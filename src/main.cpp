@@ -1,5 +1,18 @@
 #include <Arduino.h>
+#include <WiFi.h>
+#include <HTTPClient.h>
 #include <Adafruit_NeoPixel.h>
+#include <tinyxml2.h>
+#include <iostream>
+#include <cstring>
+
+using namespace tinyxml2;
+using namespace std;
+
+const char* ssid = "PlanetExpress";
+const char* password = "futurama";
+
+char * testDocument = "<root><element>7</element></root>";
 
 #define OUTER_PIN 17
 #define MIDDLE_PIN 18
@@ -9,6 +22,25 @@
 #define WIFI_RST 21
 #define OUTPUT_ENABLE 22
 #define BRIGHTNESS 255        // Global brightness value. 8bit, 0-255
+
+
+
+
+
+
+
+
+//Your Domain name with URL path or IP address with path
+String serverName = "https://eyes.nasa.gov/dsn/data/dsn.xml";
+
+// the following variables are unsigned longs because the time, measured in
+// milliseconds, will quickly become a bigger number than can be stored in an int.
+unsigned long lastTime = 0;
+// Timer set to 10 minutes (600000)
+//unsigned long timerDelay = 600000;
+// Set timer to 5 seconds (5000)
+unsigned long timerDelay = 5000;
+
 
 
 
@@ -26,21 +58,21 @@ unsigned long lastUpdateP3 = 0;
 unsigned long lastUpdateP4 = 0;
 
 // state variables for patterns
-int p1State = 0 ;
+int p1State = 0;
 int p1StateExtend = 0;
-int p2State = 0 ;
-int p3State = 0 ; 
-int p4State = 0 ;
+int p2State = 0;
+int p3State = 0; 
+int p4State = 0;
 
 
 
 
 // Define NeoPixel objects - NAME(PIXEL_COUNT, PIN, PIXEL_TYPE)
 Adafruit_NeoPixel
-  outer_pixels(80, OUTER_PIN, NEO_GRB + NEO_KHZ800),
-  inner_pixels(80, INNER_PIN, NEO_GRB + NEO_KHZ800),
-  middle_pixels(80, MIDDLE_PIN, NEO_GRB + NEO_KHZ800),
-  bottom_pixels(80, BOTTOM_PIN, NEO_GRB + NEO_KHZ800);
+  outer_pixels(10, OUTER_PIN, NEO_GRB + NEO_KHZ800),
+  inner_pixels(10, INNER_PIN, NEO_GRB + NEO_KHZ800),
+  middle_pixels(10, MIDDLE_PIN, NEO_GRB + NEO_KHZ800),
+  bottom_pixels(10, BOTTOM_PIN, NEO_GRB + NEO_KHZ800);
 
 uint32_t offColor = outer_pixels.Color(0, 0, 0);
 
@@ -322,6 +354,23 @@ void setup() {
   inner_pixels.setBrightness(BRIGHTNESS);
   middle_pixels.setBrightness(BRIGHTNESS);
   bottom_pixels.setBrightness(BRIGHTNESS);
+
+
+
+
+  WiFi.begin(ssid, password);
+  Serial.println("Connecting");
+  while(WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("");
+  Serial.print("Connected to WiFi network with IP Address: ");
+  Serial.println(WiFi.localIP());
+
+
+
+  
 }
 
 
@@ -329,6 +378,75 @@ void setup() {
 
 // loop() function -- runs repeatedly as long as board is on ---------------
 void loop() {
+
+  //Send an HTTP POST request every 5 seconds
+  if ((millis() - lastTime) > timerDelay) {
+    //Check WiFi connection status
+    if(WiFi.status()== WL_CONNECTED){
+      HTTPClient http;
+
+      String serverPath = serverName + "?r=" + String(random(9999999999));
+      Serial.println(serverPath);
+      
+      // Your Domain name with URL path or IP address with path
+      http.begin(serverPath.c_str());
+      
+      // Send HTTP GET request
+      int httpResponseCode = http.GET();
+      
+      if (httpResponseCode>0) {
+        Serial.print("HTTP Response code: ");
+        Serial.println(httpResponseCode);
+        String payload = http.getString();
+        // Serial.println(payload);
+
+        XMLDocument xmlDocument;
+
+        if(xmlDocument.Parse(payload.c_str())!= XML_SUCCESS){
+          Serial.println("Error parsing");  
+          return;
+        };
+        
+        XMLNode * root = xmlDocument.FirstChild();
+        XMLElement * station = root->FirstChildElement("station");
+        XMLElement * dish = root->FirstChildElement("dish");
+        XMLElement * target = dish->FirstChildElement("target");
+        XMLElement * timestamp = root->FirstChildElement("timestamp");
+
+        const char * stationFriendlyName;
+        stationFriendlyName = station->Attribute("friendlyName");
+
+        const char * dishName;
+        dishName = dish->Attribute("name");
+
+        const char * targetName;
+        targetName = target->Attribute("name");
+
+        uint64_t timestampInt;      
+        timestamp->QueryUnsigned64Text(&timestampInt);
+
+
+        Serial.println(timestampInt);
+        Serial.println(stationFriendlyName);
+        Serial.println(dishName);
+        Serial.println(targetName);
+
+      }
+      else {
+        Serial.print("Error code: ");
+        Serial.println(httpResponseCode);
+      }
+      // Free resources
+      http.end();
+    }
+    else {
+      Serial.println("WiFi Disconnected");
+    }
+    lastTime = millis();
+  }
+
+
+
 
   if(millis() - lastUpdateP1 > pattern1Interval) updatePattern1();
   if(millis() - lastUpdateP2 > pattern2Interval) updatePattern2();
@@ -375,10 +493,15 @@ void loop() {
   // rainbow(outer_pixels, 10);             // Flowing rainbow cycle along the whole strip
   // rainbow(inner_pixels, 10);             // Flowing rainbow cycle along the whole strip
   // rainbow(middle_pixels, 10);             // Flowing rainbow cycle along the whole strip
-  // rainbow(bottom_pixels, 10);             // Flowing rainbow cycle along the whole strip  
+  // rainbow(bottom_pixels, 10);             // Flowing rainbow cycle along the whole strip
   
   // theaterChaseRainbow(outer_pixels, 50); // Rainbow-enhanced theaterChase variant
   // theaterChaseRainbow(inner_pixels, 50); // Rainbow-enhanced theaterChase variant
   // theaterChaseRainbow(middle_pixels, 50); // Rainbow-enhanced theaterChase variant
   // theaterChaseRainbow(bottom_pixels, 50); // Rainbow-enhanced theaterChase variant
+
+
+
+
+  
 }
