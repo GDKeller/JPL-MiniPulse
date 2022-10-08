@@ -69,10 +69,10 @@ int p4State = 0;
 
 // Define NeoPixel objects - NAME(PIXEL_COUNT, PIN, PIXEL_TYPE)
 Adafruit_NeoPixel
-  outer_pixels(10, OUTER_PIN, NEO_GRB + NEO_KHZ800),
-  inner_pixels(10, INNER_PIN, NEO_GRB + NEO_KHZ800),
-  middle_pixels(10, MIDDLE_PIN, NEO_GRB + NEO_KHZ800),
-  bottom_pixels(10, BOTTOM_PIN, NEO_GRB + NEO_KHZ800);
+  outer_pixels(20, OUTER_PIN, NEO_GRB + NEO_KHZ800),
+  inner_pixels(20, INNER_PIN, NEO_GRB + NEO_KHZ800),
+  middle_pixels(20, MIDDLE_PIN, NEO_GRB + NEO_KHZ800),
+  bottom_pixels(20, BOTTOM_PIN, NEO_GRB + NEO_KHZ800);
 
 uint32_t offColor = outer_pixels.Color(0, 0, 0);
 
@@ -379,13 +379,13 @@ void setup() {
 // loop() function -- runs repeatedly as long as board is on ---------------
 void loop() {
 
-  //Send an HTTP POST request every 5 seconds
+  // Send an HTTP POST request every 5 seconds
   if ((millis() - lastTime) > timerDelay) {
     //Check WiFi connection status
     if(WiFi.status()== WL_CONNECTED){
       HTTPClient http;
 
-      String serverPath = serverName + "?r=" + String(random(9999999999));
+      String serverPath = serverName + "?r=" + String(random(1410065407));
       Serial.println(serverPath);
       
       // Your Domain name with URL path or IP address with path
@@ -441,6 +441,15 @@ void loop() {
     }
     else {
       Serial.println("WiFi Disconnected");
+
+      WiFi.begin(ssid, password);
+      Serial.println("Connecting");
+      while(WiFi.status() != WL_CONNECTED) {
+        Serial.print(".");
+      }
+      Serial.println("");
+      Serial.print("Connected to WiFi network with IP Address: ");
+      Serial.println(WiFi.localIP());
     }
     lastTime = millis();
   }
