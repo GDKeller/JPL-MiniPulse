@@ -24,6 +24,7 @@ char * testDocument = "<root><element>7</element></root>";
 #define BRIGHTNESS 255        // Global brightness value. 8bit, 0-255
 
 
+TaskHandle_t  HandleData;
 
 
 
@@ -323,10 +324,96 @@ void updatePattern4() { // pattern 1 a walking purple led
 }
 
 
+void getData( void * parameter) {
+
+  for(;;) {
+    // Send an HTTP POST request every 5 seconds
+    if ((millis() - lastTime) > timerDelay) {
+
+      Serial.print("getData() running on core ");
+      Serial.println(xPortGetCoreID());
+      //Check WiFi connection status
+      if(WiFi.status()== WL_CONNECTED){
+        HTTPClient http;
+
+        String serverPath = serverName + "?r=" + String(random(1410065407));
+        Serial.println(serverPath);
+        
+        // Your Domain name with URL path or IP address with path
+        http.begin(serverPath.c_str());
+        
+        // Send HTTP GET request
+        int httpResponseCode = http.GET();
+        
+        if (httpResponseCode>0) {
+          Serial.print("HTTP Response code: ");
+          Serial.println(httpResponseCode);
+          String payload = http.getString();
+          // Serial.println(payload);
+
+          XMLDocument xmlDocument;
+
+          if(xmlDocument.Parse(payload.c_str())!= XML_SUCCESS){
+            Serial.println("Error parsing");  
+            return;
+          };
+          
+          XMLNode * root = xmlDocument.FirstChild();
+          XMLElement * station = root->FirstChildElement("station");
+          XMLElement * dish = root->FirstChildElement("dish");
+          XMLElement * target = dish->FirstChildElement("target");
+          XMLElement * timestamp = root->FirstChildElement("timestamp");
+
+          const char * stationFriendlyName;
+          stationFriendlyName = station->Attribute("friendlyName");
+
+          const char * dishName;
+          dishName = dish->Attribute("name");
+
+          const char * targetName;
+          targetName = target->Attribute("name");
+
+          uint64_t timestampInt;      
+          timestamp->QueryUnsigned64Text(&timestampInt);
+
+
+          Serial.println(timestampInt);
+          Serial.println(stationFriendlyName);
+          Serial.println(dishName);
+          Serial.println(targetName);
+
+        }
+        else {
+          Serial.print("Error code: ");
+          Serial.println(httpResponseCode);
+        }
+        // Free resources
+        http.end();
+      }
+      else {
+        Serial.println("WiFi Disconnected");
+
+        WiFi.begin(ssid, password);
+        Serial.println("Connecting");
+        while(WiFi.status() != WL_CONNECTED) {
+          Serial.print(".");
+        }
+        Serial.println("");
+        Serial.print("Connected to WiFi network with IP Address: ");
+        Serial.println(WiFi.localIP());
+      }
+      lastTime = millis();
+    }
+  }
+}
+
 
 // setup() function -- runs once at startup --------------------------------
 void setup() {
   Serial.begin(115200);
+
+  Serial.print("setup() running on core ");
+  Serial.println(xPortGetCoreID());
 
   pinMode(OUTER_PIN, OUTPUT);
   pinMode(INNER_PIN, OUTPUT);
@@ -369,6 +456,15 @@ void setup() {
   Serial.println(WiFi.localIP());
 
 
+  xTaskCreatePinnedToCore(
+      getData, /* Function to implement the task */
+      "getData", /* Name of the task */
+      10000,  /* Stack size in words */
+      NULL,  /* Task input parameter */
+      0,  /* Priority of the task */
+      &HandleData,  /* Task handle. */
+      0); /* Core where the task should run */
+
 
   
 }
@@ -378,81 +474,8 @@ void setup() {
 
 // loop() function -- runs repeatedly as long as board is on ---------------
 void loop() {
-
-  // Send an HTTP POST request every 5 seconds
-  if ((millis() - lastTime) > timerDelay) {
-    //Check WiFi connection status
-    if(WiFi.status()== WL_CONNECTED){
-      HTTPClient http;
-
-      String serverPath = serverName + "?r=" + String(random(1410065407));
-      Serial.println(serverPath);
-      
-      // Your Domain name with URL path or IP address with path
-      http.begin(serverPath.c_str());
-      
-      // Send HTTP GET request
-      int httpResponseCode = http.GET();
-      
-      if (httpResponseCode>0) {
-        Serial.print("HTTP Response code: ");
-        Serial.println(httpResponseCode);
-        String payload = http.getString();
-        // Serial.println(payload);
-
-        XMLDocument xmlDocument;
-
-        if(xmlDocument.Parse(payload.c_str())!= XML_SUCCESS){
-          Serial.println("Error parsing");  
-          return;
-        };
-        
-        XMLNode * root = xmlDocument.FirstChild();
-        XMLElement * station = root->FirstChildElement("station");
-        XMLElement * dish = root->FirstChildElement("dish");
-        XMLElement * target = dish->FirstChildElement("target");
-        XMLElement * timestamp = root->FirstChildElement("timestamp");
-
-        const char * stationFriendlyName;
-        stationFriendlyName = station->Attribute("friendlyName");
-
-        const char * dishName;
-        dishName = dish->Attribute("name");
-
-        const char * targetName;
-        targetName = target->Attribute("name");
-
-        uint64_t timestampInt;      
-        timestamp->QueryUnsigned64Text(&timestampInt);
-
-
-        Serial.println(timestampInt);
-        Serial.println(stationFriendlyName);
-        Serial.println(dishName);
-        Serial.println(targetName);
-
-      }
-      else {
-        Serial.print("Error code: ");
-        Serial.println(httpResponseCode);
-      }
-      // Free resources
-      http.end();
-    }
-    else {
-      Serial.println("WiFi Disconnected");
-
-      WiFi.begin(ssid, password);
-      Serial.println("Connecting");
-      while(WiFi.status() != WL_CONNECTED) {
-        Serial.print(".");
-      }
-      Serial.println("");
-      Serial.print("Connected to WiFi network with IP Address: ");
-      Serial.println(WiFi.localIP());
-    }
-    lastTime = millis();
-  }
+  // Serial.print("loop() running on core ");
+  // Serial.println(xPortGetCoreID());
 
 
 
