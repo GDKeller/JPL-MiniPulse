@@ -317,9 +317,30 @@ void updatePattern4() { // pattern 1 a walking purple led
 }
 
 
+struct DSN_Target {
+  const char * type;
+};
+
+struct DSN_Dish {
+  const char * name;
+  struct DSN_Target target;
+};
+
+struct DSN_Station {
+  uint64_t fetchTimestamp;
+  const char * callsign;
+  const char * name;
+  struct DSN_Dish dish;
+} data;
+
+struct DSN_Station stations[3];
 
 // Fetch XML data from HTTP & parse for use in animations
 void getData( void * parameter) {
+
+  
+
+
 
   for(;;) {
 
@@ -357,7 +378,6 @@ void getData( void * parameter) {
           String payload = http.getString();
           // Serial.println(payload);
 
-
           // XML Parsing
           XMLDocument xmlDocument;  // Create variable for XML document
 
@@ -368,23 +388,47 @@ void getData( void * parameter) {
 
           // Find XML elements          
           XMLNode * root = xmlDocument.FirstChild();
-          XMLElement * station = root->FirstChildElement("station");
-          XMLElement * dish = root->FirstChildElement("dish");
-          XMLElement * target = dish->FirstChildElement("target");
+          // XMLElement * station = root->FirstChildElement("station");
+          // XMLElement * dish = root->FirstChildElement("dish");
+
+
+
+          
+
+          // XMLElement * target = dish->FirstChildElement("target");
           XMLElement * timestamp = root->FirstChildElement("timestamp");
 
           // Get value of XML elements
           const char * stationFriendlyName;
-          stationFriendlyName = station->Attribute("friendlyName");
+          // stationFriendlyName = station->Attribute("friendlyName");
 
           const char * dishName;
-          dishName = dish->Attribute("name");
+          // dishName = dish->Attribute("name");
 
           const char * targetName;
-          targetName = target->Attribute("name");
+          // targetName = target->Attribute("name");
 
           uint64_t timestampInt;      
           timestamp->QueryUnsigned64Text(&timestampInt);
+
+         
+          int i = 0;
+          for (XMLElement * station = root->FirstChildElement("station"); station != NULL; station = station->NextSiblingElement("station")) {
+            DSN_Station newStation;
+            newStation.fetchTimestamp = timestampInt;
+            newStation.callsign = station->Attribute("name");
+            newStation.name = station->Attribute("friendlyName");
+            stations[i] = newStation;
+            i++;
+          }
+
+          // for (int i = 0; i < 3; i++) {
+          //   Serial.print("From the array: ");
+          //   Serial.println(stations[i].callsign);
+          // }
+
+
+
 
 
 
@@ -394,10 +438,10 @@ void getData( void * parameter) {
 
 
           // Add data to queue, to be passed to another task
-          if (xQueueSend( queue, &timestampInt, portMAX_DELAY )) {
+          if (xQueueSend( queue, stations, portMAX_DELAY )) {
             if ( SHOW_SERIAL == 1 ) {
               Serial.print("Write to queue: ");
-              Serial.println(timestampInt);
+              Serial.println(stations[0].fetchTimestamp);
             }
           } else {
             if ( SHOW_SERIAL == 1 ) {
@@ -519,11 +563,24 @@ void loop() {
   }
 
   // Receive from queue (data task on core 1)
-  uint64_t timestamp;
-  if (xQueueReceive(queue, &timestamp, 1) == pdPASS) {
+  // struct DSN_Stations stations[3];
+  if (xQueueReceive(queue, &stations, 1) == pdPASS) {
     if ( SHOW_SERIAL == 1 ) {
+      Serial.println();
+      Serial.println("-------");
       Serial.print("timestamp: ");
-      Serial.println(timestamp);
+      Serial.println(stations[0].fetchTimestamp);
+      Serial.println();
+
+      int i;
+      for (i = 0; i < 3; i++) {
+        Serial.print("Station: ");
+        Serial.print(stations[i].name);
+        Serial.print(" (");
+        Serial.print(stations[i].callsign);
+        Serial.println(") ");
+        Serial.println();
+      } 
     }
   }
 
