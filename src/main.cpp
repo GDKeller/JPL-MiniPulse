@@ -520,7 +520,7 @@ void loop() {
 
   // Receive from queue (data task on core 1)
   uint64_t timestamp;
-  if (xQueueReceive(queue, &timestamp, 100) == pdPASS) {
+  if (xQueueReceive(queue, &timestamp, 1) == pdPASS) {
     if ( SHOW_SERIAL == 1 ) {
       Serial.print("timestamp: ");
       Serial.println(timestamp);
