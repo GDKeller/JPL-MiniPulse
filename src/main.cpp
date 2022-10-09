@@ -17,8 +17,8 @@ using namespace std;
 const char* ssid = "PlanetExpress";
 const char* password = "futurama";
 
-#define TEST_MODE 0
-#define SHOW_SERIAL 0
+#define TEST_CORES 0
+#define SHOW_SERIAL 1
 
 #define OUTER_PIN 17
 #define MIDDLE_PIN 18
@@ -326,7 +326,7 @@ void getData( void * parameter) {
     // Send an HTTP POST request every 5 seconds
     if ((millis() - lastTime) > timerDelay) {
 
-      if ( TEST_MODE == 1 ) {
+      if ( TEST_CORES == 1 ) {
         Serial.print("getData() running on core ");
         Serial.println(xPortGetCoreID());
       }
@@ -441,7 +441,7 @@ void getData( void * parameter) {
 void setup() {
   Serial.begin(115200);     // Begin serial communications, ESP32 uses 115200 rate
 
-  if ( TEST_MODE == 1 ) {
+  if ( TEST_CORES == 1 ) {
     Serial.print("setup() running on core ");
     Serial.println(xPortGetCoreID());
   }
@@ -511,7 +511,7 @@ void setup() {
 
 // loop() function -- runs repeatedly as long as board is on ---------------
 void loop() {
-  if ( TEST_MODE == 1 ) {    
+  if ( TEST_CORES == 1 ) {    
     if ( millis() - lastTime > 4000 && millis() - lastTime < 4500 ) {
       Serial.print("loop() running on core ");
       Serial.println(xPortGetCoreID());
