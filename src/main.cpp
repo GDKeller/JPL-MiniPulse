@@ -1,3 +1,4 @@
+/* LIBRARIES */
 #include <Arduino.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
@@ -6,13 +7,18 @@
 #include <iostream>
 #include <cstring>
 
+/* NAMESPACES */
 using namespace tinyxml2;
 using namespace std;
 
+
+
+/* CONFIG */
 const char* ssid = "PlanetExpress";
 const char* password = "futurama";
 
-char * testDocument = "<root><element>7</element></root>";
+#define TEST_MODE 0
+#define SHOW_SERIAL 0
 
 #define OUTER_PIN 17
 #define MIDDLE_PIN 18
@@ -23,28 +29,12 @@ char * testDocument = "<root><element>7</element></root>";
 #define OUTPUT_ENABLE 22
 #define BRIGHTNESS 255        // Global brightness value. 8bit, 0-255
 
+String serverName = "https://eyes.nasa.gov/dsn/data/dsn.xml"; // URL to fetch
 
-TaskHandle_t  HandleData;
-
-
-
-
-
-
-//Your Domain name with URL path or IP address with path
-String serverName = "https://eyes.nasa.gov/dsn/data/dsn.xml";
-
-// the following variables are unsigned longs because the time, measured in
-// milliseconds, will quickly become a bigger number than can be stored in an int.
-unsigned long lastTime = 0;
-// Timer set to 10 minutes (600000)
-//unsigned long timerDelay = 600000;
-// Set timer to 5 seconds (5000)
-unsigned long timerDelay = 5000;
-
-
-
-
+// Time is measured in milliseconds and will become a bigger number
+// than can be stored in an int, so long is used
+unsigned long lastTime = 0;       // Init reference variable for timer
+unsigned long timerDelay = 5000;  // Set timer to 5 seconds (5000)
 
 // how often each pattern updates
 unsigned long pattern1Interval  = 50;
@@ -52,13 +42,35 @@ unsigned long pattern2Interval  = 50;
 unsigned long pattern3Interval  = 50;
 unsigned long pattern4Interval  = 50;
 
-// for millis() when last update occurred
+
+/* TASKS */
+TaskHandle_t  HandleData;     // Task for fetching and parsing data
+QueueHandle_t queue;          // Queue to pass data between tasks
+
+
+/* HARDWARDE */
+// Define NeoPixel objects - NAME(PIXEL_COUNT, PIN, PIXEL_TYPE)
+Adafruit_NeoPixel
+  outer_pixels(20, OUTER_PIN, NEO_GRB + NEO_KHZ800),
+  inner_pixels(20, INNER_PIN, NEO_GRB + NEO_KHZ800),
+  middle_pixels(20, MIDDLE_PIN, NEO_GRB + NEO_KHZ800),
+  bottom_pixels(20, BOTTOM_PIN, NEO_GRB + NEO_KHZ800);
+
+
+
+
+/* ANIMATION UTILITIES */
+// Do not change these
+
+uint32_t offColor = outer_pixels.Color(0, 0, 0);  // Variable for LED off state
+
+// Init reference variables for when last update occurred
 unsigned long lastUpdateP1 = 0;
 unsigned long lastUpdateP2 = 0;
 unsigned long lastUpdateP3 = 0;
 unsigned long lastUpdateP4 = 0;
 
-// state variables for patterns
+// Init state variables for patterns, tracks which pixel to animate
 int p1State = 0;
 int p1StateExtend = 0;
 int p2State = 0;
@@ -67,17 +79,7 @@ int p4State = 0;
 
 
 
-
-// Define NeoPixel objects - NAME(PIXEL_COUNT, PIN, PIXEL_TYPE)
-Adafruit_NeoPixel
-  outer_pixels(20, OUTER_PIN, NEO_GRB + NEO_KHZ800),
-  inner_pixels(20, INNER_PIN, NEO_GRB + NEO_KHZ800),
-  middle_pixels(20, MIDDLE_PIN, NEO_GRB + NEO_KHZ800),
-  bottom_pixels(20, BOTTOM_PIN, NEO_GRB + NEO_KHZ800);
-
-uint32_t offColor = outer_pixels.Color(0, 0, 0);
-
-
+/* ANIMATION FUNCTIONS */
 
 // Custom function to calculate color relative to global BRIGHTNESS variable 
 void setPixelColor( Adafruit_NeoPixel &strip, uint16_t n, uint32_t &color ) {
@@ -92,9 +94,6 @@ void setPixelColor( Adafruit_NeoPixel &strip, uint16_t n, uint32_t &color ) {
   // Serial.println();
 	strip.setPixelColor(n, (BRIGHTNESS*r/255) , (BRIGHTNESS*g/255), (BRIGHTNESS*b/255));
 }
-
-
-// Animation functions -----------------
 
 // Fill strip pixels one after another with a color. Strip is NOT cleared
 // first; anything there will be covered pixel by pixel. Pass in color
@@ -168,7 +167,6 @@ void theaterChaseRainbow(Adafruit_NeoPixel &strip, int wait) {
     }
   }
 }
-
 
 void updatePattern1() { // rain
   uint32_t colorArray [] = {
@@ -267,11 +265,6 @@ void updatePattern1() { // rain
   lastUpdateP1 = millis();               // to calculate next update
 }
 
-
-
-
-
-
 void updatePattern2() { // pattern 1 a walking green led
   uint32_t color2 = inner_pixels.Color(0, 64, 0);
   uint32_t offColor = inner_pixels.Color(0, 0, 0);
@@ -324,21 +317,31 @@ void updatePattern4() { // pattern 1 a walking purple led
 }
 
 
+
+// Fetch XML data from HTTP & parse for use in animations
 void getData( void * parameter) {
 
   for(;;) {
+
     // Send an HTTP POST request every 5 seconds
     if ((millis() - lastTime) > timerDelay) {
 
-      Serial.print("getData() running on core ");
-      Serial.println(xPortGetCoreID());
+      if ( TEST_MODE == 1 ) {
+        Serial.print("getData() running on core ");
+        Serial.println(xPortGetCoreID());
+      }
+
       //Check WiFi connection status
       if(WiFi.status()== WL_CONNECTED){
+
         HTTPClient http;
 
         String serverPath = serverName + "?r=" + String(random(1410065407));
-        Serial.println(serverPath);
         
+        if ( SHOW_SERIAL == 1 ) {
+          Serial.println(serverPath);
+        }
+
         // Your Domain name with URL path or IP address with path
         http.begin(serverPath.c_str());
         
@@ -346,24 +349,31 @@ void getData( void * parameter) {
         int httpResponseCode = http.GET();
         
         if (httpResponseCode>0) {
-          Serial.print("HTTP Response code: ");
-          Serial.println(httpResponseCode);
+          if ( SHOW_SERIAL == 1 ) {
+            Serial.print("HTTP Response code: ");
+            Serial.println(httpResponseCode);
+          }
+
           String payload = http.getString();
           // Serial.println(payload);
 
-          XMLDocument xmlDocument;
+
+          // XML Parsing
+          XMLDocument xmlDocument;  // Create variable for XML document
 
           if(xmlDocument.Parse(payload.c_str())!= XML_SUCCESS){
             Serial.println("Error parsing");  
             return;
           };
-          
+
+          // Find XML elements          
           XMLNode * root = xmlDocument.FirstChild();
           XMLElement * station = root->FirstChildElement("station");
           XMLElement * dish = root->FirstChildElement("dish");
           XMLElement * target = dish->FirstChildElement("target");
           XMLElement * timestamp = root->FirstChildElement("timestamp");
 
+          // Get value of XML elements
           const char * stationFriendlyName;
           stationFriendlyName = station->Attribute("friendlyName");
 
@@ -377,18 +387,30 @@ void getData( void * parameter) {
           timestamp->QueryUnsigned64Text(&timestampInt);
 
 
-          Serial.println(timestampInt);
-          Serial.println(stationFriendlyName);
-          Serial.println(dishName);
-          Serial.println(targetName);
 
+          // Serial.println(stationFriendlyName);
+          // Serial.println(dishName);
+          // Serial.println(targetName);
+
+
+          // Add data to queue, to be passed to another task
+          if (xQueueSend( queue, &timestampInt, portMAX_DELAY )) {
+            if ( SHOW_SERIAL == 1 ) {
+              Serial.print("Write to queue: ");
+              Serial.println(timestampInt);
+            }
+          } else {
+            if ( SHOW_SERIAL == 1 ) {
+              Serial.println("Error adding to queue");
+            }
+          }
         }
         else {
           Serial.print("Error code: ");
           Serial.println(httpResponseCode);
         }
-        // Free resources
-        http.end();
+
+        http.end(); // Free up resources
       }
       else {
         Serial.println("WiFi Disconnected");
@@ -402,19 +424,48 @@ void getData( void * parameter) {
         Serial.print("Connected to WiFi network with IP Address: ");
         Serial.println(WiFi.localIP());
       }
-      lastTime = millis();
+
+      lastTime = millis();  // Sync reference variable for timer
     }
   }
 }
 
 
+
+
+
+
+
+
 // setup() function -- runs once at startup --------------------------------
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(115200);     // Begin serial communications, ESP32 uses 115200 rate
 
-  Serial.print("setup() running on core ");
-  Serial.println(xPortGetCoreID());
+  if ( TEST_MODE == 1 ) {
+    Serial.print("setup() running on core ");
+    Serial.println(xPortGetCoreID());
+  }
 
+  // Initialize task for core 2
+  xTaskCreatePinnedToCore(
+    getData, /* Function to implement the task */
+    "getData", /* Name of the task */
+    10000,  /* Stack size in words */
+    NULL,  /* Task input parameter */
+    0,  /* Priority of the task */
+    &HandleData,  /* Task handle. */
+    0); /* Core where the task should run */
+
+
+  // Create queue to pass data between tasks on separate cores
+  queue = xQueueCreate( 1, sizeof( uint64_t ) );    // Create queue
+
+  if (queue == NULL) {                              // Check that queue was created successfully
+    Serial.println("Error creating the queue");
+  }
+
+
+  // Set up pins
   pinMode(OUTER_PIN, OUTPUT);
   pinMode(INNER_PIN, OUTPUT);
   pinMode(MIDDLE_PIN, OUTPUT);
@@ -442,11 +493,9 @@ void setup() {
   middle_pixels.setBrightness(BRIGHTNESS);
   bottom_pixels.setBrightness(BRIGHTNESS);
 
-
-
-
+  // Connect to WiFi
   WiFi.begin(ssid, password);
-  Serial.println("Connecting");
+  Serial.println("Connecting...");
   while(WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
@@ -454,18 +503,6 @@ void setup() {
   Serial.println("");
   Serial.print("Connected to WiFi network with IP Address: ");
   Serial.println(WiFi.localIP());
-
-
-  xTaskCreatePinnedToCore(
-      getData, /* Function to implement the task */
-      "getData", /* Name of the task */
-      10000,  /* Stack size in words */
-      NULL,  /* Task input parameter */
-      0,  /* Priority of the task */
-      &HandleData,  /* Task handle. */
-      0); /* Core where the task should run */
-
-
   
 }
 
@@ -474,16 +511,27 @@ void setup() {
 
 // loop() function -- runs repeatedly as long as board is on ---------------
 void loop() {
-  // Serial.print("loop() running on core ");
-  // Serial.println(xPortGetCoreID());
+  if ( TEST_MODE == 1 ) {    
+    if ( millis() - lastTime > 4000 && millis() - lastTime < 4500 ) {
+      Serial.print("loop() running on core ");
+      Serial.println(xPortGetCoreID());
+    }
+  }
+
+  // Receive from queue (data task on core 1)
+  uint64_t timestamp;
+  if (xQueueReceive(queue, &timestamp, 100) == pdPASS) {
+    if ( SHOW_SERIAL == 1 ) {
+      Serial.print("timestamp: ");
+      Serial.println(timestamp);
+    }
+  }
 
 
-
-
-  if(millis() - lastUpdateP1 > pattern1Interval) updatePattern1();
-  if(millis() - lastUpdateP2 > pattern2Interval) updatePattern2();
-  if(millis() - lastUpdateP3 > pattern3Interval) updatePattern3();
-  if(millis() - lastUpdateP4 > pattern4Interval) updatePattern4();
+  if( millis() - lastUpdateP1 > pattern1Interval ) updatePattern1();
+  if( millis() - lastUpdateP2 > pattern2Interval ) updatePattern2();
+  if( millis() - lastUpdateP3 > pattern3Interval ) updatePattern3();
+  if( millis() - lastUpdateP4 > pattern4Interval ) updatePattern4();
 
 
 
@@ -531,9 +579,6 @@ void loop() {
   // theaterChaseRainbow(inner_pixels, 50); // Rainbow-enhanced theaterChase variant
   // theaterChaseRainbow(middle_pixels, 50); // Rainbow-enhanced theaterChase variant
   // theaterChaseRainbow(bottom_pixels, 50); // Rainbow-enhanced theaterChase variant
-
-
-
 
   
 }
