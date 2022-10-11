@@ -321,17 +321,41 @@ void updatePattern4() { // pattern 1 a walking purple led
 struct DSN_Target {
   const char * name;
 };
+struct DSN_Target blankTarget;      // Create a blank placeholder struct
 
 struct DSN_Dish {
   const char * name;
-  struct DSN_Target target;
+  struct DSN_Target targets[10] = {
+    blankTarget,
+    blankTarget,
+    blankTarget,
+    blankTarget,
+    blankTarget,
+    blankTarget,
+    blankTarget,
+    blankTarget,
+    blankTarget,
+    blankTarget,
+  };
 };
+struct DSN_Dish blankDish;          // Create a blank placeholder struct
 
 struct DSN_Station {
   uint64_t fetchTimestamp;
   const char * callsign;
   const char * name;
-  struct DSN_Dish dishes[10];
+  struct DSN_Dish dishes[10] = {
+    blankDish,
+    blankDish,
+    blankDish,
+    blankDish,
+    blankDish,
+    blankDish,
+    blankDish,
+    blankDish,
+    blankDish,
+    blankDish,
+  };
 };
 
 struct DSN_Station stations[3];
@@ -352,13 +376,17 @@ void getData( void * parameter) {
 
       // Reset station data sets
       struct DSN_Station blankStation;    // Create a blank placeholder struct
-      struct DSN_Dish blankDish;          // Create a blank placeholder struct
+      
 
       for (int s = 0; s < 3; s++) {
-        stations[s] = blankStation;       // Reset all station array elements with blank structs
+        // stations[s] = blankStation;       // Reset all station array elements with blank structs
 
         for (int d = 0; d < 10; d++) {
           stations[s].dishes[d] = blankDish;  // Reset all dish array elements with blank structs
+
+          for (int t = 0; t < 10; t++) {
+            stations[s].dishes[d].targets[t] = blankTarget; // Reset all target array elements with blank structs
+          }
         }
       }
 
@@ -393,78 +421,82 @@ void getData( void * parameter) {
           // XML Parsing
           XMLDocument xmlDocument;  // Create variable for XML document
 
-          if(xmlDocument.Parse(payload.c_str())!= XML_SUCCESS){
+          if(xmlDocument.Parse(payload.c_str())!= XML_SUCCESS){   // Handle XML parsing error
             Serial.println("Error parsing");  
             return;
           };
 
           // Find XML elements          
-          XMLNode * root = xmlDocument.FirstChild();          
-          XMLElement * timestamp = root->FirstChildElement("timestamp");
+          XMLNode * root = xmlDocument.FirstChild();      // Find document root node
+          XMLElement * timestamp = root->FirstChildElement("timestamp");  // Find XML timestamp element
 
           uint64_t timestampInt;      
-          timestamp->QueryUnsigned64Text(&timestampInt);
+          timestamp->QueryUnsigned64Text(&timestampInt);  // Convert timestamp to int
 
          
           DSN_Station newStation;
-          int i = 0;
+          int i = 0;    // Create station elements counter
           for (XMLElement * xmlStation = root->FirstChildElement("station"); xmlStation != NULL; xmlStation = xmlStation->NextSiblingElement("station")) {
             newStation.fetchTimestamp = timestampInt;
             newStation.callsign = xmlStation->Attribute("name");
             newStation.name = xmlStation->Attribute("friendlyName");
 
-            int d2;
+            int d2;   // Create dish array struct counter
             for (int d2 = 0; d2 < 10; d2++) {
-              newStation.dishes[d2] = blankDish;
+              newStation.dishes[d2] = blankDish;  // Reset this array struct to blank
             }
 
 
-            string dish_string("dish");
+            // Find dish elements that are associated with this station
+            string dish_string("dish");   // Convet from string to char, as XMLElement->Value returns char
             const char * compare;
-            compare = &dish_string[0];
-            int n = 0;
+            compare = &dish_string[0];    // Assign string-to-char for comparison
+            int n = 0;    // Create dish elements counter
             for (XMLElement * xmlDish = xmlStation->NextSiblingElement(); xmlDish != NULL; xmlDish = xmlDish->NextSiblingElement()) {
-              const char * elementValue = xmlDish->Value();
-              Serial.print("element: ");
-              Serial.println(elementValue);
-              if (elementValue != dish_string) {
-                Serial.println("---");
+              const char * elementValue = xmlDish->Value(); // Get element value (tag type)
+
+              if (elementValue != dish_string) {    // If the element isn't a dish, exit the loop
                 break;
               }
 
-              newStation.dishes[n].name = xmlDish->Attribute("name");             
-              XMLElement * xmlTarget = xmlDish->FirstChildElement("target");
-              newStation.dishes[n].target.name = xmlTarget->Attribute("name");
+              newStation.dishes[n].name = xmlDish->Attribute("name");   // Add dish name to data struct array
 
-              n++;
-            }
-
-            stations[i] = newStation;
-            i++;
-          }
-
-
-
-          for (i = 0; i < 3; i++) {
-            Serial.print("Station: ");
-            Serial.print(stations[i].name);
-            Serial.print(" (");
-            Serial.print(stations[i].callsign);
-            Serial.println(") ");
-
-            int d;
-            for (d = 0; d < 10; d++) {
-              const char * dishName = stations[i].dishes[d].name;
-              const char * targetName = stations[i].dishes[d].target.name;
-              if (dishName != NULL) {
-                Serial.print("---Dish: ");
-                Serial.println(dishName);
-                Serial.print("--- ---Target: ");
-                Serial.println(targetName);
+              // Find all target elements within this dish element
+              int t2 = 0;   // Create target elements counter
+              for (XMLElement * xmlTarget = xmlDish->FirstChildElement("target"); xmlTarget != NULL; xmlTarget = xmlTarget->NextSiblingElement("target")) {
+                newStation.dishes[n].targets[t2].name = xmlTarget->Attribute("name");
+                t2 ++;
               }
+
+              n++;    // Iterate dish element counter
             }
-            Serial.println();
+
+            stations[i] = newStation; // Add data to top-level station struct array
+            i++;    // Iterate station element counter
           }
+
+
+
+          // for (i = 0; i < 3; i++) {
+          //   Serial.print("Station: ");
+          //   Serial.print(stations[i].name);
+          //   Serial.print(" (");
+          //   Serial.print(stations[i].callsign);
+          //   Serial.println(") ");
+
+          //   int d;
+          //   for (d = 0; d < 10; d++) {
+          //     const char * dishName = stations[i].dishes[d].name;
+          //     const char * targetName = stations[i].dishes[d].target.name;
+          //     if (dishName != NULL) {
+          //       Serial.print("---Dish: ");
+          //       Serial.println(dishName);
+          //       Serial.print("--- ---Target: ");
+          //       Serial.println(targetName);
+          //     }
+          //   }
+          //   Serial.println();
+          // }
 
 
 
@@ -606,21 +638,29 @@ void loop() {
 
       int i;
       for (i = 0; i < 3; i++) {
+        DSN_Station station = stations[i];
         Serial.print("Station: ");
-        Serial.print(stations[i].name);
+        Serial.print(station.name);
         Serial.print(" (");
-        Serial.print(stations[i].callsign);
+        Serial.print(station.callsign);
         Serial.println(") ");
 
-        int d;
-        for (d = 0; d < 10; d++) {
-          const char * dishName = stations[i].dishes[d].name;
-          const char * targetName = stations[i].dishes[d].target.name;
+        for (int d = 0; d < 10; d++) {
+          const char * dishName = station.dishes[d].name;          
+          
           if (dishName != NULL) {
+
             Serial.print("---Dish: ");
             Serial.println(dishName);
-            Serial.print("--- ---Target: ");
-            Serial.println(targetName);
+
+            for (int t = 0; t < 10; t++) {
+              const char * targetName = station.dishes[d].targets[t].name;
+
+              if (targetName != NULL) {
+                Serial.print("--- ---Target: ");
+                Serial.println(targetName);
+              }
+            }
           }
         }
         Serial.println();
