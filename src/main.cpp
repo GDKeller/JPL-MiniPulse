@@ -318,13 +318,39 @@ void updatePattern4() { // pattern 1 a walking purple led
 
 
 // Create data structure objects
+
+// Target struct
 struct DSN_Target {
   const char * name;
 };
 struct DSN_Target blankTarget;      // Create a blank placeholder struct
 
+// Signal Struct
+struct DSN_Signal {
+  const char * direction;
+  const char * type;
+  const char * rate;
+  const char * frequency;
+  const char * spacecraft;
+  const char * spacecraftId;
+};
+struct DSN_Signal blankSignal;      // Create a blank placeholder struct
+
+// Dish struct
 struct DSN_Dish {
   const char * name;
+  struct DSN_Signal signals[10] = {
+    blankSignal,
+    blankSignal,
+    blankSignal,
+    blankSignal,
+    blankSignal,
+    blankSignal,
+    blankSignal,
+    blankSignal,
+    blankSignal,
+    blankSignal,
+  };
   struct DSN_Target targets[10] = {
     blankTarget,
     blankTarget,
@@ -340,6 +366,7 @@ struct DSN_Dish {
 };
 struct DSN_Dish blankDish;          // Create a blank placeholder struct
 
+// Station struct
 struct DSN_Station {
   uint64_t fetchTimestamp;
   const char * callsign;
@@ -383,6 +410,10 @@ void getData( void * parameter) {
 
         for (int d = 0; d < 10; d++) {
           stations[s].dishes[d] = blankDish;  // Reset all dish array elements with blank structs
+
+          for (int sig = 0; sig < 10; sig++) {
+            stations[s].dishes[d].signals[sig] = blankSignal; // Reset all signal array elements with blank structs
+          }
 
           for (int t = 0; t < 10; t++) {
             stations[s].dishes[d].targets[t] = blankTarget; // Reset all target array elements with blank structs
@@ -449,8 +480,7 @@ void getData( void * parameter) {
 
             // Find dish elements that are associated with this station
             string dish_string("dish");   // Convet from string to char, as XMLElement->Value returns char
-            const char * compare;
-            compare = &dish_string[0];    // Assign string-to-char for comparison
+            const char * compare = &dish_string[0];    // Assign string-to-char for comparison
             int n = 0;    // Create dish elements counter
             for (XMLElement * xmlDish = xmlStation->NextSiblingElement(); xmlDish != NULL; xmlDish = xmlDish->NextSiblingElement()) {
               const char * elementValue = xmlDish->Value(); // Get element value (tag type)
@@ -460,6 +490,32 @@ void getData( void * parameter) {
               }
 
               newStation.dishes[n].name = xmlDish->Attribute("name");   // Add dish name to data struct array
+
+
+              // Find all signal elements within this dish element
+              int sig2 = 0;   // Create target elements counter
+              for (XMLElement * xmlSignal = xmlDish->FirstChildElement(); xmlSignal != NULL; xmlSignal = xmlSignal->NextSiblingElement()) {
+                string upSignal_string("upSignal");
+                string downSignal_string("downSignal");
+                const char * upSignal_char = &upSignal_string[0];
+                const char * downSignal_char = &downSignal_string[0];
+                const char * elementValue = xmlSignal->Value();
+
+                if (elementValue != upSignal_string and elementValue != downSignal_string) {
+                  continue;
+                }
+
+                newStation.dishes[n].signals[sig2].direction = elementValue;
+                newStation.dishes[n].signals[sig2].type = xmlSignal->Attribute("signalType");
+                newStation.dishes[n].signals[sig2].frequency = xmlSignal->Attribute("frequency");
+                newStation.dishes[n].signals[sig2].rate = xmlSignal->Attribute("dataRate");
+                newStation.dishes[n].signals[sig2].spacecraft = xmlSignal->Attribute("spacecraft");
+                newStation.dishes[n].signals[sig2].spacecraftId = xmlSignal->Attribute("spacecraftID");
+                
+                sig2 ++;
+              }
+
+
 
               // Find all target elements within this dish element
               int t2 = 0;   // Create target elements counter
@@ -639,28 +695,61 @@ void loop() {
       int i;
       for (i = 0; i < 3; i++) {
         DSN_Station station = stations[i];
+        Serial.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         Serial.print("Station: ");
         Serial.print(station.name);
         Serial.print(" (");
         Serial.print(station.callsign);
         Serial.println(") ");
+        Serial.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
         for (int d = 0; d < 10; d++) {
           const char * dishName = station.dishes[d].name;          
           
           if (dishName != NULL) {
 
-            Serial.print("---Dish: ");
+            Serial.print("> Dish: ");
             Serial.println(dishName);
+
 
             for (int t = 0; t < 10; t++) {
               const char * targetName = station.dishes[d].targets[t].name;
 
               if (targetName != NULL) {
-                Serial.print("--- ---Target: ");
+                Serial.print("  Target: ");
                 Serial.println(targetName);
               }
             }
+
+            for (int sig = 0; sig < 10; sig++) {
+              if (not station.dishes[d].signals[sig].direction) {
+                break;
+              }
+              const char * direction = station.dishes[d].signals[sig].direction;
+              const char * type = station.dishes[d].signals[sig].type;
+              const char * rate = station.dishes[d].signals[sig].rate;
+              const char * frequency = station.dishes[d].signals[sig].frequency;
+              const char * spacecraft = station.dishes[d].signals[sig].spacecraft;
+              const char * spacecraftId = station.dishes[d].signals[sig].spacecraftId;
+              
+              Serial.println();
+              Serial.print("- Signal: ");
+              Serial.println(direction);
+              Serial.print("  Type: ");
+              Serial.println(type);
+              Serial.print("  Rate: ");
+              Serial.println(rate);
+              Serial.print("  Frequency: ");
+              Serial.println(frequency);
+              Serial.print("  Spacecraft: ");
+              Serial.println(spacecraft);
+            
+
+            }
+
+            Serial.println();
+            Serial.println("----------------------------");
+            Serial.println();
           }
         }
         Serial.println();
