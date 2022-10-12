@@ -27,20 +27,21 @@ const char* password = "futurama";
 
 #define WIFI_RST 21
 #define OUTPUT_ENABLE 22
-#define BRIGHTNESS 255        // Global brightness value. 8bit, 0-255
+#define BRIGHTNESS 127        // Global brightness value. 8bit, 0-255
 
 String serverName = "https://eyes.nasa.gov/dsn/data/dsn.xml"; // URL to fetch
 
 // Time is measured in milliseconds and will become a bigger number
 // than can be stored in an int, so long is used
 unsigned long lastTime = 0;       // Init reference variable for timer
+unsigned long wordLastTime = 0;
 unsigned long timerDelay = 5000;  // Set timer to 5 seconds (5000)
 
 // how often each pattern updates
-unsigned long pattern1Interval  = 50;
-unsigned long pattern2Interval  = 50;
-unsigned long pattern3Interval  = 50;
-unsigned long pattern4Interval  = 50;
+unsigned long pattern1Interval  = 500;
+unsigned long pattern2Interval  = 500;
+unsigned long pattern3Interval  = 500;
+unsigned long pattern4Interval  = 500;
 
 
 /* TASKS */
@@ -51,10 +52,17 @@ QueueHandle_t queue;          // Queue to pass data between tasks
 /* HARDWARDE */
 // Define NeoPixel objects - NAME(PIXEL_COUNT, PIN, PIXEL_TYPE)
 Adafruit_NeoPixel
-  outer_pixels(20, OUTER_PIN, NEO_GRB + NEO_KHZ800),
-  inner_pixels(20, INNER_PIN, NEO_GRB + NEO_KHZ800),
-  middle_pixels(20, MIDDLE_PIN, NEO_GRB + NEO_KHZ800),
-  bottom_pixels(20, BOTTOM_PIN, NEO_GRB + NEO_KHZ800);
+  outer_pixels(10, OUTER_PIN, NEO_GRB + NEO_KHZ800),
+  middle_pixels(10, MIDDLE_PIN, NEO_GRB + NEO_KHZ800),
+  inner_pixels(10, INNER_PIN, NEO_GRB + NEO_KHZ800),
+  bottom_pixels(10, BOTTOM_PIN, NEO_GRB + NEO_KHZ800);
+
+Adafruit_NeoPixel* allStrips[4] = {
+  &bottom_pixels,
+  &outer_pixels,
+  &middle_pixels,
+  &inner_pixels,
+};
 
 
 
@@ -79,13 +87,77 @@ int p4State = 0;
 
 
 
+// Adafruit_NeoPixel ledsOuter = outer_pixels;
+// Adafruit_NeoPixel * ledsMiddle = &middle_pixels;
+// Adafruit_NeoPixel * ledsInner = &inner_pixels;
+// Adafruit_NeoPixel * ledsBottom = &bottom_pixels;
+
+// Adafruit_NeoPixel stripsArray[] = {
+//   outer_pixels,
+//   middle_pixels,
+//   inner_pixels,
+//   bottom_pixels 
+// };
+
+uint32_t color_red = outer_pixels.Color(0, 0, 255);
+uint32_t blue = outer_pixels.Color(255, 0, 0);
+uint32_t green = outer_pixels.Color(0, 255, 0);
+uint32_t purple = outer_pixels.Color(64, 0, 64);
+const uint32_t red = color_red;
+const uint32_t off = offColor;
+
+
+// Letter Typography arrays
+uint32_t character_g[20] = {
+  blue, blue, blue, blue,
+  blue, off, off, off,
+  blue, off, blue, blue,
+  blue, off, off, blue,
+  blue, blue, blue, blue
+};
+
+uint32_t character_j[20] = {
+  off, off, off, blue,
+  off, off, off, blue,
+  off, off, off, blue,
+  blue, off, off, blue,
+  blue, blue, blue, blue
+};
+
+uint32_t character_l[20] = {
+  blue, off, off, off,
+  blue, off, off, off,
+  blue, off, off, off,
+  blue, off, off, off,
+  blue, blue, blue, blue
+};
+
+uint32_t character_p[20] = {
+  blue, blue, blue, blue,
+  blue, off, off, blue,
+  blue, blue, blue, blue,
+  blue, off, off, off,
+  blue, off, off, off
+};
+
+uint32_t character_v[20] = {
+  blue, off, off, blue,
+  blue, off, off, blue,
+  blue, off, blue, blue,
+  off, blue, blue, off,
+  off, blue, blue, off
+};
+
+
+
+
 /* ANIMATION FUNCTIONS */
 
 // Custom function to calculate color relative to global BRIGHTNESS variable 
 void setPixelColor( Adafruit_NeoPixel &strip, uint16_t n, uint32_t &color ) {
   uint8_t rgb[4];             // Create array that will hold color channel values
   *(uint32_t*)&rgb = color;   // Assigns color value to the color channel array
-  uint8_t r = rgb[0];         // Red color channel value
+  uint8_t r = rgb[0];         // blue color channel value
   uint8_t g = rgb[1];         // Green color channel value
   uint8_t b = rgb[2];         // Blue color channel value
   // Serial.println(r);
@@ -167,6 +239,55 @@ void theaterChaseRainbow(Adafruit_NeoPixel &strip, int wait) {
     }
   }
 }
+
+// Display letter from array
+void doLetter(uint32_t character_array[20]) {
+  int pixelsCount[4] = {0, 0, 0, 0};
+  int pixel = 0;
+
+  for (int i = 0; i < 20; i++) {
+    
+    int j = i + 1;
+    int stripInt = j % 4;
+    if (stripInt == 0) stripInt = 4;
+    --stripInt;
+    
+
+
+    Adafruit_NeoPixel*& target = allStrips[stripInt];
+
+    if (stripInt == 0) {
+      // Serial.print(character_v[i]); Serial.print("/"); Serial.print(pixel); Serial.print(" : ");
+      setPixelColor(*target, pixel, character_array[i]);
+    }
+    if (stripInt == 1) {
+      // Serial.print(character_array[i]); Serial.print(" : ");
+      setPixelColor(*target, pixel, character_array[i]);
+    }
+    if (stripInt == 2) {
+      // Serial.print(character_array[i]); Serial.print(" : ");
+      setPixelColor(*target, pixel, character_array[i]);
+    }
+    if (stripInt == 3) {
+      // Serial.println(character_array[i]); Serial.print(" : ");
+      setPixelColor(*target, pixel, character_array[i]);
+      pixel++;
+    }    
+  }
+  
+  for (int p = 0; p < 4; p++) {
+    allStrips[p]->show();
+    // pixelsCount[p] = pixelsCount[p]++;
+  }
+
+
+
+  lastUpdateP1 = millis();
+  // Serial.println();
+  // Serial.println("---------");
+  // Serial.println();
+}
+
 
 void updatePattern1() { // rain
   uint32_t colorArray [] = {
@@ -315,6 +436,8 @@ void updatePattern4() { // pattern 1 a walking purple led
   bottom_pixels.show(); // update display
   lastUpdateP4 = millis();               // to calculate next update
 }
+
+
 
 
 // Create data structure objects
@@ -648,6 +771,7 @@ void setup() {
 
 
 
+char letter = 'j';
 
 // loop() function -- runs repeatedly as long as board is on ---------------
 void loop() {
@@ -733,8 +857,36 @@ void loop() {
     }
   }
 
+  
 
-  // if( millis() - lastUpdateP1 > pattern1Interval ) updatePattern1();
+  uint32_t * character_array;
+
+
+  // Serial.println(millis() - wordLastTime);
+  if ( (millis() - wordLastTime) > 2000) {
+    Serial.println(letter);
+    if (letter == 'j') character_array = character_j;
+    else if (letter == 'p') character_array = character_p;
+    else if (letter == 'l') character_array = character_l;
+  
+    if ( millis() - lastUpdateP1 > pattern1Interval ) {
+      doLetter(character_array);
+    }
+
+    if (letter == 'j') letter = 'p';
+    else if (letter == 'p') letter = 'l';
+    else if (letter == 'l') letter = 'j';
+    Serial.println(letter);
+    Serial.println();
+
+
+    
+
+    wordLastTime = millis();
+  }
+
+
+  // if ( millis() - lastUpdateP1 > pattern1Interval ) updatePattern1();
   // if( millis() - lastUpdateP2 > pattern2Interval ) updatePattern2();
   // if( millis() - lastUpdateP3 > pattern3Interval ) updatePattern3();
   // if( millis() - lastUpdateP4 > pattern4Interval ) updatePattern4();
