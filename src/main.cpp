@@ -533,30 +533,6 @@ void getData( void * parameter) {
 
 
 
-          // for (i = 0; i < 3; i++) {
-          //   Serial.print("Station: ");
-          //   Serial.print(stations[i].name);
-          //   Serial.print(" (");
-          //   Serial.print(stations[i].callsign);
-          //   Serial.println(") ");
-
-          //   int d;
-          //   for (d = 0; d < 10; d++) {
-          //     const char * dishName = stations[i].dishes[d].name;
-          //     const char * targetName = stations[i].dishes[d].target.name;
-          //     if (dishName != NULL) {
-          //       Serial.print("---Dish: ");
-          //       Serial.println(dishName);
-          //       Serial.print("--- ---Target: ");
-          //       Serial.println(targetName);
-          //     }
-          //   }
-          //   Serial.println();
-          // }
-
-
-
-
 
 
 
@@ -758,10 +734,10 @@ void loop() {
   }
 
 
-  if( millis() - lastUpdateP1 > pattern1Interval ) updatePattern1();
-  if( millis() - lastUpdateP2 > pattern2Interval ) updatePattern2();
-  if( millis() - lastUpdateP3 > pattern3Interval ) updatePattern3();
-  if( millis() - lastUpdateP4 > pattern4Interval ) updatePattern4();
+  // if( millis() - lastUpdateP1 > pattern1Interval ) updatePattern1();
+  // if( millis() - lastUpdateP2 > pattern2Interval ) updatePattern2();
+  // if( millis() - lastUpdateP3 > pattern3Interval ) updatePattern3();
+  // if( millis() - lastUpdateP4 > pattern4Interval ) updatePattern4();
 
 
 
