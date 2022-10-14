@@ -6,6 +6,8 @@
 #include <tinyxml2.h>
 #include <iostream>
 #include <cstring>
+#include <TextCharacters.h>
+
 
 /* NAMESPACES */
 using namespace tinyxml2;
@@ -107,46 +109,46 @@ const uint32_t red = color_red;
 const uint32_t off = offColor;
 
 
-// Letter Typography arrays
-uint32_t character_g[20] = {
-  blue, blue, blue, blue,
-  blue, off, off, off,
-  blue, off, blue, blue,
-  blue, off, off, blue,
-  blue, blue, blue, blue
-};
+// // Letter Typography arrays
+// uint32_t character_g[20] = {
+//   blue, blue, blue, blue,
+//   blue, off, off, off,
+//   blue, off, blue, blue,
+//   blue, off, off, blue,
+//   blue, blue, blue, blue
+// };
 
-uint32_t character_j[20] = {
-  off, off, off, blue,
-  off, off, off, blue,
-  off, off, off, blue,
-  blue, off, off, blue,
-  blue, blue, blue, blue
-};
+// uint32_t character_j[20] = {
+//   off, off, off, blue,
+//   off, off, off, blue,
+//   off, off, off, blue,
+//   blue, off, off, blue,
+//   blue, blue, blue, blue
+// };
 
-uint32_t character_l[20] = {
-  blue, off, off, off,
-  blue, off, off, off,
-  blue, off, off, off,
-  blue, off, off, off,
-  blue, blue, blue, blue
-};
+// uint32_t character_l[20] = {
+//   blue, off, off, off,
+//   blue, off, off, off,
+//   blue, off, off, off,
+//   blue, off, off, off,
+//   blue, blue, blue, blue
+// };
 
-uint32_t character_p[20] = {
-  blue, blue, blue, blue,
-  blue, off, off, blue,
-  blue, blue, blue, blue,
-  blue, off, off, off,
-  blue, off, off, off
-};
+// uint32_t character_p[20] = {
+//   blue, blue, blue, blue,
+//   blue, off, off, blue,
+//   blue, blue, blue, blue,
+//   blue, off, off, off,
+//   blue, off, off, off
+// };
 
-uint32_t character_v[20] = {
-  blue, off, off, blue,
-  blue, off, off, blue,
-  blue, off, blue, blue,
-  off, blue, blue, off,
-  off, blue, blue, off
-};
+// uint32_t character_v[20] = {
+//   blue, off, off, blue,
+//   blue, off, off, blue,
+//   blue, off, blue, blue,
+//   off, blue, blue, off,
+//   off, blue, blue, off
+// };
 
 
 
@@ -241,7 +243,30 @@ void theaterChaseRainbow(Adafruit_NeoPixel &strip, int wait) {
 }
 
 // Display letter from array
-void doLetter(uint32_t character_array[20]) {
+void doLetter(int ledCharacter[20]) {
+
+  uint32_t character_array[20];
+
+  for (int i = 0; i < 20; i++) {
+    // Serial.println(i % 4);
+    // if (i % 4 == 0 ) {
+    //   Serial.print(ledCharacter[i]);
+    //   Serial.println(", ");
+    // } else {
+    //   Serial.print(ledCharacter[i]);
+    //   Serial.print(", ");
+    // }
+    switch (ledCharacter[i]) {
+      case 0:
+        character_array[i] = off;
+        break;
+      case 1:
+        character_array[i] = blue;
+        break;    
+    }
+  }
+  Serial.println();
+
   int pixelsCount[4] = {0, 0, 0, 0};
   int pixel = 0;
 
@@ -770,11 +795,16 @@ void setup() {
 }
 
 
+string spacecraftName = "gv";
+int* pTheLetter;
+char theLetter;
+int wordCharacterCount = 0;
 
 char letter = 'j';
 
 // loop() function -- runs repeatedly as long as board is on ---------------
 void loop() {
+    
   if ( TEST_CORES == 1 ) {    
     if ( millis() - lastTime > 4000 && millis() - lastTime < 4500 ) {
       Serial.print("loop() running on core ");
@@ -861,27 +891,39 @@ void loop() {
 
   uint32_t * character_array;
 
+  
 
   // Serial.println(millis() - wordLastTime);
   if ( (millis() - wordLastTime) > 2000) {
-    Serial.println(letter);
-    if (letter == 'j') character_array = character_j;
-    else if (letter == 'p') character_array = character_p;
-    else if (letter == 'l') character_array = character_l;
+
+    theLetter = spacecraftName[wordCharacterCount];
+    
+    TextCharacter textCharacter;
+    int * ledCharacter = textCharacter.getCharacter(theLetter);
+
+    // Serial.println(spacecraftName.size());
+    wordCharacterCount++;
+    // Serial.println(wordCharacterCount);
+    if (wordCharacterCount > (spacecraftName.size() - 1)) wordCharacterCount = 0;
+
   
     if ( millis() - lastUpdateP1 > pattern1Interval ) {
-      doLetter(character_array);
+      for (int i = 0; i < 20; i++) {
+        // Serial.println(i % 4);
+        if (i % 4 == 0 ) {
+          Serial.println(ledCharacter[i]);
+        } else {
+          Serial.print(ledCharacter[i]);
+        }
+      }
+
+
+      doLetter(ledCharacter);
+      Serial.println(theLetter);
     }
 
-    if (letter == 'j') letter = 'p';
-    else if (letter == 'p') letter = 'l';
-    else if (letter == 'l') letter = 'j';
-    Serial.println(letter);
-    Serial.println();
-
-
+    Serial.println();    
     
-
     wordLastTime = millis();
   }
 
