@@ -795,7 +795,8 @@ void setup() {
 }
 
 
-string spacecraftName = "gv";
+// string spacecraftName = "abcdefghijklmnopqrstuvwxyz";
+string spacecraftName = "voyager";
 int* pTheLetter;
 char theLetter;
 int wordCharacterCount = 0;
@@ -894,7 +895,7 @@ void loop() {
   
 
   // Serial.println(millis() - wordLastTime);
-  if ( (millis() - wordLastTime) > 2000) {
+  if ( (millis() - wordLastTime) > 1000) {
 
     theLetter = spacecraftName[wordCharacterCount];
     
@@ -908,14 +909,14 @@ void loop() {
 
   
     if ( millis() - lastUpdateP1 > pattern1Interval ) {
-      for (int i = 0; i < 20; i++) {
-        // Serial.println(i % 4);
-        if (i % 4 == 0 ) {
-          Serial.println(ledCharacter[i]);
-        } else {
-          Serial.print(ledCharacter[i]);
-        }
-      }
+      // for (int i = 0; i < 20; i++) {
+      //   // Serial.println(i % 4);
+      //   if (i % 4 == 0 ) {
+      //     Serial.println(ledCharacter[i]);
+      //   } else {
+      //     Serial.print(ledCharacter[i]);
+      //   }
+      // }
 
 
       doLetter(ledCharacter);
