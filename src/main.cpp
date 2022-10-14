@@ -796,7 +796,7 @@ void setup() {
 
 
 // string spacecraftName = "abcdefghijklmnopqrstuvwxyz";
-string spacecraftName = "voyager";
+string spacecraftName = "nasa jet propulsion laboratory";
 int* pTheLetter;
 char theLetter;
 int wordCharacterCount = 0;
@@ -895,7 +895,7 @@ void loop() {
   
 
   // Serial.println(millis() - wordLastTime);
-  if ( (millis() - wordLastTime) > 1000) {
+  if ( (millis() - wordLastTime) > 500) {
 
     theLetter = spacecraftName[wordCharacterCount];
     
