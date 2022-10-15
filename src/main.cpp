@@ -106,7 +106,7 @@ uint32_t blue = outer_pixels.Color(255, 0, 0);
 uint32_t green = outer_pixels.Color(0, 255, 0);
 uint32_t purple = outer_pixels.Color(64, 0, 64);
 const uint32_t red = color_red;
-const uint32_t off = offColor;
+uint32_t off = outer_pixels.Color(0, 0, 0);  // Variable for LED off state
 
 
 // // Letter Typography arrays
@@ -242,20 +242,14 @@ void theaterChaseRainbow(Adafruit_NeoPixel &strip, int wait) {
   }
 }
 
+
+int pixelLine = -4;
 // Display letter from array
 void doLetter(int ledCharacter[20]) {
 
   uint32_t character_array[20];
 
   for (int i = 0; i < 20; i++) {
-    // Serial.println(i % 4);
-    // if (i % 4 == 0 ) {
-    //   Serial.print(ledCharacter[i]);
-    //   Serial.println(", ");
-    // } else {
-    //   Serial.print(ledCharacter[i]);
-    //   Serial.print(", ");
-    // }
     switch (ledCharacter[i]) {
       case 0:
         character_array[i] = off;
@@ -268,7 +262,7 @@ void doLetter(int ledCharacter[20]) {
   Serial.println();
 
   int pixelsCount[4] = {0, 0, 0, 0};
-  int pixel = 0;
+  int pixel = 0 + pixelLine;
 
   for (int i = 0; i < 20; i++) {
     
@@ -283,18 +277,22 @@ void doLetter(int ledCharacter[20]) {
 
     if (stripInt == 0) {
       // Serial.print(character_v[i]); Serial.print("/"); Serial.print(pixel); Serial.print(" : ");
+      setPixelColor(*target, pixelLine - 1, off);
       setPixelColor(*target, pixel, character_array[i]);
     }
     if (stripInt == 1) {
       // Serial.print(character_array[i]); Serial.print(" : ");
+      setPixelColor(*target, pixelLine - 1, off);
       setPixelColor(*target, pixel, character_array[i]);
     }
     if (stripInt == 2) {
       // Serial.print(character_array[i]); Serial.print(" : ");
+      setPixelColor(*target, pixelLine - 1, off);
       setPixelColor(*target, pixel, character_array[i]);
     }
     if (stripInt == 3) {
       // Serial.println(character_array[i]); Serial.print(" : ");
+      setPixelColor(*target, pixelLine - 1, off);
       setPixelColor(*target, pixel, character_array[i]);
       pixel++;
     }    
@@ -306,11 +304,18 @@ void doLetter(int ledCharacter[20]) {
   }
 
 
-
+  pixelLine++;
+  if (pixelLine > 10) {
+    pixelLine = 0;
+  }
   lastUpdateP1 = millis();
   // Serial.println();
   // Serial.println("---------");
   // Serial.println();
+}
+
+void scrollLetters() {
+  
 }
 
 
@@ -796,12 +801,11 @@ void setup() {
 
 
 // string spacecraftName = "abcdefghijklmnopqrstuvwxyz";
-string spacecraftName = "nasa jet propulsion laboratory";
+string spacecraftName = "g";
 int* pTheLetter;
 char theLetter;
 int wordCharacterCount = 0;
-
-char letter = 'j';
+TextCharacter textCharacter;
 
 // loop() function -- runs repeatedly as long as board is on ---------------
 void loop() {
@@ -890,42 +894,22 @@ void loop() {
 
   
 
-  uint32_t * character_array;
-
-  
-
-  // Serial.println(millis() - wordLastTime);
   if ( (millis() - wordLastTime) > 500) {
 
-    theLetter = spacecraftName[wordCharacterCount];
-    
-    TextCharacter textCharacter;
+    theLetter = spacecraftName[wordCharacterCount];    
     int * ledCharacter = textCharacter.getCharacter(theLetter);
 
-    // Serial.println(spacecraftName.size());
-    wordCharacterCount++;
-    // Serial.println(wordCharacterCount);
+    wordCharacterCount++;   // Get next letter in string
     if (wordCharacterCount > (spacecraftName.size() - 1)) wordCharacterCount = 0;
 
   
     if ( millis() - lastUpdateP1 > pattern1Interval ) {
-      // for (int i = 0; i < 20; i++) {
-      //   // Serial.println(i % 4);
-      //   if (i % 4 == 0 ) {
-      //     Serial.println(ledCharacter[i]);
-      //   } else {
-      //     Serial.print(ledCharacter[i]);
-      //   }
-      // }
-
-
       doLetter(ledCharacter);
       Serial.println(theLetter);
     }
 
     Serial.println();    
-    
-    wordLastTime = millis();
+    wordLastTime = millis();    // Set word timer to current millis()
   }
 
 
