@@ -20,7 +20,7 @@ const char* ssid = "PlanetExpress";
 const char* password = "futurama";
 
 #define TEST_CORES 0
-#define SHOW_SERIAL 1
+#define SHOW_SERIAL 0
 
 #define OUTER_PIN 17
 #define MIDDLE_PIN 18
@@ -49,6 +49,12 @@ unsigned long pattern4Interval  = 500;
 /* TASKS */
 TaskHandle_t  HandleData;     // Task for fetching and parsing data
 QueueHandle_t queue;          // Queue to pass data between tasks
+
+
+
+/* Text Handling */
+TextCharacter textCharacter;
+
 
 
 /* HARDWARDE */
@@ -102,11 +108,14 @@ int p4State = 0;
 // };
 
 uint32_t color_red = outer_pixels.Color(0, 0, 255);
-uint32_t blue = outer_pixels.Color(255, 0, 0);
+const uint32_t bgrBlue = Adafruit_NeoPixel::Color(255, 0, 0);
 uint32_t green = outer_pixels.Color(0, 255, 0);
 uint32_t purple = outer_pixels.Color(64, 0, 64);
-const uint32_t red = color_red;
+uint32_t red = color_red;
 uint32_t off = outer_pixels.Color(0, 0, 0);  // Variable for LED off state
+uint32_t white = outer_pixels.Color(255, 255, 255); // Full white color
+
+const uint32_t bgrOff = 0;
 
 
 // // Letter Typography arrays
@@ -156,7 +165,7 @@ uint32_t off = outer_pixels.Color(0, 0, 0);  // Variable for LED off state
 /* ANIMATION FUNCTIONS */
 
 // Custom function to calculate color relative to global BRIGHTNESS variable 
-void setPixelColor( Adafruit_NeoPixel &strip, uint16_t n, uint32_t &color ) {
+void setPixelColor( Adafruit_NeoPixel &strip, uint16_t n, const uint32_t &color ) {
   uint8_t rgb[4];             // Create array that will hold color channel values
   *(uint32_t*)&rgb = color;   // Assigns color value to the color channel array
   uint8_t r = rgb[0];         // blue color channel value
@@ -243,79 +252,134 @@ void theaterChaseRainbow(Adafruit_NeoPixel &strip, int wait) {
 }
 
 
-int pixelLine = -4;
+
+
+
 // Display letter from array
-void doLetter(int ledCharacter[20]) {
+void doLetter(char theLetter, int startingPixel) {
+  // Serial.println(startingPixel);
+
+
+
+  int * ledCharacter = textCharacter.getCharacter(theLetter);
+
 
   uint32_t character_array[20];
+  uint32_t nope = 0;
 
   for (int i = 0; i < 20; i++) {
+    // Serial.println(ledCharacter[i]);
     switch (ledCharacter[i]) {
       case 0:
-        character_array[i] = off;
+        character_array[i] = nope;
         break;
       case 1:
-        character_array[i] = blue;
-        break;    
+        character_array[i] = bgrBlue;
+        break;
+      default:
+        character_array[i] = nope;
     }
-  }
-  Serial.println();
 
-  int pixelsCount[4] = {0, 0, 0, 0};
-  int pixel = 0 + pixelLine;
+    if (character_array[i] > outer_pixels.Color(255, 255, 255)) character_array[i] = nope;
+  }
+
+
+
+  Serial.print("Blue: "); Serial.print(bgrBlue); Serial.print(", ");
+  Serial.print("Off: "); Serial.print(bgrOff); Serial.print(", ");
+  Serial.print("Green: "); Serial.print(outer_pixels.Color(0, 255, 5)); Serial.println();
+  
+  int pixel = 0 + startingPixel;
+  int previousPixel = startingPixel - 1;
+
+
 
   for (int i = 0; i < 20; i++) {
-    
+
     int j = i + 1;
     int stripInt = j % 4;
     if (stripInt == 0) stripInt = 4;
     --stripInt;
     
-
+    
 
     Adafruit_NeoPixel*& target = allStrips[stripInt];
 
     if (stripInt == 0) {
-      // Serial.print(character_v[i]); Serial.print("/"); Serial.print(pixel); Serial.print(" : ");
-      setPixelColor(*target, pixelLine - 1, off);
-      setPixelColor(*target, pixel, character_array[i]);
+      Serial.print(character_array[i]); Serial.print("/"); Serial.print(pixel); Serial.print(", ");
+      if (previousPixel >= 0 && previousPixel < 10) setPixelColor(*target, previousPixel, nope);
+      if (pixel >= 0 && pixel < 10) setPixelColor(*target, pixel, character_array[i]);
     }
     if (stripInt == 1) {
-      // Serial.print(character_array[i]); Serial.print(" : ");
-      setPixelColor(*target, pixelLine - 1, off);
-      setPixelColor(*target, pixel, character_array[i]);
+      Serial.print(character_array[i]); Serial.print("/"); Serial.print(pixel); Serial.print(", ");
+      if (previousPixel >= 0 && previousPixel < 10) setPixelColor(*target, previousPixel, nope);
+      if (pixel >= 0 && pixel < 10) setPixelColor(*target, pixel, character_array[i]);
     }
     if (stripInt == 2) {
-      // Serial.print(character_array[i]); Serial.print(" : ");
-      setPixelColor(*target, pixelLine - 1, off);
-      setPixelColor(*target, pixel, character_array[i]);
+      Serial.print(character_array[i]); Serial.print("/"); Serial.print(pixel); Serial.print(", ");
+      if (previousPixel >= 0 && previousPixel < 10) setPixelColor(*target, previousPixel, nope);
+      if (pixel >= 0 && pixel < 10) setPixelColor(*target, pixel, character_array[i]);
     }
     if (stripInt == 3) {
-      // Serial.println(character_array[i]); Serial.print(" : ");
-      setPixelColor(*target, pixelLine - 1, off);
-      setPixelColor(*target, pixel, character_array[i]);
+      Serial.print(character_array[i]); Serial.print("/"); Serial.println(pixel); Serial.println();
+      if (previousPixel >= 0 && previousPixel < 10) setPixelColor(*target, previousPixel, nope);
+      if (pixel >= 0 && pixel < 10) setPixelColor(*target, pixel, character_array[i]);
       pixel++;
     }    
   }
   
   for (int p = 0; p < 4; p++) {
     allStrips[p]->show();
-    // pixelsCount[p] = pixelsCount[p]++;
   }
-
-
-  pixelLine++;
-  if (pixelLine > 10) {
-    pixelLine = 0;
-  }
-  lastUpdateP1 = millis();
-  // Serial.println();
-  // Serial.println("---------");
-  // Serial.println();
 }
 
-void scrollLetters() {
+
+
+
+
+int initLetterStartingPixels[] = {};
+int letterStartingPixels[] = {};
+bool initStartingPixels = true;
+
+void scrollLetters(string spacecraftName) {
   
+
+  // for (int i = 0; i < 4; i++) {
+  //   Adafruit_NeoPixel*& strip = allStrips[i];
+  //   strip->clear();
+  // }
+
+  for (int i = 0; i < (spacecraftName.size()); i++) {
+    if (initStartingPixels == true) {
+      initLetterStartingPixels[i] = (-5 - (6 * i));
+      letterStartingPixels[i] = initLetterStartingPixels[i];
+    }    
+
+  
+    int startingPixel = letterStartingPixels[i];
+    char theLetter = spacecraftName[i];
+
+    doLetter(theLetter, startingPixel);
+
+    startingPixel++;
+    if (startingPixel > 10) {
+      int refLetterPixel;
+      if (i == 0) {
+        refLetterPixel = letterStartingPixels[spacecraftName.size() - 1];
+      } else {
+        refLetterPixel = letterStartingPixels[i - 1]; 
+      }
+
+      // Serial.println(refLetterPixel);
+      startingPixel = refLetterPixel - 6;
+    }
+
+    letterStartingPixels[i] = startingPixel;
+  
+  }
+
+  initStartingPixels = false;
+  lastUpdateP1 = millis();
 }
 
 
@@ -801,11 +865,8 @@ void setup() {
 
 
 // string spacecraftName = "abcdefghijklmnopqrstuvwxyz";
-string spacecraftName = "g";
-int* pTheLetter;
-char theLetter;
-int wordCharacterCount = 0;
-TextCharacter textCharacter;
+string spacecraftName = "grant";
+
 
 // loop() function -- runs repeatedly as long as board is on ---------------
 void loop() {
@@ -894,19 +955,8 @@ void loop() {
 
   
 
-  if ( (millis() - wordLastTime) > 500) {
-
-    theLetter = spacecraftName[wordCharacterCount];    
-    int * ledCharacter = textCharacter.getCharacter(theLetter);
-
-    wordCharacterCount++;   // Get next letter in string
-    if (wordCharacterCount > (spacecraftName.size() - 1)) wordCharacterCount = 0;
-
-  
-    if ( millis() - lastUpdateP1 > pattern1Interval ) {
-      doLetter(ledCharacter);
-      Serial.println(theLetter);
-    }
+  if ( (millis() - wordLastTime) > 100) {
+    scrollLetters(spacecraftName);
 
     Serial.println();    
     wordLastTime = millis();    // Set word timer to current millis()

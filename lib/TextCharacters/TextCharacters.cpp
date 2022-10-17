@@ -375,8 +375,8 @@ int character_q[20] = {
 int character_r[20] = {
   0, 1, 1, 1,
   0, 1, 0, 1,
+  0, 1, 1, 1,
   0, 1, 1, 0,
-  0, 1, 0, 1,
   0, 1, 0, 1
 };
 
@@ -456,7 +456,7 @@ int character_z[20] = {
 
 int characterArray[20] = {};
 
-int * TextCharacter::getCharacter(char character) {
+int* TextCharacter::getCharacter(char character) {
     
     int *pCharacterArray = &characterArray[20];
 
