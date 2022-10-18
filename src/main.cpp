@@ -366,12 +366,13 @@ void scrollLetters(string spacecraftName) {
       int refLetterPixel;
       if (i == 0) {
         refLetterPixel = letterStartingPixels[spacecraftName.size() - 1];
+        startingPixel = refLetterPixel - 12;
       } else {
-        refLetterPixel = letterStartingPixels[i - 1]; 
+        refLetterPixel = letterStartingPixels[i - 1];
+        startingPixel = refLetterPixel - 6; 
       }
 
-      // Serial.println(refLetterPixel);
-      startingPixel = refLetterPixel - 6;
+      
     }
 
     letterStartingPixels[i] = startingPixel;
