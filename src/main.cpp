@@ -2,10 +2,12 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include <WebServer.h>
 #include <Adafruit_NeoPixel.h>
 #include <tinyxml2.h>
 #include <iostream>
 #include <cstring>
+#include <ArduinoJson.h>
 #include <TextCharacters.h>
 
 
@@ -18,7 +20,7 @@ using namespace std;
 /* CONFIG */
 const char* ssid = "Verizon_LT6SKN";
 const char* password = "smile-grey9-hie";
-#define AP_SSID  "esp32-v6"
+#define AP_SSID  "MiniPulse"
 
 #define TEST_CORES 0
 #define SHOW_SERIAL 0
@@ -61,7 +63,82 @@ TextCharacter textCharacter;
 
 
 /* NETWORKING */
+WebServer server(80);      // Set server port
+IPAddress local_IP(192, 168, 100, 100);
+IPAddress gateway(192, 168, 1, 1);
+IPAddress subnet(255, 255, 0, 0);
+IPAddress ap_ip(192, 168, 0, 1);
+IPAddress ap_gateway(192, 168, 0, 1);
+IPAddress ap_subnet(255, 255, 255, 0);
+String hostname = "minipulse";
+String header;              // Variable to store the HTTP request
+
+
+static char buf[2048];
+const size_t CAPACITY = JSON_ARRAY_SIZE(50);
+StaticJsonDocument<CAPACITY> jsonDoc;
+JsonArray networksArray = jsonDoc.to<JsonArray>();
+
+void createHtml() {
+  char html[] = PROGMEM R"=====(
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+  <style>
+  body { align-items: center; display: flex; flex-direction: column; padding: 20px; font-size: 18px; }
+  form { display: flex; flex-direction: column; }
+  input { margin-bottom: 2rem; padding: 1.2rem; }
+  select { font-size: 2rem; margin: 0 auto; }
+  </style>
+  </head>
+  <body>
+  <h1>MiniPulse</h1>
+  <form>
+  )=====";
+
+  strcpy(buf, html);
+  
+  strcat(buf, "<select name=\"networks\" id=\"networks\">");
+
+  for (JsonVariant v : networksArray) {
+
+    strcat(buf, "<option value=\"");
+    const char* network = v.as<char*>();
+    strcat(buf, network);
+    strcat(buf, "\">");
+    strcat(buf, network);
+    strcat(buf, "</option>");
+  }
+  strcat(buf, "</select>");
+
+  char newhtml[] = PROGMEM R"=====(
+  <label for="password">WiFi Network Password:</label>
+  <input type="text" id="password" name="password">
+  <input type="submit" value="Apply & Restart">
+  </form>
+  </body>
+  </html>
+  )=====";
+  
+  strcat(buf, newhtml);
+}
+
+
+void sendWebsite() {
+  Serial.println("Handling HTTP request...");
+  server.send(200, "text/html", buf);
+}
+
+void serverSetup() {
+  createHtml();
+  server.on("/", sendWebsite);
+  // server.on("/xml", SendXML);
+  server.begin();
+}
+
+
 static volatile bool wifi_connected = false;
+
 const char* rssiToString(uint rssi) {
   if (rssi > -31) return "Amazing";
   if (rssi > -68) return "Very Good";
@@ -73,6 +150,8 @@ const char* rssiToString(uint rssi) {
 
 void wifiOnConnect(){
     Serial.println("STA Connected");
+    Serial.print("Network: ");
+    Serial.println(WiFi.SSID());
     Serial.print("STA IPv4: ");
     Serial.println(WiFi.localIP());
     
@@ -99,6 +178,9 @@ void WiFiEvent(WiFiEvent_t event){
             WiFi.softAPsetHostname(AP_SSID);
             //enable ap ipv6 here
             WiFi.softAPenableIpV6();
+            Serial.print("AP IP Address: ");
+            Serial.println(WiFi.softAPIP());
+            delay(10000);
             break;
 
         case ARDUINO_EVENT_WIFI_STA_START:
@@ -150,11 +232,13 @@ void scanWifiNetworks() {
           Serial.print(")");
           Serial.print(WiFi.encryptionType(i));
           Serial.println((WiFi.encryptionType(i) == WIFI_AUTH_OPEN)?" ":"*");
+          networksArray.add(WiFi.SSID(i));
           delay(10);
       }
   }
   Serial.println("");
   delay(500);
+  return;
 }
 
 void printWifiMode() {
@@ -182,8 +266,12 @@ void printWifiStatus() {
 
 void wifiSetup() {  
   WiFi.disconnect(true);
+  delay(100);
   WiFi.onEvent(WiFiEvent);
   WiFi.mode(WIFI_MODE_APSTA);
+  // WiFi.config(local_IP, gateway, subnet);
+  WiFi.setHostname("minipulse");       // Set custom hostname
+  WiFi.softAPConfig(ap_ip, ap_gateway, ap_subnet);
   WiFi.softAP(AP_SSID);
 }
 
@@ -949,6 +1037,7 @@ void setup() {
 
   // Connect to WiFi
   wifiSetup();
+  delay(100);
   printWifiMode();
   scanWifiNetworks();                     // Scan for available WiFi networks
   delay(1000);
@@ -963,11 +1052,15 @@ void setup() {
     Serial.print(".");
   }
   delay(1000);
+  Serial.print("hostname: ");
+  Serial.println(WiFi.getHostname());
   Serial.println();
   printWifiStatus();
   Serial.print("Connected to WiFi network with IP Address: "); Serial.println(WiFi.localIP());
   delay(1000);
 
+  serverSetup();
+  delay(1000);
 
 
   // Initialize task for core 1
@@ -1006,86 +1099,86 @@ void loop() {
   }
 
   // Receive from queue (data task on core 1)
-  // struct DSN_Stations stations[3];
-  if (xQueueReceive(queue, &stations, 1) == pdPASS) {
-    if ( SHOW_SERIAL == 1 ) {
-      Serial.println();
-      Serial.println("-------");
-      Serial.print("timestamp: ");
-      Serial.println(stations[0].fetchTimestamp);
-      Serial.println();
+  // if (xQueueReceive(queue, &stations, 1) == pdPASS) {
+  //   if ( SHOW_SERIAL == 1 ) {
+  //     Serial.println();
+  //     Serial.println("-------");
+  //     Serial.print("timestamp: ");
+  //     Serial.println(stations[0].fetchTimestamp);
+  //     Serial.println();
 
-      int i;
-      for (i = 0; i < 3; i++) {
-        DSN_Station station = stations[i];
-        Serial.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        Serial.print("Station: ");
-        Serial.print(station.name);
-        Serial.print(" (");
-        Serial.print(station.callsign);
-        Serial.println(") ");
-        Serial.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  //     int i;
+  //     for (i = 0; i < 3; i++) {
+  //       DSN_Station station = stations[i];
+  //       Serial.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  //       Serial.print("Station: ");
+  //       Serial.print(station.name);
+  //       Serial.print(" (");
+  //       Serial.print(station.callsign);
+  //       Serial.println(") ");
+  //       Serial.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-        for (int d = 0; d < 10; d++) {
-          const char * dishName = station.dishes[d].name;          
+  //       for (int d = 0; d < 10; d++) {
+  //         const char * dishName = station.dishes[d].name;          
           
-          if (dishName != NULL) {
+  //         if (dishName != NULL) {
 
-            Serial.print("> Dish: ");
-            Serial.println(dishName);
+  //           Serial.print("> Dish: ");
+  //           Serial.println(dishName);
 
 
-            for (int t = 0; t < 10; t++) {
-              const char * targetName = station.dishes[d].targets[t].name;
+  //           for (int t = 0; t < 10; t++) {
+  //             const char * targetName = station.dishes[d].targets[t].name;
 
-              if (targetName != NULL) {
-                Serial.print("  Target: ");
-                Serial.println(targetName);
-              }
-            }
+  //             if (targetName != NULL) {
+  //               Serial.print("  Target: ");
+  //               Serial.println(targetName);
+  //             }
+  //           }
 
-            for (int sig = 0; sig < 10; sig++) {
-              if (not station.dishes[d].signals[sig].direction) {
-                break;
-              }
-              const char * direction = station.dishes[d].signals[sig].direction;
-              const char * type = station.dishes[d].signals[sig].type;
-              const char * rate = station.dishes[d].signals[sig].rate;
-              const char * frequency = station.dishes[d].signals[sig].frequency;
-              const char * spacecraft = station.dishes[d].signals[sig].spacecraft;
-              const char * spacecraftId = station.dishes[d].signals[sig].spacecraftId;
+  //           for (int sig = 0; sig < 10; sig++) {
+  //             if (not station.dishes[d].signals[sig].direction) {
+  //               break;
+  //             }
+  //             const char * direction = station.dishes[d].signals[sig].direction;
+  //             const char * type = station.dishes[d].signals[sig].type;
+  //             const char * rate = station.dishes[d].signals[sig].rate;
+  //             const char * frequency = station.dishes[d].signals[sig].frequency;
+  //             const char * spacecraft = station.dishes[d].signals[sig].spacecraft;
+  //             const char * spacecraftId = station.dishes[d].signals[sig].spacecraftId;
               
-              Serial.println();
-              Serial.print("- Signal: ");
-              Serial.println(direction);
-              Serial.print("  Type: ");
-              Serial.println(type);
-              Serial.print("  Rate: ");
-              Serial.println(rate);
-              Serial.print("  Frequency: ");
-              Serial.println(frequency);
-              Serial.print("  Spacecraft: ");
-              Serial.println(spacecraft);
+  //             Serial.println();
+  //             Serial.print("- Signal: ");
+  //             Serial.println(direction);
+  //             Serial.print("  Type: ");
+  //             Serial.println(type);
+  //             Serial.print("  Rate: ");
+  //             Serial.println(rate);
+  //             Serial.print("  Frequency: ");
+  //             Serial.println(frequency);
+  //             Serial.print("  Spacecraft: ");
+  //             Serial.println(spacecraft);
             
 
-            }
+  //           }
 
-            Serial.println();
-            Serial.println("----------------------------");
-            Serial.println();
-          }
-        }
-        Serial.println();
-      } 
-    }
-  }
+  //           Serial.println();
+  //           Serial.println("----------------------------");
+  //           Serial.println();
+  //         }
+  //       }
+  //       Serial.println();
+  //     } 
+  //   }
+  // }
 
+server.handleClient();
   
 
   if ( (millis() - wordLastTime) > 500) {
-    scrollLetters(spacecraftName);
+    // scrollLetters(spacecraftName);
 
-    Serial.println();    
+    // Serial.println();    
     wordLastTime = millis();    // Set word timer to current millis()
   }
 
