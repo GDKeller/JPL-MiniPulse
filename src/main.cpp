@@ -16,8 +16,9 @@ using namespace std;
 
 
 /* CONFIG */
-const char* ssid = "PlanetExpress";
-const char* password = "futurama";
+const char* ssid = "Verizon_LT6SKN";
+const char* password = "smile-grey9-hie";
+#define AP_SSID  "esp32-v6"
 
 #define TEST_CORES 0
 #define SHOW_SERIAL 0
@@ -52,8 +53,139 @@ QueueHandle_t queue;          // Queue to pass data between tasks
 
 
 
-/* Text Handling */
+/* CLASSES */
+Adafruit_NeoPixel neopixel;
 TextCharacter textCharacter;
+
+
+
+
+/* NETWORKING */
+static volatile bool wifi_connected = false;
+const char* rssiToString(uint rssi) {
+  if (rssi > -31) return "Amazing";
+  if (rssi > -68) return "Very Good";
+  if (rssi > -71) return "Okay";
+  if (rssi > -81) return "Not Good";
+  if (rssi > -91) return "Unusable";
+  return "Unknown";
+}
+
+void wifiOnConnect(){
+    Serial.println("STA Connected");
+    Serial.print("STA IPv4: ");
+    Serial.println(WiFi.localIP());
+    
+    const uint rssi = WiFi.RSSI();
+    Serial.print("Connection Strength: ");
+    Serial.print(rssiToString(rssi));
+    Serial.print(" (RSSI: ");
+    Serial.print(WiFi.RSSI());
+    Serial.print("dBm)");
+    Serial.println();
+}
+
+void wifiOnDisconnect(){
+    Serial.println("STA Disconnected");
+    delay(1000);
+    WiFi.begin(ssid, password);
+}
+
+void WiFiEvent(WiFiEvent_t event){
+    switch(event) {
+
+        case ARDUINO_EVENT_WIFI_AP_START:
+            //can set ap hostname here
+            WiFi.softAPsetHostname(AP_SSID);
+            //enable ap ipv6 here
+            WiFi.softAPenableIpV6();
+            break;
+
+        case ARDUINO_EVENT_WIFI_STA_START:
+            //set sta hostname here
+            WiFi.setHostname(AP_SSID);
+            break;
+        case ARDUINO_EVENT_WIFI_STA_CONNECTED:
+            //enable sta ipv6 here
+            WiFi.enableIpV6();
+            break;
+        case ARDUINO_EVENT_WIFI_STA_GOT_IP6:
+            Serial.print("STA IPv6: ");
+            Serial.println(WiFi.localIPv6());
+            break;
+        case ARDUINO_EVENT_WIFI_AP_GOT_IP6:
+            Serial.print("AP IPv6: ");
+            Serial.println(WiFi.softAPIPv6());
+            break;
+        case ARDUINO_EVENT_WIFI_STA_GOT_IP:
+            wifiOnConnect();
+            wifi_connected = true;
+            break;
+        case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
+            wifi_connected = false;
+            wifiOnDisconnect();
+            break;
+        default:
+            break;
+    }
+}
+
+void scanWifiNetworks() {
+  Serial.println("Scanning available WiFi networks...");
+  // WiFi.scanNetworks will return the number of networks found
+  int n = WiFi.scanNetworks();
+  Serial.println("Scan complete");
+  if (n == 0) {
+      Serial.println("No networks found");
+  } else {
+      Serial.print(n);
+      Serial.println(" networks found");
+      for (int i = 0; i < n; ++i) {
+          // Print SSID and RSSI for each network found
+          Serial.print(i + 1);
+          Serial.print(": ");
+          Serial.print(WiFi.SSID(i));
+          Serial.print(" (");
+          Serial.print(WiFi.RSSI(i));
+          Serial.print(")");
+          Serial.print(WiFi.encryptionType(i));
+          Serial.println((WiFi.encryptionType(i) == WIFI_AUTH_OPEN)?" ":"*");
+          delay(10);
+      }
+  }
+  Serial.println("");
+  delay(500);
+}
+
+void printWifiMode() {
+    Serial.print("WiFi Mode: "); Serial.println(WiFi.getMode()); Serial.println();
+    delay(100);
+}
+
+const char* wl_status_to_string(wl_status_t status) {
+  switch (status) {
+    case WL_NO_SHIELD: return "WL_NO_SHIELD";
+    case WL_IDLE_STATUS: return "WL_IDLE_STATUS";
+    case WL_NO_SSID_AVAIL: return "WL_NO_SSID_AVAIL";
+    case WL_SCAN_COMPLETED: return "WL_SCAN_COMPLETED";
+    case WL_CONNECTED: return "WL_CONNECTED";
+    case WL_CONNECT_FAILED: return "WL_CONNECT_FAILED";
+    case WL_CONNECTION_LOST: return "WL_CONNECTION_LOST";
+    case WL_DISCONNECTED: return "WL_DISCONNECTED";
+    default: return "WiFi status code unknown";
+  }
+}
+
+void printWifiStatus() {
+  Serial.print("WiFi Status: "); Serial.println(wl_status_to_string(WiFi.status()));
+}
+
+void wifiSetup() {  
+  WiFi.disconnect(true);
+  WiFi.onEvent(WiFiEvent);
+  WiFi.mode(WIFI_MODE_APSTA);
+  WiFi.softAP(AP_SSID);
+}
 
 
 
@@ -65,7 +197,7 @@ Adafruit_NeoPixel
   inner_pixels(10, INNER_PIN, NEO_GRB + NEO_KHZ800),
   bottom_pixels(10, BOTTOM_PIN, NEO_GRB + NEO_KHZ800);
 
-Adafruit_NeoPixel* allStrips[4] = {
+Adafruit_NeoPixel * allStrips[4] = {
   &bottom_pixels,
   &outer_pixels,
   &middle_pixels,
@@ -75,10 +207,25 @@ Adafruit_NeoPixel* allStrips[4] = {
 
 
 
+// const uint32_t bgrRed = Adafruit_NeoPixel::Color((uint8_t)0,  (uint8_t)0,  (uint8_t)255);
+const uint32_t bgrBlue = Adafruit_NeoPixel::Color((uint8_t)255,  (uint8_t)0,  (uint8_t)0);
+const uint32_t* pBgrBlue = &bgrBlue;
+const uint32_t bgrGreen = Adafruit_NeoPixel::Color((uint8_t)25,  (uint8_t)25,  (uint8_t)25);
+const uint32_t* pBgrGreen = &bgrGreen;
+const uint32_t bgrOff = Adafruit_NeoPixel::Color((uint8_t)0,  (uint8_t)0,  (uint8_t)0);
+const uint32_t* pBgrOff = &bgrOff;
+uint32_t bgrPurple = Adafruit_NeoPixel::Color((uint8_t)64,  (uint8_t)0,  (uint8_t)64);
+uint32_t off = Adafruit_NeoPixel::Color((uint8_t)0,  (uint8_t)0,  (uint8_t)0);  // Variable for LED off state
+uint32_t bgrWhite = Adafruit_NeoPixel::Color((uint8_t)255,  (uint8_t)255,  (uint8_t)255); // Full white color
+uint32_t* pBgrWhite = &bgrWhite;
+
+
+
+
+
+
 /* ANIMATION UTILITIES */
 // Do not change these
-
-uint32_t offColor = outer_pixels.Color(0, 0, 0);  // Variable for LED off state
 
 // Init reference variables for when last update occurred
 unsigned long lastUpdateP1 = 0;
@@ -107,57 +254,9 @@ int p4State = 0;
 //   bottom_pixels 
 // };
 
-uint32_t color_red = outer_pixels.Color(0, 0, 255);
-const uint32_t bgrBlue = Adafruit_NeoPixel::Color(255, 0, 0);
-uint32_t green = outer_pixels.Color(0, 255, 0);
-uint32_t purple = outer_pixels.Color(64, 0, 64);
-uint32_t red = color_red;
-uint32_t off = outer_pixels.Color(0, 0, 0);  // Variable for LED off state
-uint32_t white = outer_pixels.Color(255, 255, 255); // Full white color
-
-const uint32_t bgrOff = 0;
 
 
-// // Letter Typography arrays
-// uint32_t character_g[20] = {
-//   blue, blue, blue, blue,
-//   blue, off, off, off,
-//   blue, off, blue, blue,
-//   blue, off, off, blue,
-//   blue, blue, blue, blue
-// };
 
-// uint32_t character_j[20] = {
-//   off, off, off, blue,
-//   off, off, off, blue,
-//   off, off, off, blue,
-//   blue, off, off, blue,
-//   blue, blue, blue, blue
-// };
-
-// uint32_t character_l[20] = {
-//   blue, off, off, off,
-//   blue, off, off, off,
-//   blue, off, off, off,
-//   blue, off, off, off,
-//   blue, blue, blue, blue
-// };
-
-// uint32_t character_p[20] = {
-//   blue, blue, blue, blue,
-//   blue, off, off, blue,
-//   blue, blue, blue, blue,
-//   blue, off, off, off,
-//   blue, off, off, off
-// };
-
-// uint32_t character_v[20] = {
-//   blue, off, off, blue,
-//   blue, off, off, blue,
-//   blue, off, blue, blue,
-//   off, blue, blue, off,
-//   off, blue, blue, off
-// };
 
 
 
@@ -165,17 +264,17 @@ const uint32_t bgrOff = 0;
 /* ANIMATION FUNCTIONS */
 
 // Custom function to calculate color relative to global BRIGHTNESS variable 
-void setPixelColor( Adafruit_NeoPixel &strip, uint16_t n, const uint32_t &color ) {
+void setPixelColor( Adafruit_NeoPixel &strip, uint16_t n, uint32_t color ) {
   uint8_t rgb[4];             // Create array that will hold color channel values
   *(uint32_t*)&rgb = color;   // Assigns color value to the color channel array
-  uint8_t r = rgb[0];         // blue color channel value
-  uint8_t g = rgb[1];         // Green color channel value
-  uint8_t b = rgb[2];         // Blue color channel value
+  uint8_t channelR = rgb[0];         // blue color channel value
+  uint8_t channelG = rgb[1];         // Green color channel value
+  uint8_t channelB = rgb[2];         // Blue color channel value
   // Serial.println(r);
   // Serial.println(g);
   // Serial.println(b);
   // Serial.println();
-	strip.setPixelColor(n, (BRIGHTNESS*r/255) , (BRIGHTNESS*g/255), (BRIGHTNESS*b/255));
+	strip.setPixelColor(n, ((BRIGHTNESS*channelR)/255) , ((BRIGHTNESS*channelG)/255), ((BRIGHTNESS*channelB)/255));
 }
 
 // Fill strip pixels one after another with a color. Strip is NOT cleared
@@ -259,39 +358,40 @@ void theaterChaseRainbow(Adafruit_NeoPixel &strip, int wait) {
 void doLetter(char theLetter, int startingPixel) {
   // Serial.println(startingPixel);
 
-
+  const uint32_t nope = 0;
+  const uint32_t* pNope = &nope;
 
   int * ledCharacter = textCharacter.getCharacter(theLetter);
 
 
-  uint32_t character_array[20];
-  uint32_t nope = 0;
+  const uint32_t* character_array[20] = {};
 
   for (int i = 0; i < 20; i++) {
     // Serial.println(ledCharacter[i]);
     switch (ledCharacter[i]) {
       case 0:
-        character_array[i] = nope;
+        character_array[i] = pNope;
         break;
       case 1:
-        character_array[i] = bgrBlue;
+        character_array[i] = pBgrBlue;
         break;
       default:
-        character_array[i] = nope;
+        character_array[i] = pNope;
     }
 
-    if (character_array[i] > outer_pixels.Color(255, 255, 255)) character_array[i] = nope;
+    const uint32_t dim = Adafruit_NeoPixel::Color(20, 20, 20);
+    const uint32_t* pDim = &dim;
+    if (*character_array[i] > *pBgrWhite) character_array[i] = pDim;
   }
 
 
 
-  Serial.print("Blue: "); Serial.print(bgrBlue); Serial.print(", ");
-  Serial.print("Off: "); Serial.print(bgrOff); Serial.print(", ");
-  Serial.print("Green: "); Serial.print(outer_pixels.Color(0, 255, 5)); Serial.println();
+  Serial.print("Blue: "); Serial.print(*pBgrBlue); Serial.print(", ");
+  Serial.print("Off: "); Serial.print(*pBgrOff); Serial.print(", ");
+  Serial.print("Green: "); Serial.print(*pBgrGreen); Serial.println();
   
   int pixel = 0 + startingPixel;
   int previousPixel = startingPixel - 1;
-
 
 
   for (int i = 0; i < 20; i++) {
@@ -303,234 +403,249 @@ void doLetter(char theLetter, int startingPixel) {
     
     
 
-    Adafruit_NeoPixel*& target = allStrips[stripInt];
+    // Adafruit_NeoPixel*& target = allStrips[stripInt];
 
-    if (stripInt == 0) {
-      Serial.print(character_array[i]); Serial.print("/"); Serial.print(pixel); Serial.print(", ");
-      if (previousPixel >= 0 && previousPixel < 10) setPixelColor(*target, previousPixel, nope);
-      if (pixel >= 0 && pixel < 10) setPixelColor(*target, pixel, character_array[i]);
-    }
-    if (stripInt == 1) {
-      Serial.print(character_array[i]); Serial.print("/"); Serial.print(pixel); Serial.print(", ");
-      if (previousPixel >= 0 && previousPixel < 10) setPixelColor(*target, previousPixel, nope);
-      if (pixel >= 0 && pixel < 10) setPixelColor(*target, pixel, character_array[i]);
-    }
-    if (stripInt == 2) {
-      Serial.print(character_array[i]); Serial.print("/"); Serial.print(pixel); Serial.print(", ");
-      if (previousPixel >= 0 && previousPixel < 10) setPixelColor(*target, previousPixel, nope);
-      if (pixel >= 0 && pixel < 10) setPixelColor(*target, pixel, character_array[i]);
-    }
-    if (stripInt == 3) {
-      Serial.print(character_array[i]); Serial.print("/"); Serial.println(pixel); Serial.println();
-      if (previousPixel >= 0 && previousPixel < 10) setPixelColor(*target, previousPixel, nope);
-      if (pixel >= 0 && pixel < 10) setPixelColor(*target, pixel, character_array[i]);
-      pixel++;
-    }    
+    // if (stripInt == 0) {
+    //   // Serial.print(*character_array[i]); Serial.print("/"); Serial.print(pixel); Serial.print(", ");
+    //   if (-1 < previousPixel < 10) setPixelColor(*target, previousPixel, nope);
+    //   if (-1 < pixel < 10) setPixelColor(*target, pixel, *character_array[i]);
+    // }
+    // if (stripInt == 1) {
+    //   Serial.print(*character_array[i]); Serial.print("/"); Serial.print(pixel); Serial.print(", ");
+    //   if (-1 < previousPixel < 10) setPixelColor(*target, previousPixel, nope);
+    //   if (-1 < pixel < 10) setPixelColor(*target, pixel, *character_array[i]);
+    // }
+    // if (stripInt == 2) {
+    //   // Serial.print(*character_array[i]); Serial.print("/"); Serial.print(pixel); Serial.print(", ");
+    //   if (-1 < previousPixel < 10) setPixelColor(*target, previousPixel, nope);
+    //   if (-1 < pixel < 10) setPixelColor(*target, pixel, *character_array[i]);
+    // }
+    // if (stripInt == 3) {
+    //   // Serial.print(*character_array[i]); Serial.print("/"); Serial.println(pixel); Serial.println();
+    //   if (-1 < previousPixel < 10) setPixelColor(*target, previousPixel, nope);
+    //   if (-1 < pixel < 10) setPixelColor(*target, pixel, *character_array[i]);
+      
+    //   pixel++;  // Move to next pixel
+    // }
   }
+
+  Serial.println();
   
-  for (int p = 0; p < 4; p++) {
-    allStrips[p]->show();
-  }
+  // for (int p = 0; p < 4; p++) {
+  //   allStrips[p]->show();
+  // }
 }
 
 
 
 
 
-int initLetterStartingPixels[] = {};
-int letterStartingPixels[] = {};
-bool initStartingPixels = true;
 
+bool initStartingPixels = true;
 void scrollLetters(string spacecraftName) {
   
+  unsigned int wordSize = spacecraftName.size();
+  unsigned int lastArrayIndex = wordSize - 1;
 
-  // for (int i = 0; i < 4; i++) {
-  //   Adafruit_NeoPixel*& strip = allStrips[i];
-  //   strip->clear();
-  // }
+    int initLetterStartingPixels[] = {};
+    int letterStartingPixels[] = {};
 
-  for (int i = 0; i < (spacecraftName.size()); i++) {
+
+  // TODO: Refactor this so that starting pixels are calculated as an offset of previous letter, instead of multiplied
+  for (int i = 0; i < wordSize; i++) {
+     
+
+    int refLetterPixel;
+    int previousArrayIndex = i - 1;
+    if (previousArrayIndex < 0) previousArrayIndex = 0;
+
     if (initStartingPixels == true) {
-      initLetterStartingPixels[i] = (-5 - (6 * i));
+      unsigned int letterSpacing = 6 * i;
+      initLetterStartingPixels[i] = -5 - letterSpacing;
       letterStartingPixels[i] = initLetterStartingPixels[i];
-    }    
+    }
 
+
+    Serial.print(letterStartingPixels[i]); Serial.print(", ");
+    Serial.println();
   
     int startingPixel = letterStartingPixels[i];
     char theLetter = spacecraftName[i];
 
+    // Serial.print(startingPixel); Serial.print(", ");
+    // Serial.println();
     doLetter(theLetter, startingPixel);
 
-    startingPixel++;
-    if (startingPixel > 10) {
-      int refLetterPixel;
+    startingPixel = startingPixel + 1;
+
+    if (startingPixel > 10) {      
       if (i == 0) {
-        refLetterPixel = letterStartingPixels[spacecraftName.size() - 1];
+        refLetterPixel = letterStartingPixels[lastArrayIndex];
         startingPixel = refLetterPixel - 12;
       } else {
-        refLetterPixel = letterStartingPixels[i - 1];
+        
+        refLetterPixel = letterStartingPixels[previousArrayIndex];
         startingPixel = refLetterPixel - 6; 
-      }
-
-      
+      }      
     }
 
     letterStartingPixels[i] = startingPixel;
   
   }
+  Serial.println();
 
   initStartingPixels = false;
   lastUpdateP1 = millis();
 }
 
 
-void updatePattern1() { // rain
-  uint32_t colorArray [] = {
-    outer_pixels.Color(0, 0, 255),
-    outer_pixels.Color(0, 2, 24),
-    outer_pixels.Color(0, 2, 8),
-    outer_pixels.Color(0, 1, 2)
-  };
+// void updatePattern1() { // rain
+//   uint32_t colorArray [] = {
+//     outer_pixels.Color(0, 0, 255),
+//     outer_pixels.Color(0, 2, 24),
+//     outer_pixels.Color(0, 2, 8),
+//     outer_pixels.Color(0, 1, 2)
+//   };
 
-  int colorArrayLength = sizeof(colorArray) / sizeof(int);
-  int numPixels = outer_pixels.numPixels() + 8;
-  int numPixelsExtend = numPixels + colorArrayLength;  
+//   int colorArrayLength = sizeof(colorArray) / sizeof(int);
+//   int numPixels = outer_pixels.numPixels() + 8;
+//   int numPixelsExtend = numPixels + colorArrayLength;  
   
-  setPixelColor(outer_pixels, p1State, colorArray[0]); // turn on next led in pattern
+//   setPixelColor(outer_pixels, p1State, colorArray[0]); // turn on next led in pattern
   
-  if ( 0 < p1StateExtend && p1StateExtend <= numPixels ) {
-    // second
-    int secondLedExtend = p1StateExtend - 1;
-    if (secondLedExtend < 0) {               // wrap round count
-      secondLedExtend = numPixelsExtend - 1;
-    }
-    setPixelColor(outer_pixels, secondLedExtend, colorArray[1]);     // turn off last LED we set
+//   if ( 0 < p1StateExtend && p1StateExtend <= numPixels ) {
+//     // second
+//     int secondLedExtend = p1StateExtend - 1;
+//     if (secondLedExtend < 0) {               // wrap round count
+//       secondLedExtend = numPixelsExtend - 1;
+//     }
+//     setPixelColor(outer_pixels, secondLedExtend, colorArray[1]);     // turn off last LED we set
 
-    // third
-    int thirdLedExtend = p1StateExtend - 2;
-    if (thirdLedExtend < 0) {               // wrap round count
-      thirdLedExtend = numPixelsExtend - 2;
-    }
-    setPixelColor(outer_pixels, thirdLedExtend, colorArray[2]);     // turn off last LED we set
+//     // third
+//     int thirdLedExtend = p1StateExtend - 2;
+//     if (thirdLedExtend < 0) {               // wrap round count
+//       thirdLedExtend = numPixelsExtend - 2;
+//     }
+//     setPixelColor(outer_pixels, thirdLedExtend, colorArray[2]);     // turn off last LED we set
 
-    // fourth
-    int fourthLedExtend = p1StateExtend - 3;
-    if (fourthLedExtend < 0) {               // wrap round count
-      fourthLedExtend = numPixelsExtend - 3;
-    }
-    setPixelColor(outer_pixels, fourthLedExtend, colorArray[3]);     // turn off last LED we set
+//     // fourth
+//     int fourthLedExtend = p1StateExtend - 3;
+//     if (fourthLedExtend < 0) {               // wrap round count
+//       fourthLedExtend = numPixelsExtend - 3;
+//     }
+//     setPixelColor(outer_pixels, fourthLedExtend, colorArray[3]);     // turn off last LED we set
 
-    // last
-    int lastLedExtend = p1StateExtend - colorArrayLength;        // find LED to turn off
-    if (lastLedExtend < 0) {               // wrap round count
-      lastLedExtend = numPixelsExtend - colorArrayLength;
-    }
-    setPixelColor(outer_pixels, lastLedExtend, offColor);     // turn off last LED we set
+//     // last
+//     int lastLedExtend = p1StateExtend - colorArrayLength;        // find LED to turn off
+//     if (lastLedExtend < 0) {               // wrap round count
+//       lastLedExtend = numPixelsExtend - colorArrayLength;
+//     }
+//     setPixelColor(outer_pixels, lastLedExtend, off);     // turn off last LED we set
 
 
-  } else {
-    // second
-    int secondLed = p1State - 1;
-    if (secondLed < 0) {               // wrap round count
-      secondLed = numPixels - 1;
-    }
-    setPixelColor(outer_pixels, secondLed, colorArray[1]);     // turn off last LED we set
+//   } else {
+//     // second
+//     int secondLed = p1State - 1;
+//     if (secondLed < 0) {               // wrap round count
+//       secondLed = numPixels - 1;
+//     }
+//     setPixelColor(outer_pixels, secondLed, colorArray[1]);     // turn off last LED we set
 
-    // third
-    int thirdLed = p1State - 2;
-    if (thirdLed < 0) {               // wrap round count
-      thirdLed = numPixels - 2;
-    }
-    setPixelColor(outer_pixels, thirdLed, colorArray[2]);     // turn off last LED we set
+//     // third
+//     int thirdLed = p1State - 2;
+//     if (thirdLed < 0) {               // wrap round count
+//       thirdLed = numPixels - 2;
+//     }
+//     setPixelColor(outer_pixels, thirdLed, colorArray[2]);     // turn off last LED we set
 
-    // fourth
-    int fourthLed = p1State - 3;
-    if (fourthLed < 0) {               // wrap round count
-      fourthLed = numPixels - 3;
-    }
-    setPixelColor(outer_pixels, fourthLed, colorArray[3]);     // turn off last LED we set
+//     // fourth
+//     int fourthLed = p1State - 3;
+//     if (fourthLed < 0) {               // wrap round count
+//       fourthLed = numPixels - 3;
+//     }
+//     setPixelColor(outer_pixels, fourthLed, colorArray[3]);     // turn off last LED we set
 
-    // last
-    int lastLed = p1State - colorArrayLength;        // find LED to turn off
-    if (lastLed < 0) {               // wrap round count
-      lastLed = numPixels - colorArrayLength;
-    }
-    setPixelColor(outer_pixels, lastLed, offColor);     // turn off last LED we set
-  }
+//     // last
+//     int lastLed = p1State - colorArrayLength;        // find LED to turn off
+//     if (lastLed < 0) {               // wrap round count
+//       lastLed = numPixels - colorArrayLength;
+//     }
+//     setPixelColor(outer_pixels, lastLed, off);     // turn off last LED we set
+//   }
 
   
 
-  if ( p1State == numPixels - 1 ) {
-    p1StateExtend = p1State;
-  }
+//   if ( p1State == numPixels - 1 ) {
+//     p1StateExtend = p1State;
+//   }
 
 
-  p1State ++;                 // move on state variable for the next time we enter this
-  if (p1State >= numPixels){   // wrap round the state
-  p1State = 0;
-  }
+//   p1State ++;                 // move on state variable for the next time we enter this
+//   if (p1State >= numPixels){   // wrap round the state
+//   p1State = 0;
+//   }
 
-  if ( p1StateExtend != 0 ) {
-    p1StateExtend++;
-  }  
-  if ( p1StateExtend >= numPixelsExtend ) {
-    p1StateExtend = 0;
-  }
+//   if ( p1StateExtend != 0 ) {
+//     p1StateExtend++;
+//   }  
+//   if ( p1StateExtend >= numPixelsExtend ) {
+//     p1StateExtend = 0;
+//   }
 
-  outer_pixels.show(); // update display
-  lastUpdateP1 = millis();               // to calculate next update
-}
+//   outer_pixels.show(); // update display
+//   lastUpdateP1 = millis();               // to calculate next update
+// }
 
-void updatePattern2() { // pattern 1 a walking green led
-  uint32_t color2 = inner_pixels.Color(0, 64, 0);
-  uint32_t offColor = inner_pixels.Color(0, 0, 0);
-  setPixelColor(inner_pixels, p2State, color2); // turn on next led in pattern
-  int lastLed2 = p2State - 1;        // find LED to turn off
-  if (lastLed2 < 0) {               // wrap round count
-    lastLed2 = inner_pixels.numPixels() - 1;
-  }
-  setPixelColor(inner_pixels, lastLed2, offColor);     // turn off last LED we set
-  p2State ++;                 // move on state variable for the next time we enter this
-  if(p2State >= inner_pixels.numPixels()){   // wrap round the state
-  p2State = 0;
-  }
-  inner_pixels.show(); // update display
-  lastUpdateP2 = millis();               // to calculate next update
-}
+// void updatePattern2() { // pattern 1 a walking green led
+//   uint32_t color2 = inner_pixels.Color(0, 64, 0);
+//   uint32_t offColor = inner_pixels.Color(0, 0, 0);
+//   setPixelColor(inner_pixels, p2State, color2); // turn on next led in pattern
+//   int lastLed2 = p2State - 1;        // find LED to turn off
+//   if (lastLed2 < 0) {               // wrap round count
+//     lastLed2 = inner_pixels.numPixels() - 1;
+//   }
+//   setPixelColor(inner_pixels, lastLed2, off);     // turn off last LED we set
+//   p2State ++;                 // move on state variable for the next time we enter this
+//   if(p2State >= inner_pixels.numPixels()){   // wrap round the state
+//   p2State = 0;
+//   }
+//   inner_pixels.show(); // update display
+//   lastUpdateP2 = millis();               // to calculate next update
+// }
 
-void updatePattern3() { // pattern 1 a walking blue led
-  uint32_t color2 = middle_pixels.Color(64, 0, 0);
-  uint32_t offColor = middle_pixels.Color(0, 0, 0);
-  setPixelColor(middle_pixels, p3State, color2); // turn on next led in pattern
-  int lastLed2 = p3State - 1;        // find LED to turn off
-  if (lastLed2 < 0) {               // wrap round count
-    lastLed2 = middle_pixels.numPixels() - 1;
-  }
-  setPixelColor(middle_pixels, lastLed2, offColor);     // turn off last LED we set
-  p3State ++;                 // move on state variable for the next time we enter this
-  if(p3State >= middle_pixels.numPixels()){   // wrap round the state
-  p3State = 0;
-  }
-  middle_pixels.show(); // update display
-  lastUpdateP3 = millis();               // to calculate next update
-}
+// void updatePattern3() { // pattern 1 a walking blue led
+//   uint32_t color2 = middle_pixels.Color(64, 0, 0);
+//   uint32_t offColor = middle_pixels.Color(0, 0, 0);
+//   setPixelColor(middle_pixels, p3State, color2); // turn on next led in pattern
+//   int lastLed2 = p3State - 1;        // find LED to turn off
+//   if (lastLed2 < 0) {               // wrap round count
+//     lastLed2 = middle_pixels.numPixels() - 1;
+//   }
+//   setPixelColor(middle_pixels, lastLed2, off);     // turn off last LED we set
+//   p3State ++;                 // move on state variable for the next time we enter this
+//   if(p3State >= middle_pixels.numPixels()){   // wrap round the state
+//   p3State = 0;
+//   }
+//   middle_pixels.show(); // update display
+//   lastUpdateP3 = millis();               // to calculate next update
+// }
 
-void updatePattern4() { // pattern 1 a walking purple led
-  uint32_t color2 = bottom_pixels.Color(32, 0, 32);
-  uint32_t offColor = bottom_pixels.Color(0, 0, 0);
-  setPixelColor(bottom_pixels, p4State, color2); // turn on next led in pattern
-  int lastLed2 = p4State - 1;        // find LED to turn off
-  if (lastLed2 < 0) {               // wrap round count
-    lastLed2 = bottom_pixels.numPixels() - 1;
-  }
-  setPixelColor(bottom_pixels, lastLed2, offColor);     // turn off last LED we set
-  p4State ++;                 // move on state variable for the next time we enter this
-  if(p4State >= bottom_pixels.numPixels()){   // wrap round the state
-  p4State = 0;
-  }
-  bottom_pixels.show(); // update display
-  lastUpdateP4 = millis();               // to calculate next update
-}
+// void updatePattern4() { // pattern 1 a walking purple led
+//   uint32_t color2 = bottom_pixels.Color(32, 0, 32);
+//   uint32_t offColor = bottom_pixels.Color(0, 0, 0);
+//   setPixelColor(bottom_pixels, p4State, color2); // turn on next led in pattern
+//   int lastLed2 = p4State - 1;        // find LED to turn off
+//   if (lastLed2 < 0) {               // wrap round count
+//     lastLed2 = bottom_pixels.numPixels() - 1;
+//   }
+//   setPixelColor(bottom_pixels, lastLed2, off);     // turn off last LED we set
+//   p4State ++;                 // move on state variable for the next time we enter this
+//   if(p4State >= bottom_pixels.numPixels()){   // wrap round the state
+//   p4State = 0;
+//   }
+//   bottom_pixels.show(); // update display
+//   lastUpdateP4 = millis();               // to calculate next update
+// }
 
 
 
@@ -775,9 +890,9 @@ void getData( void * parameter) {
 
         WiFi.begin(ssid, password);
         Serial.println("Connecting");
-        while(WiFi.status() != WL_CONNECTED) {
-          Serial.print(".");
-        }
+        // while(WiFi.status() != WL_CONNECTED) {
+        //   Serial.print(".");
+        // }
         Serial.println("");
         Serial.print("Connected to WiFi network with IP Address: ");
         Serial.println(WiFi.localIP());
@@ -804,24 +919,6 @@ void setup() {
     Serial.println(xPortGetCoreID());
   }
 
-  // Initialize task for core 2
-  xTaskCreatePinnedToCore(
-    getData, /* Function to implement the task */
-    "getData", /* Name of the task */
-    10000,  /* Stack size in words */
-    NULL,  /* Task input parameter */
-    0,  /* Priority of the task */
-    &HandleData,  /* Task handle. */
-    0); /* Core where the task should run */
-
-
-  // Create queue to pass data between tasks on separate cores
-  queue = xQueueCreate( 1, sizeof( uint64_t ) );    // Create queue
-
-  if (queue == NULL) {                              // Check that queue was created successfully
-    Serial.println("Error creating the queue");
-  }
-
 
   // Set up pins
   pinMode(OUTER_PIN, OUTPUT);
@@ -830,7 +927,6 @@ void setup() {
   pinMode(BOTTOM_PIN, OUTPUT);
   pinMode(OUTPUT_ENABLE, OUTPUT);
   pinMode(WIFI_RST, INPUT);
-
   digitalWrite(OUTPUT_ENABLE, HIGH);
 
   // Initialize NeoPixel objects
@@ -852,16 +948,46 @@ void setup() {
   bottom_pixels.setBrightness(BRIGHTNESS);
 
   // Connect to WiFi
-  WiFi.begin(ssid, password);
+  wifiSetup();
+  printWifiMode();
+  scanWifiNetworks();                     // Scan for available WiFi networks
+  delay(1000);
+  printWifiStatus();                      // Print WiFi status
+  delay(1000);
+ 
+ 
+  WiFi.begin(ssid, password);             // Attempt to connect to WiFi
   Serial.println("Connecting...");
-  while(WiFi.status() != WL_CONNECTED) {
-    delay(500);
+  while(WiFi.waitForConnectResult() != WL_CONNECTED) {
+    delay(1000);
     Serial.print(".");
   }
-  Serial.println("");
-  Serial.print("Connected to WiFi network with IP Address: ");
-  Serial.println(WiFi.localIP());
-  
+  delay(1000);
+  Serial.println();
+  printWifiStatus();
+  Serial.print("Connected to WiFi network with IP Address: "); Serial.println(WiFi.localIP());
+  delay(1000);
+
+
+
+  // Initialize task for core 1
+  xTaskCreatePinnedToCore(
+    getData, /* Function to implement the task */
+    "getData", /* Name of the task */
+    10000,  /* Stack size in words */
+    NULL,  /* Task input parameter */
+    0,  /* Priority of the task */
+    &HandleData,  /* Task handle. */
+    0); /* Core where the task should run */
+
+
+  // Create queue to pass data between tasks on separate cores
+  queue = xQueueCreate( 1, sizeof( uint64_t ) );    // Create queue
+
+  if (queue == NULL) {                              // Check that queue was created successfully
+    Serial.println("Error creating the queue");
+  }
+
 }
 
 
@@ -956,7 +1082,7 @@ void loop() {
 
   
 
-  if ( (millis() - wordLastTime) > 100) {
+  if ( (millis() - wordLastTime) > 500) {
     scrollLetters(spacecraftName);
 
     Serial.println();    
