@@ -293,7 +293,7 @@ Adafruit_NeoPixel * allStrips[4] = {
 };
 
 
-
+int innerPixelsChunkLength = 10;
 
 // const uint32_t bgrRed = Adafruit_NeoPixel::Color((uint8_t)0,  (uint8_t)0,  (uint8_t)255);
 const uint32_t bgrBlue = Adafruit_NeoPixel::Color((uint8_t)255,  (uint8_t)0,  (uint8_t)0);
@@ -327,21 +327,6 @@ int p1StateExtend = 0;
 int p2State = 0;
 int p3State = 0; 
 int p4State = 0;
-
-
-
-// Adafruit_NeoPixel ledsOuter = outer_pixels;
-// Adafruit_NeoPixel * ledsMiddle = &middle_pixels;
-// Adafruit_NeoPixel * ledsInner = &inner_pixels;
-// Adafruit_NeoPixel * ledsBottom = &bottom_pixels;
-
-// Adafruit_NeoPixel stripsArray[] = {
-//   outer_pixels,
-//   middle_pixels,
-//   inner_pixels,
-//   bottom_pixels 
-// };
-
 
 
 
@@ -441,37 +426,29 @@ void theaterChaseRainbow(Adafruit_NeoPixel &strip, int wait) {
 
 
 
-
 // Display letter from array
 void doLetter(char theLetter, int startingPixel) {
-  // Serial.println(startingPixel);
-
-  const uint32_t nope = 0;
-  const uint32_t* pNope = &nope;
 
   int * ledCharacter = textCharacter.getCharacter(theLetter);
-
 
   const uint32_t* character_array[20] = {};
 
   for (int i = 0; i < 20; i++) {
-    // Serial.println(ledCharacter[i]);
     switch (ledCharacter[i]) {
       case 0:
-        character_array[i] = pNope;
+        character_array[i] = pBgrOff;
         break;
       case 1:
         character_array[i] = pBgrBlue;
         break;
       default:
-        character_array[i] = pNope;
+        character_array[i] = pBgrOff;
     }
 
-    const uint32_t dim = Adafruit_NeoPixel::Color(20, 20, 20);
-    const uint32_t* pDim = &dim;
-    if (*character_array[i] > *pBgrWhite) character_array[i] = pDim;
+  //   const uint32_t dim = Adafruit_NeoPixel::Color(20, 20, 20);
+  //   const uint32_t* pDim = &dim;
+  //   if (*character_array[i] > *pBgrWhite) character_array[i] = pDim;
   }
-
 
 
   Serial.print("Blue: "); Serial.print(*pBgrBlue); Serial.print(", ");
@@ -483,257 +460,198 @@ void doLetter(char theLetter, int startingPixel) {
 
 
   for (int i = 0; i < 20; i++) {
-
     int j = i + 1;
     int stripInt = j % 4;
     if (stripInt == 0) stripInt = 4;
     --stripInt;
-    
-    
+        
 
-    // Adafruit_NeoPixel*& target = allStrips[stripInt];
+    Adafruit_NeoPixel*& target = allStrips[stripInt];
 
-    // if (stripInt == 0) {
-    //   // Serial.print(*character_array[i]); Serial.print("/"); Serial.print(pixel); Serial.print(", ");
-    //   if (-1 < previousPixel < 10) setPixelColor(*target, previousPixel, nope);
-    //   if (-1 < pixel < 10) setPixelColor(*target, pixel, *character_array[i]);
-    // }
-    // if (stripInt == 1) {
-    //   Serial.print(*character_array[i]); Serial.print("/"); Serial.print(pixel); Serial.print(", ");
-    //   if (-1 < previousPixel < 10) setPixelColor(*target, previousPixel, nope);
-    //   if (-1 < pixel < 10) setPixelColor(*target, pixel, *character_array[i]);
-    // }
-    // if (stripInt == 2) {
-    //   // Serial.print(*character_array[i]); Serial.print("/"); Serial.print(pixel); Serial.print(", ");
-    //   if (-1 < previousPixel < 10) setPixelColor(*target, previousPixel, nope);
-    //   if (-1 < pixel < 10) setPixelColor(*target, pixel, *character_array[i]);
-    // }
-    // if (stripInt == 3) {
-    //   // Serial.print(*character_array[i]); Serial.print("/"); Serial.println(pixel); Serial.println();
-    //   if (-1 < previousPixel < 10) setPixelColor(*target, previousPixel, nope);
-    //   if (-1 < pixel < 10) setPixelColor(*target, pixel, *character_array[i]);
+    if (stripInt == 0) {
+      // Serial.print(*character_array[i]); Serial.print("/"); Serial.print(pixel); Serial.print(", ");
+      if (-1 < previousPixel < 10) setPixelColor(*target, previousPixel, *pBgrOff);
+      if (-1 < pixel < 10) setPixelColor(*target, pixel, *character_array[i]);
+    }
+    if (stripInt == 1) {
+      Serial.print(*character_array[i]); Serial.print("/"); Serial.print(pixel); Serial.print(", ");
+      if (-1 < previousPixel < 10) setPixelColor(*target, previousPixel, *pBgrOff);
+      if (-1 < pixel < 10) setPixelColor(*target, pixel, *character_array[i]);
+    }
+    if (stripInt == 2) {
+      // Serial.print(*character_array[i]); Serial.print("/"); Serial.print(pixel); Serial.print(", ");
+      if (-1 < previousPixel < 10) setPixelColor(*target, previousPixel, *pBgrOff);
+      if (-1 < pixel < 10) setPixelColor(*target, pixel, *character_array[i]);
+    }
+    if (stripInt == 3) {
+      // Serial.print(*character_array[i]); Serial.print("/"); Serial.println(pixel); Serial.println();
+      if (-1 < previousPixel < 10) setPixelColor(*target, previousPixel, *pBgrOff);
+      if (-1 < pixel < 10) setPixelColor(*target, pixel, *character_array[i]);
       
-    //   pixel++;  // Move to next pixel
-    // }
+      pixel++;  // Move to next pixel
+    }
   }
 
   Serial.println();
   
-  // for (int p = 0; p < 4; p++) {
-  //   allStrips[p]->show();
-  // }
+  for (int p = 0; p < 4; p++) {
+    allStrips[p]->show();
+  }
 }
 
 
 
+// Updates scrolling letters on inner strips
+static int startPixel;
+void scrollLetters(string spacecraftName, bool nameChanged) {
+  int letterSpacing = 6;
+  if (nameChanged == true) static int startPixel = 0;
 
-
-
-bool initStartingPixels = true;
-void scrollLetters(string spacecraftName) {
-  
   unsigned int wordSize = spacecraftName.size();
   unsigned int lastArrayIndex = wordSize - 1;
 
-    int initLetterStartingPixels[] = {};
-    int letterStartingPixels[] = {};
+  int letterPixel = startPixel;
+  int wrapPixel = innerPixelsChunkLength + (wordSize * letterSpacing);
+  int wordPixelsOffset = wordSize * letterSpacing;
+  int startWrapPixel = letterPixel - wordPixelsOffset;
 
 
-  // TODO: Refactor this so that starting pixels are calculated as an offset of previous letter, instead of multiplied
   for (int i = 0; i < wordSize; i++) {
-     
-
-    int refLetterPixel;
+    
     int previousArrayIndex = i - 1;
     if (previousArrayIndex < 0) previousArrayIndex = 0;
 
-    if (initStartingPixels == true) {
-      unsigned int letterSpacing = 6 * i;
-      initLetterStartingPixels[i] = -5 - letterSpacing;
-      letterStartingPixels[i] = initLetterStartingPixels[i];
-    }
-
-
-    Serial.print(letterStartingPixels[i]); Serial.print(", ");
+    Serial.print(letterPixel); Serial.print(", ");
     Serial.println();
-  
-    int startingPixel = letterStartingPixels[i];
+
     char theLetter = spacecraftName[i];
 
-    // Serial.print(startingPixel); Serial.print(", ");
-    // Serial.println();
-    doLetter(theLetter, startingPixel);
+    if (-1 < letterPixel && letterPixel < (10 + letterSpacing)) doLetter(theLetter, letterPixel);
 
-    startingPixel = startingPixel + 1;
-
-    if (startingPixel > 10) {      
-      if (i == 0) {
-        refLetterPixel = letterStartingPixels[lastArrayIndex];
-        startingPixel = refLetterPixel - 12;
-      } else {
-        
-        refLetterPixel = letterStartingPixels[previousArrayIndex];
-        startingPixel = refLetterPixel - 6; 
-      }      
-    }
-
-    letterStartingPixels[i] = startingPixel;
-  
+    letterPixel = letterPixel - letterSpacing;
   }
-  Serial.println();
 
-  initStartingPixels = false;
-  lastUpdateP1 = millis();
+  startPixel++;
+  
+  if (startPixel > wrapPixel) {
+    startPixel = 0;
+  }
+
+
+  Serial.println();
 }
 
 
-// void updatePattern1() { // rain
-//   uint32_t colorArray [] = {
-//     outer_pixels.Color(0, 0, 255),
-//     outer_pixels.Color(0, 2, 24),
-//     outer_pixels.Color(0, 2, 8),
-//     outer_pixels.Color(0, 1, 2)
-//   };
 
-//   int colorArrayLength = sizeof(colorArray) / sizeof(int);
-//   int numPixels = outer_pixels.numPixels() + 8;
-//   int numPixelsExtend = numPixels + colorArrayLength;  
+// Rain animation
+void updatePattern1() { // rain
+  uint32_t colorArray [] = {
+    outer_pixels.Color(0, 0, 255),
+    outer_pixels.Color(0, 2, 24),
+    outer_pixels.Color(0, 2, 8),
+    outer_pixels.Color(0, 1, 2)
+  };
+
+  int colorArrayLength = sizeof(colorArray) / sizeof(int);
+  int numPixels = outer_pixels.numPixels() + 8;
+  int numPixelsExtend = numPixels + colorArrayLength;  
   
-//   setPixelColor(outer_pixels, p1State, colorArray[0]); // turn on next led in pattern
+  setPixelColor(outer_pixels, p1State, colorArray[0]); // turn on next led in pattern
   
-//   if ( 0 < p1StateExtend && p1StateExtend <= numPixels ) {
-//     // second
-//     int secondLedExtend = p1StateExtend - 1;
-//     if (secondLedExtend < 0) {               // wrap round count
-//       secondLedExtend = numPixelsExtend - 1;
-//     }
-//     setPixelColor(outer_pixels, secondLedExtend, colorArray[1]);     // turn off last LED we set
+  if ( 0 < p1StateExtend && p1StateExtend <= numPixels ) {
+    // second
+    int secondLedExtend = p1StateExtend - 1;
+    if (secondLedExtend < 0) {               // wrap round count
+      secondLedExtend = numPixelsExtend - 1;
+    }
+    setPixelColor(outer_pixels, secondLedExtend, colorArray[1]);     // turn off last LED we set
 
-//     // third
-//     int thirdLedExtend = p1StateExtend - 2;
-//     if (thirdLedExtend < 0) {               // wrap round count
-//       thirdLedExtend = numPixelsExtend - 2;
-//     }
-//     setPixelColor(outer_pixels, thirdLedExtend, colorArray[2]);     // turn off last LED we set
+    // third
+    int thirdLedExtend = p1StateExtend - 2;
+    if (thirdLedExtend < 0) {               // wrap round count
+      thirdLedExtend = numPixelsExtend - 2;
+    }
+    setPixelColor(outer_pixels, thirdLedExtend, colorArray[2]);     // turn off last LED we set
 
-//     // fourth
-//     int fourthLedExtend = p1StateExtend - 3;
-//     if (fourthLedExtend < 0) {               // wrap round count
-//       fourthLedExtend = numPixelsExtend - 3;
-//     }
-//     setPixelColor(outer_pixels, fourthLedExtend, colorArray[3]);     // turn off last LED we set
+    // fourth
+    int fourthLedExtend = p1StateExtend - 3;
+    if (fourthLedExtend < 0) {               // wrap round count
+      fourthLedExtend = numPixelsExtend - 3;
+    }
+    setPixelColor(outer_pixels, fourthLedExtend, colorArray[3]);     // turn off last LED we set
 
-//     // last
-//     int lastLedExtend = p1StateExtend - colorArrayLength;        // find LED to turn off
-//     if (lastLedExtend < 0) {               // wrap round count
-//       lastLedExtend = numPixelsExtend - colorArrayLength;
-//     }
-//     setPixelColor(outer_pixels, lastLedExtend, off);     // turn off last LED we set
+    // last
+    int lastLedExtend = p1StateExtend - colorArrayLength;        // find LED to turn off
+    if (lastLedExtend < 0) {               // wrap round count
+      lastLedExtend = numPixelsExtend - colorArrayLength;
+    }
+    setPixelColor(outer_pixels, lastLedExtend, off);     // turn off last LED we set
 
 
-//   } else {
-//     // second
-//     int secondLed = p1State - 1;
-//     if (secondLed < 0) {               // wrap round count
-//       secondLed = numPixels - 1;
-//     }
-//     setPixelColor(outer_pixels, secondLed, colorArray[1]);     // turn off last LED we set
+  } else {
+    // second
+    int secondLed = p1State - 1;
+    if (secondLed < 0) {               // wrap round count
+      secondLed = numPixels - 1;
+    }
+    setPixelColor(outer_pixels, secondLed, colorArray[1]);     // turn off last LED we set
 
-//     // third
-//     int thirdLed = p1State - 2;
-//     if (thirdLed < 0) {               // wrap round count
-//       thirdLed = numPixels - 2;
-//     }
-//     setPixelColor(outer_pixels, thirdLed, colorArray[2]);     // turn off last LED we set
+    // third
+    int thirdLed = p1State - 2;
+    if (thirdLed < 0) {               // wrap round count
+      thirdLed = numPixels - 2;
+    }
+    setPixelColor(outer_pixels, thirdLed, colorArray[2]);     // turn off last LED we set
 
-//     // fourth
-//     int fourthLed = p1State - 3;
-//     if (fourthLed < 0) {               // wrap round count
-//       fourthLed = numPixels - 3;
-//     }
-//     setPixelColor(outer_pixels, fourthLed, colorArray[3]);     // turn off last LED we set
+    // fourth
+    int fourthLed = p1State - 3;
+    if (fourthLed < 0) {               // wrap round count
+      fourthLed = numPixels - 3;
+    }
+    setPixelColor(outer_pixels, fourthLed, colorArray[3]);     // turn off last LED we set
 
-//     // last
-//     int lastLed = p1State - colorArrayLength;        // find LED to turn off
-//     if (lastLed < 0) {               // wrap round count
-//       lastLed = numPixels - colorArrayLength;
-//     }
-//     setPixelColor(outer_pixels, lastLed, off);     // turn off last LED we set
-//   }
+    // last
+    int lastLed = p1State - colorArrayLength;        // find LED to turn off
+    if (lastLed < 0) {               // wrap round count
+      lastLed = numPixels - colorArrayLength;
+    }
+    setPixelColor(outer_pixels, lastLed, off);     // turn off last LED we set
+  }
 
   
 
-//   if ( p1State == numPixels - 1 ) {
-//     p1StateExtend = p1State;
-//   }
+  if ( p1State == numPixels - 1 ) {
+    p1StateExtend = p1State;
+  }
 
 
-//   p1State ++;                 // move on state variable for the next time we enter this
-//   if (p1State >= numPixels){   // wrap round the state
-//   p1State = 0;
-//   }
+  p1State ++;                 // move on state variable for the next time we enter this
+  if (p1State >= numPixels){   // wrap round the state
+  p1State = 0;
+  }
 
-//   if ( p1StateExtend != 0 ) {
-//     p1StateExtend++;
-//   }  
-//   if ( p1StateExtend >= numPixelsExtend ) {
-//     p1StateExtend = 0;
-//   }
+  if ( p1StateExtend != 0 ) {
+    p1StateExtend++;
+  }  
+  if ( p1StateExtend >= numPixelsExtend ) {
+    p1StateExtend = 0;
+  }
 
-//   outer_pixels.show(); // update display
-//   lastUpdateP1 = millis();               // to calculate next update
-// }
+  outer_pixels.show(); // update display
+  lastUpdateP1 = millis();               // to calculate next update
+}
 
-// void updatePattern2() { // pattern 1 a walking green led
-//   uint32_t color2 = inner_pixels.Color(0, 64, 0);
-//   uint32_t offColor = inner_pixels.Color(0, 0, 0);
-//   setPixelColor(inner_pixels, p2State, color2); // turn on next led in pattern
-//   int lastLed2 = p2State - 1;        // find LED to turn off
-//   if (lastLed2 < 0) {               // wrap round count
-//     lastLed2 = inner_pixels.numPixels() - 1;
-//   }
-//   setPixelColor(inner_pixels, lastLed2, off);     // turn off last LED we set
-//   p2State ++;                 // move on state variable for the next time we enter this
-//   if(p2State >= inner_pixels.numPixels()){   // wrap round the state
-//   p2State = 0;
-//   }
-//   inner_pixels.show(); // update display
-//   lastUpdateP2 = millis();               // to calculate next update
-// }
 
-// void updatePattern3() { // pattern 1 a walking blue led
-//   uint32_t color2 = middle_pixels.Color(64, 0, 0);
-//   uint32_t offColor = middle_pixels.Color(0, 0, 0);
-//   setPixelColor(middle_pixels, p3State, color2); // turn on next led in pattern
-//   int lastLed2 = p3State - 1;        // find LED to turn off
-//   if (lastLed2 < 0) {               // wrap round count
-//     lastLed2 = middle_pixels.numPixels() - 1;
-//   }
-//   setPixelColor(middle_pixels, lastLed2, off);     // turn off last LED we set
-//   p3State ++;                 // move on state variable for the next time we enter this
-//   if(p3State >= middle_pixels.numPixels()){   // wrap round the state
-//   p3State = 0;
-//   }
-//   middle_pixels.show(); // update display
-//   lastUpdateP3 = millis();               // to calculate next update
-// }
+// Handles updating all animations
+void updateAnimation(string spacecraftName, bool nameChanged) {
+  int wordSize = spacecraftName.size();
 
-// void updatePattern4() { // pattern 1 a walking purple led
-//   uint32_t color2 = bottom_pixels.Color(32, 0, 32);
-//   uint32_t offColor = bottom_pixels.Color(0, 0, 0);
-//   setPixelColor(bottom_pixels, p4State, color2); // turn on next led in pattern
-//   int lastLed2 = p4State - 1;        // find LED to turn off
-//   if (lastLed2 < 0) {               // wrap round count
-//     lastLed2 = bottom_pixels.numPixels() - 1;
-//   }
-//   setPixelColor(bottom_pixels, lastLed2, off);     // turn off last LED we set
-//   p4State ++;                 // move on state variable for the next time we enter this
-//   if(p4State >= bottom_pixels.numPixels()){   // wrap round the state
-//   p4State = 0;
-//   }
-//   bottom_pixels.show(); // update display
-//   lastUpdateP4 = millis();               // to calculate next update
-// }
+  if ( (millis() - wordLastTime) > 1000) {
+    scrollLetters(spacecraftName, nameChanged);
+    wordLastTime = millis();    // Set word timer to current millis()
+  }
+}
+
 
 
 
@@ -1087,6 +1005,7 @@ void setup() {
 // string spacecraftName = "abcdefghijklmnopqrstuvwxyz";
 string spacecraftName = "grant";
 
+bool nameChanged = true;
 
 // loop() function -- runs repeatedly as long as board is on ---------------
 void loop() {
@@ -1172,15 +1091,11 @@ void loop() {
   //   }
   // }
 
-server.handleClient();
-  
+  server.handleClient();
 
-  if ( (millis() - wordLastTime) > 500) {
-    // scrollLetters(spacecraftName);
+  updateAnimation(spacecraftName, nameChanged);
+  nameChanged = false;
 
-    // Serial.println();    
-    wordLastTime = millis();    // Set word timer to current millis()
-  }
 
 
   // if ( millis() - lastUpdateP1 > pattern1Interval ) updatePattern1();
