@@ -9,6 +9,7 @@
 #include <cstring>
 #include <ArduinoJson.h>
 #include <TextCharacters.h>
+#include <algorithm>
 
 
 /* NAMESPACES */
@@ -24,6 +25,7 @@ const char* password = "smile-grey9-hie";
 
 #define TEST_CORES 0
 #define SHOW_SERIAL 0
+#define ID_LEDS 1
 
 #define OUTER_PIN 17
 #define MIDDLE_PIN 18
@@ -43,6 +45,7 @@ unsigned long wordLastTime = 0;
 unsigned long timerDelay = 5000;  // Set timer to 5 seconds (5000)
 
 // how often each pattern updates
+unsigned long wordScrollInterval = 1000;
 unsigned long pattern1Interval  = 500;
 unsigned long pattern2Interval  = 500;
 unsigned long pattern3Interval  = 500;
@@ -53,11 +56,6 @@ unsigned long pattern4Interval  = 500;
 TaskHandle_t  HandleData;     // Task for fetching and parsing data
 QueueHandle_t queue;          // Queue to pass data between tasks
 
-
-
-/* CLASSES */
-Adafruit_NeoPixel neopixel;
-TextCharacter textCharacter;
 
 
 
@@ -278,6 +276,8 @@ void wifiSetup() {
 
 
 /* HARDWARDE */
+Adafruit_NeoPixel neopixel;
+
 // Define NeoPixel objects - NAME(PIXEL_COUNT, PIN, PIXEL_TYPE)
 Adafruit_NeoPixel
   outer_pixels(10, OUTER_PIN, NEO_GRB + NEO_KHZ800),
@@ -286,11 +286,19 @@ Adafruit_NeoPixel
   bottom_pixels(10, BOTTOM_PIN, NEO_GRB + NEO_KHZ800);
 
 Adafruit_NeoPixel * allStrips[4] = {
-  &bottom_pixels,
-  &outer_pixels,
-  &middle_pixels,
-  &inner_pixels,
+  &inner_pixels,    // ID: Green
+  &middle_pixels,   // ID: Red
+  &outer_pixels,    // ID: Blue
+  &bottom_pixels,   // ID: Purple
 };
+
+// Utility function to reverse elements of an array
+void reverseStripsArray(void) {
+    reverse(allStrips, allStrips + 4);
+}
+
+
+
 
 
 int innerPixelsChunkLength = 10;
@@ -307,6 +315,12 @@ uint32_t off = Adafruit_NeoPixel::Color((uint8_t)0,  (uint8_t)0,  (uint8_t)0);  
 uint32_t bgrWhite = Adafruit_NeoPixel::Color((uint8_t)255,  (uint8_t)255,  (uint8_t)255); // Full white color
 uint32_t* pBgrWhite = &bgrWhite;
 
+
+
+
+/* Text Utilities */
+TextCharacter textCharacter;
+int letterSpacing = 6;
 
 
 
@@ -327,10 +341,6 @@ int p1StateExtend = 0;
 int p2State = 0;
 int p3State = 0; 
 int p4State = 0;
-
-
-
-
 
 
 
@@ -428,9 +438,8 @@ void theaterChaseRainbow(Adafruit_NeoPixel &strip, int wait) {
 
 // Display letter from array
 void doLetter(char theLetter, int startingPixel) {
-
   int * ledCharacter = textCharacter.getCharacter(theLetter);
-
+  Serial.print("Letter: "); Serial.println(theLetter);
   const uint32_t* character_array[20] = {};
 
   for (int i = 0; i < 20; i++) {
@@ -451,12 +460,12 @@ void doLetter(char theLetter, int startingPixel) {
   }
 
 
-  Serial.print("Blue: "); Serial.print(*pBgrBlue); Serial.print(", ");
-  Serial.print("Off: "); Serial.print(*pBgrOff); Serial.print(", ");
-  Serial.print("Green: "); Serial.print(*pBgrGreen); Serial.println();
+  // Serial.print("Blue: "); Serial.print(*pBgrBlue); Serial.print(", ");
+  // Serial.print("Off: "); Serial.print(*pBgrOff); Serial.print(", ");
+  // Serial.print("Green: "); Serial.print(*pBgrGreen); Serial.println();
   
   int pixel = 0 + startingPixel;
-  int previousPixel = startingPixel - 1;
+  int previousPixel = startingPixel - letterSpacing + 1;
 
 
   for (int i = 0; i < 20; i++) {
@@ -467,36 +476,21 @@ void doLetter(char theLetter, int startingPixel) {
         
 
     Adafruit_NeoPixel*& target = allStrips[stripInt];
-
-    if (stripInt == 0) {
-      // Serial.print(*character_array[i]); Serial.print("/"); Serial.print(pixel); Serial.print(", ");
-      if (-1 < previousPixel < 10) setPixelColor(*target, previousPixel, *pBgrOff);
-      if (-1 < pixel < 10) setPixelColor(*target, pixel, *character_array[i]);
-    }
-    if (stripInt == 1) {
-      Serial.print(*character_array[i]); Serial.print("/"); Serial.print(pixel); Serial.print(", ");
-      if (-1 < previousPixel < 10) setPixelColor(*target, previousPixel, *pBgrOff);
-      if (-1 < pixel < 10) setPixelColor(*target, pixel, *character_array[i]);
-    }
-    if (stripInt == 2) {
-      // Serial.print(*character_array[i]); Serial.print("/"); Serial.print(pixel); Serial.print(", ");
-      if (-1 < previousPixel < 10) setPixelColor(*target, previousPixel, *pBgrOff);
-      if (-1 < pixel < 10) setPixelColor(*target, pixel, *character_array[i]);
-    }
-    if (stripInt == 3) {
-      // Serial.print(*character_array[i]); Serial.print("/"); Serial.println(pixel); Serial.println();
-      if (-1 < previousPixel < 10) setPixelColor(*target, previousPixel, *pBgrOff);
-      if (-1 < pixel < 10) setPixelColor(*target, pixel, *character_array[i]);
-      
-      pixel++;  // Move to next pixel
-    }
+  
+    // Serial.print(*character_array[i]); Serial.print("/"); Serial.println(pixel); Serial.println();
+    if (-1 < previousPixel < innerPixelsChunkLength) setPixelColor(*target, previousPixel, *pBgrOff);
+    if (-1 < pixel < innerPixelsChunkLength) setPixelColor(*target, pixel, *character_array[i]);
+    
+    if (stripInt == sizeof(allStrips) / sizeof(allStrips[0]) - 1) pixel--;  // Move to next pixel
   }
-
-  Serial.println();
   
   for (int p = 0; p < 4; p++) {
     allStrips[p]->show();
   }
+
+  Serial.println();
+  Serial.println("--------");
+  Serial.println();
 }
 
 
@@ -504,7 +498,6 @@ void doLetter(char theLetter, int startingPixel) {
 // Updates scrolling letters on inner strips
 static int startPixel;
 void scrollLetters(string spacecraftName, bool nameChanged) {
-  int letterSpacing = 6;
   if (nameChanged == true) static int startPixel = 0;
 
   unsigned int wordSize = spacecraftName.size();
@@ -526,7 +519,8 @@ void scrollLetters(string spacecraftName, bool nameChanged) {
 
     char theLetter = spacecraftName[i];
 
-    if (-1 < letterPixel && letterPixel < (10 + letterSpacing)) doLetter(theLetter, letterPixel);
+    // if (-1 < letterPixel && letterPixel < (10 + letterSpacing)) doLetter(theLetter, letterPixel);
+    doLetter(theLetter, letterPixel);
 
     letterPixel = letterPixel - letterSpacing;
   }
@@ -646,7 +640,7 @@ void updatePattern1() { // rain
 void updateAnimation(string spacecraftName, bool nameChanged) {
   int wordSize = spacecraftName.size();
 
-  if ( (millis() - wordLastTime) > 1000) {
+  if ( (millis() - wordLastTime) > wordScrollInterval) {
     scrollLetters(spacecraftName, nameChanged);
     wordLastTime = millis();    // Set word timer to current millis()
   }
@@ -935,6 +929,9 @@ void setup() {
   pinMode(WIFI_RST, INPUT);
   digitalWrite(OUTPUT_ENABLE, HIGH);
 
+
+  // reverseStripsArray();
+
   // Initialize NeoPixel objects
   outer_pixels.begin();
   inner_pixels.begin();
@@ -952,6 +949,22 @@ void setup() {
   inner_pixels.setBrightness(BRIGHTNESS);
   middle_pixels.setBrightness(BRIGHTNESS);
   bottom_pixels.setBrightness(BRIGHTNESS);
+
+
+  // Identify Neopixel strips by filling with unique colors
+  if (ID_LEDS == 1) {
+    outer_pixels.fill(neopixel.Color(255, 0, 0));
+    inner_pixels.fill(neopixel.Color(0, 255, 0));
+    middle_pixels.fill(neopixel.Color(0, 0, 255));
+    bottom_pixels.fill(neopixel.Color(127, 0, 127));
+
+    outer_pixels.show();
+    inner_pixels.show();
+    middle_pixels.show();
+    bottom_pixels.show();
+  }
+
+
 
   // Connect to WiFi
   wifiSetup();
