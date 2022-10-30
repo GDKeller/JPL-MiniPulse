@@ -31,10 +31,12 @@ const char* password = "smile-grey9-hie";
 #define MIDDLE_PIN 18
 #define INNER_PIN 19
 #define BOTTOM_PIN 16
-
 #define WIFI_RST 21
 #define OUTPUT_ENABLE 22
 #define BRIGHTNESS 127        // Global brightness value. 8bit, 0-255
+#define POTENTIOMETER 36
+
+static int brightness = 100;
 
 String serverName = "https://eyes.nasa.gov/dsn/data/dsn.xml"; // URL to fetch
 
@@ -43,9 +45,10 @@ String serverName = "https://eyes.nasa.gov/dsn/data/dsn.xml"; // URL to fetch
 unsigned long lastTime = 0;       // Init reference variable for timer
 unsigned long wordLastTime = 0;
 unsigned long timerDelay = 5000;  // Set timer to 5 seconds (5000)
+unsigned long animationTimer = 0;
 
 // how often each pattern updates
-unsigned long wordScrollInterval = 1000;
+unsigned long wordScrollInterval = 200;
 unsigned long pattern1Interval  = 500;
 unsigned long pattern2Interval  = 500;
 unsigned long pattern3Interval  = 500;
@@ -278,12 +281,25 @@ void wifiSetup() {
 /* HARDWARDE */
 Adafruit_NeoPixel neopixel;
 
+const int outerPixelsTotal = 800;
+const int middlePixelsTotal = 800;
+const int innerPixelsTotal = 960;
+const int bottomPixelsTotal = 5;
+
+const int outerChunks = 10;
+const int middleChunks = 10;
+const int innerChunks = 12;
+const int bottomChunks = 1;
+
+const int innerPixelsChunkLength = innerPixelsTotal / innerChunks;
+
+
 // Define NeoPixel objects - NAME(PIXEL_COUNT, PIN, PIXEL_TYPE)
 Adafruit_NeoPixel
-  outer_pixels(10, OUTER_PIN, NEO_GRB + NEO_KHZ800),
-  middle_pixels(10, MIDDLE_PIN, NEO_GRB + NEO_KHZ800),
-  inner_pixels(10, INNER_PIN, NEO_GRB + NEO_KHZ800),
-  bottom_pixels(10, BOTTOM_PIN, NEO_GRB + NEO_KHZ800);
+  outer_pixels(outerPixelsTotal, OUTER_PIN, NEO_GRB + NEO_KHZ800),
+  middle_pixels(middlePixelsTotal, MIDDLE_PIN, NEO_GRB + NEO_KHZ800),
+  inner_pixels(innerPixelsTotal, INNER_PIN, NEO_GRB + NEO_KHZ800),
+  bottom_pixels(bottomPixelsTotal, BOTTOM_PIN, NEO_GRB + NEO_KHZ800);
 
 Adafruit_NeoPixel * allStrips[4] = {
   &inner_pixels,    // ID: Green
@@ -292,29 +308,52 @@ Adafruit_NeoPixel * allStrips[4] = {
   &bottom_pixels,   // ID: Purple
 };
 
-// Utility function to reverse elements of an array
-void reverseStripsArray(void) {
-    reverse(allStrips, allStrips + 4);
+
+int allStripsLength = sizeof(allStrips) / sizeof(allStrips[0]);
+void allStripsShow( void ) {
+  for (int i = 0; i < allStripsLength; i++) {
+    allStrips[i]->show();
+  }
+}
+void allStripsOff( void ) {
+  for (int i = 0; i < allStripsLength; i++) {
+    allStrips[i]->clear();
+    allStripsShow();
+  }
+}
+
+
+void potentiometerBrightess() {
+  int potValue = analogRead(POTENTIOMETER);
+  brightness = map(potValue, 0, 4095, 1, 255);
+  Serial.print("Brightness: "); Serial.println(brightness);
 }
 
 
 
 
 
-int innerPixelsChunkLength = 10;
+int degreeToSixteenbit(int degree) {
+  // Max value of uint16_t is 65535
+  return (degree * (65535 - 1)) / 360;
+}
 
-// const uint32_t bgrRed = Adafruit_NeoPixel::Color((uint8_t)0,  (uint8_t)0,  (uint8_t)255);
-const uint32_t bgrBlue = Adafruit_NeoPixel::Color((uint8_t)255,  (uint8_t)0,  (uint8_t)0);
-const uint32_t* pBgrBlue = &bgrBlue;
-const uint32_t bgrGreen = Adafruit_NeoPixel::Color((uint8_t)25,  (uint8_t)25,  (uint8_t)25);
+
+const uint32_t bgrRed = Adafruit_NeoPixel::ColorHSV(degreeToSixteenbit(0));
+const uint32_t* pBgrRed = &bgrRed;
+const uint32_t bgrGreen = Adafruit_NeoPixel::ColorHSV(degreeToSixteenbit(120));
 const uint32_t* pBgrGreen = &bgrGreen;
-const uint32_t bgrOff = Adafruit_NeoPixel::Color((uint8_t)0,  (uint8_t)0,  (uint8_t)0);
-const uint32_t* pBgrOff = &bgrOff;
-uint32_t bgrPurple = Adafruit_NeoPixel::Color((uint8_t)64,  (uint8_t)0,  (uint8_t)64);
-uint32_t off = Adafruit_NeoPixel::Color((uint8_t)0,  (uint8_t)0,  (uint8_t)0);  // Variable for LED off state
-uint32_t bgrWhite = Adafruit_NeoPixel::Color((uint8_t)255,  (uint8_t)255,  (uint8_t)255); // Full white color
-uint32_t* pBgrWhite = &bgrWhite;
+const uint32_t bgrBlue = Adafruit_NeoPixel::ColorHSV(degreeToSixteenbit(240));
+const uint32_t* pBgrBlue = &bgrBlue;
 
+const uint32_t bgrPurple = Adafruit_NeoPixel::ColorHSV(degreeToSixteenbit(300));
+const uint32_t* pBgrPurple = &bgrPurple;
+const uint32_t bgrWhite = Adafruit_NeoPixel::Color(255, 255, 255); // Full white color
+const uint32_t* pBgrWhite = &bgrWhite;
+const uint32_t bgrDim = Adafruit_NeoPixel::ColorHSV(degreeToSixteenbit(0), 0, 64);
+const uint32_t* pBgrDim = &bgrDim;
+const uint32_t bgrOff = Adafruit_NeoPixel::ColorHSV(degreeToSixteenbit(0), 0, 0);
+const uint32_t* pBgrOff = &bgrOff;
 
 
 
@@ -346,8 +385,14 @@ int p4State = 0;
 
 /* ANIMATION FUNCTIONS */
 
+// Utility function to reverse elements of an array
+void reverseStripsArray(void) {
+    reverse(allStrips, allStrips + 4);
+}
+
 // Custom function to calculate color relative to global BRIGHTNESS variable 
 void setPixelColor( Adafruit_NeoPixel &strip, uint16_t n, uint32_t color ) {
+  potentiometerBrightess();
   uint8_t rgb[4];             // Create array that will hold color channel values
   *(uint32_t*)&rgb = color;   // Assigns color value to the color channel array
   uint8_t channelR = rgb[0];         // blue color channel value
@@ -357,7 +402,7 @@ void setPixelColor( Adafruit_NeoPixel &strip, uint16_t n, uint32_t color ) {
   // Serial.println(g);
   // Serial.println(b);
   // Serial.println();
-	strip.setPixelColor(n, ((BRIGHTNESS*channelR)/255) , ((BRIGHTNESS*channelG)/255), ((BRIGHTNESS*channelB)/255));
+	strip.setPixelColor(n, ((brightness*channelR)/255) , ((brightness*channelG)/255), ((brightness*channelB)/255));
 }
 
 // Fill strip pixels one after another with a color. Strip is NOT cleared
@@ -397,13 +442,14 @@ void rainbow(Adafruit_NeoPixel &strip, int wait) {
   // Color wheel has a range of 65536 but it's OK if we roll over, so
   // just count from 0 to 5*65536. Adding 256 to firstPixelHue each time
   // means we'll make 5*65536/256 = 1280 passes through this loop:
-  for(long firstPixelHue = 0; firstPixelHue < 5*65536; firstPixelHue += 256) {
+  for(long firstPixelHue = 0; firstPixelHue < 1*65536; firstPixelHue += 256) {
     // strip.rainbow() can take a single argument (first pixel hue) or
     // optionally a few extras: number of rainbow repetitions (default 1),
     // saturation and value (brightness) (both 0-255, similar to the
     // ColorHSV() function, default 255), and a true/false flag for whether
     // to apply gamma correction to provide 'truer' colors (default true).
-    strip.rainbow(firstPixelHue, 1, 255, BRIGHTNESS, true);
+    potentiometerBrightess();
+    strip.rainbow(firstPixelHue, 1, 255, brightness, true);
     // Above line is equivalent to:
     // strip.rainbow(firstPixelHue, 1, 255, 255, true);
     strip.show(); // Update strip with new contents
@@ -436,10 +482,91 @@ void theaterChaseRainbow(Adafruit_NeoPixel &strip, int wait) {
 
 
 
+void fadeToBlack(int ledNo, int fadeValue) {
+ #ifdef ADAFRUIT_NEOPIXEL_H
+    // NeoPixel
+    uint32_t oldColor;
+    uint8_t r, g, b;
+    int value;
+   
+    oldColor = allStrips[0]->getPixelColor(ledNo);
+    r = (oldColor & 0x00ff0000UL) >> 16;
+    g = (oldColor & 0x0000ff00UL) >> 8;
+    b = (oldColor & 0x000000ffUL);
+
+    r=(r<=10)? 0 : (int) r - (r*fadeValue/256);
+    g=(g<=10)? 0 : (int) g - (g*fadeValue/256);
+    b=(b<=10)? 0 : (int) b - ((b*fadeValue * 0.8)/256);
+   
+    allStrips[0]->setPixelColor(ledNo, r,g,b);
+ #endif
+ #ifndef ADAFRUIT_NEOPIXEL_H
+   // FastLED
+   leds[ledNo].fadeToBlackBy( fadeValue );
+ #endif  
+}
+
+void meteorRain(const uint32_t* pColor, int meteorSize, int meteorTrailDecay, bool meteorRandomDecay, int SpeedDelay) {  
+  allStrips[0]->clear();
+
+  Serial.println("meteor!");
+  for(int i = 0; i < (innerPixelsTotal + innerPixelsChunkLength); i++) {
+   
+    // fade brightness all LEDs one step
+    for(int j = 0; j < innerPixelsTotal; j++) {
+      if( (!meteorRandomDecay) || (random(10) > 5) ) {
+        fadeToBlack(j, meteorTrailDecay);        
+      }
+    }
+   
+    // draw meteor
+    for(int j = 0; j < meteorSize; j++) {
+      if( ( i - j < innerPixelsTotal) && (i - j >= 0) ) {
+        setPixelColor(*allStrips[0], i - j, *pColor);
+      }
+    }
+   
+    allStrips[0]->show();
+    delay(SpeedDelay);
+  }
+}
+
+void meteorRainChunked(const uint32_t* pColor, int meteorSize, int meteorTrailDecay, bool meteorRandomDecay, int SpeedDelay) {  
+  allStrips[0]->clear();
+
+  Serial.println("meteor!");
+  for (int s = 1; s < innerChunks + 1; s++) {
+    for(int i = 0; i < (innerPixelsChunkLength * 2); i++) {
+
+      // fade brightness all LEDs one step
+      for(int j = 0; j < innerPixelsChunkLength; j++) {
+        const int pixel = j;
+        if( (!meteorRandomDecay) || (random(10) > 5) ) {
+          fadeToBlack(pixel, meteorTrailDecay);        
+        }
+      }
+    
+      // draw meteor
+      for(int j = 0; j < meteorSize; j++) {
+        if( ( i - j < innerPixelsChunkLength * s) && (i - j >= (s * innerPixelsChunkLength) - innerPixelsChunkLength) ) {
+          setPixelColor(*allStrips[0], i - j, *pColor);
+        }
+      }
+    }
+   
+    allStrips[0]->show();
+    delay(SpeedDelay);
+  }
+}
+
+
+
+
+
+
 // Display letter from array
 void doLetter(char theLetter, int startingPixel) {
   int * ledCharacter = textCharacter.getCharacter(theLetter);
-  Serial.print("Letter: "); Serial.println(theLetter);
   const uint32_t* character_array[20] = {};
 
   for (int i = 0; i < 20; i++) {
@@ -454,15 +581,10 @@ void doLetter(char theLetter, int startingPixel) {
         character_array[i] = pBgrOff;
     }
 
-  //   const uint32_t dim = Adafruit_NeoPixel::Color(20, 20, 20);
-  //   const uint32_t* pDim = &dim;
+
   //   if (*character_array[i] > *pBgrWhite) character_array[i] = pDim;
   }
 
-
-  // Serial.print("Blue: "); Serial.print(*pBgrBlue); Serial.print(", ");
-  // Serial.print("Off: "); Serial.print(*pBgrOff); Serial.print(", ");
-  // Serial.print("Green: "); Serial.print(*pBgrGreen); Serial.println();
   
   int pixel = 0 + startingPixel;
   int previousPixel = startingPixel - letterSpacing + 1;
@@ -481,16 +603,12 @@ void doLetter(char theLetter, int startingPixel) {
     if (-1 < previousPixel < innerPixelsChunkLength) setPixelColor(*target, previousPixel, *pBgrOff);
     if (-1 < pixel < innerPixelsChunkLength) setPixelColor(*target, pixel, *character_array[i]);
     
-    if (stripInt == sizeof(allStrips) / sizeof(allStrips[0]) - 1) pixel--;  // Move to next pixel
+    if (stripInt == allStripsLength - 1) pixel--;  // Move to next pixel
   }
   
   for (int p = 0; p < 4; p++) {
     allStrips[p]->show();
   }
-
-  Serial.println();
-  Serial.println("--------");
-  Serial.println();
 }
 
 
@@ -579,7 +697,7 @@ void updatePattern1() { // rain
     if (lastLedExtend < 0) {               // wrap round count
       lastLedExtend = numPixelsExtend - colorArrayLength;
     }
-    setPixelColor(outer_pixels, lastLedExtend, off);     // turn off last LED we set
+    setPixelColor(outer_pixels, lastLedExtend, *pBgrOff);     // turn off last LED we set
 
 
   } else {
@@ -609,7 +727,7 @@ void updatePattern1() { // rain
     if (lastLed < 0) {               // wrap round count
       lastLed = numPixels - colorArrayLength;
     }
-    setPixelColor(outer_pixels, lastLed, off);     // turn off last LED we set
+    setPixelColor(outer_pixels, lastLed, *pBgrOff);     // turn off last LED we set
   }
 
   
@@ -640,10 +758,21 @@ void updatePattern1() { // rain
 void updateAnimation(string spacecraftName, bool nameChanged) {
   int wordSize = spacecraftName.size();
 
-  if ( (millis() - wordLastTime) > wordScrollInterval) {
-    scrollLetters(spacecraftName, nameChanged);
+  if ( (millis() - animationTimer) > 100) {
+    Serial.println("animation");
+    // rainbow(*allStrips[0], 10);
+    meteorRain(pBgrWhite, 2, 200, true, 0);
+  }
+
+  if ( (millis() - wordLastTime) > 1000) {
+    
     wordLastTime = millis();    // Set word timer to current millis()
   }
+
+  // if ( (millis() - wordLastTime) > wordScrollInterval) {
+  //   // scrollLetters(spacecraftName, nameChanged);
+  //   wordLastTime = millis();    // Set word timer to current millis()
+  // }
 }
 
 
@@ -927,41 +1056,51 @@ void setup() {
   pinMode(BOTTOM_PIN, OUTPUT);
   pinMode(OUTPUT_ENABLE, OUTPUT);
   pinMode(WIFI_RST, INPUT);
+  pinMode(POTENTIOMETER, INPUT);
   digitalWrite(OUTPUT_ENABLE, HIGH);
 
 
   // reverseStripsArray();
 
   // Initialize NeoPixel objects
-  outer_pixels.begin();
-  inner_pixels.begin();
-  middle_pixels.begin();
-  bottom_pixels.begin();
-
-  // Turn off all NeoPixels
-  outer_pixels.show();
-  inner_pixels.show();
-  middle_pixels.show();
-  bottom_pixels.show();
+  
+  for (int i = 0; i < allStripsLength; i++) {
+    allStrips[i]->begin();
+  }
 
   // Set brightness
-  outer_pixels.setBrightness(BRIGHTNESS);
-  inner_pixels.setBrightness(BRIGHTNESS);
-  middle_pixels.setBrightness(BRIGHTNESS);
-  bottom_pixels.setBrightness(BRIGHTNESS);
+  for (int i = 0; i < allStripsLength; i++) {
+    allStrips[i]->setBrightness(BRIGHTNESS);
+  }
 
+  // Turn off all NeoPixels
+  allStripsShow();
+
+  
 
   // Identify Neopixel strips by filling with unique colors
   if (ID_LEDS == 1) {
-    outer_pixels.fill(neopixel.Color(255, 0, 0));
-    inner_pixels.fill(neopixel.Color(0, 255, 0));
-    middle_pixels.fill(neopixel.Color(0, 0, 255));
-    bottom_pixels.fill(neopixel.Color(127, 0, 127));
+    Serial.println("ID LED strips");
+    const uint32_t* colors[] = {pBgrRed, pBgrGreen, pBgrBlue, pBgrPurple, pBgrWhite};    
+    
+    for (int c = 0; c < sizeof(colors) / sizeof(colors[0]); c++) {
+      for (int i = 0; i < allStripsLength; i++) {
+        allStrips[i]->fill(*colors[c]);        
+      }
+      allStripsShow();
+      delay(1000);
+    }
 
-    outer_pixels.show();
-    inner_pixels.show();
-    middle_pixels.show();
-    bottom_pixels.show();
+
+    outer_pixels.fill(*pBgrBlue);
+    inner_pixels.fill(*pBgrGreen);
+    middle_pixels.fill(*pBgrRed);
+    bottom_pixels.fill(*pBgrPurple);
+
+    allStripsShow();
+    delay(2000);
+    allStripsOff();
+    
   }
 
 
@@ -1022,7 +1161,7 @@ bool nameChanged = true;
 
 // loop() function -- runs repeatedly as long as board is on ---------------
 void loop() {
-    
+
   if ( TEST_CORES == 1 ) {    
     if ( millis() - lastTime > 4000 && millis() - lastTime < 4500 ) {
       Serial.print("loop() running on core ");
@@ -1031,84 +1170,89 @@ void loop() {
   }
 
   // Receive from queue (data task on core 1)
-  // if (xQueueReceive(queue, &stations, 1) == pdPASS) {
-  //   if ( SHOW_SERIAL == 1 ) {
-  //     Serial.println();
-  //     Serial.println("-------");
-  //     Serial.print("timestamp: ");
-  //     Serial.println(stations[0].fetchTimestamp);
-  //     Serial.println();
+  if (xQueueReceive(queue, &stations, 1) == pdPASS) {
+    if ( SHOW_SERIAL == 1 ) {
+      Serial.println();
+      Serial.println("-------");
+      Serial.print("timestamp: ");
+      Serial.println(stations[0].fetchTimestamp);
+      Serial.println();
 
-  //     int i;
-  //     for (i = 0; i < 3; i++) {
-  //       DSN_Station station = stations[i];
-  //       Serial.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  //       Serial.print("Station: ");
-  //       Serial.print(station.name);
-  //       Serial.print(" (");
-  //       Serial.print(station.callsign);
-  //       Serial.println(") ");
-  //       Serial.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      int i;
+      for (i = 0; i < 3; i++) {
+        DSN_Station station = stations[i];
+        Serial.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        Serial.print("Station: ");
+        Serial.print(station.name);
+        Serial.print(" (");
+        Serial.print(station.callsign);
+        Serial.println(") ");
+        Serial.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-  //       for (int d = 0; d < 10; d++) {
-  //         const char * dishName = station.dishes[d].name;          
+        for (int d = 0; d < 10; d++) {
+          const char * dishName = station.dishes[d].name;          
           
-  //         if (dishName != NULL) {
+          if (dishName != NULL) {
 
-  //           Serial.print("> Dish: ");
-  //           Serial.println(dishName);
+            Serial.print("> Dish: ");
+            Serial.println(dishName);
 
 
-  //           for (int t = 0; t < 10; t++) {
-  //             const char * targetName = station.dishes[d].targets[t].name;
+            for (int t = 0; t < 10; t++) {
+              const char * targetName = station.dishes[d].targets[t].name;
 
-  //             if (targetName != NULL) {
-  //               Serial.print("  Target: ");
-  //               Serial.println(targetName);
-  //             }
-  //           }
+              if (targetName != NULL) {
+                Serial.print("  Target: ");
+                Serial.println(targetName);
 
-  //           for (int sig = 0; sig < 10; sig++) {
-  //             if (not station.dishes[d].signals[sig].direction) {
-  //               break;
-  //             }
-  //             const char * direction = station.dishes[d].signals[sig].direction;
-  //             const char * type = station.dishes[d].signals[sig].type;
-  //             const char * rate = station.dishes[d].signals[sig].rate;
-  //             const char * frequency = station.dishes[d].signals[sig].frequency;
-  //             const char * spacecraft = station.dishes[d].signals[sig].spacecraft;
-  //             const char * spacecraftId = station.dishes[d].signals[sig].spacecraftId;
+                if (t == 0) spacecraftName = targetName;
+              }
+            }
+
+            for (int sig = 0; sig < 10; sig++) {
+              if (not station.dishes[d].signals[sig].direction) {
+                break;
+              }
+              const char * direction = station.dishes[d].signals[sig].direction;
+              const char * type = station.dishes[d].signals[sig].type;
+              const char * rate = station.dishes[d].signals[sig].rate;
+              const char * frequency = station.dishes[d].signals[sig].frequency;
+              const char * spacecraft = station.dishes[d].signals[sig].spacecraft;
+              const char * spacecraftId = station.dishes[d].signals[sig].spacecraftId;
               
-  //             Serial.println();
-  //             Serial.print("- Signal: ");
-  //             Serial.println(direction);
-  //             Serial.print("  Type: ");
-  //             Serial.println(type);
-  //             Serial.print("  Rate: ");
-  //             Serial.println(rate);
-  //             Serial.print("  Frequency: ");
-  //             Serial.println(frequency);
-  //             Serial.print("  Spacecraft: ");
-  //             Serial.println(spacecraft);
+              Serial.println();
+              Serial.print("- Signal: ");
+              Serial.println(direction);
+              Serial.print("  Type: ");
+              Serial.println(type);
+              Serial.print("  Rate: ");
+              Serial.println(rate);
+              Serial.print("  Frequency: ");
+              Serial.println(frequency);
+              Serial.print("  Spacecraft: ");
+              Serial.println(spacecraft);
             
 
-  //           }
+            }
 
-  //           Serial.println();
-  //           Serial.println("----------------------------");
-  //           Serial.println();
-  //         }
-  //       }
-  //       Serial.println();
-  //     } 
-  //   }
-  // }
+            Serial.println();
+            Serial.println("----------------------------");
+            Serial.println();
+          }
+        }
+        Serial.println();
+      } 
+    }
+  }
 
   server.handleClient();
+
+  potentiometerBrightess();
 
   updateAnimation(spacecraftName, nameChanged);
   nameChanged = false;
 
+  
 
 
   // if ( millis() - lastUpdateP1 > pattern1Interval ) updatePattern1();
