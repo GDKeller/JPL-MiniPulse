@@ -19,13 +19,11 @@ using namespace std;
 
 
 /* CONFIG */
+static int brightness = 255;
+
 const char* ssid = "Verizon_LT6SKN";
 const char* password = "smile-grey9-hie";
 #define AP_SSID  "MiniPulse"
-
-#define TEST_CORES 0
-#define SHOW_SERIAL 0
-#define ID_LEDS 1
 
 #define OUTER_PIN 17
 #define MIDDLE_PIN 18
@@ -33,10 +31,20 @@ const char* password = "smile-grey9-hie";
 #define BOTTOM_PIN 16
 #define WIFI_RST 21
 #define OUTPUT_ENABLE 22
-#define BRIGHTNESS 127        // Global brightness value. 8bit, 0-255
+#define BRIGHTNESS 255        // Global brightness value. 8bit, 0-255
 #define POTENTIOMETER 36
 
-static int brightness = 100;
+// Diagnostic utilities, all 0 is normal operation
+#define TEST_CORES 0
+#define SHOW_SERIAL 0
+#define ID_LEDS 0
+#define DISABLE_WIFI 1
+
+
+
+
+
+
 
 String serverName = "https://eyes.nasa.gov/dsn/data/dsn.xml"; // URL to fetch
 
@@ -335,25 +343,29 @@ void potentiometerBrightess() {
 
 int degreeToSixteenbit(int degree) {
   // Max value of uint16_t is 65535
-  return (degree * (65535 - 1)) / 360;
+  return (degree * 65535) / 360;
 }
 
 
-const uint32_t bgrRed = Adafruit_NeoPixel::ColorHSV(degreeToSixteenbit(0));
+const uint32_t bgrRed = Adafruit_NeoPixel::ColorHSV(degreeToSixteenbit(0), 255, brightness);
 const uint32_t* pBgrRed = &bgrRed;
-const uint32_t bgrGreen = Adafruit_NeoPixel::ColorHSV(degreeToSixteenbit(120));
+const uint32_t bgrGreen = Adafruit_NeoPixel::ColorHSV(degreeToSixteenbit(120), 255, brightness);
 const uint32_t* pBgrGreen = &bgrGreen;
-const uint32_t bgrBlue = Adafruit_NeoPixel::ColorHSV(degreeToSixteenbit(240));
+const uint32_t bgrBlue = Adafruit_NeoPixel::ColorHSV(degreeToSixteenbit(240), 255, brightness);
 const uint32_t* pBgrBlue = &bgrBlue;
 
-const uint32_t bgrPurple = Adafruit_NeoPixel::ColorHSV(degreeToSixteenbit(300));
+const uint32_t bgrPurple = Adafruit_NeoPixel::ColorHSV(degreeToSixteenbit(300), 255, brightness);
 const uint32_t* pBgrPurple = &bgrPurple;
-const uint32_t bgrWhite = Adafruit_NeoPixel::Color(255, 255, 255); // Full white color
+const uint32_t bgrWhite = Adafruit_NeoPixel::ColorHSV(0, 0, brightness); // Full white color
 const uint32_t* pBgrWhite = &bgrWhite;
-const uint32_t bgrDim = Adafruit_NeoPixel::ColorHSV(degreeToSixteenbit(0), 0, 64);
+const uint32_t bgrDim = Adafruit_NeoPixel::ColorHSV(0, 0, 64);
 const uint32_t* pBgrDim = &bgrDim;
-const uint32_t bgrOff = Adafruit_NeoPixel::ColorHSV(degreeToSixteenbit(0), 0, 0);
+const uint32_t bgrOff = Adafruit_NeoPixel::ColorHSV(0, 0, 0);
 const uint32_t* pBgrOff = &bgrOff;
+
+
+
+
 
 
 
@@ -390,8 +402,32 @@ void reverseStripsArray(void) {
     reverse(allStrips, allStrips + 4);
 }
 
-// Custom function to calculate color relative to global BRIGHTNESS variable 
-void setPixelColor( Adafruit_NeoPixel &strip, uint16_t n, uint32_t color ) {
+ 
+/**
+ * Sets pixel color relative to global BRIGHTNESS definition and adds gamma correction
+ * 
+ * The color value must be a pointer - it is deferenced here so Color objects aren't being copied as they're passed
+ * 
+ * @param strip The memory reference of the NeoPixel strip to be updated
+ * @param n The pixel on the strip to be set
+ * @param color The memory reference of the color to set pixel to
+*/
+void setPixelColor( Adafruit_NeoPixel &strip, uint16_t n, const uint32_t* color ) {
+  uint8_t rgb[4];                   // Create array that will hold color channel values
+  *(uint32_t*)&rgb = *color;        // Assigns color value to the color channel array
+  uint8_t channelR = rgb[0];        // blue color channel value
+  uint8_t channelG = rgb[1];        // Green color channel value
+  uint8_t channelB = rgb[2];        // Blue color channel value
+  // Serial.println(channelR);
+  // Serial.println(channelG);
+  // Serial.println(channelB);
+  // Serial.println();
+  uint32_t newColor = Adafruit_NeoPixel::Color(((brightness*channelR)/255) , ((brightness*channelG)/255), ((brightness*channelB)/255));
+  uint32_t gammaCorrected = Adafruit_NeoPixel::gamma32(newColor);
+	strip.setPixelColor(n, (gammaCorrected));
+}
+
+uint32_t brightnessAdjust(uint32_t color) {
   potentiometerBrightess();
   uint8_t rgb[4];             // Create array that will hold color channel values
   *(uint32_t*)&rgb = color;   // Assigns color value to the color channel array
@@ -402,16 +438,16 @@ void setPixelColor( Adafruit_NeoPixel &strip, uint16_t n, uint32_t color ) {
   // Serial.println(g);
   // Serial.println(b);
   // Serial.println();
-  uint32_t gammaCorrected = Adafruit_NeoPixel::gamma32(Adafruit_NeoPixel::Color(((brightness*channelR)/255) , ((brightness*channelG)/255), ((brightness*channelB)/255)));
-	strip.setPixelColor(n, (gammaCorrected));
+	return Adafruit_NeoPixel::Color(((brightness*channelR)/255), ((brightness*channelG)/255), ((brightness*channelB)/255));
 }
+
 
 // Fill strip pixels one after another with a color. Strip is NOT cleared
 // first; anything there will be covered pixel by pixel. Pass in color
 // (as a single 'packed' 32-bit value, which you can get by calling
 // strip.Color(red, green, blue) as shown in the loop() function above),
 // and a delay time (in milliseconds) between pixels.
-void colorWipe(Adafruit_NeoPixel &strip, uint32_t color, int wait) {
+void colorWipe(Adafruit_NeoPixel &strip, uint32_t* color, int wait) {
   for(int i=0; i<strip.numPixels(); i++) {  // For each pixel in strip...
     setPixelColor(strip, i, color);         //  Set pixel's color (in RAM)
     strip.show();                           //  Update strip to match
@@ -422,7 +458,7 @@ void colorWipe(Adafruit_NeoPixel &strip, uint32_t color, int wait) {
 // Theater-marquee-style chasing lights. Pass in a color (32-bit value,
 // a la strip.Color(r,g,b) as mentioned above), and a delay time (in ms)
 // between frames.
-void theaterChase(Adafruit_NeoPixel &strip, uint32_t color, int wait) {
+void theaterChase(Adafruit_NeoPixel &strip, uint32_t* color, int wait) {
   for(int a=0; a<10; a++) {                 // Repeat 10 times...
     for(int b=0; b<3; b++) {                //  'b' counts from 0 to 2...
       strip.clear();                        //   Set all pixels in RAM to 0 (off)
@@ -467,7 +503,6 @@ void hueCycle(Adafruit_NeoPixel &strip, int wait) {
   // means we'll make 5*65536/256 = 1280 passes through this loop:
   for(long hue = 0; hue < 1*65536; hue += 256) {
     potentiometerBrightess();
-    Serial.print("Hue: "); Serial.println(hue);
     strip.fill(Adafruit_NeoPixel::gamma32(Adafruit_NeoPixel::ColorHSV(hue, 255, brightness)));
     strip.show(); // Update strip with new contents
     delay(wait);  // Pause for a moment
@@ -486,8 +521,9 @@ void theaterChaseRainbow(Adafruit_NeoPixel &strip, int wait) {
         // revolution of the color wheel (range 65536) along the length
         // of the strip (strip.numPixels() steps):
         int      hue   = firstPixelHue + c * 65536L / strip.numPixels();
-        uint32_t color = strip.gamma32(strip.ColorHSV(hue)); // hue -> RGB
-        setPixelColor(strip, c, color); // Set pixel 'c' to value 'color'
+        uint32_t color = strip.ColorHSV(hue); // hue -> RGB
+        const uint32_t* pColor = &color;
+        setPixelColor(strip, c, pColor); // Set pixel 'c' to value 'color'
       }
       strip.show();                // Update strip with new contents
       delay(wait);                 // Pause for a moment
@@ -499,23 +535,25 @@ void theaterChaseRainbow(Adafruit_NeoPixel &strip, int wait) {
 
 
 
-void fadeToBlack(int ledNo, int fadeValue) {
+void fadeToBlack(Adafruit_NeoPixel*& strip, int ledNo, int fadeValue) {
  #ifdef ADAFRUIT_NEOPIXEL_H
     // NeoPixel
     uint32_t oldColor;
     uint8_t r, g, b;
     int value;
    
-    oldColor = allStrips[0]->getPixelColor(ledNo);
+    oldColor = strip->getPixelColor(ledNo);
     r = (oldColor & 0x00ff0000UL) >> 16;
     g = (oldColor & 0x0000ff00UL) >> 8;
     b = (oldColor & 0x000000ffUL);
 
-    r=(r<=10)? 0 : (int) r - (r*fadeValue/256);
-    g=(g<=10)? 0 : (int) g - (g*fadeValue/256);
-    b=(b<=10)? 0 : (int) b - ((b*fadeValue * 0.8)/256);
-   
-    allStrips[0]->setPixelColor(ledNo, r,g,b);
+    r=(r<=10)? 0 : (int) r - ((r*fadeValue/256) * 1.5);
+    g=(g<=10)? 0 : (int) g - ((g*fadeValue/256) * 1.5);
+    b=(b<=10)? 0 : (int) b - (((b*fadeValue * 0.1)/256) * 1.5);
+
+    // uint32_t rgbColor = brightnessAdjust(Adafruit_NeoPixel::Color(r, g, b));
+    uint32_t rgbColor = Adafruit_NeoPixel::Color(r, g, b);
+    strip->setPixelColor(ledNo, Adafruit_NeoPixel::gamma32(rgbColor));
  #endif
  #ifndef ADAFRUIT_NEOPIXEL_H
    // FastLED
@@ -523,8 +561,11 @@ void fadeToBlack(int ledNo, int fadeValue) {
  #endif  
 }
 
+
+
 void meteorRain(const uint32_t* pColor, int meteorSize, int meteorTrailDecay, bool meteorRandomDecay, int SpeedDelay) {  
-  allStrips[0]->clear();
+  Adafruit_NeoPixel*& strip = allStrips[0];
+  strip->clear();
 
   Serial.println("meteor!");
   for(int i = 0; i < (innerPixelsTotal + innerPixelsChunkLength); i++) {
@@ -532,14 +573,16 @@ void meteorRain(const uint32_t* pColor, int meteorSize, int meteorTrailDecay, bo
     // fade brightness all LEDs one step
     for(int j = 0; j < innerPixelsTotal; j++) {
       if( (!meteorRandomDecay) || (random(10) > 5) ) {
-        fadeToBlack(j, meteorTrailDecay);        
+        fadeToBlack(strip, j, meteorTrailDecay);        
       }
     }
    
     // draw meteor
     for(int j = 0; j < meteorSize; j++) {
       if( ( i - j < innerPixelsTotal) && (i - j >= 0) ) {
-        setPixelColor(*allStrips[0], i - j, *pColor);
+        // setPixelColor(*allStrips[0], i - j, *pColor);
+        setPixelColor(*strip, i - j, pColor);
+        // strip->setPixelColor(i-j, *pColor);
       }
     }
    
@@ -548,34 +591,58 @@ void meteorRain(const uint32_t* pColor, int meteorSize, int meteorTrailDecay, bo
   }
 }
 
-void meteorRainChunked(const uint32_t* pColor, int meteorSize, int meteorTrailDecay, bool meteorRandomDecay, int SpeedDelay) {  
-  allStrips[0]->clear();
 
-  Serial.println("meteor!");
-  for (int s = 1; s < innerChunks + 1; s++) {
-    for(int i = 0; i < (innerPixelsChunkLength * 2); i++) {
+void meteorRainRegions(const uint32_t* pColor, int meteorSize, int meteorTrailDecay, bool meteorRandomDecay, int SpeedDelay) {  
+  Adafruit_NeoPixel*& strip = allStrips[0];
 
-      // fade brightness all LEDs one step
-      for(int j = 0; j < innerPixelsChunkLength; j++) {
-        const int pixel = j;
-        if( (!meteorRandomDecay) || (random(10) > 5) ) {
-          fadeToBlack(pixel, meteorTrailDecay);        
-        }
-      }
+  
+  for (int l = 0; l < innerPixelsChunkLength; l++) {
+    int hue = 0;
     
-      // draw meteor
-      for(int j = 0; j < meteorSize; j++) {
-        if( ( i - j < innerPixelsChunkLength * s) && (i - j >= (s * innerPixelsChunkLength) - innerPixelsChunkLength) ) {
-          setPixelColor(*allStrips[0], i - j, *pColor);
-        }
-      }
-    }
-   
-    allStrips[0]->show();
-    delay(SpeedDelay);
-  }
-}
+    for (int region = 0; region < innerChunks; region++) {
+      int startPixel = region * innerPixelsChunkLength; // First pixel of each region
+      int drawPixel = startPixel + l;   // Current pixel to draw
 
+      for (int d = 1; d < innerPixelsChunkLength + 1; d++) {
+        int currentPixel = drawPixel - d - 1;
+        
+        // Draw meteor
+        if (d < (meteorSize + 1)) {
+          setPixelColor(*strip, currentPixel, pColor);
+          continue;
+        }
+
+        // Draw tail
+        int satExpo =  ceil(255 * log(d + 1));            // Calculate logarithmic growth
+        int satValue = satExpo > 255 ? 255 : satExpo;
+        int brightExpo = ceil(128 * pow(0.9, d));     // Calculate exponential decay
+        int brightValue = brightExpo > 128 ? 128 : brightExpo < 1 ? 0 : brightExpo;
+        int brightValueMap = map(brightValue, 0, 255, 0, brightness);
+        uint32_t trailColor = Adafruit_NeoPixel::ColorHSV(hue, satValue, brightValueMap);
+        uint32_t* pTrailColor = &trailColor;
+        
+        if (d < (meteorSize + 2)) {
+          setPixelColor(*strip, currentPixel, pTrailColor);
+          continue;
+        }
+
+        if (random(10) > 5) setPixelColor(*strip, currentPixel, pTrailColor);
+        // setPixelColor(*strip, currentPixel, pTrailColor);
+        
+        if (brightValue == 0) break;
+      }
+
+      hue += 512;   // Cycle hue through time
+    }
+    
+    allStrips[0]->show();
+
+    
+    if (SpeedDelay != 0) delay(SpeedDelay);
+  }
+
+  
+}
 
 
 
@@ -617,8 +684,8 @@ void doLetter(char theLetter, int startingPixel) {
     Adafruit_NeoPixel*& target = allStrips[stripInt];
   
     // Serial.print(*character_array[i]); Serial.print("/"); Serial.println(pixel); Serial.println();
-    if (-1 < previousPixel < innerPixelsChunkLength) setPixelColor(*target, previousPixel, *pBgrOff);
-    if (-1 < pixel < innerPixelsChunkLength) setPixelColor(*target, pixel, *character_array[i]);
+    if (-1 < previousPixel < innerPixelsChunkLength) setPixelColor(*target, previousPixel, pBgrOff);
+    if (-1 < pixel < innerPixelsChunkLength) setPixelColor(*target, pixel, character_array[i]);
     
     if (stripInt == allStripsLength - 1) pixel--;  // Move to next pixel
   }
@@ -672,119 +739,22 @@ void scrollLetters(string spacecraftName, bool nameChanged) {
 
 
 
-// Rain animation
-void updatePattern1() { // rain
-  uint32_t colorArray [] = {
-    outer_pixels.Color(0, 0, 255),
-    outer_pixels.Color(0, 2, 24),
-    outer_pixels.Color(0, 2, 8),
-    outer_pixels.Color(0, 1, 2)
-  };
-
-  int colorArrayLength = sizeof(colorArray) / sizeof(int);
-  int numPixels = outer_pixels.numPixels() + 8;
-  int numPixelsExtend = numPixels + colorArrayLength;  
-  
-  setPixelColor(outer_pixels, p1State, colorArray[0]); // turn on next led in pattern
-  
-  if ( 0 < p1StateExtend && p1StateExtend <= numPixels ) {
-    // second
-    int secondLedExtend = p1StateExtend - 1;
-    if (secondLedExtend < 0) {               // wrap round count
-      secondLedExtend = numPixelsExtend - 1;
-    }
-    setPixelColor(outer_pixels, secondLedExtend, colorArray[1]);     // turn off last LED we set
-
-    // third
-    int thirdLedExtend = p1StateExtend - 2;
-    if (thirdLedExtend < 0) {               // wrap round count
-      thirdLedExtend = numPixelsExtend - 2;
-    }
-    setPixelColor(outer_pixels, thirdLedExtend, colorArray[2]);     // turn off last LED we set
-
-    // fourth
-    int fourthLedExtend = p1StateExtend - 3;
-    if (fourthLedExtend < 0) {               // wrap round count
-      fourthLedExtend = numPixelsExtend - 3;
-    }
-    setPixelColor(outer_pixels, fourthLedExtend, colorArray[3]);     // turn off last LED we set
-
-    // last
-    int lastLedExtend = p1StateExtend - colorArrayLength;        // find LED to turn off
-    if (lastLedExtend < 0) {               // wrap round count
-      lastLedExtend = numPixelsExtend - colorArrayLength;
-    }
-    setPixelColor(outer_pixels, lastLedExtend, *pBgrOff);     // turn off last LED we set
-
-
-  } else {
-    // second
-    int secondLed = p1State - 1;
-    if (secondLed < 0) {               // wrap round count
-      secondLed = numPixels - 1;
-    }
-    setPixelColor(outer_pixels, secondLed, colorArray[1]);     // turn off last LED we set
-
-    // third
-    int thirdLed = p1State - 2;
-    if (thirdLed < 0) {               // wrap round count
-      thirdLed = numPixels - 2;
-    }
-    setPixelColor(outer_pixels, thirdLed, colorArray[2]);     // turn off last LED we set
-
-    // fourth
-    int fourthLed = p1State - 3;
-    if (fourthLed < 0) {               // wrap round count
-      fourthLed = numPixels - 3;
-    }
-    setPixelColor(outer_pixels, fourthLed, colorArray[3]);     // turn off last LED we set
-
-    // last
-    int lastLed = p1State - colorArrayLength;        // find LED to turn off
-    if (lastLed < 0) {               // wrap round count
-      lastLed = numPixels - colorArrayLength;
-    }
-    setPixelColor(outer_pixels, lastLed, *pBgrOff);     // turn off last LED we set
-  }
-
-  
-
-  if ( p1State == numPixels - 1 ) {
-    p1StateExtend = p1State;
-  }
-
-
-  p1State ++;                 // move on state variable for the next time we enter this
-  if (p1State >= numPixels){   // wrap round the state
-  p1State = 0;
-  }
-
-  if ( p1StateExtend != 0 ) {
-    p1StateExtend++;
-  }  
-  if ( p1StateExtend >= numPixelsExtend ) {
-    p1StateExtend = 0;
-  }
-
-  outer_pixels.show(); // update display
-  lastUpdateP1 = millis();               // to calculate next update
-}
 
 
 // Handles updating all animations
 void updateAnimation(string spacecraftName, bool nameChanged) {
+  potentiometerBrightess();
+
   int wordSize = spacecraftName.size();
 
   if ( (millis() - animationTimer) > 1) {
-    Serial.println("animation");
-    hueCycle(*allStrips[0], 10);
-    rainbow(*allStrips[0], 10);
-    meteorRain(pBgrWhite, 2, 200, true, 0);
+    // hueCycle(*allStrips[0], 10);
+    // rainbow(*allStrips[0], 10);
+    meteorRainRegions(pBgrWhite, 1, 100, true, 0);
     animationTimer = millis();    // Set word timer to current millis()
   }
 
-  if ( (millis() - wordLastTime) > 1000) {
-    
+  if ( (millis() - wordLastTime) > 1000) {    
     wordLastTime = millis();    // Set word timer to current millis()
   }
 
@@ -1123,33 +1093,34 @@ void setup() {
   }
 
 
-
-  // Connect to WiFi
-  wifiSetup();
-  delay(100);
-  printWifiMode();
-  scanWifiNetworks();                     // Scan for available WiFi networks
-  delay(1000);
-  printWifiStatus();                      // Print WiFi status
-  delay(1000);
- 
- 
-  WiFi.begin(ssid, password);             // Attempt to connect to WiFi
-  Serial.println("Connecting...");
-  while(WiFi.waitForConnectResult() != WL_CONNECTED) {
+  if (DISABLE_WIFI == 0) {
+    // Connect to WiFi
+    wifiSetup();
+    delay(100);
+    printWifiMode();
+    scanWifiNetworks();                     // Scan for available WiFi networks
     delay(1000);
-    Serial.print(".");
-  }
-  delay(1000);
-  Serial.print("hostname: ");
-  Serial.println(WiFi.getHostname());
-  Serial.println();
-  printWifiStatus();
-  Serial.print("Connected to WiFi network with IP Address: "); Serial.println(WiFi.localIP());
-  delay(1000);
+    printWifiStatus();                      // Print WiFi status
+    delay(1000);
+  
+  
+    WiFi.begin(ssid, password);             // Attempt to connect to WiFi
+    Serial.println("Connecting...");
+    while(WiFi.waitForConnectResult() != WL_CONNECTED) {
+      delay(1000);
+      Serial.print(".");
+    }
+    delay(1000);
+    Serial.print("hostname: ");
+    Serial.println(WiFi.getHostname());
+    Serial.println();
+    printWifiStatus();
+    Serial.print("Connected to WiFi network with IP Address: "); Serial.println(WiFi.localIP());
+    delay(1000);
 
-  serverSetup();
-  delay(1000);
+    serverSetup();
+    delay(1000);
+  }
 
 
   // Initialize task for core 1
@@ -1265,8 +1236,6 @@ void loop() {
   }
 
   server.handleClient();
-
-  potentiometerBrightess();
 
   updateAnimation(spacecraftName, nameChanged);
   nameChanged = false;
