@@ -334,7 +334,6 @@ void allStripsOff( void ) {
 void potentiometerBrightess() {
   int potValue = analogRead(POTENTIOMETER);
   brightness = map(potValue, 0, 4095, 32, 255);
-  Serial.print("Brightness: "); Serial.println(brightness);
 }
 
 
@@ -610,6 +609,8 @@ void meteorRainRegions(const uint32_t* pColor, int meteorSize, int meteorTrailDe
       for (int d = 1; d < innerPixelsChunkLength + 1; d++) {
         int currentPixel = drawPixel - d - 1;
 
+        if (currentPixel < 0) continue;
+
         // Draw meteor
         if (d < (meteorSize + 1)) {
           setPixelColor(*strip, currentPixel, pColor);
@@ -617,24 +618,28 @@ void meteorRainRegions(const uint32_t* pColor, int meteorSize, int meteorTrailDe
         }
 
         // Draw tail
-        int satExpo =  ceil(255 * log(d));                // Calculate logarithmic growth
-        int satValue = satExpo > 255 ? 255 : satExpo;
-        int brightExpo = ceil(128 * mPower(0.9, d));     // Calculate exponential decay
-        int brightValue = brightExpo > 128 ? 128 : brightExpo < 1 ? 0 : brightExpo;
+        int satExpo =  ceil(255 * log(d + 1));                // Calculate logarithmic growth
+        satExpo += random(32) - 16;     // Add random variance to saturation
+        int satValue = satExpo > 255 ? 255 : (satExpo < 0 ? 0 : satExpo);
+        int brightExpo = ceil(255 * mPower(0.85, d));     // Calculate exponential decay
+        brightExpo += random(32) - 16;        // Add randomvariance to brightness
+        int brightValue = brightExpo > 255 ? 255 : (brightExpo < 0 ? 0 : brightExpo);
         int brightValueMap = map(brightValue, 0, 255, 0, brightness);
         int randVal = (4 * d) * (4 *d);
         int hueRandom = hue + (random(randVal) - (randVal/2));
-        uint32_t trailColor = Adafruit_NeoPixel::ColorHSV(hueRandom, satValue, brightValueMap);
+        uint32_t trailColor = Adafruit_NeoPixel::ColorHSV(hueRandom, satValue, brightValue);
         uint32_t* pTrailColor = &trailColor;
 
         hue -= ceil(4096 * mPower(0.7, d));   // Cycle hue through time
 
+        // Make sure the pixel right after the meteor will get drawn so meteor values aren't repeated
         if (d < (meteorSize + 2)) {
           setPixelColor(*strip, currentPixel, pTrailColor);
           continue;
         }
 
-        if (random(10) > 5) setPixelColor(*strip, currentPixel, pTrailColor);
+        // Roll the dice on showing each pixel for a "fizzle" effect
+        if (random(10) < 5) setPixelColor(*strip, currentPixel, pTrailColor);
       }
 
       
