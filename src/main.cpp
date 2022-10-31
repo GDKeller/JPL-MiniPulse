@@ -402,7 +402,8 @@ void setPixelColor( Adafruit_NeoPixel &strip, uint16_t n, uint32_t color ) {
   // Serial.println(g);
   // Serial.println(b);
   // Serial.println();
-	strip.setPixelColor(n, ((brightness*channelR)/255) , ((brightness*channelG)/255), ((brightness*channelB)/255));
+  uint32_t gammaCorrected = Adafruit_NeoPixel::gamma32(Adafruit_NeoPixel::Color(((brightness*channelR)/255) , ((brightness*channelG)/255), ((brightness*channelB)/255)));
+	strip.setPixelColor(n, (gammaCorrected));
 }
 
 // Fill strip pixels one after another with a color. Strip is NOT cleared
@@ -777,8 +778,8 @@ void updateAnimation(string spacecraftName, bool nameChanged) {
   if ( (millis() - animationTimer) > 1) {
     Serial.println("animation");
     hueCycle(*allStrips[0], 10);
-    // rainbow(*allStrips[0], 10);
-    // meteorRain(pBgrWhite, 2, 200, true, 0);
+    rainbow(*allStrips[0], 10);
+    meteorRain(pBgrWhite, 2, 200, true, 0);
     animationTimer = millis();    // Set word timer to current millis()
   }
 
