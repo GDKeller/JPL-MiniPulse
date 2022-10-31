@@ -457,6 +457,22 @@ void rainbow(Adafruit_NeoPixel &strip, int wait) {
   }
 }
 
+
+// Rainbow cycle along whole strip. Pass delay time (in ms) between frames.
+void hueCycle(Adafruit_NeoPixel &strip, int wait) {
+  // Hue of first pixel runs 5 complete loops through the color wheel.
+  // Color wheel has a range of 65536 but it's OK if we roll over, so
+  // just count from 0 to 5*65536. Adding 256 to firstPixelHue each time
+  // means we'll make 5*65536/256 = 1280 passes through this loop:
+  for(long hue = 0; hue < 1*65536; hue += 256) {
+    potentiometerBrightess();
+    Serial.print("Hue: "); Serial.println(hue);
+    strip.fill(Adafruit_NeoPixel::gamma32(Adafruit_NeoPixel::ColorHSV(hue, 255, brightness)));
+    strip.show(); // Update strip with new contents
+    delay(wait);  // Pause for a moment
+  }
+}
+
 // Rainbow-enhanced theater marquee. Pass delay time (in ms) between frames.
 void theaterChaseRainbow(Adafruit_NeoPixel &strip, int wait) {
   int firstPixelHue = 0;     // First pixel starts at red (hue 0)
@@ -758,10 +774,12 @@ void updatePattern1() { // rain
 void updateAnimation(string spacecraftName, bool nameChanged) {
   int wordSize = spacecraftName.size();
 
-  if ( (millis() - animationTimer) > 100) {
+  if ( (millis() - animationTimer) > 1) {
     Serial.println("animation");
+    hueCycle(*allStrips[0], 10);
     // rainbow(*allStrips[0], 10);
-    meteorRain(pBgrWhite, 2, 200, true, 0);
+    // meteorRain(pBgrWhite, 2, 200, true, 0);
+    animationTimer = millis();    // Set word timer to current millis()
   }
 
   if ( (millis() - wordLastTime) > 1000) {
