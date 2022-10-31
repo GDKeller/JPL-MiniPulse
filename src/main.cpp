@@ -333,20 +333,34 @@ void allStripsOff( void ) {
 
 void potentiometerBrightess() {
   int potValue = analogRead(POTENTIOMETER);
-  brightness = map(potValue, 0, 4095, 1, 255);
+  brightness = map(potValue, 0, 4095, 32, 255);
   Serial.print("Brightness: "); Serial.println(brightness);
 }
 
 
 
-
+/* MATH FUNCTIONS */
 
 int degreeToSixteenbit(int degree) {
   // Max value of uint16_t is 65535
   return (degree * 65535) / 360;
 }
 
+float mPower(float a, int b) {
+  float result = a;
+  for (int i = 1; i < b; i++) {
+    result = result * a;
+  }
+  return result;
+}
 
+/* Text Utilities */
+TextCharacter textCharacter;
+int letterSpacing = 6;
+
+
+
+/* COLORS */
 const uint32_t bgrRed = Adafruit_NeoPixel::ColorHSV(degreeToSixteenbit(0), 255, brightness);
 const uint32_t* pBgrRed = &bgrRed;
 const uint32_t bgrGreen = Adafruit_NeoPixel::ColorHSV(degreeToSixteenbit(120), 255, brightness);
@@ -362,18 +376,6 @@ const uint32_t bgrDim = Adafruit_NeoPixel::ColorHSV(0, 0, 64);
 const uint32_t* pBgrDim = &bgrDim;
 const uint32_t bgrOff = Adafruit_NeoPixel::ColorHSV(0, 0, 0);
 const uint32_t* pBgrOff = &bgrOff;
-
-
-
-
-
-
-
-/* Text Utilities */
-TextCharacter textCharacter;
-int letterSpacing = 6;
-
-
 
 
 
@@ -592,20 +594,22 @@ void meteorRain(const uint32_t* pColor, int meteorSize, int meteorTrailDecay, bo
 }
 
 
+
 void meteorRainRegions(const uint32_t* pColor, int meteorSize, int meteorTrailDecay, bool meteorRandomDecay, int SpeedDelay) {  
   Adafruit_NeoPixel*& strip = allStrips[0];
 
   
   for (int l = 0; l < innerPixelsChunkLength; l++) {
-    int hue = 0;
     
     for (int region = 0; region < innerChunks; region++) {
+      int hue = 0;
       int startPixel = region * innerPixelsChunkLength; // First pixel of each region
       int drawPixel = startPixel + l;   // Current pixel to draw
 
+      int growInt;
       for (int d = 1; d < innerPixelsChunkLength + 1; d++) {
         int currentPixel = drawPixel - d - 1;
-        
+
         // Draw meteor
         if (d < (meteorSize + 1)) {
           setPixelColor(*strip, currentPixel, pColor);
@@ -613,26 +617,27 @@ void meteorRainRegions(const uint32_t* pColor, int meteorSize, int meteorTrailDe
         }
 
         // Draw tail
-        int satExpo =  ceil(255 * log(d + 1));            // Calculate logarithmic growth
+        int satExpo =  ceil(255 * log(d));                // Calculate logarithmic growth
         int satValue = satExpo > 255 ? 255 : satExpo;
-        int brightExpo = ceil(128 * pow(0.9, d));     // Calculate exponential decay
+        int brightExpo = ceil(128 * mPower(0.9, d));     // Calculate exponential decay
         int brightValue = brightExpo > 128 ? 128 : brightExpo < 1 ? 0 : brightExpo;
         int brightValueMap = map(brightValue, 0, 255, 0, brightness);
-        uint32_t trailColor = Adafruit_NeoPixel::ColorHSV(hue, satValue, brightValueMap);
+        int randVal = (4 * d) * (4 *d);
+        int hueRandom = hue + (random(randVal) - (randVal/2));
+        uint32_t trailColor = Adafruit_NeoPixel::ColorHSV(hueRandom, satValue, brightValueMap);
         uint32_t* pTrailColor = &trailColor;
-        
+
+        hue -= ceil(4096 * mPower(0.7, d));   // Cycle hue through time
+
         if (d < (meteorSize + 2)) {
           setPixelColor(*strip, currentPixel, pTrailColor);
           continue;
         }
 
         if (random(10) > 5) setPixelColor(*strip, currentPixel, pTrailColor);
-        // setPixelColor(*strip, currentPixel, pTrailColor);
-        
-        if (brightValue == 0) break;
       }
 
-      hue += 512;   // Cycle hue through time
+      
     }
     
     allStrips[0]->show();
