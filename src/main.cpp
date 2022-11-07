@@ -38,7 +38,7 @@ const char* password = "smile-grey9-hie";
 #define TEST_CORES 0
 #define SHOW_SERIAL 0
 #define ID_LEDS 0
-#define DISABLE_WIFI 1
+#define DISABLE_WIFI 0
 
 
 
@@ -56,7 +56,7 @@ unsigned long timerDelay = 5000;  // Set timer to 5 seconds (5000)
 unsigned long animationTimer = 0;
 
 // how often each pattern updates
-unsigned long wordScrollInterval = 200;
+unsigned long wordScrollInterval = 20;
 unsigned long pattern1Interval  = 500;
 unsigned long pattern2Interval  = 500;
 unsigned long pattern3Interval  = 500;
@@ -355,7 +355,8 @@ float mPower(float a, int b) {
 
 /* Text Utilities */
 TextCharacter textCharacter;
-int letterSpacing = 6;
+int letterSpacing = 7;
+int letterTotalPixels = 28;
 
 
 
@@ -663,6 +664,7 @@ void doLetter(char theLetter, int startingPixel) {
   int * ledCharacter = textCharacter.getCharacter(theLetter);
   const uint32_t* character_array[20] = {};
 
+  // Map character array to LED colors
   for (int i = 0; i < 20; i++) {
     switch (ledCharacter[i]) {
       case 0:
@@ -674,29 +676,22 @@ void doLetter(char theLetter, int startingPixel) {
       default:
         character_array[i] = pBgrOff;
     }
-
-
-  //   if (*character_array[i] > *pBgrWhite) character_array[i] = pDim;
   }
-
-  
+    
   int pixel = 0 + startingPixel;
   int previousPixel = startingPixel - letterSpacing + 1;
-
 
   for (int i = 0; i < 20; i++) {
     int j = i + 1;
     int stripInt = j % 4;
     if (stripInt == 0) stripInt = 4;
-    --stripInt;
-        
+    --stripInt;        
 
     Adafruit_NeoPixel*& target = allStrips[stripInt];
   
     // Serial.print(*character_array[i]); Serial.print("/"); Serial.println(pixel); Serial.println();
     if (-1 < previousPixel < innerPixelsChunkLength) setPixelColor(*target, previousPixel, pBgrOff);
     if (-1 < pixel < innerPixelsChunkLength) setPixelColor(*target, pixel, character_array[i]);
-    
     if (stripInt == allStripsLength - 1) pixel--;  // Move to next pixel
   }
   
@@ -707,17 +702,69 @@ void doLetter(char theLetter, int startingPixel) {
 
 
 
+
+// Display letter from array
+void doLetterRegions(char theLetter, int startingPixel) {
+  int * ledCharacter = textCharacter.getCharacter(theLetter);
+  const uint32_t* character_array[letterTotalPixels] = {};
+  const int characterWidth = 4;
+
+  // Map character array to LED colors
+  for (int i = 0; i < letterTotalPixels; i++) {
+    switch (ledCharacter[i]) {
+      case 0:
+        character_array[i] = pBgrOff;
+        break;
+      case 1:
+        character_array[i] = pBgrRed;
+        break;
+      default:
+        character_array[i] = pBgrOff;
+    }
+  }
+
+  Adafruit_NeoPixel*& target = allStrips[0];
+  
+  int pixel = 0 + startingPixel;
+  int previousPixel = startingPixel - letterSpacing;
+
+  for (int i = 0; i < letterTotalPixels; i++) {
+    int j = i + 1; // Add 1 to avoid modulus on 0
+    int regionInt = j % characterWidth; // Modulus gives an int for the region to draw to
+    if (regionInt == 0) regionInt = characterWidth; // Modulus of same int gives zero, so assign to last region int
+    --regionInt; // Decrement to un-offset from original offset for modulus calc
+
+    int drawPixel = pixel + (innerPixelsChunkLength * (regionInt)); // Calculate pixel to draw
+    int drawPreviousPixel = previousPixel + (innerPixelsChunkLength * (regionInt)); // Calculate trailing pixel after letter to "draw" off value
+
+    int regionStart = (innerPixelsChunkLength * (regionInt + 1)) - innerPixelsChunkLength - 1; // Calculate the pixel before the region start
+    int regionEnd = innerPixelsChunkLength * (regionInt + 1); // Calculate the pixel after the region end
+
+
+    if (regionStart < drawPreviousPixel < regionEnd) setPixelColor(*target, drawPreviousPixel, pBgrOff);
+    if (startingPixel < innerPixelsChunkLength) {
+      if (regionStart < drawPixel < regionEnd) setPixelColor(*target, drawPixel, character_array[i]);
+    }
+    if (regionInt == characterWidth - 1) pixel--;  // Move to next pixel
+  }
+}
+
+
+
+
+
 // Updates scrolling letters on inner strips
 static int startPixel;
 void scrollLetters(string spacecraftName, bool nameChanged) {
-  if (nameChanged == true) static int startPixel = 0;
+  static int startPixel = 0;
 
   unsigned int wordSize = spacecraftName.size();
   unsigned int lastArrayIndex = wordSize - 1;
 
   int letterPixel = startPixel;
-  int wrapPixel = innerPixelsChunkLength + (wordSize * letterSpacing);
-  int wordPixelsOffset = wordSize * letterSpacing;
+  int wrapPixel = innerPixelsChunkLength * 2;
+  // int wrapPixel = innerPixelsTotal + innerPixelsChunkLength;
+  int wordPixelsOffset = (wordSize * letterSpacing) * 3;
   int startWrapPixel = letterPixel - wordPixelsOffset;
 
 
@@ -726,25 +773,22 @@ void scrollLetters(string spacecraftName, bool nameChanged) {
     int previousArrayIndex = i - 1;
     if (previousArrayIndex < 0) previousArrayIndex = 0;
 
-    Serial.print(letterPixel); Serial.print(", ");
-    Serial.println();
+    // Serial.print(letterPixel); Serial.print(", ");
+
+    // Serial.println();
 
     char theLetter = spacecraftName[i];
+    doLetterRegions(theLetter, letterPixel);
 
-    // if (-1 < letterPixel && letterPixel < (10 + letterSpacing)) doLetter(theLetter, letterPixel);
-    doLetter(theLetter, letterPixel);
-
-    letterPixel = letterPixel - letterSpacing;
+    letterPixel = letterPixel - letterSpacing - 3;
   }
+
+  allStrips[0]->show();
+
 
   startPixel++;
   
-  if (startPixel > wrapPixel) {
-    startPixel = 0;
-  }
-
-
-  Serial.println();
+  if (startPixel > wrapPixel) startPixel = 0;
 }
 
 
@@ -757,24 +801,19 @@ void updateAnimation(string spacecraftName, bool nameChanged) {
 
   int wordSize = spacecraftName.size();
 
-  if ( (millis() - animationTimer) > 1) {
-    // hueCycle(*allStrips[0], 10);
-    // rainbow(*allStrips[0], 10);
-    meteorRainRegions(pBgrWhite, 1, 100, true, 0);
-    animationTimer = millis();    // Set word timer to current millis()
-  }
+  // if ( (millis() - animationTimer) > 1) {
+  //   // hueCycle(*allStrips[0], 10);
+  //   // rainbow(*allStrips[0], 10);
+  //   // meteorRainRegions(pBgrWhite, 1, 100, true, 0);
+  //   animationTimer = millis();    // Set word timer to current millis()
+  // }
 
-  if ( (millis() - wordLastTime) > 1000) {    
+
+  if ( (millis() - wordLastTime) > wordScrollInterval) {
+    scrollLetters(spacecraftName, nameChanged);
     wordLastTime = millis();    // Set word timer to current millis()
   }
-
-  // if ( (millis() - wordLastTime) > wordScrollInterval) {
-  //   // scrollLetters(spacecraftName, nameChanged);
-  //   wordLastTime = millis();    // Set word timer to current millis()
-  // }
 }
-
-
 
 
 
@@ -1155,7 +1194,7 @@ void setup() {
 
 
 // string spacecraftName = "abcdefghijklmnopqrstuvwxyz";
-string spacecraftName = "grant";
+string spacecraftName = "voyager";
 
 bool nameChanged = true;
 
