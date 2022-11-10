@@ -8,9 +8,14 @@
 #ifndef AnimationUtils_h
 #define AnimationUtils_h
 
-class AnimationUtils {
+class AnimationUtils { 
+    
     public:
-        int getBrightness();
+        int brightness;
+        int thePin;
+        int readBrightness();
+        void updateBrightness();
+        AnimationUtils(int thePin);
 };
 
 #endif

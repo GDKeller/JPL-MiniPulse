@@ -10,7 +10,7 @@
 #include <ArduinoJson.h>
 #include <TextCharacters.h>
 #include <algorithm>
-
+#include <AnimationUtils.h>
 
 /* NAMESPACES */
 using namespace tinyxml2;
@@ -19,7 +19,7 @@ using namespace std;
 
 
 /* CONFIG */
-static int brightness = 255;
+// static int brightness = 255;
 
 const char* ssid = "Verizon_LT6SKN";
 const char* password = "smile-grey9-hie";
@@ -38,13 +38,13 @@ const char* password = "smile-grey9-hie";
 #define TEST_CORES 0
 #define SHOW_SERIAL 0
 #define ID_LEDS 0
-#define DISABLE_WIFI 0
+#define DISABLE_WIFI 1
 
 
 
 
 
-
+AnimationUtils au(POTENTIOMETER);
 
 String serverName = "https://eyes.nasa.gov/dsn/data/dsn.xml"; // URL to fetch
 
@@ -331,10 +331,10 @@ void allStripsOff( void ) {
 }
 
 
-void potentiometerBrightess() {
-  int potValue = analogRead(POTENTIOMETER);
-  brightness = map(potValue, 0, 4095, 32, 255);
-}
+// void potentiometerBrightess() {
+//   int potValue = analogRead(POTENTIOMETER);
+//   brightness = map(potValue, 0, 4095, 32, 255);
+// }
 
 
 
@@ -361,16 +361,16 @@ int letterTotalPixels = 28;
 
 
 /* COLORS */
-const uint32_t bgrRed = Adafruit_NeoPixel::ColorHSV(degreeToSixteenbit(0), 255, brightness);
+const uint32_t bgrRed = Adafruit_NeoPixel::ColorHSV(degreeToSixteenbit(0), 255, au.brightness);
 const uint32_t* pBgrRed = &bgrRed;
-const uint32_t bgrGreen = Adafruit_NeoPixel::ColorHSV(degreeToSixteenbit(120), 255, brightness);
+const uint32_t bgrGreen = Adafruit_NeoPixel::ColorHSV(degreeToSixteenbit(120), 255, au.brightness);
 const uint32_t* pBgrGreen = &bgrGreen;
-const uint32_t bgrBlue = Adafruit_NeoPixel::ColorHSV(degreeToSixteenbit(240), 255, brightness);
+const uint32_t bgrBlue = Adafruit_NeoPixel::ColorHSV(degreeToSixteenbit(240), 255, au.brightness);
 const uint32_t* pBgrBlue = &bgrBlue;
 
-const uint32_t bgrPurple = Adafruit_NeoPixel::ColorHSV(degreeToSixteenbit(300), 255, brightness);
+const uint32_t bgrPurple = Adafruit_NeoPixel::ColorHSV(degreeToSixteenbit(300), 255, au.brightness);
 const uint32_t* pBgrPurple = &bgrPurple;
-const uint32_t bgrWhite = Adafruit_NeoPixel::ColorHSV(0, 0, brightness); // Full white color
+const uint32_t bgrWhite = Adafruit_NeoPixel::ColorHSV(0, 0, au.brightness); // Full white color
 const uint32_t* pBgrWhite = &bgrWhite;
 const uint32_t bgrDim = Adafruit_NeoPixel::ColorHSV(0, 0, 64);
 const uint32_t* pBgrDim = &bgrDim;
@@ -424,13 +424,13 @@ void setPixelColor( Adafruit_NeoPixel &strip, uint16_t n, const uint32_t* color 
   // Serial.println(channelG);
   // Serial.println(channelB);
   // Serial.println();
-  uint32_t newColor = Adafruit_NeoPixel::Color(((brightness*channelR)/255) , ((brightness*channelG)/255), ((brightness*channelB)/255));
+  uint32_t newColor = Adafruit_NeoPixel::Color(((au.brightness*channelR)/255) , ((au.brightness*channelG)/255), ((au.brightness*channelB)/255));
   uint32_t gammaCorrected = Adafruit_NeoPixel::gamma32(newColor);
 	strip.setPixelColor(n, (gammaCorrected));
 }
 
 uint32_t brightnessAdjust(uint32_t color) {
-  potentiometerBrightess();
+  au.updateBrightness();
   uint8_t rgb[4];             // Create array that will hold color channel values
   *(uint32_t*)&rgb = color;   // Assigns color value to the color channel array
   uint8_t channelR = rgb[0];         // blue color channel value
@@ -440,7 +440,7 @@ uint32_t brightnessAdjust(uint32_t color) {
   // Serial.println(g);
   // Serial.println(b);
   // Serial.println();
-	return Adafruit_NeoPixel::Color(((brightness*channelR)/255), ((brightness*channelG)/255), ((brightness*channelB)/255));
+	return Adafruit_NeoPixel::Color(((au.brightness*channelR)/255), ((au.brightness*channelG)/255), ((au.brightness*channelB)/255));
 }
 
 
@@ -487,8 +487,8 @@ void rainbow(Adafruit_NeoPixel &strip, int wait) {
     // saturation and value (brightness) (both 0-255, similar to the
     // ColorHSV() function, default 255), and a true/false flag for whether
     // to apply gamma correction to provide 'truer' colors (default true).
-    potentiometerBrightess();
-    strip.rainbow(firstPixelHue, 1, 255, brightness, true);
+    au.updateBrightness();
+    strip.rainbow(firstPixelHue, 1, 255, au.brightness, true);
     // Above line is equivalent to:
     // strip.rainbow(firstPixelHue, 1, 255, 255, true);
     strip.show(); // Update strip with new contents
@@ -504,8 +504,8 @@ void hueCycle(Adafruit_NeoPixel &strip, int wait) {
   // just count from 0 to 5*65536. Adding 256 to firstPixelHue each time
   // means we'll make 5*65536/256 = 1280 passes through this loop:
   for(long hue = 0; hue < 1*65536; hue += 256) {
-    potentiometerBrightess();
-    strip.fill(Adafruit_NeoPixel::gamma32(Adafruit_NeoPixel::ColorHSV(hue, 255, brightness)));
+    au.updateBrightness();
+    strip.fill(Adafruit_NeoPixel::gamma32(Adafruit_NeoPixel::ColorHSV(hue, 255, au.brightness)));
     strip.show(); // Update strip with new contents
     delay(wait);  // Pause for a moment
   }
@@ -629,7 +629,7 @@ void meteorRainRegions(int region, int beginPixel, const uint32_t* pColor, int m
     int brightExpo = ceil(255 * mPower(0.85, d));     // Calculate exponential decay
     brightExpo += random(32) - 16;        // Add randomvariance to brightness
     int brightValue = brightExpo > 255 ? 255 : (brightExpo < 0 ? 0 : brightExpo);
-    int brightValueMap = map(brightValue, 0, 255, 0, brightness);
+    int brightValueMap = map(brightValue, 0, 255, 0, au.brightness);
     int randVal = (4 * d) * (4 *d);
     int hueRandom = hue + (random(randVal) - (randVal/2));
     uint32_t trailColor = Adafruit_NeoPixel::ColorHSV(hueRandom, satValue, brightValue);
@@ -844,7 +844,8 @@ void manageMeteors() {
 
 // Handles updating all animations
 void updateAnimation(string spacecraftName, bool nameChanged) {
-  // aUtil.potentiometerBrightess(POTENTIOMETER);
+  // potentiometerBrightess();
+  au.updateBrightness();
 
   int wordSize = spacecraftName.size();
 
