@@ -12,10 +12,10 @@ class AnimationUtils {
     
     public:
         int brightness;
-        int thePin;
+        int potPin;
         int readBrightness();
         void updateBrightness();
-        AnimationUtils(int thePin);
+        AnimationUtils(int pin);
 };
 
 #endif

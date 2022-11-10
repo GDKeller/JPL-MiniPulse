@@ -1,13 +1,13 @@
 #include <Arduino.h>
 #include <AnimationUtils.h>
 
-AnimationUtils::AnimationUtils(int potPin) {
-  thePin = potPin;
+AnimationUtils::AnimationUtils(int pin) {
+  potPin = pin;
   brightness = 255;
 }
 
 int AnimationUtils::readBrightness() {
-  int potValue = analogRead(thePin);
+  int potValue = analogRead(potPin);
   int potBrightness = map(potValue, 0, 4095, 32, 255);
   return potBrightness;
 }
