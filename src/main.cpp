@@ -595,67 +595,65 @@ void meteorRain(const uint32_t* pColor, int meteorSize, int meteorTrailDecay, bo
 
 
 
-void meteorRainRegions(const uint32_t* pColor, int meteorSize, int meteorTrailDecay, bool meteorRandomDecay, int SpeedDelay) {  
+void meteorRainRegions(int region, int beginPixel, const uint32_t* pColor, int meteorSize, int meteorTrailDecay, bool meteorRandomDecay, int SpeedDelay) {  
   Adafruit_NeoPixel*& strip = allStrips[0];
 
-  
-  for (int l = 0; l < innerPixelsChunkLength; l++) {
-    
-    for (int region = 0; region < innerChunks; region++) {
-      int hue = 0;
-      int startPixel = region * innerPixelsChunkLength; // First pixel of each region
-      int drawPixel = startPixel + l;   // Current pixel to draw
+  int hue = 0;
+  int startPixel = region * innerPixelsChunkLength; // First pixel of each region
+  int drawPixel = startPixel + beginPixel;   // Current pixel to draw
 
-      int growInt;
-      for (int d = 1; d < innerPixelsChunkLength + 1; d++) {
-        int currentPixel = drawPixel - d - 1;
+  int regionStart = (innerPixelsChunkLength * region) - innerPixelsChunkLength - 1; // Calculate the pixel before the region start
+  int regionEnd = innerPixelsChunkLength * (region + 1); // Calculate the pixel after the region end
 
-        if (currentPixel < 0) continue;
 
-        // Draw meteor
-        if (d < (meteorSize + 1)) {
-          setPixelColor(*strip, currentPixel, pColor);
-          continue;
-        }
+  int growInt;
+  for (int d = 1; d < innerPixelsChunkLength + 1; d++) {
+    int currentPixel = drawPixel - d - 1;
 
-        // Draw tail
-        int satExpo =  ceil(255 * log(d + 1));                // Calculate logarithmic growth
-        satExpo += random(32) - 16;     // Add random variance to saturation
-        int satValue = satExpo > 255 ? 255 : (satExpo < 0 ? 0 : satExpo);
-        int brightExpo = ceil(255 * mPower(0.85, d));     // Calculate exponential decay
-        brightExpo += random(32) - 16;        // Add randomvariance to brightness
-        int brightValue = brightExpo > 255 ? 255 : (brightExpo < 0 ? 0 : brightExpo);
-        int brightValueMap = map(brightValue, 0, 255, 0, brightness);
-        int randVal = (4 * d) * (4 *d);
-        int hueRandom = hue + (random(randVal) - (randVal/2));
-        uint32_t trailColor = Adafruit_NeoPixel::ColorHSV(hueRandom, satValue, brightValue);
-        uint32_t* pTrailColor = &trailColor;
-
-        hue -= ceil(4096 * mPower(0.7, d));   // Cycle hue through time
-
-        // Make sure the pixel right after the meteor will get drawn so meteor values aren't repeated
-        if (d < (meteorSize + 2)) {
-          setPixelColor(*strip, currentPixel, pTrailColor);
-          continue;
-        }
-
-        // Roll the dice on showing each pixel for a "fizzle" effect
-        if (random(10) < 5) setPixelColor(*strip, currentPixel, pTrailColor);
-      }
-
-      
+    // Serial.println(regionStart);
+    // Serial.println(currentPixel);
+    // Serial.println(regionEnd);
+    // Serial.println("-----------");
+    if (currentPixel < regionStart) continue;
+    if (currentPixel >= regionEnd) continue;
+    // Draw meteor
+    if (d < (meteorSize + 1)) {
+      setPixelColor(*strip, currentPixel, pColor);
+      continue;
     }
-    
-    allStrips[0]->show();
 
-    
-    if (SpeedDelay != 0) delay(SpeedDelay);
-  }
+    // Draw tail
+    int satExpo =  ceil(255 * log(d + 1));                // Calculate logarithmic growth
+    satExpo += random(32) - 16;     // Add random variance to saturation
+    int satValue = satExpo > 255 ? 255 : (satExpo < 0 ? 0 : satExpo);
+    int brightExpo = ceil(255 * mPower(0.85, d));     // Calculate exponential decay
+    brightExpo += random(32) - 16;        // Add randomvariance to brightness
+    int brightValue = brightExpo > 255 ? 255 : (brightExpo < 0 ? 0 : brightExpo);
+    int brightValueMap = map(brightValue, 0, 255, 0, brightness);
+    int randVal = (4 * d) * (4 *d);
+    int hueRandom = hue + (random(randVal) - (randVal/2));
+    uint32_t trailColor = Adafruit_NeoPixel::ColorHSV(hueRandom, satValue, brightValue);
+    uint32_t* pTrailColor = &trailColor;
 
-  
+    hue -= ceil(4096 * mPower(0.7, d));   // Cycle hue through time
+
+    // Make sure the pixel right after the meteor will get drawn so meteor values aren't repeated
+    if (d < (meteorSize + 2)) {
+      setPixelColor(*strip, currentPixel, pTrailColor);
+      continue;
+    }
+
+    // Roll the dice on showing each pixel for a "fizzle" effect
+    if (random(10) < 5) setPixelColor(*strip, currentPixel, pTrailColor);
+  }  
 }
 
 
+
+// Manage meteors
+void fireMeteor(int meteorRegion, int startPixel) {
+  meteorRainRegions(meteorRegion, startPixel, pBgrWhite, 1, 100, true, 0);
+}
 
 
 
@@ -699,8 +697,6 @@ void doLetter(char theLetter, int startingPixel) {
     allStrips[p]->show();
   }
 }
-
-
 
 
 // Display letter from array
@@ -750,9 +746,6 @@ void doLetterRegions(char theLetter, int startingPixel) {
 }
 
 
-
-
-
 // Updates scrolling letters on inner strips
 static int startPixel;
 void scrollLetters(string spacecraftName, bool nameChanged) {
@@ -790,29 +783,86 @@ void scrollLetters(string spacecraftName, bool nameChanged) {
   
   if (startPixel > wrapPixel) startPixel = 0;
 }
+  
 
+static int region1StartPixel = 0;
+static int region2StartPixel = 0;
+static int region3StartPixel = 0;
+static int region4StartPixel = 0;
+static int region5StartPixel = 0;
+static int region6StartPixel = 0;
+static int region7StartPixel = 0;
+static int region8StartPixel = 0;
+static int region9StartPixel = 0;
+static int region10StartPixel = 0;
+static int region11StartPixel = 0;
+static int region12StartPixel = 0;
 
+// Manage meteors
+void manageMeteors() {
+  fireMeteor(0, region1StartPixel);
+  fireMeteor(1, region2StartPixel);
+  fireMeteor(2, region3StartPixel);
+  fireMeteor(3, region4StartPixel);
+  fireMeteor(4, region5StartPixel);
+  fireMeteor(5, region6StartPixel);
+  fireMeteor(6, region7StartPixel);
+  fireMeteor(7, region8StartPixel);
+  fireMeteor(8, region9StartPixel);
+  fireMeteor(9, region10StartPixel);
+  fireMeteor(10, region11StartPixel);
+  fireMeteor(11, region12StartPixel);
+
+  region1StartPixel++;
+  region2StartPixel++;
+  region3StartPixel++;
+  region4StartPixel++;
+  region5StartPixel++;
+  region6StartPixel++;
+  region7StartPixel++;
+  region8StartPixel++;
+  region9StartPixel++;
+  region10StartPixel++;
+  region11StartPixel++;
+  region12StartPixel++;
+
+  if (region1StartPixel > (innerPixelsChunkLength * 1) + (innerPixelsChunkLength / 2)) region1StartPixel = 0;
+  if (region2StartPixel > (innerPixelsChunkLength * 2) + (innerPixelsChunkLength / 2)) region2StartPixel = 0;
+  if (region3StartPixel > (innerPixelsChunkLength * 3) + (innerPixelsChunkLength / 2)) region3StartPixel = 0;
+  if (region4StartPixel > (innerPixelsChunkLength * 4) + (innerPixelsChunkLength / 2)) region4StartPixel = 0;
+  if (region5StartPixel > (innerPixelsChunkLength * 5) + (innerPixelsChunkLength / 2)) region5StartPixel = 0;
+  if (region6StartPixel > (innerPixelsChunkLength * 6) + (innerPixelsChunkLength / 2)) region6StartPixel = 0;
+  if (region7StartPixel > (innerPixelsChunkLength * 7) + (innerPixelsChunkLength / 2)) region7StartPixel = 0;
+  if (region8StartPixel > (innerPixelsChunkLength * 8) + (innerPixelsChunkLength / 2)) region8StartPixel = 0;
+  if (region9StartPixel > (innerPixelsChunkLength * 9) + (innerPixelsChunkLength / 2)) region9StartPixel = 0;
+  if (region10StartPixel > (innerPixelsChunkLength * 10) + (innerPixelsChunkLength / 2)) region10StartPixel = 0;
+  if (region11StartPixel > (innerPixelsChunkLength * 11) + (innerPixelsChunkLength / 2)) region11StartPixel = 0;
+  if (region12StartPixel > (innerPixelsChunkLength * 12) + (innerPixelsChunkLength / 2)) region12StartPixel = 0;
+}
 
 
 
 // Handles updating all animations
 void updateAnimation(string spacecraftName, bool nameChanged) {
-  potentiometerBrightess();
+  // aUtil.potentiometerBrightess(POTENTIOMETER);
 
   int wordSize = spacecraftName.size();
 
-  // if ( (millis() - animationTimer) > 1) {
+  if ( (millis() - animationTimer) > 1) {
   //   // hueCycle(*allStrips[0], 10);
   //   // rainbow(*allStrips[0], 10);
-  //   // meteorRainRegions(pBgrWhite, 1, 100, true, 0);
-  //   animationTimer = millis();    // Set word timer to current millis()
-  // }
 
-
-  if ( (millis() - wordLastTime) > wordScrollInterval) {
-    scrollLetters(spacecraftName, nameChanged);
-    wordLastTime = millis();    // Set word timer to current millis()
+    manageMeteors();
+    allStrips[0]->show();
+    animationTimer = millis();    // Set word timer to current millis()
   }
+
+
+
+  // if ( (millis() - wordLastTime) > wordScrollInterval) {
+  //   scrollLetters(spacecraftName, nameChanged);
+  //   wordLastTime = millis();    // Set word timer to current millis()
+  // }
 }
 
 
