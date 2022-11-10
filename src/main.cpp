@@ -331,11 +331,6 @@ void allStripsOff( void ) {
 }
 
 
-// void potentiometerBrightess() {
-//   int potValue = analogRead(POTENTIOMETER);
-//   brightness = map(potValue, 0, 4095, 32, 255);
-// }
-
 
 
 /* MATH FUNCTIONS */
