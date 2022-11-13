@@ -2,9 +2,10 @@
 #include <AnimationUtils.h>
 #include <Adafruit_NeoPixel.h>
 
+int AnimationUtils::brightness = 255;
+
 AnimationUtils::AnimationUtils(int pin) {
   potPin = pin;
-  brightness = 255;
 }
 
 int AnimationUtils::readBrightness() {
