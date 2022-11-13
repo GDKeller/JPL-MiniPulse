@@ -5,6 +5,7 @@
 
 #include <Arduino.h>
 #include <Adafruit_NeoPixel.h>
+#include <MathHelpers.h>
 
 #ifndef AnimationUtils_h
 #define AnimationUtils_h
@@ -25,7 +26,7 @@ class AnimationUtils {
             public:
                 // Color yellow;
                 Color yellow = {
-                    Adafruit_NeoPixel::ColorHSV((110 * 65535) / 360, 255, 255),
+                    Adafruit_NeoPixel::ColorHSV(degreeToSixteenbit(290), 255, 255),
                     &yellow.value,
                 };
         };
