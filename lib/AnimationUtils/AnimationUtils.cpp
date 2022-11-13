@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <AnimationUtils.h>
+#include <Adafruit_NeoPixel.h>
 
 AnimationUtils::AnimationUtils(int pin) {
   potPin = pin;
@@ -11,7 +12,6 @@ int AnimationUtils::readBrightness() {
   int potBrightness = map(potValue, 0, 4095, 32, 255);
   return potBrightness;
 }
-
 
 void AnimationUtils::updateBrightness() {
   brightness = readBrightness();

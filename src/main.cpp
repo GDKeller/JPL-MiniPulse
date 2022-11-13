@@ -45,6 +45,7 @@ const char* password = "smile-grey9-hie";
 
 
 AnimationUtils au(POTENTIOMETER);
+AnimationUtils::Colors mpColors;
 
 String serverName = "https://eyes.nasa.gov/dsn/data/dsn.xml"; // URL to fetch
 
@@ -647,7 +648,7 @@ void meteorRainRegions(int region, int beginPixel, const uint32_t* pColor, int m
 
 // Manage meteors
 void fireMeteor(int meteorRegion, int startPixel) {
-  meteorRainRegions(meteorRegion, startPixel, pBgrWhite, 1, 100, true, 0);
+  meteorRainRegions(meteorRegion, startPixel, mpColors.yellow.pointer, 1, 100, true, 0);
 }
 
 
@@ -1246,7 +1247,8 @@ bool nameChanged = true;
 
 // loop() function -- runs repeatedly as long as board is on ---------------
 void loop() {
-
+  Serial.print("Yellow pointer");
+  // Serial.println(mpColors.yellow.pointer);
   if ( TEST_CORES == 1 ) {    
     if ( millis() - lastTime > 4000 && millis() - lastTime < 4500 ) {
       Serial.print("loop() running on core ");
