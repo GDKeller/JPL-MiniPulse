@@ -384,30 +384,6 @@ void reverseStripsArray(void)
 	reverse(allStrips, allStrips + 4);
 }
 
-/**
- * Sets pixel color relative to global BRIGHTNESS definition and adds gamma correction
- *
- * The color value must be a pointer - it is deferenced here so Color objects aren't being copied as they're passed
- *
- * @param strip The memory reference of the NeoPixel strip to be updated
- * @param n The pixel on the strip to be set
- * @param color The memory reference of the color to set pixel to
- */
-void setPixelColor(Adafruit_NeoPixel &strip, uint16_t n, const uint32_t *color)
-{
-	uint8_t rgb[4];				// Create array that will hold color channel values
-	*(uint32_t *)&rgb = *color; // Assigns color value to the color channel array
-	uint8_t channelR = rgb[0];	// blue color channel value
-	uint8_t channelG = rgb[1];	// Green color channel value
-	uint8_t channelB = rgb[2];	// Blue color channel value
-	// Serial.println(channelR);
-	// Serial.println(channelG);
-	// Serial.println(channelB);
-	// Serial.println();
-	uint32_t newColor = Adafruit_NeoPixel::Color(((AnimationUtils::brightness * channelR) / 255), ((AnimationUtils::brightness * channelG) / 255), ((AnimationUtils::brightness * channelB) / 255));
-	uint32_t gammaCorrected = Adafruit_NeoPixel::gamma32(newColor);
-	strip.setPixelColor(n, (gammaCorrected));
-}
 
 uint32_t brightnessAdjust(uint32_t color)
 {
@@ -433,7 +409,7 @@ void colorWipe(Adafruit_NeoPixel &strip, uint32_t *color, int wait)
 {
 	for (int i = 0; i < strip.numPixels(); i++)
 	{									// For each pixel in strip...
-		setPixelColor(strip, i, color); //  Set pixel's color (in RAM)
+		au.setPixelColor(strip, i, color); //  Set pixel's color (in RAM)
 		strip.show();					//  Update strip to match
 		delay(wait);					//  Pause for a moment
 	}
@@ -453,7 +429,7 @@ void theaterChase(Adafruit_NeoPixel &strip, uint32_t *color, int wait)
 			// 'c' counts up from 'b' to end of strip in steps of 3...
 			for (int c = b; c < strip.numPixels(); c += 3)
 			{
-				setPixelColor(strip, c, color); // Set pixel 'c' to value 'color'
+				au.setPixelColor(strip, c, color); // Set pixel 'c' to value 'color'
 			}
 			strip.show(); // Update strip with new contents
 			delay(wait);  // Pause for a moment
@@ -518,7 +494,7 @@ void theaterChaseRainbow(Adafruit_NeoPixel &strip, int wait)
 				int hue = firstPixelHue + c * 65536L / strip.numPixels();
 				uint32_t color = strip.ColorHSV(hue); // hue -> RGB
 				const uint32_t *pColor = &color;
-				setPixelColor(strip, c, pColor); // Set pixel 'c' to value 'color'
+				au.setPixelColor(strip, c, pColor); // Set pixel 'c' to value 'color'
 			}
 			strip.show();				 // Update strip with new contents
 			delay(wait);				 // Pause for a moment
@@ -577,8 +553,8 @@ void meteorRain(const uint32_t *pColor, int meteorSize, int meteorTrailDecay, bo
 		{
 			if ((i - j < innerPixelsTotal) && (i - j >= 0))
 			{
-				// setPixelColor(*allStrips[0], i - j, *pColor);
-				setPixelColor(*strip, i - j, pColor);
+				// au.setPixelColor(*allStrips[0], i - j, *pColor);
+				au.setPixelColor(*strip, i - j, pColor);
 				// strip->setPixelColor(i-j, *pColor);
 			}
 		}
@@ -620,7 +596,7 @@ void meteorRainRegions(
 		// Draw meteor
 		if (d < meteorSize + 1)
 		{
-			setPixelColor(*strip, currentPixel, pColor);
+			au.setPixelColor(*strip, currentPixel, pColor);
 			continue;
 		}
 
@@ -643,13 +619,13 @@ void meteorRainRegions(
 		// Make sure the pixel right after the meteor will get drawn so meteor values aren't repeated
 		if (d < (meteorSize + 2))
 		{
-			setPixelColor(*strip, currentPixel, pTrailColor);
+			au.setPixelColor(*strip, currentPixel, pTrailColor);
 			continue;
 		}
 
 		// Roll the dice on showing each pixel for a "fizzle" effect
 		if (random(10) < 5)
-			setPixelColor(*strip, currentPixel, pTrailColor);
+			au.setPixelColor(*strip, currentPixel, pTrailColor);
 	}
 }
 
@@ -708,9 +684,9 @@ void doLetter(char theLetter, int startingPixel)
 
 		// Serial.print(*character_array[i]); Serial.print("/"); Serial.println(pixel); Serial.println();
 		if (-1 < previousPixel < innerPixelsChunkLength)
-			setPixelColor(*target, previousPixel, mpColors.off.pointer);
+			au.setPixelColor(*target, previousPixel, mpColors.off.pointer);
 		if (-1 < pixel < innerPixelsChunkLength)
-			setPixelColor(*target, pixel, character_array[i]);
+			au.setPixelColor(*target, pixel, character_array[i]);
 		if (stripInt == allStripsLength - 1)
 			pixel--; // Move to next pixel
 	}
@@ -764,11 +740,11 @@ void doLetterRegions(char theLetter, int startingPixel)
 		int regionEnd = innerPixelsChunkLength * (regionInt + 1);								   // Calculate the pixel after the region end
 
 		if (regionStart < drawPreviousPixel < regionEnd)
-			setPixelColor(*target, drawPreviousPixel, mpColors.off.pointer);
+			au.setPixelColor(*target, drawPreviousPixel, mpColors.off.pointer);
 		if (startingPixel < innerPixelsChunkLength)
 		{
 			if (regionStart < drawPixel < regionEnd)
-				setPixelColor(*target, drawPixel, character_array[i]);
+				au.setPixelColor(*target, drawPixel, character_array[i]);
 		}
 		if (regionInt == characterWidth - 1)
 			pixel--; // Move to next pixel

@@ -17,6 +17,11 @@ class AnimationUtils {
         int potPin;
         int readBrightness();
         void updateBrightness();
+        void setPixelColor(
+            Adafruit_NeoPixel &strip,
+            uint16_t n,
+            const uint32_t *color
+        );
         AnimationUtils(int pin);
         class Colors {
             struct Color {
