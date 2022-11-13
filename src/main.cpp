@@ -9,9 +9,10 @@
 #include <cstring>
 #include <ArduinoJson.h>
 #include <algorithm>
+#include <MathHelpers.h>		// Custom math helpers lib
 #include <TextCharacters.h>		// Custom LED text lib
 #include <AnimationUtils.h>		// Custom animation utilities lib
-#include <MathHelpers.h>		// Custom math helpers lib
+#include <Animate.h>			// Custom animate lib
 
 /* NAMESPACES */
 using namespace tinyxml2;
@@ -40,6 +41,7 @@ const char *password = "smile-grey9-hie";
 
 AnimationUtils au(POTENTIOMETER);
 AnimationUtils::Colors mpColors;
+Animate animate;
 
 String serverName = "https://eyes.nasa.gov/dsn/data/dsn.xml"; // URL to fetch
 
@@ -503,138 +505,14 @@ void theaterChaseRainbow(Adafruit_NeoPixel &strip, int wait)
 	}
 }
 
-void fadeToBlack(Adafruit_NeoPixel *&strip, int ledNo, int fadeValue)
-{
-#ifdef ADAFRUIT_NEOPIXEL_H
-	// NeoPixel
-	uint32_t oldColor;
-	uint8_t r, g, b;
-	int value;
-
-	oldColor = strip->getPixelColor(ledNo);
-	r = (oldColor & 0x00ff0000UL) >> 16;
-	g = (oldColor & 0x0000ff00UL) >> 8;
-	b = (oldColor & 0x000000ffUL);
-
-	r = (r <= 10) ? 0 : (int)r - ((r * fadeValue / 256) * 1.5);
-	g = (g <= 10) ? 0 : (int)g - ((g * fadeValue / 256) * 1.5);
-	b = (b <= 10) ? 0 : (int)b - (((b * fadeValue * 0.1) / 256) * 1.5);
-
-	// uint32_t rgbColor = brightnessAdjust(Adafruit_NeoPixel::Color(r, g, b));
-	uint32_t rgbColor = Adafruit_NeoPixel::Color(r, g, b);
-	strip->setPixelColor(ledNo, Adafruit_NeoPixel::gamma32(rgbColor));
-#endif
-#ifndef ADAFRUIT_NEOPIXEL_H
-	// FastLED
-	leds[ledNo].fadeToBlackBy(fadeValue);
-#endif
-}
-
-void meteorRain(const uint32_t *pColor, int meteorSize, int meteorTrailDecay, bool meteorRandomDecay, int SpeedDelay)
-{
-	Adafruit_NeoPixel *&strip = allStrips[0];
-	strip->clear();
-
-	Serial.println("meteor!");
-	for (int i = 0; i < (innerPixelsTotal + innerPixelsChunkLength); i++)
-	{
-
-		// fade brightness all LEDs one step
-		for (int j = 0; j < innerPixelsTotal; j++)
-		{
-			if ((!meteorRandomDecay) || (random(10) > 5))
-			{
-				fadeToBlack(strip, j, meteorTrailDecay);
-			}
-		}
-
-		// draw meteor
-		for (int j = 0; j < meteorSize; j++)
-		{
-			if ((i - j < innerPixelsTotal) && (i - j >= 0))
-			{
-				// au.setPixelColor(*allStrips[0], i - j, *pColor);
-				au.setPixelColor(*strip, i - j, pColor);
-				// strip->setPixelColor(i-j, *pColor);
-			}
-		}
-
-		allStrips[0]->show();
-		delay(SpeedDelay);
-	}
-}
-
-void meteorRainRegions(
-	Adafruit_NeoPixel *&strip,
-	int region,
-	int beginPixel,
-	const uint32_t *pColor,
-	int meteorSize,
-	int meteorTrailDecay,
-	bool meteorRandomDecay,
-	int tailHueStart,
-	bool tailHueAdd,
-	float tailHueExponent,
-	int tailHueSaturation)
-{
-
-	int hue = degreeToSixteenbit(tailHueStart);
-	int startPixel = region * innerPixelsChunkLength; // First pixel of each region
-	int drawPixel = startPixel + beginPixel;		  // Current pixel to draw
-
-	int regionStart = (innerPixelsChunkLength * region) - innerPixelsChunkLength - 1; // Calculate the pixel before the region start
-	int regionEnd = innerPixelsChunkLength * (region + 1);							  // Calculate the pixel after the region end
-
-	int growInt;
-	for (int d = 1; d < innerPixelsChunkLength + 1; d++)
-	{
-		int currentPixel = drawPixel - d - 1;
-
-		if (currentPixel < regionStart) continue;
-		if (currentPixel >= regionEnd) continue;
-
-		// Draw meteor
-		if (d < meteorSize + 1)
-		{
-			au.setPixelColor(*strip, currentPixel, pColor);
-			continue;
-		}
-
-		// Draw tail
-		int satExpo = ceil(tailHueSaturation * log(d + 1)); // Calculate logarithmic growth
-		satExpo += random(32) - 16;							// Add random variance to saturation
-		int satValue = satExpo > tailHueSaturation ? tailHueSaturation : (satExpo < 0 ? 0 : satExpo);
-		int brightExpo = ceil(255 * mPower(0.85, d)); // Calculate exponential decay
-		brightExpo += random(32) - 16;				  // Add randomvariance to brightness
-		int brightValue = brightExpo > 255 ? 255 : (brightExpo < 0 ? 0 : brightExpo);
-		int brightValueMap = map(brightValue, 0, 255, 0, AnimationUtils::brightness);
-		int randVal = (4 * d) * (4 * d);
-		int hueRandom = hue + (random(randVal) - (randVal / 2));
-		uint32_t trailColor = strip->ColorHSV(hueRandom, satValue, brightValue);
-		uint32_t *pTrailColor = &trailColor;
-
-		// Cycle hue through time
-		tailHueAdd == true ? hue += ceil(4096 * mPower(tailHueExponent, d)) : hue -= ceil(4096 * mPower(tailHueExponent, d));
-
-		// Make sure the pixel right after the meteor will get drawn so meteor values aren't repeated
-		if (d < (meteorSize + 2))
-		{
-			au.setPixelColor(*strip, currentPixel, pTrailColor);
-			continue;
-		}
-
-		// Roll the dice on showing each pixel for a "fizzle" effect
-		if (random(10) < 5)
-			au.setPixelColor(*strip, currentPixel, pTrailColor);
-	}
-}
 
 // Manage meteors
 void fireMeteor(int meteorRegion, int startPixel)
 {
-	meteorRainRegions(
+	animate.meteorRainRegions(
 		allStrips[0],		  	// Strip
 		meteorRegion,		  	// Region of strip
+		innerPixelsChunkLength,	// Number of pixels of each region
 		startPixel,			  	// Pixel to start at
 		mpColors.teal.pointer,	// Color of meteor core
 		1,						// Size of meteor core

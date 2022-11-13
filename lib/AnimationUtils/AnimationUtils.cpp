@@ -5,6 +5,10 @@
 /* Initialize global brightness */
 int AnimationUtils::brightness = 255;
 
+AnimationUtils::AnimationUtils() {
+  // be happy
+}
+
 /* Constructor - set brightness potentiometer pin */
 AnimationUtils::AnimationUtils(int pin) {
   potPin = pin;

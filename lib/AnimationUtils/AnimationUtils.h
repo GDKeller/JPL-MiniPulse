@@ -22,7 +22,9 @@ class AnimationUtils {
             uint16_t n,
             const uint32_t *color
         );
+        AnimationUtils();
         AnimationUtils(int pin);
+
         class Colors {
             struct Color {
                 uint32_t value;
