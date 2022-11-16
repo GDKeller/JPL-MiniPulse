@@ -35,7 +35,7 @@ const char *password = "smile-grey9-hie";
 
 // Diagnostic utilities, all 0 is normal operation
 #define TEST_CORES 0
-#define SHOW_SERIAL 1
+#define SHOW_SERIAL 0
 #define ID_LEDS 0
 #define DISABLE_WIFI 0
 
@@ -53,7 +53,7 @@ unsigned long timerDelay = 5000; // Set timer to 5 seconds (5000)
 unsigned long animationTimer = 0;
 
 // how often each pattern updates
-unsigned long wordScrollInterval = 10;
+unsigned long wordScrollInterval = 20;
 unsigned long pattern1Interval = 500;
 unsigned long pattern2Interval = 500;
 unsigned long pattern3Interval = 500;
@@ -629,25 +629,21 @@ void doLetterRegions(char theLetter, int startingPixel)
 }
 
 // Updates scrolling letters on inner strips
-void scrollLetters(char* spacecraftName, bool nameChanged)
+void scrollLetters(char * spacecraftName, int wordSize, bool nameChanged)
 {
 	static int startPixel = 0;
-
-	unsigned int wordSize = strlen(spacecraftName);
-	unsigned int lastArrayIndex = wordSize - 1;
 
 	int letterPixel = startPixel;
 	int wrapPixel = innerPixelsChunkLength + (wordSize * (characterHeight + characterKerning));
 
 	for (int i = 0; i < wordSize; i++)
 	{
-
 		int previousArrayIndex = i - 1;
 		if (previousArrayIndex < 0)
 			previousArrayIndex = 0;
 
+		
 		char theLetter = spacecraftName[i];
-		// Serial.print("letter: "); Serial.println(theLetter);
 		doLetterRegions(theLetter, letterPixel);
 
 		letterPixel = letterPixel - letterSpacing - characterKerning;
@@ -733,8 +729,6 @@ void updateAnimation(char * spacecraftName, bool nameChanged)
 	// potentiometerBrightess();
 	au.updateBrightness();
 
-	int wordSize = strlen(spacecraftName);
-
 	// if ((millis() - animationTimer) > 1)
 	// {
 	// 	//   // hueCycle(*allStrips[0], 10);
@@ -747,8 +741,10 @@ void updateAnimation(char * spacecraftName, bool nameChanged)
 
 	if ((millis() - wordLastTime) > wordScrollInterval)
 	{
-		Serial.println(spacecraftName);
-		scrollLetters(spacecraftName, nameChanged);
+		int wordSize = sizeof(spacecraftName)/sizeof(char);
+		// Serial.print("wordSize: "); Serial.println(wordSize);
+		// Serial.print("updateAnimation: "); Serial.println(spacecraftName);
+		scrollLetters(spacecraftName, wordSize, nameChanged);
 		allStrips[0]->show();
 		wordLastTime = millis(); // Set word timer to current millis()
 	}
@@ -1139,7 +1135,8 @@ void setup()
 }
 
 
-char * displaySpacecraftName = "abcdefghijklmnopqrstuvwxyz 1234567890";
+char * displaySpacecraftName;
+// char * displaySpacecraftName = "abcdefghijklmnopqrstuvwxyz 1234567890";
 bool nameChanged = true;
 
 // loop() function -- runs repeatedly as long as board is on ---------------
@@ -1159,8 +1156,9 @@ void loop()
 	// Receive from queue (data task on core 1)
 	if (xQueueReceive(queue, &stations, 1) == pdPASS)
 	{
-		// Serial.println(stations[0].dishes[0].targets[0].name);
-		// displaySpacecraftName = (char *) stations[0].dishes[0].targets[0].name;
+		// Serial.println("getting name");
+		displaySpacecraftName = (char *) stations[0].dishes[0].targets[0].name;
+		// Serial.print("name: "); Serial.println(displaySpacecraftName);
 
 		if (SHOW_SERIAL == 1)
 		{
@@ -1242,6 +1240,7 @@ void loop()
 	server.handleClient();
 	
 
+	if (displaySpacecraftName == NULL) displaySpacecraftName = "";
 	// Serial.println(displaySpacecraftName);
 	updateAnimation(displaySpacecraftName, nameChanged);
 	nameChanged = false;
