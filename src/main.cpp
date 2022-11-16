@@ -37,7 +37,7 @@ const char *password = "smile-grey9-hie";
 #define TEST_CORES 0
 #define SHOW_SERIAL 0
 #define ID_LEDS 0
-#define DISABLE_WIFI 1
+#define DISABLE_WIFI 0
 
 AnimationUtils au(POTENTIOMETER);
 AnimationUtils::Colors mpColors;
@@ -616,34 +616,19 @@ void doLetterRegions(char theLetter, int startingPixel)
 		int regionStart = (innerPixelsChunkLength * (regionInt + 1)) - innerPixelsChunkLength; // Calculate the pixel before the region start
 		int regionEnd = innerPixelsChunkLength * (regionInt + 1);								   // Calculate the pixel after the region end
 
-
-		// Serial.println(drawPreviousPixel);
-		// Serial.print("char pixel: "); Serial.println(i);
-		// Serial.print("regionStart: "); Serial.println(regionStart);
-		// Serial.print(regionInt); Serial.print(": "); Serial.println(drawPixel);
-		// Serial.print("regionEnd: "); Serial.println(regionEnd);
-		
 		if (regionStart <= drawPreviousPixel && drawPreviousPixel < regionEnd) {
-			// Serial.println("drawing previous");
 			au.setPixelColor(*target, drawPreviousPixel, mpColors.off.pointer);
 		}
 		if (regionStart <= drawPixel && drawPixel < regionEnd) {
-			// Serial.println("drawing pixel");
 			au.setPixelColor(*target, drawPixel, character_array[i]);
 		}
 
-		// Serial.println("--");
 		if (regionInt == characterWidth - 1)
 			pixel--; // Move to next pixel
-
-		// allStrips[0]->show();
-		// delay(50);
 	}
-	// Serial.println("--------------------");
 }
 
 // Updates scrolling letters on inner strips
-// static int startPixel;
 void scrollLetters(string spacecraftName, bool nameChanged)
 {
 	static int startPixel = 0;
@@ -653,9 +638,6 @@ void scrollLetters(string spacecraftName, bool nameChanged)
 
 	int letterPixel = startPixel;
 	int wrapPixel = innerPixelsChunkLength + (wordSize * (characterHeight + characterKerning));
-	// int wrapPixel = innerPixelsTotal + innerPixelsChunkLength;
-	int wordPixelsOffset = (wordSize * letterSpacing) * 3;
-	int startWrapPixel = letterPixel - wordPixelsOffset;
 
 	for (int i = 0; i < wordSize; i++)
 	{
@@ -664,18 +646,11 @@ void scrollLetters(string spacecraftName, bool nameChanged)
 		if (previousArrayIndex < 0)
 			previousArrayIndex = 0;
 
-		// Serial.print(letterPixel); Serial.print(", ");
-
-		// Serial.println();
-
 		char theLetter = spacecraftName[i];
-		// Serial.println(letterPixel);
 		doLetterRegions(theLetter, letterPixel);
 
 		letterPixel = letterPixel - letterSpacing - characterKerning;
 	}
-
-	// allStrips[0]->show();
 
 	startPixel++;
 
