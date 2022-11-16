@@ -9,10 +9,10 @@
 #include <cstring>
 #include <ArduinoJson.h>
 #include <algorithm>
-#include <MathHelpers.h>		// Custom math helpers lib
-#include <TextCharacters.h>		// Custom LED text lib
-#include <AnimationUtils.h>		// Custom animation utilities lib
-#include <Animate.h>			// Custom animate lib
+#include <MathHelpers.h>	// Custom math helpers lib
+#include <TextCharacters.h> // Custom LED text lib
+#include <AnimationUtils.h> // Custom animation utilities lib
+#include <Animate.h>		// Custom animate lib
 
 /* NAMESPACES */
 using namespace tinyxml2;
@@ -357,10 +357,11 @@ void allStripsOff(void)
 
 /* Text Utilities */
 TextCharacter textCharacter;
+const int characterWidth = 4;
+const int characterHeight = 7;
+const int characterKerning = 3;
 int letterSpacing = 7;
 int letterTotalPixels = 28;
-
-
 
 /* ANIMATION UTILITIES */
 // Do not change these
@@ -386,7 +387,6 @@ void reverseStripsArray(void)
 	reverse(allStrips, allStrips + 4);
 }
 
-
 uint32_t brightnessAdjust(uint32_t color)
 {
 	au.updateBrightness();
@@ -410,10 +410,10 @@ uint32_t brightnessAdjust(uint32_t color)
 void colorWipe(Adafruit_NeoPixel &strip, uint32_t *color, int wait)
 {
 	for (int i = 0; i < strip.numPixels(); i++)
-	{									// For each pixel in strip...
+	{									   // For each pixel in strip...
 		au.setPixelColor(strip, i, color); //  Set pixel's color (in RAM)
-		strip.show();					//  Update strip to match
-		delay(wait);					//  Pause for a moment
+		strip.show();					   //  Update strip to match
+		delay(wait);					   //  Pause for a moment
 	}
 }
 
@@ -505,21 +505,20 @@ void theaterChaseRainbow(Adafruit_NeoPixel &strip, int wait)
 	}
 }
 
-
 // Manage meteors
 void fireMeteor(int meteorRegion, int startPixel)
 {
 	animate.meteorRainRegions(
-		allStrips[0],		  	// Strip
-		meteorRegion,		  	// Region of strip
-		innerPixelsChunkLength,	// Number of pixels of each region
-		startPixel,			  	// Pixel to start at
+		allStrips[0],			// Strip
+		meteorRegion,			// Region of strip
+		innerPixelsChunkLength, // Number of pixels of each region
+		startPixel,				// Pixel to start at
 		mpColors.teal.pointer,	// Color of meteor core
 		1,						// Size of meteor core
-		100,				  	// Meteor tail decay amount
-		true,				  	// Meteor tail random decay
+		100,					// Meteor tail decay amount
+		true,					// Meteor tail random decay
 		240,					// Starting hue for tail
-		true,				  	// Forward hue direction for tail color
+		true,					// Forward hue direction for tail color
 		0.75,					// Tail hue cycle exponent
 		255						// Tail hue saturation start
 	);
@@ -580,7 +579,6 @@ void doLetterRegions(char theLetter, int startingPixel)
 {
 	int *ledCharacter = textCharacter.getCharacter(theLetter);
 	const uint32_t *character_array[letterTotalPixels] = {};
-	const int characterWidth = 4;
 
 	// Map character array to LED colors
 	for (int i = 0; i < letterTotalPixels; i++)
@@ -591,7 +589,7 @@ void doLetterRegions(char theLetter, int startingPixel)
 			character_array[i] = mpColors.off.pointer;
 			break;
 		case 1:
-			character_array[i] = mpColors.red.pointer;
+			character_array[i] = mpColors.teal.pointer;
 			break;
 		default:
 			character_array[i] = mpColors.off.pointer;
@@ -601,6 +599,7 @@ void doLetterRegions(char theLetter, int startingPixel)
 	Adafruit_NeoPixel *&target = allStrips[0];
 
 	int pixel = 0 + startingPixel;
+
 	int previousPixel = startingPixel - letterSpacing;
 
 	for (int i = 0; i < letterTotalPixels; i++)
@@ -614,23 +613,37 @@ void doLetterRegions(char theLetter, int startingPixel)
 		int drawPixel = pixel + (innerPixelsChunkLength * (regionInt));					// Calculate pixel to draw
 		int drawPreviousPixel = previousPixel + (innerPixelsChunkLength * (regionInt)); // Calculate trailing pixel after letter to "draw" off value
 
-		int regionStart = (innerPixelsChunkLength * (regionInt + 1)) - innerPixelsChunkLength - 1; // Calculate the pixel before the region start
+		int regionStart = (innerPixelsChunkLength * (regionInt + 1)) - innerPixelsChunkLength; // Calculate the pixel before the region start
 		int regionEnd = innerPixelsChunkLength * (regionInt + 1);								   // Calculate the pixel after the region end
 
-		if (regionStart < drawPreviousPixel < regionEnd)
+
+		// Serial.println(drawPreviousPixel);
+		// Serial.print("char pixel: "); Serial.println(i);
+		// Serial.print("regionStart: "); Serial.println(regionStart);
+		// Serial.print(regionInt); Serial.print(": "); Serial.println(drawPixel);
+		// Serial.print("regionEnd: "); Serial.println(regionEnd);
+		
+		if (regionStart <= drawPreviousPixel && drawPreviousPixel < regionEnd) {
+			// Serial.println("drawing previous");
 			au.setPixelColor(*target, drawPreviousPixel, mpColors.off.pointer);
-		if (startingPixel < innerPixelsChunkLength)
-		{
-			if (regionStart < drawPixel < regionEnd)
-				au.setPixelColor(*target, drawPixel, character_array[i]);
 		}
+		if (regionStart <= drawPixel && drawPixel < regionEnd) {
+			// Serial.println("drawing pixel");
+			au.setPixelColor(*target, drawPixel, character_array[i]);
+		}
+
+		// Serial.println("--");
 		if (regionInt == characterWidth - 1)
 			pixel--; // Move to next pixel
+
+		// allStrips[0]->show();
+		// delay(50);
 	}
+	// Serial.println("--------------------");
 }
 
 // Updates scrolling letters on inner strips
-static int startPixel;
+// static int startPixel;
 void scrollLetters(string spacecraftName, bool nameChanged)
 {
 	static int startPixel = 0;
@@ -639,7 +652,7 @@ void scrollLetters(string spacecraftName, bool nameChanged)
 	unsigned int lastArrayIndex = wordSize - 1;
 
 	int letterPixel = startPixel;
-	int wrapPixel = innerPixelsChunkLength * 2;
+	int wrapPixel = innerPixelsChunkLength + (wordSize * (characterHeight + characterKerning));
 	// int wrapPixel = innerPixelsTotal + innerPixelsChunkLength;
 	int wordPixelsOffset = (wordSize * letterSpacing) * 3;
 	int startWrapPixel = letterPixel - wordPixelsOffset;
@@ -656,12 +669,13 @@ void scrollLetters(string spacecraftName, bool nameChanged)
 		// Serial.println();
 
 		char theLetter = spacecraftName[i];
+		// Serial.println(letterPixel);
 		doLetterRegions(theLetter, letterPixel);
 
-		letterPixel = letterPixel - letterSpacing - 3;
+		letterPixel = letterPixel - letterSpacing - characterKerning;
 	}
 
-	allStrips[0]->show();
+	// allStrips[0]->show();
 
 	startPixel++;
 
@@ -745,20 +759,22 @@ void updateAnimation(string spacecraftName, bool nameChanged)
 
 	int wordSize = spacecraftName.size();
 
-	if ((millis() - animationTimer) > 1)
-	{
-		//   // hueCycle(*allStrips[0], 10);
-		//   // rainbow(*allStrips[0], 10);
+	// if ((millis() - animationTimer) > 1)
+	// {
+	// 	//   // hueCycle(*allStrips[0], 10);
+	// 	//   // rainbow(*allStrips[0], 10);
 
-		manageMeteors();
-		allStrips[0]->show();
-		animationTimer = millis(); // Set word timer to current millis()
-	}
-
-	// if ( (millis() - wordLastTime) > wordScrollInterval) {
-	//   scrollLetters(spacecraftName, nameChanged);
-	//   wordLastTime = millis();    // Set word timer to current millis()
+	// 	manageMeteors();
+	// 	allStrips[0]->show();
+	// 	animationTimer = millis(); // Set word timer to current millis()
 	// }
+
+	if ((millis() - wordLastTime) > wordScrollInterval)
+	{
+		scrollLetters(spacecraftName, nameChanged);
+		allStrips[0]->show();
+		wordLastTime = millis(); // Set word timer to current millis()
+	}
 }
 
 // Create data structure objects
@@ -1146,7 +1162,7 @@ void setup()
 }
 
 // string spacecraftName = "abcdefghijklmnopqrstuvwxyz";
-string spacecraftName = "voyager";
+string spacecraftName = "nasa voyager";
 
 bool nameChanged = true;
 
