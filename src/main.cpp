@@ -530,7 +530,7 @@ void fireMeteor(int meteorRegion, int startPixel)
 
 
 
-static bool nameIsDone = true;
+static bool nameScrollDone = true;
 
 // Display letter from array
 void doLetter(char theLetter, int startingPixel)
@@ -661,7 +661,7 @@ void scrollLetters(char * spacecraftName, int wordSize, bool nameChanged)
 
 	if (startPixel > wrapPixel) {
 		startPixel = 0;
-		nameIsDone = true;
+		nameScrollDone = true;
 	}
 }
 
@@ -752,7 +752,7 @@ void updateAnimation(char * spacecraftName, bool nameChanged)
 	{
 		int wordSize = sizeof(spacecraftName)/sizeof(char);
 
-		if (nameIsDone == false) scrollLetters(spacecraftName, wordSize, nameChanged);
+		if (nameScrollDone == false) scrollLetters(spacecraftName, wordSize, nameChanged);
 		allStrips[0]->show();
 		wordLastTime = millis(); // Set word timer to current millis()
 	}
@@ -1167,8 +1167,8 @@ void loop()
 	// Receive from queue (data task on core 1)
 	if (xQueueReceive(queue, &stations, 1) == pdPASS)
 	{
-		if (nameIsDone == true) {
-			nameIsDone = false;
+		if (nameScrollDone == true) {
+			nameScrollDone = false;
 			displaySpacecraftName = (char *) stations[stationCount].dishes[dishCount].targets[targetCount].name;
 
 			Serial.println("-----------------------------");
