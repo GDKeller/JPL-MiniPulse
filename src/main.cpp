@@ -364,6 +364,7 @@ int letterSpacing = 7;
 int letterTotalPixels = 28;
 
 /* ANIMATION UTILITIES */
+
 // Do not change these
 
 // Init reference variables for when last update occurred
