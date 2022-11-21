@@ -51,6 +51,7 @@ unsigned long lastTime = 0; // Init reference variable for timer
 unsigned long wordLastTime = 0;
 unsigned long timerDelay = 5000; // Set timer to 5 seconds (5000)
 unsigned long animationTimer = 0;
+unsigned long targetChangeTimer = 0;
 
 // how often each pattern updates
 unsigned long wordScrollInterval = 20;
@@ -58,6 +59,8 @@ unsigned long pattern1Interval = 500;
 unsigned long pattern2Interval = 500;
 unsigned long pattern3Interval = 500;
 unsigned long pattern4Interval = 500;
+unsigned long targetChangeInterval = 5000;
+
 
 /* TASKS */
 TaskHandle_t HandleData; // Task for fetching and parsing data
@@ -1140,6 +1143,9 @@ char * displaySpacecraftName;
 // char * displaySpacecraftName = "abcdefghijklmnopqrstuvwxyz 1234567890";
 bool nameChanged = true;
 
+int stationCount = 0;
+int dishCount = 0;
+int targetCount = 0;
 // loop() function -- runs repeatedly as long as board is on ---------------
 void loop()
 {
@@ -1158,8 +1164,34 @@ void loop()
 	if (xQueueReceive(queue, &stations, 1) == pdPASS)
 	{
 		// Serial.println("getting name");
-		displaySpacecraftName = (char *) stations[0].dishes[0].targets[0].name;
 		// Serial.print("name: "); Serial.println(displaySpacecraftName);
+		if ((millis() - targetChangeTimer) > targetChangeInterval) {
+			displaySpacecraftName = (char *) stations[stationCount].dishes[dishCount].targets[targetCount].name;			
+			// if (stations[0].dishes[dishCount].targets[targetCount].name == NULL) {
+			// 	dishCount ++;
+			// }
+			Serial.println("-----------------------------");
+			Serial.print("Name: "); Serial.println(displaySpacecraftName);
+
+			targetCount++;
+			const char * nextTargetName = stations[stationCount].dishes[dishCount].targets[targetCount].name;
+			if (nextTargetName == NULL) {
+				dishCount++;
+				targetCount = 0;
+			}
+			const char * nextDishName = stations[stationCount].dishes[dishCount].name;
+			Serial.print("Next dish int: "); Serial.println(dishCount);
+			Serial.print("Next Dish name: "); Serial.println(nextDishName);
+
+			if (nextDishName == NULL) {
+				stationCount ++;
+				dishCount = 0;
+			}			
+			if (stationCount > 2) stationCount = 0;
+			Serial.print("Station int: "); Serial.println(stationCount);
+
+			targetChangeTimer = millis();
+		}
 
 		if (SHOW_SERIAL == 1)
 		{
@@ -1169,8 +1201,7 @@ void loop()
 			Serial.println(stations[0].fetchTimestamp);
 			Serial.println();
 
-			int i;
-			for (i = 0; i < 3; i++)
+			for (int i = 0; i < 3; i++)
 			{
 				DSN_Station station = stations[i];
 				Serial.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
@@ -1242,7 +1273,7 @@ void loop()
 	
 
 	if (displaySpacecraftName == NULL) displaySpacecraftName = "";
-	// Serial.println(displaySpacecraftName);
+	// Serial.print("Name: "); Serial.println(displaySpacecraftName);
 	updateAnimation(displaySpacecraftName, nameChanged);
 	nameChanged = false;
 
