@@ -528,6 +528,10 @@ void fireMeteor(int meteorRegion, int startPixel)
 	);
 }
 
+
+
+static bool nameIsDone = true;
+
 // Display letter from array
 void doLetter(char theLetter, int startingPixel)
 {
@@ -655,8 +659,10 @@ void scrollLetters(char * spacecraftName, int wordSize, bool nameChanged)
 
 	startPixel++;
 
-	if (startPixel > wrapPixel)
+	if (startPixel > wrapPixel) {
 		startPixel = 0;
+		nameIsDone = true;
+	}
 }
 
 static int region1StartPixel = 0;
@@ -730,7 +736,6 @@ void manageMeteors()
 // Handles updating all animations
 void updateAnimation(char * spacecraftName, bool nameChanged)
 {
-	// potentiometerBrightess();
 	au.updateBrightness();
 
 	// if ((millis() - animationTimer) > 1)
@@ -746,9 +751,8 @@ void updateAnimation(char * spacecraftName, bool nameChanged)
 	if ((millis() - wordLastTime) > wordScrollInterval)
 	{
 		int wordSize = sizeof(spacecraftName)/sizeof(char);
-		// Serial.print("wordSize: "); Serial.println(wordSize);
-		// Serial.print("updateAnimation: "); Serial.println(spacecraftName);
-		scrollLetters(spacecraftName, wordSize, nameChanged);
+
+		if (nameIsDone == false) scrollLetters(spacecraftName, wordSize, nameChanged);
 		allStrips[0]->show();
 		wordLastTime = millis(); // Set word timer to current millis()
 	}
@@ -1139,7 +1143,7 @@ void setup()
 }
 
 
-char * displaySpacecraftName;
+char * displaySpacecraftName = "";
 // char * displaySpacecraftName = "abcdefghijklmnopqrstuvwxyz 1234567890";
 bool nameChanged = true;
 
@@ -1163,13 +1167,10 @@ void loop()
 	// Receive from queue (data task on core 1)
 	if (xQueueReceive(queue, &stations, 1) == pdPASS)
 	{
-		// Serial.println("getting name");
-		// Serial.print("name: "); Serial.println(displaySpacecraftName);
-		if ((millis() - targetChangeTimer) > targetChangeInterval) {
-			displaySpacecraftName = (char *) stations[stationCount].dishes[dishCount].targets[targetCount].name;			
-			// if (stations[0].dishes[dishCount].targets[targetCount].name == NULL) {
-			// 	dishCount ++;
-			// }
+		if (nameIsDone == true) {
+			nameIsDone = false;
+			displaySpacecraftName = (char *) stations[stationCount].dishes[dishCount].targets[targetCount].name;
+
 			Serial.println("-----------------------------");
 			Serial.print("Name: "); Serial.println(displaySpacecraftName);
 
