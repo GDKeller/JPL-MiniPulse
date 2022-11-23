@@ -585,7 +585,7 @@ void doLetter(char theLetter, int startingPixel)
 }
 
 // Display letter from array
-void doLetterRegions(char theLetter, int startingPixel)
+void doLetterRegions(char theLetter, int regionStart, int startingPixel)
 {
 	int *ledCharacter = textCharacter.getCharacter(theLetter);
 	const uint32_t *character_array[letterTotalPixels] = {};
@@ -608,9 +608,11 @@ void doLetterRegions(char theLetter, int startingPixel)
 
 	Adafruit_NeoPixel *&target = allStrips[0];
 
-	int pixel = 0 + startingPixel;
+	int regionOffset = innerPixelsChunkLength * regionStart;
 
-	int previousPixel = startingPixel - letterSpacing;
+	int pixel = 0 + startingPixel + regionOffset;
+
+	int previousPixel = startingPixel + regionOffset - letterSpacing;
 
 	for (int i = 0; i < letterTotalPixels; i++)
 	{
@@ -623,8 +625,8 @@ void doLetterRegions(char theLetter, int startingPixel)
 		int drawPixel = pixel + (innerPixelsChunkLength * (regionInt));					// Calculate pixel to draw
 		int drawPreviousPixel = previousPixel + (innerPixelsChunkLength * (regionInt)); // Calculate trailing pixel after letter to "draw" off value
 
-		int regionStart = (innerPixelsChunkLength * (regionInt + 1)) - innerPixelsChunkLength; // Calculate the pixel before the region start
-		int regionEnd = innerPixelsChunkLength * (regionInt + 1);								   // Calculate the pixel after the region end
+		int regionStart = (innerPixelsChunkLength * (regionInt + 1)) - innerPixelsChunkLength + regionOffset; // Calculate the pixel before the region start
+		int regionEnd = innerPixelsChunkLength * (regionInt + 1) + regionOffset;								   // Calculate the pixel after the region end
 
 		if (regionStart <= drawPreviousPixel && drawPreviousPixel < regionEnd) {
 			au.setPixelColor(*target, drawPreviousPixel, mpColors.off.pointer);
@@ -641,7 +643,9 @@ void doLetterRegions(char theLetter, int startingPixel)
 // Updates scrolling letters on inner strips
 void scrollLetters(char * spacecraftName, int wordSize, bool nameChanged)
 {
-	Serial.println(spacecraftName);
+	int regionStart = 4;
+
+	// Serial.println(spacecraftName);
 	static int startPixel = 0;
 
 	int letterPixel = startPixel;
@@ -655,7 +659,9 @@ void scrollLetters(char * spacecraftName, int wordSize, bool nameChanged)
 
 		
 		char theLetter = spacecraftName[i];
-		doLetterRegions(theLetter, letterPixel);
+		doLetterRegions(theLetter, 0, letterPixel);
+		doLetterRegions(theLetter, 6, letterPixel);
+		// doLetterRegions(theLetter, 8, letterPixel);
 
 		letterPixel = letterPixel - letterSpacing - characterKerning;
 	}
