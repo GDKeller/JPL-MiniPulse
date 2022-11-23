@@ -13,6 +13,7 @@
 #include <TextCharacters.h> // Custom LED text lib
 #include <AnimationUtils.h> // Custom animation utilities lib
 #include <Animate.h>		// Custom animate lib
+#include <SpacecraftData.h>
 
 /* NAMESPACES */
 using namespace tinyxml2;
@@ -42,6 +43,7 @@ const char *password = "smile-grey9-hie";
 AnimationUtils au(POTENTIOMETER);
 AnimationUtils::Colors mpColors;
 Animate animate;
+SpacecraftData data;
 
 String serverName = "https://eyes.nasa.gov/dsn/data/dsn.xml"; // URL to fetch
 
@@ -54,7 +56,7 @@ unsigned long animationTimer = 0;
 unsigned long targetChangeTimer = 0;
 
 // how often each pattern updates
-unsigned long wordScrollInterval = 20;
+unsigned long wordScrollInterval = 10;
 unsigned long pattern1Interval = 500;
 unsigned long pattern2Interval = 500;
 unsigned long pattern3Interval = 500;
@@ -639,6 +641,7 @@ void doLetterRegions(char theLetter, int startingPixel)
 // Updates scrolling letters on inner strips
 void scrollLetters(char * spacecraftName, int wordSize, bool nameChanged)
 {
+	Serial.println(spacecraftName);
 	static int startPixel = 0;
 
 	int letterPixel = startPixel;
@@ -750,7 +753,8 @@ void updateAnimation(char * spacecraftName, bool nameChanged)
 
 	if ((millis() - wordLastTime) > wordScrollInterval)
 	{
-		int wordSize = sizeof(spacecraftName)/sizeof(char);
+		string wordLength = (string) spacecraftName;
+		int wordSize = wordLength.length();
 
 		if (nameScrollDone == false) scrollLetters(spacecraftName, wordSize, nameChanged);
 		allStrips[0]->show();
@@ -1140,9 +1144,12 @@ void setup()
 	{ // Check that queue was created successfully
 		Serial.println("Error creating the queue");
 	}
+
+	data.loadJson();
 }
 
 
+char * spacecraftCallsign = "";
 char * displaySpacecraftName = "";
 // char * displaySpacecraftName = "abcdefghijklmnopqrstuvwxyz 1234567890";
 bool nameChanged = true;
@@ -1169,10 +1176,14 @@ void loop()
 	{
 		if (nameScrollDone == true) {
 			nameScrollDone = false;
-			displaySpacecraftName = (char *) stations[stationCount].dishes[dishCount].targets[targetCount].name;
+			spacecraftCallsign = (char*) stations[stationCount].dishes[dishCount].targets[targetCount].name;
+			// displaySpacecraftName = (char*) data.callsignToName(spacecraftCallsign);
 
 			Serial.println("-----------------------------");
-			Serial.print("Name: "); Serial.println(displaySpacecraftName);
+			Serial.print("Name: "); Serial.println(spacecraftCallsign);
+			const char* fullName = data.callsignToName(spacecraftCallsign);
+			Serial.print("Full name: "); Serial.println(fullName);
+			displaySpacecraftName = (char *) fullName;
 
 			targetCount++;
 			const char * nextTargetName = stations[stationCount].dishes[dishCount].targets[targetCount].name;
@@ -1273,6 +1284,7 @@ void loop()
 	server.handleClient();
 	
 
+	if (spacecraftCallsign == NULL) spacecraftCallsign = "";
 	if (displaySpacecraftName == NULL) displaySpacecraftName = "";
 	// Serial.print("Name: "); Serial.println(displaySpacecraftName);
 	updateAnimation(displaySpacecraftName, nameChanged);
