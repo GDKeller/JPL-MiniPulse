@@ -43,6 +43,7 @@ const char *password = "smile-grey9-hie";
 AnimationUtils au(POTENTIOMETER);
 AnimationUtils::Colors mpColors;
 Animate animate;
+Animate::Meteor meteor;
 SpacecraftData data;
 
 String serverName = "https://eyes.nasa.gov/dsn/data/dsn.xml"; // URL to fetch
@@ -512,13 +513,13 @@ void theaterChaseRainbow(Adafruit_NeoPixel &strip, int wait)
 }
 
 // Manage meteors
-void fireMeteor(int meteorRegion, int startPixel)
+void fireMeteor(int meteorRegion)
 {
-	animate.meteorRainRegions(
+	Animate::Meteor meteor;	
+	meteor.fireMeteor(
 		allStrips[0],			// Strip
 		meteorRegion,			// Region of strip
 		innerPixelsChunkLength, // Number of pixels of each region
-		startPixel,				// Pixel to start at
 		mpColors.teal.pointer,	// Color of meteor core
 		1,						// Size of meteor core
 		100,					// Meteor tail decay amount
@@ -674,88 +675,115 @@ void scrollLetters(char * spacecraftName, int wordSize, bool nameChanged)
 	}
 }
 
-static int region1StartPixel = 0;
-static int region2StartPixel = 0;
-static int region3StartPixel = 0;
-static int region4StartPixel = 0;
-static int region5StartPixel = 0;
-static int region6StartPixel = 0;
-static int region7StartPixel = 0;
-static int region8StartPixel = 0;
-static int region9StartPixel = 0;
-static int region10StartPixel = 0;
-static int region11StartPixel = 0;
-static int region12StartPixel = 0;
+// static int region1StartPixel = 0;
+// static int region2StartPixel = 0;
+// static int region3StartPixel = 0;
+// static int region4StartPixel = 0;
+// static int region5StartPixel = 0;
+// static int region6StartPixel = 0;
+// static int region7StartPixel = 0;
+// static int region8StartPixel = 0;
+// static int region9StartPixel = 0;
+// static int region10StartPixel = 0;
+// static int region11StartPixel = 0;
+// static int region12StartPixel = 0;
 
 // Manage meteors
 void manageMeteors()
 {
-	fireMeteor(0, region1StartPixel);
-	fireMeteor(1, region2StartPixel);
-	fireMeteor(2, region3StartPixel);
-	fireMeteor(3, region4StartPixel);
-	fireMeteor(4, region5StartPixel);
-	fireMeteor(5, region6StartPixel);
-	fireMeteor(6, region7StartPixel);
-	fireMeteor(7, region8StartPixel);
-	fireMeteor(8, region9StartPixel);
-	fireMeteor(9, region10StartPixel);
-	fireMeteor(10, region11StartPixel);
-	fireMeteor(11, region12StartPixel);
+	// fireMeteor(0, region1StartPixel);
+	// fireMeteor(1, region2StartPixel);
+	// fireMeteor(2, region3StartPixel);
+	// fireMeteor(3, region4StartPixel);
+	fireMeteor(4);
+	fireMeteor(5);
+	// fireMeteor(6, region7StartPixel);
+	// fireMeteor(7, region8StartPixel);
+	// fireMeteor(8, region9StartPixel);
+	// fireMeteor(9, region10StartPixel);
+	fireMeteor(10);
+	fireMeteor(11);
 
-	region1StartPixel++;
-	region2StartPixel++;
-	region3StartPixel++;
-	region4StartPixel++;
-	region5StartPixel++;
-	region6StartPixel++;
-	region7StartPixel++;
-	region8StartPixel++;
-	region9StartPixel++;
-	region10StartPixel++;
-	region11StartPixel++;
-	region12StartPixel++;
+	// region1StartPixel++;
+	// region2StartPixel++;
+	// region3StartPixel++;
+	// region4StartPixel++;
+	// region5StartPixel++;
+	// region6StartPixel++;
+	// region7StartPixel++;
+	// region8StartPixel++;
+	// region9StartPixel++;
+	// region10StartPixel++;
+	// region11StartPixel++;
+	// region12StartPixel++;
 
-	if (region1StartPixel > (innerPixelsChunkLength * 1) + (innerPixelsChunkLength / 2))
-		region1StartPixel = 0;
-	if (region2StartPixel > (innerPixelsChunkLength * 2) + (innerPixelsChunkLength / 2))
-		region2StartPixel = 0;
-	if (region3StartPixel > (innerPixelsChunkLength * 3) + (innerPixelsChunkLength / 2))
-		region3StartPixel = 0;
-	if (region4StartPixel > (innerPixelsChunkLength * 4) + (innerPixelsChunkLength / 2))
-		region4StartPixel = 0;
-	if (region5StartPixel > (innerPixelsChunkLength * 5) + (innerPixelsChunkLength / 2))
-		region5StartPixel = 0;
-	if (region6StartPixel > (innerPixelsChunkLength * 6) + (innerPixelsChunkLength / 2))
-		region6StartPixel = 0;
-	if (region7StartPixel > (innerPixelsChunkLength * 7) + (innerPixelsChunkLength / 2))
-		region7StartPixel = 0;
-	if (region8StartPixel > (innerPixelsChunkLength * 8) + (innerPixelsChunkLength / 2))
-		region8StartPixel = 0;
-	if (region9StartPixel > (innerPixelsChunkLength * 9) + (innerPixelsChunkLength / 2))
-		region9StartPixel = 0;
-	if (region10StartPixel > (innerPixelsChunkLength * 10) + (innerPixelsChunkLength / 2))
-		region10StartPixel = 0;
-	if (region11StartPixel > (innerPixelsChunkLength * 11) + (innerPixelsChunkLength / 2))
-		region11StartPixel = 0;
-	if (region12StartPixel > (innerPixelsChunkLength * 12) + (innerPixelsChunkLength / 2))
-		region12StartPixel = 0;
+	// if (region1StartPixel > (innerPixelsChunkLength * 1) + (innerPixelsChunkLength / 2))
+	// 	region1StartPixel = 0;
+	// if (region2StartPixel > (innerPixelsChunkLength * 2) + (innerPixelsChunkLength / 2))
+	// 	region2StartPixel = 0;
+	// if (region3StartPixel > (innerPixelsChunkLength * 3) + (innerPixelsChunkLength / 2))
+	// 	region3StartPixel = 0;
+	// if (region4StartPixel > (innerPixelsChunkLength * 4) + (innerPixelsChunkLength / 2))
+	// 	region4StartPixel = 0;
+	// if (region5StartPixel > (innerPixelsChunkLength * 5) + (innerPixelsChunkLength / 2))
+	// 	region5StartPixel = 0;
+	// if (region6StartPixel > (innerPixelsChunkLength * 6) + (innerPixelsChunkLength / 2))
+	// 	region6StartPixel = 0;
+	// if (region7StartPixel > (innerPixelsChunkLength * 7) + (innerPixelsChunkLength / 2))
+	// 	region7StartPixel = 0;
+	// if (region8StartPixel > (innerPixelsChunkLength * 8) + (innerPixelsChunkLength / 2))
+	// 	region8StartPixel = 0;
+	// if (region9StartPixel > (innerPixelsChunkLength * 9) + (innerPixelsChunkLength / 2))
+	// 	region9StartPixel = 0;
+	// if (region10StartPixel > (innerPixelsChunkLength * 10) + (innerPixelsChunkLength / 2))
+	// 	region10StartPixel = 0;
+	// if (region11StartPixel > (innerPixelsChunkLength * 11) + (innerPixelsChunkLength / 2))
+	// 	region11StartPixel = 0;
+	// if (region12StartPixel > (innerPixelsChunkLength * 12) + (innerPixelsChunkLength / 2))
+	// 	region12StartPixel = 0;
 }
 
+
+// Animate::Meteor* activeMeteors[100];
 // Handles updating all animations
 void updateAnimation(char * spacecraftName, bool nameChanged)
 {
 	au.updateBrightness();
 
-	// if ((millis() - animationTimer) > 1)
-	// {
-	// 	//   // hueCycle(*allStrips[0], 10);
-	// 	//   // rainbow(*allStrips[0], 10);
 
-	// 	manageMeteors();
-	// 	allStrips[0]->show();
-	// 	animationTimer = millis(); // Set word timer to current millis()
-	// }
+
+	if ((millis() - animationTimer) > 1000)
+	{
+		//   // hueCycle(*allStrips[0], 10);
+		//   // rainbow(*allStrips[0], 10);
+
+		// Animate::Meteor newMeteor;
+		// newMeteor.strip = allStrips[0];			// Strip
+		// newMeteor.region = 4;			// Region of strip
+		// newMeteor.regionLength = (int) innerPixelsChunkLength; // Number of pixels of each region
+		// newMeteor.pColor = mpColors.teal.pointer;	// Color of meteor core
+		// newMeteor.meteorSize = 1;						// Size of meteor core
+		// newMeteor.meteorTrailDecay = 100;					// Meteor tail decay amount
+		// newMeteor.meteorRandomDecay = true;					// Meteor tail random decay
+		// newMeteor.tailHueStart = 240;					// Starting hue for tail
+		// newMeteor.tailHueAdd = true;					// Forward hue direction for tail color
+		// newMeteor.tailHueExponent = 0.75;					// Tail hue cycle exponent
+		// newMeteor.tailHueSaturation = 255;						// Tail hue saturation start
+		// newMeteor.firstPixel = 0;
+
+		// Animate::Meteor* pNewMeteor = &newMeteor;
+		// activeMeteors[0]= pNewMeteor;
+
+		// manageMeteors();
+		// allStrips[0]->show();
+		animationTimer = millis(); // Set word timer to current millis()
+	}
+
+	// meteor.animateMeteor(activeMeteors[0]);
+
+	
+
+
 
 	if ((millis() - wordLastTime) > wordScrollInterval)
 	{
@@ -763,9 +791,14 @@ void updateAnimation(char * spacecraftName, bool nameChanged)
 		int wordSize = wordLength.length();
 
 		if (nameScrollDone == false) scrollLetters(spacecraftName, wordSize, nameChanged);
-		allStrips[0]->show();
+		// allStrips[0]->show();
 		wordLastTime = millis(); // Set word timer to current millis()
 	}
+
+	allStrips[0]->show();
+
+
+	// activeMeteors[0]->firstPixel++;
 }
 
 // Create data structure objects

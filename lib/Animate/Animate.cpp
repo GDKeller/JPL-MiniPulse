@@ -3,26 +3,45 @@
 #include <AnimationUtils.h>
 #include <Adafruit_NeoPixel.h>
 
-// Animate::Animate() {
-//     aUtil = AnimationUtils();
-// }
+Animate::Animate() {
+    // nothing
+}
 
-// AnimationUtils au;
+AnimationUtils Animate::aUtilAnimate = AnimationUtils();
 
-void Animate::meteorRainRegions(
-	Adafruit_NeoPixel *&strip,
+
+Animate::Meteor::Meteor() : strip(strip) {}
+
+void Animate::Meteor::fireMeteor(
+	Adafruit_NeoPixel* &strip,
 	int region,
-  int regionLength,
-	int beginPixel,
-	const uint32_t *pColor,
+	const int regionLength,
+	uint32_t *pColor,
 	int meteorSize,
 	int meteorTrailDecay,
 	bool meteorRandomDecay,
 	int tailHueStart,
 	bool tailHueAdd,
-	float tailHueExponent,
+	double tailHueExponent,
 	int tailHueSaturation)
 {
+}
+
+void Animate::Meteor::animateMeteor(Meteor* meteor)
+{
+	Adafruit_NeoPixel* &strip = meteor->strip;
+	int region = meteor->region;
+	int regionLength = meteor->regionLength;
+	uint32_t *pColor = meteor->pColor; 
+	int meteorSize = meteor->meteorSize;
+	int meteorTrailDecay = meteor->meteorTrailDecay;
+	bool meteorRandomDecay = meteor->meteorRandomDecay;
+	int tailHueStart = meteor->tailHueStart;
+	bool tailHueAdd = meteor->tailHueAdd;
+	double tailHueExponent = meteor->tailHueExponent;
+	int tailHueSaturation = meteor->tailHueSaturation;
+	int beginPixel = meteor->firstPixel;
+	
 
 	int hue = degreeToSixteenbit(tailHueStart);
 	int startPixel = region * regionLength; // First pixel of each region
@@ -31,7 +50,6 @@ void Animate::meteorRainRegions(
 	int regionStart = (regionLength * region) - regionLength - 1; // Calculate the pixel before the region start
 	int regionEnd = regionLength * (region + 1);							  // Calculate the pixel after the region end
 
-	int growInt;
 	for (int d = 1; d < regionLength + 1; d++)
 	{
 		int currentPixel = drawPixel - d - 1;
@@ -42,7 +60,7 @@ void Animate::meteorRainRegions(
 		// Draw meteor
 		if (d < meteorSize + 1)
 		{
-			aUtil.setPixelColor(*strip, currentPixel, pColor);
+			aUtilAnimate.setPixelColor(*strip, currentPixel, pColor);
 			continue;
 		}
 
@@ -65,12 +83,12 @@ void Animate::meteorRainRegions(
 		// Make sure the pixel right after the meteor will get drawn so meteor values aren't repeated
 		if (d < (meteorSize + 2))
 		{
-			aUtil.setPixelColor(*strip, currentPixel, pTrailColor);
+			aUtilAnimate.setPixelColor(*strip, currentPixel, pTrailColor);
 			continue;
 		}
 
 		// Roll the dice on showing each pixel for a "fizzle" effect
 		if (random(10) < 5)
-			aUtil.setPixelColor(*strip, currentPixel, pTrailColor);
+			aUtilAnimate.setPixelColor(*strip, currentPixel, pTrailColor);
 	}
 }
