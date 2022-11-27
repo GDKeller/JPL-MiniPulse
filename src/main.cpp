@@ -675,72 +675,14 @@ void scrollLetters(char * spacecraftName, int wordSize, bool nameChanged)
 	}
 }
 
-// static int region1StartPixel = 0;
-// static int region2StartPixel = 0;
-// static int region3StartPixel = 0;
-// static int region4StartPixel = 0;
-// static int region5StartPixel = 0;
-// static int region6StartPixel = 0;
-// static int region7StartPixel = 0;
-// static int region8StartPixel = 0;
-// static int region9StartPixel = 0;
-// static int region10StartPixel = 0;
-// static int region11StartPixel = 0;
-// static int region12StartPixel = 0;
 
 // Manage meteors
 void manageMeteors()
 {
-	// fireMeteor(0, region1StartPixel);
-	// fireMeteor(1, region2StartPixel);
-	// fireMeteor(2, region3StartPixel);
-	// fireMeteor(3, region4StartPixel);
 	fireMeteor(4);
 	fireMeteor(5);
-	// fireMeteor(6, region7StartPixel);
-	// fireMeteor(7, region8StartPixel);
-	// fireMeteor(8, region9StartPixel);
-	// fireMeteor(9, region10StartPixel);
 	fireMeteor(10);
 	fireMeteor(11);
-
-	// region1StartPixel++;
-	// region2StartPixel++;
-	// region3StartPixel++;
-	// region4StartPixel++;
-	// region5StartPixel++;
-	// region6StartPixel++;
-	// region7StartPixel++;
-	// region8StartPixel++;
-	// region9StartPixel++;
-	// region10StartPixel++;
-	// region11StartPixel++;
-	// region12StartPixel++;
-
-	// if (region1StartPixel > (innerPixelsChunkLength * 1) + (innerPixelsChunkLength / 2))
-	// 	region1StartPixel = 0;
-	// if (region2StartPixel > (innerPixelsChunkLength * 2) + (innerPixelsChunkLength / 2))
-	// 	region2StartPixel = 0;
-	// if (region3StartPixel > (innerPixelsChunkLength * 3) + (innerPixelsChunkLength / 2))
-	// 	region3StartPixel = 0;
-	// if (region4StartPixel > (innerPixelsChunkLength * 4) + (innerPixelsChunkLength / 2))
-	// 	region4StartPixel = 0;
-	// if (region5StartPixel > (innerPixelsChunkLength * 5) + (innerPixelsChunkLength / 2))
-	// 	region5StartPixel = 0;
-	// if (region6StartPixel > (innerPixelsChunkLength * 6) + (innerPixelsChunkLength / 2))
-	// 	region6StartPixel = 0;
-	// if (region7StartPixel > (innerPixelsChunkLength * 7) + (innerPixelsChunkLength / 2))
-	// 	region7StartPixel = 0;
-	// if (region8StartPixel > (innerPixelsChunkLength * 8) + (innerPixelsChunkLength / 2))
-	// 	region8StartPixel = 0;
-	// if (region9StartPixel > (innerPixelsChunkLength * 9) + (innerPixelsChunkLength / 2))
-	// 	region9StartPixel = 0;
-	// if (region10StartPixel > (innerPixelsChunkLength * 10) + (innerPixelsChunkLength / 2))
-	// 	region10StartPixel = 0;
-	// if (region11StartPixel > (innerPixelsChunkLength * 11) + (innerPixelsChunkLength / 2))
-	// 	region11StartPixel = 0;
-	// if (region12StartPixel > (innerPixelsChunkLength * 12) + (innerPixelsChunkLength / 2))
-	// 	region12StartPixel = 0;
 }
 
 
