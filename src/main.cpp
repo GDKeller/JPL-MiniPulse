@@ -57,6 +57,7 @@ unsigned long animationTimer = 0;
 unsigned long targetChangeTimer = 0;
 unsigned long meteorsTimer = 0;
 unsigned long tick = 0;
+unsigned long tickAfter = 0;
 
 // how often each pattern updates
 unsigned long wordScrollInterval = 10;
@@ -644,7 +645,7 @@ void scrollLetters(char * spacecraftName, int wordSize, bool nameChanged)
 		
 		char theLetter = spacecraftName[i];
 		doLetterRegions(theLetter, 0, letterPixel);
-		doLetterRegions(theLetter, 6, letterPixel);
+		// doLetterRegions(theLetter, 6, letterPixel);
 		// doLetterRegions(theLetter, 8, letterPixel);
 
 		letterPixel = letterPixel - letterSpacing - characterKerning;
@@ -664,6 +665,24 @@ void manageMeteors()
 {
 }
 
+void createMeteor(int region) {
+	animate.ActiveMeteors[animate.ActiveMeteorsSize++] = new Meteor {
+		0,								// firstPixel
+		region,							// region
+		(int) innerPixelsChunkLength,	// regionLength
+		mpColors.purple.pointer,		// pColor
+		1,								// meteorSize
+		100,							// meteorTrailDecay
+		true,							// meteorRandomDecay
+		240,							// tailHueStart
+		true,							// tailHueAdd
+		0.75,							// tailHueExponent
+		255,							// tailHueSaturation
+		allStrips[0]					// rStrip
+	};
+	
+	if (animate.ActiveMeteorsSize > 50) animate.ActiveMeteorsSize = 0;
+}
 
 // Animate::Meteor* activeMeteors[100];
 // Handles updating all animations
@@ -671,57 +690,28 @@ void manageMeteors()
 
 void updateAnimation(char * spacecraftName, bool nameChanged)
 {
+	// Update brightness from potentiometer
 	au.updateBrightness();
-	// Serial.println("Update");
 
 
-
-	if ((millis() - animationTimer) > 1000)
+	if ((millis() - animationTimer) > 3000)
 	{
-		Serial.print("meteor array size: "); Serial.println(animate.ActiveMeteorsSize);
-		Serial.println("Creating new meteor");
 
-		Serial.println("New meteor obj");
-		Meteor *newMeteor = new Meteor {
-			NULL,
-			0,
-			4,
-			(int) innerPixelsChunkLength,
-			mpColors.teal.pointer,
-			1,
-			100,
-			true,
-			240,
-			true,
-			0.75,
-			255,
-			allStrips[0]
-		};
+		createMeteor(4);
+		createMeteor(5);
+		createMeteor(6);
+		createMeteor(7);
 
-		Serial.println("assign to array");
-		for (int i = 0; i < animate.ActiveMeteorsSize; i++) {
-			if (animate.ActiveMeteors[i] == nullptr) {
-				animate.ActiveMeteors[i] = newMeteor;
-				animate.animateMeteor(animate.ActiveMeteors[i]);
-				break;
-			}
-		}
-		
-		Serial.println("meteor object creation successful");
-
-		// manageMeteors();
-
-		animationTimer = millis(); // Set word timer to current millis()
+		animationTimer = millis(); // Set animation timer to current millis()
 	}
 
 
-	if ((millis() - meteorsTimer) > 1) {
-		if (animate.ActiveMeteors != NULL) {
-			for (int i = 0; i < animate.ActiveMeteorsSize; i++) {	
-				if (animate.ActiveMeteors[i] != nullptr) animate.animateMeteor(animate.ActiveMeteors[i]);
-			}
+	if ((millis() - tick) > 1) {
+		// Update meteor animations
+		for (int i = 0; i < 50; i++) {	
+			if (animate.ActiveMeteors[i] != nullptr) animate.animateMeteor(animate.ActiveMeteors[i]);
 		}
-		meteorsTimer = millis();
+		tick = millis();
 	}
 
 
@@ -731,25 +721,26 @@ void updateAnimation(char * spacecraftName, bool nameChanged)
 		int wordSize = wordLength.length();
 
 		if (nameScrollDone == false) scrollLetters(spacecraftName, wordSize, nameChanged);
-		// allStrips[0]->show();
 		wordLastTime = millis(); // Set word timer to current millis()
 	}
 
+	// Illuminate LEDs
 	allStrips[0]->show();
 
-	if ((millis() - tick) > 1) {
-		if (animate.ActiveMeteors != NULL) {
-			for (int i = 0; i < animate.ActiveMeteorsSize; i++) {
-				if (animate.ActiveMeteors[i] != nullptr){
-					animate.ActiveMeteors[i]->firstPixel++;
-					if (animate.ActiveMeteors[i]->firstPixel > animate.ActiveMeteors[i]->regionLength * 2) {
-						delete *animate.ActiveMeteors[i];
-						animate.ActiveMeteors[i] = nullptr;
-					}
+
+	if ((millis() - tickAfter) > 1) {
+		for (int i = 0; i < 50; i++) {
+			if (animate.ActiveMeteors[i] != nullptr){
+				animate.ActiveMeteors[i]->firstPixel++;
+
+				// If meteor is beyond the display region, unallocate memory and remove array item
+				if (animate.ActiveMeteors[i]->firstPixel > animate.ActiveMeteors[i]->regionLength * 2) {
+					delete animate.ActiveMeteors[i];
+					animate.ActiveMeteors[i] = nullptr;
 				}
 			}
 		}
-		tick = millis();
+		tickAfter = millis();
 	}
 }
 

@@ -12,7 +12,6 @@
 #define Animate_h
 
 struct Meteor {
-    int arrayPos;
     int firstPixel;
     int region;
     int regionLength;
@@ -30,8 +29,8 @@ struct Meteor {
 class Animate {
     static AnimationUtils aUtilAnimate;
     public:
-        Meteor* ActiveMeteors[100] = {nullptr};
-        size_t ActiveMeteorsSize = 100;
+        Meteor* ActiveMeteors[50] = {nullptr};
+        size_t ActiveMeteorsSize = 0;
         void animateMeteor(Meteor* meteor);
 
         Animate();

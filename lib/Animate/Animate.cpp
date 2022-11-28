@@ -3,15 +3,9 @@
 #include <AnimationUtils.h>
 #include <Adafruit_NeoPixel.h>
 
-Animate::Animate() {
-    // nothing
-}
+Animate::Animate() {}
 
 AnimationUtils Animate::aUtilAnimate = AnimationUtils();
-
-
-// Animate::Meteor : rStrip(rStrip) {}
-// Animate::Meteor {}
 
 void Animate::animateMeteor(Meteor* meteor)
 {
@@ -27,8 +21,7 @@ void Animate::animateMeteor(Meteor* meteor)
 	double tailHueExponent = meteor->tailHueExponent;
 	int tailHueSaturation = meteor->tailHueSaturation;
 	int beginPixel = meteor->firstPixel;
-	
-	Serial.print("class func beginPixel: "); Serial.println(beginPixel);
+
 
 	int hue = degreeToSixteenbit(tailHueStart);
 	int startPixel = region * regionLength; // First pixel of each region
