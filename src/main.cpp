@@ -660,11 +660,8 @@ void scrollLetters(char * spacecraftName, int wordSize, bool nameChanged)
 }
 
 
-// Manage meteors
-void manageMeteors()
-{
-}
 
+// Create Meteor object
 void createMeteor(int region, int startPixel = 0) {
 	animate.ActiveMeteors[animate.ActiveMeteorsSize++] = new Meteor {
 		startPixel,						// firstPixel
@@ -672,7 +669,7 @@ void createMeteor(int region, int startPixel = 0) {
 		(int) innerPixelsChunkLength,	// regionLength
 		mpColors.purple.pointer,		// pColor
 		1,								// meteorSize
-		100,							// meteorTrailDecay
+		false,							// meteorTrailDecay
 		true,							// meteorRandomDecay
 		240,							// tailHueStart
 		true,							// tailHueAdd
@@ -684,16 +681,33 @@ void createMeteor(int region, int startPixel = 0) {
 	if (animate.ActiveMeteorsSize > 50) animate.ActiveMeteorsSize = 0;
 }
 
-// Animate::Meteor* activeMeteors[100];
-// Handles updating all animations
+void animationMeteorPulseRegion(
+	uint8_t region,
+	int16_t startPixel = 0,
+	uint8_t pulseCount = 2,
+	int16_t offset = 10)
+{	
+	for (int i = 0; i < pulseCount; i++) {
+		int16_t pixel = i + startPixel + (i * offset * -1);
+		createMeteor(region, pixel);
+	}
+}
 
 
-int metaTimer1 = 0;
-int sub1MetaTimer1 = 0;
-int sub2MetaTimer1 = 0;
-int sub3MetaTimer1 = 0;
-int sub4MetaTimer1 = 0;
-int sub5MetaTimer1 = 0;
+void animationMeteorPulseRing(
+	// uint8_t ring
+	uint8_t pulseCount,
+	uint8_t offset
+)
+{
+	for (int i = 0; i < innerChunks; i++) {
+		if (i < 4) continue;
+		animationMeteorPulseRegion(i, 0 - i, pulseCount, offset);
+	}
+}
+
+
+
 
 int region1Timer = 0;
 int region2Timer = 0;
@@ -714,50 +728,9 @@ void updateAnimation(char * spacecraftName, bool nameChanged)
 	au.updateBrightness();
 
 
-	// if (millis() - region4Timer > 3000) {
-	// 	createMeteor(4);
-	// 	region4Timer = millis();
-	// }
-	// if (millis() - region5Timer > 3100) {
-	// 	createMeteor(5);
-	// 	region5Timer = millis();
-	// }
-	// if (millis() - region6Timer > 3200) {
-	// 	createMeteor(6);
-	// 	region6Timer = millis();
-	// }
-	// if (millis() - region7Timer > 3300) {
-	// 	createMeteor(7);
-	// 	region7Timer = millis();
-	// }
-
-
-
-	if ((millis() - animationTimer) > 10000)
+	if ((millis() - animationTimer) > 5000)
 	{
-		createMeteor(4, 0);
-		createMeteor(4, -20);
-		
-		createMeteor(5, 0);
-		createMeteor(5, -20);
-
-		createMeteor(6, 0);
-		createMeteor(6, -20);
-
-		createMeteor(7, 0);
-		createMeteor(7, -20);
-
-		createMeteor(8, 0);
-		createMeteor(8, -20);
-
-		createMeteor(9, 0);
-		createMeteor(9, -20);
-
-		createMeteor(10, 0);
-		createMeteor(10, -20);
-
-		createMeteor(11, 0);
-		createMeteor(11, -20);
+		animationMeteorPulseRing(5, 12);
 
 		animationTimer = millis(); // Set animation timer to current millis()
 	}

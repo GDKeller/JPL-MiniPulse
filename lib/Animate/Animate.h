@@ -17,7 +17,7 @@ struct Meteor {
     int regionLength;
     uint32_t *pColor;
     int meteorSize;
-    int meteorTrailDecay;
+    bool meteorTrailDecay;
     bool meteorRandomDecay;
     int tailHueStart;
     bool tailHueAdd;
