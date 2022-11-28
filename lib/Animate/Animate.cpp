@@ -10,26 +10,13 @@ Animate::Animate() {
 AnimationUtils Animate::aUtilAnimate = AnimationUtils();
 
 
-Animate::Meteor::Meteor() : strip(strip) {}
+// Animate::Meteor : rStrip(rStrip) {}
+// Animate::Meteor {}
 
-void Animate::Meteor::fireMeteor(
-	Adafruit_NeoPixel* &strip,
-	int region,
-	const int regionLength,
-	uint32_t *pColor,
-	int meteorSize,
-	int meteorTrailDecay,
-	bool meteorRandomDecay,
-	int tailHueStart,
-	bool tailHueAdd,
-	double tailHueExponent,
-	int tailHueSaturation)
+void Animate::animateMeteor(Meteor* meteor)
 {
-}
-
-void Animate::Meteor::animateMeteor(Meteor* meteor)
-{
-	Adafruit_NeoPixel* &strip = meteor->strip;
+	Meteor drMeteor = *meteor;
+	Adafruit_NeoPixel *&strip = meteor->rStrip;
 	int region = meteor->region;
 	int regionLength = meteor->regionLength;
 	uint32_t *pColor = meteor->pColor; 
@@ -42,6 +29,10 @@ void Animate::Meteor::animateMeteor(Meteor* meteor)
 	int tailHueSaturation = meteor->tailHueSaturation;
 	int beginPixel = meteor->firstPixel;
 	
+	// if (beginPixel > regionLength * 2) {
+	// 	delete meteor;
+	// }
+	Serial.print("class func beginPixel: "); Serial.println(beginPixel);
 
 	int hue = degreeToSixteenbit(tailHueStart);
 	int startPixel = region * regionLength; // First pixel of each region
@@ -50,6 +41,7 @@ void Animate::Meteor::animateMeteor(Meteor* meteor)
 	int regionStart = (regionLength * region) - regionLength - 1; // Calculate the pixel before the region start
 	int regionEnd = regionLength * (region + 1);							  // Calculate the pixel after the region end
 
+	// Draw every LED in entire region 
 	for (int d = 1; d < regionLength + 1; d++)
 	{
 		int currentPixel = drawPixel - d - 1;

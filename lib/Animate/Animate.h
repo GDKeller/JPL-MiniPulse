@@ -11,43 +11,29 @@
 #ifndef Animate_h
 #define Animate_h
 
+struct Meteor {
+    int firstPixel;
+    int region;
+    int regionLength;
+    uint32_t *pColor;
+    int meteorSize;
+    int meteorTrailDecay;
+    bool meteorRandomDecay;
+    int tailHueStart;
+    bool tailHueAdd;
+    double tailHueExponent;
+    int tailHueSaturation;
+    Adafruit_NeoPixel *&rStrip;
+};
+
 class Animate {
     static AnimationUtils aUtilAnimate;
     public:
+        Meteor* ActiveMeteors[100] = {nullptr};
+        size_t ActiveMeteorsSize = 100;
+        void animateMeteor(Meteor* meteor);
+
         Animate();
-
-        class Meteor {
-            public:
-                Adafruit_NeoPixel* &strip;
-                int region;
-                int regionLength;
-                uint32_t *pColor;
-                int meteorSize;
-                int meteorTrailDecay;
-                bool meteorRandomDecay;
-                int tailHueStart;
-                bool tailHueAdd;
-                double tailHueExponent;
-                int tailHueSaturation;
-                int firstPixel;
-
-                void fireMeteor(
-                    Adafruit_NeoPixel* &strip,
-                    int region,
-                    int regionLength,
-                    uint32_t *pColor,
-                    int meteorSize,
-                    int meteorTrailDecay,
-                    bool meteorRandomDecay,
-                    int tailHueStart,
-                    bool tailHueAdd,
-                    double tailHueExponent,
-                    int tailHueSaturation
-                );
-                void animateMeteor(Meteor* meteor);
-
-                Meteor();
-        };
 };
 
 #endif

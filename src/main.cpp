@@ -43,7 +43,7 @@ const char *password = "smile-grey9-hie";
 AnimationUtils au(POTENTIOMETER);
 AnimationUtils::Colors mpColors;
 Animate animate;
-Animate::Meteor meteor;
+// Animate::Meteor meteor;
 SpacecraftData data;
 
 String serverName = "https://eyes.nasa.gov/dsn/data/dsn.xml"; // URL to fetch
@@ -55,6 +55,8 @@ unsigned long wordLastTime = 0;
 unsigned long timerDelay = 5000; // Set timer to 5 seconds (5000)
 unsigned long animationTimer = 0;
 unsigned long targetChangeTimer = 0;
+unsigned long meteorsTimer = 0;
+unsigned long tick = 0;
 
 // how often each pattern updates
 unsigned long wordScrollInterval = 10;
@@ -512,25 +514,6 @@ void theaterChaseRainbow(Adafruit_NeoPixel &strip, int wait)
 	}
 }
 
-// Manage meteors
-void fireMeteor(int meteorRegion)
-{
-	Animate::Meteor meteor;	
-	meteor.fireMeteor(
-		allStrips[0],			// Strip
-		meteorRegion,			// Region of strip
-		innerPixelsChunkLength, // Number of pixels of each region
-		mpColors.teal.pointer,	// Color of meteor core
-		1,						// Size of meteor core
-		100,					// Meteor tail decay amount
-		true,					// Meteor tail random decay
-		240,					// Starting hue for tail
-		true,					// Forward hue direction for tail color
-		0.75,					// Tail hue cycle exponent
-		255						// Tail hue saturation start
-	);
-}
-
 
 
 static bool nameScrollDone = true;
@@ -679,52 +662,66 @@ void scrollLetters(char * spacecraftName, int wordSize, bool nameChanged)
 // Manage meteors
 void manageMeteors()
 {
-	fireMeteor(4);
-	fireMeteor(5);
-	fireMeteor(10);
-	fireMeteor(11);
 }
 
 
 // Animate::Meteor* activeMeteors[100];
 // Handles updating all animations
+
+
 void updateAnimation(char * spacecraftName, bool nameChanged)
 {
 	au.updateBrightness();
+	// Serial.println("Update");
 
 
 
 	if ((millis() - animationTimer) > 1000)
 	{
-		//   // hueCycle(*allStrips[0], 10);
-		//   // rainbow(*allStrips[0], 10);
+		Serial.print("meteor array size: "); Serial.println(animate.ActiveMeteorsSize);
+		Serial.println("Creating new meteor");
 
-		// Animate::Meteor newMeteor;
-		// newMeteor.strip = allStrips[0];			// Strip
-		// newMeteor.region = 4;			// Region of strip
-		// newMeteor.regionLength = (int) innerPixelsChunkLength; // Number of pixels of each region
-		// newMeteor.pColor = mpColors.teal.pointer;	// Color of meteor core
-		// newMeteor.meteorSize = 1;						// Size of meteor core
-		// newMeteor.meteorTrailDecay = 100;					// Meteor tail decay amount
-		// newMeteor.meteorRandomDecay = true;					// Meteor tail random decay
-		// newMeteor.tailHueStart = 240;					// Starting hue for tail
-		// newMeteor.tailHueAdd = true;					// Forward hue direction for tail color
-		// newMeteor.tailHueExponent = 0.75;					// Tail hue cycle exponent
-		// newMeteor.tailHueSaturation = 255;						// Tail hue saturation start
-		// newMeteor.firstPixel = 0;
+		Serial.println("New meteor obj");
+		Meteor *newMeteor = new Meteor {
+			0,
+			4,
+			(int) innerPixelsChunkLength,
+			mpColors.teal.pointer,
+			1,
+			100,
+			true,
+			240,
+			true,
+			0.75,
+			255,
+			allStrips[0]
+		};
 
-		// Animate::Meteor* pNewMeteor = &newMeteor;
-		// activeMeteors[0]= pNewMeteor;
+		Serial.println("assign to array");
+		for (int i = 0; i < animate.ActiveMeteorsSize; i++) {
+			if (animate.ActiveMeteors[i] == nullptr) {
+				animate.ActiveMeteors[i] = newMeteor;
+				animate.animateMeteor(animate.ActiveMeteors[i]);
+				break;
+			}
+		}
+		
+		Serial.println("meteor object creation successful");
 
 		// manageMeteors();
-		// allStrips[0]->show();
+
 		animationTimer = millis(); // Set word timer to current millis()
 	}
 
-	// meteor.animateMeteor(activeMeteors[0]);
 
-	
-
+	if ((millis() - meteorsTimer) > 1) {
+		if (animate.ActiveMeteors != NULL) {
+			for (int i = 0; i < animate.ActiveMeteorsSize; i++) {	
+				if (animate.ActiveMeteors[i] != nullptr) animate.animateMeteor(animate.ActiveMeteors[i]);
+			}
+		}
+		meteorsTimer = millis();
+	}
 
 
 	if ((millis() - wordLastTime) > wordScrollInterval)
@@ -739,8 +736,14 @@ void updateAnimation(char * spacecraftName, bool nameChanged)
 
 	allStrips[0]->show();
 
-
-	// activeMeteors[0]->firstPixel++;
+	if ((millis() - tick) > 1) {
+		if (animate.ActiveMeteors != NULL) {
+			for (int i = 0; i < animate.ActiveMeteorsSize; i++) {
+				if (animate.ActiveMeteors[i] != nullptr) animate.ActiveMeteors[i]->firstPixel++;
+			}
+		}
+		tick = millis();
+	}
 }
 
 // Create data structure objects
