@@ -665,9 +665,9 @@ void manageMeteors()
 {
 }
 
-void createMeteor(int region) {
+void createMeteor(int region, int startPixel = 0) {
 	animate.ActiveMeteors[animate.ActiveMeteorsSize++] = new Meteor {
-		0,								// firstPixel
+		startPixel,						// firstPixel
 		region,							// region
 		(int) innerPixelsChunkLength,	// regionLength
 		mpColors.purple.pointer,		// pColor
@@ -688,31 +688,88 @@ void createMeteor(int region) {
 // Handles updating all animations
 
 
+int metaTimer1 = 0;
+int sub1MetaTimer1 = 0;
+int sub2MetaTimer1 = 0;
+int sub3MetaTimer1 = 0;
+int sub4MetaTimer1 = 0;
+int sub5MetaTimer1 = 0;
+
+int region1Timer = 0;
+int region2Timer = 0;
+int region3Timer = 0;
+int region4Timer = 0;
+int region5Timer = 0;
+int region6Timer = 0;
+int region7Timer = 0;
+int region8Timer = 0;
+int region9Timer = 0;
+int region10Timer = 0;
+int region11Timer = 0;
+int region12Timer = 0;
+
 void updateAnimation(char * spacecraftName, bool nameChanged)
 {
 	// Update brightness from potentiometer
 	au.updateBrightness();
 
 
-	if ((millis() - animationTimer) > 3000)
-	{
+	// if (millis() - region4Timer > 3000) {
+	// 	createMeteor(4);
+	// 	region4Timer = millis();
+	// }
+	// if (millis() - region5Timer > 3100) {
+	// 	createMeteor(5);
+	// 	region5Timer = millis();
+	// }
+	// if (millis() - region6Timer > 3200) {
+	// 	createMeteor(6);
+	// 	region6Timer = millis();
+	// }
+	// if (millis() - region7Timer > 3300) {
+	// 	createMeteor(7);
+	// 	region7Timer = millis();
+	// }
 
-		createMeteor(4);
-		createMeteor(5);
-		createMeteor(6);
-		createMeteor(7);
+
+
+	if ((millis() - animationTimer) > 10000)
+	{
+		createMeteor(4, 0);
+		createMeteor(4, -20);
+		
+		createMeteor(5, 0);
+		createMeteor(5, -20);
+
+		createMeteor(6, 0);
+		createMeteor(6, -20);
+
+		createMeteor(7, 0);
+		createMeteor(7, -20);
+
+		createMeteor(8, 0);
+		createMeteor(8, -20);
+
+		createMeteor(9, 0);
+		createMeteor(9, -20);
+
+		createMeteor(10, 0);
+		createMeteor(10, -20);
+
+		createMeteor(11, 0);
+		createMeteor(11, -20);
 
 		animationTimer = millis(); // Set animation timer to current millis()
 	}
 
 
-	if ((millis() - tick) > 1) {
+	// if ((millis() - tick) > 1) {
 		// Update meteor animations
 		for (int i = 0; i < 50; i++) {	
 			if (animate.ActiveMeteors[i] != nullptr) animate.animateMeteor(animate.ActiveMeteors[i]);
 		}
-		tick = millis();
-	}
+	// 	tick = millis();
+	// }
 
 
 	if ((millis() - wordLastTime) > wordScrollInterval)
@@ -728,7 +785,7 @@ void updateAnimation(char * spacecraftName, bool nameChanged)
 	allStrips[0]->show();
 
 
-	if ((millis() - tickAfter) > 1) {
+	// if ((millis() - tickAfter) > 1) {
 		for (int i = 0; i < 50; i++) {
 			if (animate.ActiveMeteors[i] != nullptr){
 				animate.ActiveMeteors[i]->firstPixel++;
@@ -740,8 +797,8 @@ void updateAnimation(char * spacecraftName, bool nameChanged)
 				}
 			}
 		}
-		tickAfter = millis();
-	}
+	// 	tickAfter = millis();
+	// }
 }
 
 // Create data structure objects
