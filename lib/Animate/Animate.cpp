@@ -15,7 +15,6 @@ AnimationUtils Animate::aUtilAnimate = AnimationUtils();
 
 void Animate::animateMeteor(Meteor* meteor)
 {
-	Meteor drMeteor = *meteor;
 	Adafruit_NeoPixel *&strip = meteor->rStrip;
 	int region = meteor->region;
 	int regionLength = meteor->regionLength;
@@ -29,9 +28,6 @@ void Animate::animateMeteor(Meteor* meteor)
 	int tailHueSaturation = meteor->tailHueSaturation;
 	int beginPixel = meteor->firstPixel;
 	
-	// if (beginPixel > regionLength * 2) {
-	// 	delete meteor;
-	// }
 	Serial.print("class func beginPixel: "); Serial.println(beginPixel);
 
 	int hue = degreeToSixteenbit(tailHueStart);

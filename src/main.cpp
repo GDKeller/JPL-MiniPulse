@@ -683,6 +683,7 @@ void updateAnimation(char * spacecraftName, bool nameChanged)
 
 		Serial.println("New meteor obj");
 		Meteor *newMeteor = new Meteor {
+			NULL,
 			0,
 			4,
 			(int) innerPixelsChunkLength,
@@ -739,7 +740,13 @@ void updateAnimation(char * spacecraftName, bool nameChanged)
 	if ((millis() - tick) > 1) {
 		if (animate.ActiveMeteors != NULL) {
 			for (int i = 0; i < animate.ActiveMeteorsSize; i++) {
-				if (animate.ActiveMeteors[i] != nullptr) animate.ActiveMeteors[i]->firstPixel++;
+				if (animate.ActiveMeteors[i] != nullptr){
+					animate.ActiveMeteors[i]->firstPixel++;
+					if (animate.ActiveMeteors[i]->firstPixel > animate.ActiveMeteors[i]->regionLength * 2) {
+						delete *animate.ActiveMeteors[i];
+						animate.ActiveMeteors[i] = nullptr;
+					}
+				}
 			}
 		}
 		tick = millis();
