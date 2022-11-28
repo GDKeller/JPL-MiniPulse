@@ -727,10 +727,19 @@ void updateAnimation(char * spacecraftName, bool nameChanged)
 	// Update brightness from potentiometer
 	au.updateBrightness();
 
-
-	if ((millis() - animationTimer) > 5000)
+	if ((millis() - wordLastTime) > wordScrollInterval)
 	{
-		animationMeteorPulseRing(5, 12);
+		string wordLength = (string) spacecraftName;
+		int wordSize = wordLength.length();
+
+		if (nameScrollDone == false) scrollLetters(spacecraftName, wordSize, nameChanged);
+		wordLastTime = millis(); // Set word timer to current millis()
+	}
+
+
+	if ((millis() - animationTimer) > 2000)
+	{
+		animationMeteorPulseRing(2, 12);
 
 		animationTimer = millis(); // Set animation timer to current millis()
 	}
@@ -745,14 +754,6 @@ void updateAnimation(char * spacecraftName, bool nameChanged)
 	// }
 
 
-	if ((millis() - wordLastTime) > wordScrollInterval)
-	{
-		string wordLength = (string) spacecraftName;
-		int wordSize = wordLength.length();
-
-		if (nameScrollDone == false) scrollLetters(spacecraftName, wordSize, nameChanged);
-		wordLastTime = millis(); // Set word timer to current millis()
-	}
 
 	// Illuminate LEDs
 	allStrips[0]->show();

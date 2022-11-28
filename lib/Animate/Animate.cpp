@@ -59,8 +59,12 @@ void Animate::animateMeteor(Meteor* meteor)
 			int hueRandom = hue + (random(randVal) - (randVal / 2));
 			trailColor = strip->ColorHSV(hueRandom, satValue, brightValue);
 		} else {
-			uint8_t satValue = tailHueSaturation - (d * 16) < 0 ? 0 : tailHueSaturation - (d * 16);
-			uint8_t brightValue = 255 - (d * 32) < 0 ? 0 : 255 - (d * 32);
+			int satCalc = tailHueSaturation - (d * 16);
+			satCalc += random(32) - 16;
+			uint8_t satValue = satCalc < 0 ? 0 : satCalc;
+			int brightCalc = 255 - (d * 32);
+			brightCalc += random(32) - 16;
+			uint8_t brightValue = brightCalc < 0 ? 0 : brightCalc;
 			trailColor = strip->ColorHSV(hue, satValue, brightValue);
 		}
 		
