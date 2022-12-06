@@ -24,27 +24,33 @@ void Animate::animateMeteor(Meteor* meteor)
 
 
 	int hue = degreeToSixteenbit(tailHueStart);
-	int startPixel = region * regionLength; // First pixel of each region
-	int drawPixel = startPixel + beginPixel; // Current pixel to draw
 
+	// First pixel of each region
+	int startPixel = meteor->directionDown == true ?
+		(region + 1) * regionLength : startPixel = region * regionLength;
 
-	int regionStart; // Calculate the pixel before the region start
-	int regionEnd; // Calculate the pixel after the region end
-	if (meteor->directionDown == true) {
-		regionStart = regionLength * region; // Calculate the pixel before the region start
-		regionEnd = regionLength * (region + 1); // Calculate the pixel after the region end
-	} else {
-		regionStart = regionLength * region; // Calculate the pixel before the region start
-		regionEnd = regionLength * (region + 1); // Calculate the pixel after the region end
-	}
+	// Current pixel to draw
+	int drawPixel = meteor->directionDown == true ?
+		startPixel - beginPixel : drawPixel = startPixel + beginPixel;
+
+	int regionStart = regionLength * region; // Calculate the pixel before the region start
+	int regionEnd = regionLength * (region + 1); // Calculate the pixel after the region end
+
 
 	// Draw every LED in entire region 
 	for (int d = 1; d < (regionLength/2) + 1; d++)
 	{
-		int currentPixel = drawPixel - d - 1;
+		int currentPixel;
+		if (meteor->directionDown == true) {
+			currentPixel = drawPixel + d + 1;
+			if (currentPixel >= regionEnd) break;
+			if (currentPixel < regionStart) continue;
+		} else {
+			currentPixel = drawPixel - d - 1;
+			if (currentPixel < regionStart) break;
+			if (currentPixel >= regionEnd) continue;
+		}
 
-		if (currentPixel < regionStart) break;
-		if (currentPixel >= regionEnd) continue;
 
 		// Draw meteor
 		if (d < meteorSize + 1)

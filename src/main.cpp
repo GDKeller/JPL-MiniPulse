@@ -732,16 +732,16 @@ void updateAnimation(char * spacecraftName, bool nameChanged)
 	}
 
 
-	if ((millis() - animationTimer) > 2000)
+	if ((millis() - animationTimer) > 3000)
 	{
-		animationMeteorPulseRegion(4, false, random(-12, 0), 1, 12);
-		animationMeteorPulseRegion(5, false, random(-12, 0), 1, 12);
-		animationMeteorPulseRegion(6, false,random(-12, 0), 2, 12);
-		animationMeteorPulseRegion(7, false,random(-12, 0), 2, 12);
-		animationMeteorPulseRegion(8, true, random(-12, 0), 3, 12);
-		animationMeteorPulseRegion(9, true, random(-12, 0), 3, 12);
-		animationMeteorPulseRegion(10, true, random(-12, 0), 4, 12);
-		animationMeteorPulseRegion(11, true, random(-12, 0), 4, 12);
+		animationMeteorPulseRegion(4, false, 0, 1, 12);
+		animationMeteorPulseRegion(5, false, 0, 2, 12);
+		animationMeteorPulseRegion(6, false, 0, 3, 12);
+		animationMeteorPulseRegion(7, false, 0, 4, 12);
+		animationMeteorPulseRegion(8, true, 0, 1, 12);
+		animationMeteorPulseRegion(9, true, 0, 2, 12);
+		animationMeteorPulseRegion(10, true, 0, 3, 12);
+		animationMeteorPulseRegion(11, true, 0, 4, 12);
 
 		animationTimer = millis(); // Set animation timer to current millis()
 	}
@@ -766,6 +766,10 @@ void updateAnimation(char * spacecraftName, bool nameChanged)
 	/* Update first pixel location for all active Meteors in array */
 	for (int i = 0; i < 50; i++) {
 		if (animate.ActiveMeteors[i] != nullptr){
+			// if (animate.ActiveMeteors[i]->region == 10) {
+			// 	Serial.print("update loop firstPixel: "); Serial.println(animate.ActiveMeteors[i]->firstPixel);
+			// }
+
 			animate.ActiveMeteors[i]->firstPixel++;
 
 			// If meteor is beyond the display region, unallocate memory and remove array item
