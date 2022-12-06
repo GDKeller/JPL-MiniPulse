@@ -12,6 +12,7 @@
 #define Animate_h
 
 struct Meteor {
+    bool directionDown;
     int firstPixel;
     int region;
     int regionLength;

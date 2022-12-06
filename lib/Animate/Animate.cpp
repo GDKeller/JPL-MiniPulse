@@ -27,8 +27,16 @@ void Animate::animateMeteor(Meteor* meteor)
 	int startPixel = region * regionLength; // First pixel of each region
 	int drawPixel = startPixel + beginPixel; // Current pixel to draw
 
-	int regionStart = regionLength * region; // Calculate the pixel before the region start
-	int regionEnd = regionLength * (region + 1); // Calculate the pixel after the region end
+
+	int regionStart; // Calculate the pixel before the region start
+	int regionEnd; // Calculate the pixel after the region end
+	if (meteor->directionDown == true) {
+		regionStart = regionLength * region; // Calculate the pixel before the region start
+		regionEnd = regionLength * (region + 1); // Calculate the pixel after the region end
+	} else {
+		regionStart = regionLength * region; // Calculate the pixel before the region start
+		regionEnd = regionLength * (region + 1); // Calculate the pixel after the region end
+	}
 
 	// Draw every LED in entire region 
 	for (int d = 1; d < (regionLength/2) + 1; d++)

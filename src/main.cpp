@@ -662,8 +662,9 @@ void scrollLetters(char * spacecraftName, int wordSize, bool nameChanged)
 
 
 // Create Meteor object
-void createMeteor(int region, int startPixel = 0) {
+void createMeteor(int region, bool directionDown = true,  int startPixel = 0) {
 	animate.ActiveMeteors[animate.ActiveMeteorsSize++] = new Meteor {
+		directionDown,					// directionDown
 		startPixel,						// firstPixel
 		region,							// region
 		(int) innerPixelsChunkLength,	// regionLength
@@ -683,13 +684,14 @@ void createMeteor(int region, int startPixel = 0) {
 
 void animationMeteorPulseRegion(
 	uint8_t region,
+	bool directionDown = true,
 	int16_t startPixel = 0,
 	uint8_t pulseCount = 2,
 	int16_t offset = 10)
-{	
+{
 	for (int i = 0; i < pulseCount; i++) {
 		int16_t pixel = i + startPixel + (i * offset * -1);
-		createMeteor(region, pixel);
+		createMeteor(region, directionDown, pixel);
 	}
 }
 
@@ -702,31 +704,24 @@ void animationMeteorPulseRing(
 {
 	for (int i = 0; i < innerChunks; i++) {
 		if (i < 4) continue;
-		animationMeteorPulseRegion(i, 0 - i, pulseCount, offset);
+		animationMeteorPulseRegion(i, true, 0 - i, pulseCount, offset);
 	}
 }
 
 
 
-
-int region1Timer = 0;
-int region2Timer = 0;
-int region3Timer = 0;
-int region4Timer = 0;
-int region5Timer = 0;
-int region6Timer = 0;
-int region7Timer = 0;
-int region8Timer = 0;
-int region9Timer = 0;
-int region10Timer = 0;
-int region11Timer = 0;
-int region12Timer = 0;
-
+/**
+ * Main Animation update function
+ * 
+ * Gets called every loop();
+ * 
+*/
 void updateAnimation(char * spacecraftName, bool nameChanged)
 {
 	// Update brightness from potentiometer
 	au.updateBrightness();
 
+	/* Update Scrolling letters animation */
 	if ((millis() - wordLastTime) > wordScrollInterval)
 	{
 		string wordLength = (string) spacecraftName;
@@ -739,7 +734,14 @@ void updateAnimation(char * spacecraftName, bool nameChanged)
 
 	if ((millis() - animationTimer) > 2000)
 	{
-		animationMeteorPulseRing(2, 12);
+		animationMeteorPulseRegion(4, false, random(-12, 0), 1, 12);
+		animationMeteorPulseRegion(5, false, random(-12, 0), 1, 12);
+		animationMeteorPulseRegion(6, false,random(-12, 0), 2, 12);
+		animationMeteorPulseRegion(7, false,random(-12, 0), 2, 12);
+		animationMeteorPulseRegion(8, true, random(-12, 0), 3, 12);
+		animationMeteorPulseRegion(9, true, random(-12, 0), 3, 12);
+		animationMeteorPulseRegion(10, true, random(-12, 0), 4, 12);
+		animationMeteorPulseRegion(11, true, random(-12, 0), 4, 12);
 
 		animationTimer = millis(); // Set animation timer to current millis()
 	}
@@ -759,20 +761,20 @@ void updateAnimation(char * spacecraftName, bool nameChanged)
 	allStrips[0]->show();
 
 
-	// if ((millis() - tickAfter) > 1) {
-		for (int i = 0; i < 50; i++) {
-			if (animate.ActiveMeteors[i] != nullptr){
-				animate.ActiveMeteors[i]->firstPixel++;
+	/* After Showing LEDs */
 
-				// If meteor is beyond the display region, unallocate memory and remove array item
-				if (animate.ActiveMeteors[i]->firstPixel > animate.ActiveMeteors[i]->regionLength * 2) {
-					delete animate.ActiveMeteors[i];
-					animate.ActiveMeteors[i] = nullptr;
-				}
+	/* Update first pixel location for all active Meteors in array */
+	for (int i = 0; i < 50; i++) {
+		if (animate.ActiveMeteors[i] != nullptr){
+			animate.ActiveMeteors[i]->firstPixel++;
+
+			// If meteor is beyond the display region, unallocate memory and remove array item
+			if (animate.ActiveMeteors[i]->firstPixel > animate.ActiveMeteors[i]->regionLength * 2) {
+				delete animate.ActiveMeteors[i];
+				animate.ActiveMeteors[i] = nullptr;
 			}
 		}
-	// 	tickAfter = millis();
-	// }
+	}
 }
 
 // Create data structure objects
