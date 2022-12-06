@@ -36,14 +36,13 @@ const char *password = "smile-grey9-hie";
 
 // Diagnostic utilities, all 0 is normal operation
 #define TEST_CORES 0
-#define SHOW_SERIAL 0
+#define SHOW_SERIAL 1
 #define ID_LEDS 0
 #define DISABLE_WIFI 0
 
 AnimationUtils au(POTENTIOMETER);
 AnimationUtils::Colors mpColors;
 Animate animate;
-// Animate::Meteor meteor;
 SpacecraftData data;
 
 String serverName = "https://eyes.nasa.gov/dsn/data/dsn.xml"; // URL to fetch
@@ -747,13 +746,10 @@ void updateAnimation(char * spacecraftName, bool nameChanged)
 	}
 
 
-	// if ((millis() - tick) > 1) {
-		// Update meteor animations
-		for (int i = 0; i < 50; i++) {	
-			if (animate.ActiveMeteors[i] != nullptr) animate.animateMeteor(animate.ActiveMeteors[i]);
-		}
-	// 	tick = millis();
-	// }
+	// Update meteor animations
+	for (int i = 0; i < 50; i++) {	
+		if (animate.ActiveMeteors[i] != nullptr) animate.animateMeteor(animate.ActiveMeteors[i]);
+	}
 
 
 
@@ -766,10 +762,6 @@ void updateAnimation(char * spacecraftName, bool nameChanged)
 	/* Update first pixel location for all active Meteors in array */
 	for (int i = 0; i < 50; i++) {
 		if (animate.ActiveMeteors[i] != nullptr){
-			// if (animate.ActiveMeteors[i]->region == 10) {
-			// 	Serial.print("update loop firstPixel: "); Serial.println(animate.ActiveMeteors[i]->firstPixel);
-			// }
-
 			animate.ActiveMeteors[i]->firstPixel++;
 
 			// If meteor is beyond the display region, unallocate memory and remove array item
@@ -980,17 +972,17 @@ void getData(void *parameter)
 								const char *downSignal_char = &downSignal_string[0];
 								const char *elementValue = xmlSignal->Value();
 
-								if (elementValue != upSignal_string and elementValue != downSignal_string)
-								{
-									continue;
-								}
+								// If element is not an up/down signal, skip it
+								if (elementValue != upSignal_string and elementValue != downSignal_string) continue;
 
-								newStation.dishes[n].signals[sig2].direction = elementValue;
-								newStation.dishes[n].signals[sig2].type = xmlSignal->Attribute("signalType");
-								newStation.dishes[n].signals[sig2].frequency = xmlSignal->Attribute("frequency");
-								newStation.dishes[n].signals[sig2].rate = xmlSignal->Attribute("dataRate");
-								newStation.dishes[n].signals[sig2].spacecraft = xmlSignal->Attribute("spacecraft");
-								newStation.dishes[n].signals[sig2].spacecraftId = xmlSignal->Attribute("spacecraftID");
+								newStation.dishes[n].signals[sig2] = {
+									elementValue,							// direction
+									xmlSignal->Attribute("signalType"),		// type
+									xmlSignal->Attribute("dataRate"),		// rate
+									xmlSignal->Attribute("frequency"),		// frequency
+									xmlSignal->Attribute("spacecraft"),		// spacecraft
+									xmlSignal->Attribute("spacecraftID"),	// spacecraftID
+								};
 
 								sig2++;
 							}
@@ -1196,7 +1188,6 @@ void loop()
 		if (nameScrollDone == true) {
 			nameScrollDone = false;
 			spacecraftCallsign = (char*) stations[stationCount].dishes[dishCount].targets[targetCount].name;
-			// displaySpacecraftName = (char*) data.callsignToName(spacecraftCallsign);
 
 			Serial.println("-----------------------------");
 			Serial.print("Name: "); Serial.println(spacecraftCallsign);
