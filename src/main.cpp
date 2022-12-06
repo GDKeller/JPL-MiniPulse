@@ -36,7 +36,7 @@ const char *password = "smile-grey9-hie";
 
 // Diagnostic utilities, all 0 is normal operation
 #define TEST_CORES 0
-#define SHOW_SERIAL 1
+#define SHOW_SERIAL 0
 #define ID_LEDS 0
 #define DISABLE_WIFI 0
 
@@ -715,7 +715,7 @@ void animationMeteorPulseRing(
  * Gets called every loop();
  * 
 */
-void updateAnimation(char * spacecraftName, bool nameChanged)
+void updateAnimation(char * spacecraftName, bool nameChanged, bool hasDownSignal, bool hasUpSignal)
 {
 	// Update brightness from potentiometer
 	au.updateBrightness();
@@ -733,15 +733,18 @@ void updateAnimation(char * spacecraftName, bool nameChanged)
 
 	if ((millis() - animationTimer) > 3000)
 	{
-		animationMeteorPulseRegion(4, false, 0, 1, 12);
-		animationMeteorPulseRegion(5, false, 0, 2, 12);
-		animationMeteorPulseRegion(6, false, 0, 3, 12);
-		animationMeteorPulseRegion(7, false, 0, 4, 12);
-		animationMeteorPulseRegion(8, true, 0, 1, 12);
-		animationMeteorPulseRegion(9, true, 0, 2, 12);
-		animationMeteorPulseRegion(10, true, 0, 3, 12);
-		animationMeteorPulseRegion(11, true, 0, 4, 12);
-
+		if (hasUpSignal == true) {
+			animationMeteorPulseRegion(4, false, 0, 1, 12);
+			animationMeteorPulseRegion(5, false, 0, 2, 12);
+			animationMeteorPulseRegion(6, false, 0, 3, 12);
+			animationMeteorPulseRegion(7, false, 0, 4, 12);
+		}	
+		if (hasDownSignal == true) {
+			animationMeteorPulseRegion(8, true, 0, 1, 12);
+			animationMeteorPulseRegion(9, true, 0, 2, 12);
+			animationMeteorPulseRegion(10, true, 0, 3, 12);
+			animationMeteorPulseRegion(11, true, 0, 4, 12);
+		}
 		animationTimer = millis(); // Set animation timer to current millis()
 	}
 
@@ -1165,9 +1168,15 @@ char * displaySpacecraftName = "";
 // char * displaySpacecraftName = "abcdefghijklmnopqrstuvwxyz 1234567890";
 bool nameChanged = true;
 
+bool hasDownSignal = false;
+char * downSignalRate = "";
+bool hasUpSignal = false;
+char * upSignalRate = "";
+
 int stationCount = 0;
 int dishCount = 0;
 int targetCount = 0;
+int signalCount = 0;
 // loop() function -- runs repeatedly as long as board is on ---------------
 void loop()
 {
@@ -1187,9 +1196,38 @@ void loop()
 	{
 		if (nameScrollDone == true) {
 			nameScrollDone = false;
-			spacecraftCallsign = (char*) stations[stationCount].dishes[dishCount].targets[targetCount].name;
+			hasDownSignal = false;
+			downSignalRate = "";
+			hasUpSignal = false;
+			upSignalRate = "";
 
+			string upSignal_string("upSignal");
+			string downSignal_string("downSignal");		
+			
 			Serial.println("-----------------------------");
+
+			spacecraftCallsign = (char*) stations[stationCount].dishes[dishCount].targets[targetCount].name;
+			string callsign_string(spacecraftCallsign);
+
+			for (int i = 0; i < 10; i++) {
+				const char* signalDirection = stations[stationCount].dishes[dishCount].signals[i].direction;
+				const char* signalTarget = stations[stationCount].dishes[dishCount].signals[i].spacecraft;
+				
+				if (signalDirection == NULL) break;	// Once we hit a non-existent array item, we can assume there aren't any more existing items so we end the loop
+				
+				if (signalDirection == downSignal_string && signalTarget == callsign_string ) {
+					hasDownSignal = true;
+					downSignalRate = (char*)stations[stationCount].dishes[dishCount].signals[i].rate;
+				}
+
+				if (signalDirection == upSignal_string && signalTarget == callsign_string) {
+					hasUpSignal = true;
+					upSignalRate = (char*)stations[stationCount].dishes[dishCount].signals[i].rate;
+				}
+			}
+
+
+			
 			Serial.print("Name: "); Serial.println(spacecraftCallsign);
 			const char* fullName = data.callsignToName(spacecraftCallsign);
 			Serial.print("Full name: "); Serial.println(fullName);
@@ -1296,8 +1334,7 @@ void loop()
 
 	if (spacecraftCallsign == NULL) spacecraftCallsign = "";
 	if (displaySpacecraftName == NULL) displaySpacecraftName = "";
-	// Serial.print("Name: "); Serial.println(displaySpacecraftName);
-	updateAnimation(displaySpacecraftName, nameChanged);
+	updateAnimation(displaySpacecraftName, nameChanged, hasDownSignal, hasUpSignal);
 	nameChanged = false;
 
 	// if ( millis() - lastUpdateP1 > pattern1Interval ) updatePattern1();
