@@ -99,7 +99,7 @@ void SpacecraftData::loadJson() {
       Serial.println(error.c_str());
       return;
     }
-    Serial.println("JSON loaded");
+    Serial.println("Spacecraft callsigns loaded");
 }
 
 const char* SpacecraftData::callsignToName(char* key) {

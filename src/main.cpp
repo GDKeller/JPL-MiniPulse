@@ -21,8 +21,8 @@ using namespace std;
 
 /* CONFIG */
 
-const char *ssid = "Verizon_LT6SKN";
-const char *password = "smile-grey9-hie";
+const char *ssid = "PlanetExpress";
+const char *password = "futurama";
 #define AP_SSID "MiniPulse"
 
 #define OUTER_PIN 17
@@ -46,6 +46,8 @@ Animate animate;
 SpacecraftData data;
 
 String serverName = "https://eyes.nasa.gov/dsn/data/dsn.xml"; // URL to fetch
+String dummyXmlData = PROGMEM R"==--==("<dsn><station friendlyName="Goldstone" name="gdscc" timeUTC="1663914800000" timeZoneOffset="-25200000" /><dish azimuthAngle="187.0" elevationAngle="60.00" isArray="false" isDDOR="false" isMSPA="false" name="DSS24" windSpeed="0.0000"><upSignal dataRate="16000" frequency="2090" power="4.955" signalType="data" spacecraft="JWST" spacecraftID="-170" /><downSignal dataRate="40000" frequency="2270000000" power="-120.2351" signalType="data" spacecraft="JWST" spacecraftID="-170" /><downSignal dataRate="28000000" frequency="25900000000" power="-91.1759" signalType="data" spacecraft="JWST" spacecraftID="-170" /><target downlegRange="1.278e+06" id="170" name="JWST" rtlt="8.527" uplegRange="1.278e+06" /></dish><dish azimuthAngle="182.5" elevationAngle="39.07" isArray="false" isDDOR="false" isMSPA="false" name="DSS25" windSpeed="0.0000"><upSignal dataRate="2000" frequency="7160" power="0.0000" signalType="none" spacecraft="DSSR" spacecraftID="-116" /><downSignal dataRate="0.0000" frequency="7160000000" power="-150.0076" signalType="carrier" spacecraft="DSSR" spacecraftID="-116" /><target downlegRange="-1.000e+00" id="116" name="DSSR" rtlt="-1.0000" uplegRange="-1.000e+00" /></dish><dish azimuthAngle="303.4" elevationAngle="12.20" isArray="false" isDDOR="false" isMSPA="false" name="DSS26" windSpeed="0.0000"><downSignal dataRate="0.0000" frequency="8421000000" power="-177.8969" signalType="none" spacecraft="TEST" spacecraftID="-99" /><target downlegRange="-1.000e+00" id="99" name="TEST" rtlt="-1.0000" uplegRange="-1.000e+00" /></dish><dish azimuthAngle="277.2" elevationAngle="11.18" isArray="false" isDDOR="false" isMSPA="false" name="DSS14" windSpeed="2.469"><downSignal dataRate="160.0" frequency="8419000000" power="-155.4095" signalType="data" spacecraft="VGR1" spacecraftID="-31" /><target downlegRange="2.360e+10" id="31" name="VGR1" rtlt="157500" uplegRange="2.361e+10" /></dish><station friendlyName="Madrid" name="mdscc" timeUTC="1663914800000" timeZoneOffset="7200000" /><dish azimuthAngle="99.03" elevationAngle="34.73" isArray="false" isDDOR="false" isMSPA="false" name="DSS56" windSpeed="4.321"><downSignal dataRate="146400" frequency="2271000000" power="-101.8831" signalType="data" spacecraft="LRO" spacecraftID="-85" /><target downlegRange="3.928e+05" id="85" name="LRO" rtlt="2.621" uplegRange="3.929e+05" /></dish><dish azimuthAngle="96.27" elevationAngle="24.56" isArray="false" isDDOR="false" isMSPA="false" name="DSS65" windSpeed="4.321"><upSignal dataRate="1000" frequency="2081" power="0.2041" signalType="data" spacecraft="KPLO" spacecraftID="-155" /><downSignal dataRate="0.0000" frequency="8475000000" power="-119.3601" signalType="none" spacecraft="KPLO" spacecraftID="-155" /><downSignal dataRate="8192" frequency="2261000000" power="-113.5036" signalType="data" spacecraft="KPLO" spacecraftID="-155" /><target downlegRange="-1.000e+00" id="155" name="KPLO" rtlt="-1.0000" uplegRange="-1.000e+00" /></dish><dish azimuthAngle="228.6" elevationAngle="65.13" isArray="false" isDDOR="false" isMSPA="true" name="DSS53" windSpeed="4.321"><downSignal dataRate="0.0000" frequency="8411000000" power="-153.9174" signalType="none" spacecraft="TGO" spacecraftID="-143" /><downSignal dataRate="0.0000" frequency="8440000000" power="-481.3964" signalType="none" spacecraft="MRO" spacecraftID="-74" /><target downlegRange="1.240e+08" id="74" name="MRO" rtlt="827.5" uplegRange="1.240e+08" /><target downlegRange="1.240e+08" id="143" name="TGO" rtlt="827.5" uplegRange="1.240e+08" /></dish><dish azimuthAngle="228.6" elevationAngle="64.82" isArray="false" isDDOR="false" isMSPA="false" name="DSS55" windSpeed="4.321"><downSignal dataRate="11.63" frequency="8446000000" power="-155.2768" signalType="data" spacecraft="MVN" spacecraftID="-202" /><upSignal dataRate="7.813" frequency="7188" power="7.354" signalType="data" spacecraft="MVN" spacecraftID="-202" /><target downlegRange="1.240e+08" id="202" name="MVN" rtlt="827.5" uplegRange="1.240e+08" /></dish><dish azimuthAngle="228.5" elevationAngle="64.93" isArray="false" isDDOR="false" isMSPA="true" name="DSS63" windSpeed="4.321"><upSignal dataRate="2000" frequency="7162" power="0.0000" signalType="none" spacecraft="M20" spacecraftID="-168" /><downSignal dataRate="6000000" frequency="8440000000" power="-473.8288" signalType="none" spacecraft="MRO" spacecraftID="-74" /><downSignal dataRate="0.0000" frequency="8415000000" power="-473.8288" signalType="none" spacecraft="M20" spacecraftID="-168" /><target downlegRange="1.240e+08" id="168" name="M20" rtlt="827.5" uplegRange="1.240e+08" /><target downlegRange="1.240e+08" id="74" name="MRO" rtlt="827.5" uplegRange="1.240e+08" /></dish><station friendlyName="Canberra" name="cdscc" timeUTC="1663914800000" timeZoneOffset="36000000" /><dish azimuthAngle="69.28" elevationAngle="36.89" isArray="false" isDDOR="false" isMSPA="false" name="DSS34" windSpeed="10.49"><upSignal dataRate="2000" frequency="2101" power="0.2471" signalType="data" spacecraft="MMS1" spacecraftID="-108" /><downSignal dataRate="2500000" frequency="2282000000" power="-101.9699" signalType="data" spacecraft="MMS1" spacecraftID="-108" /><target downlegRange="5.863e+04" id="108" name="MMS1" rtlt="0.3911" uplegRange="5.862e+04" /></dish><dish azimuthAngle="290.8" elevationAngle="47.88" isArray="false" isDDOR="false" isMSPA="false" name="DSS35" windSpeed="10.49"><downSignal dataRate="0.0000" frequency="32040000000" power="-149.7441" signalType="none" spacecraft="SPP" spacecraftID="-96" /><upSignal dataRate="125.0" frequency="7176" power="0.0000" signalType="none" spacecraft="SPP" spacecraftID="-96" /><downSignal dataRate="0.0000" frequency="32040000000" power="-151.3900" signalType="none" spacecraft="SPP" spacecraftID="-96" /><target downlegRange="1.261e+08" id="96" name="SPP" rtlt="841.1" uplegRange="1.261e+08" /></dish><dish azimuthAngle="279.5" elevationAngle="23.46" isArray="false" isDDOR="false" isMSPA="false" name="DSS43" windSpeed="10.49"><downSignal dataRate="245800" frequency="2245000000" power="-123.2127" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><target downlegRange="1.679e+06" id="21" name="SOHO" rtlt="11.20" uplegRange="1.679e+06" /></dish><timestamp>1663914800000</timestamp></dsn>")==--==";
+
 
 // Time is measured in milliseconds and will become a bigger number
 // than can be stored in an int, so long is used
@@ -113,7 +115,7 @@ void createHtml()
 	{
 
 		strcat(buf, "<option value=\"");
-		const char *network = v.as<char *>();
+		const char *network = v.as<const char *>();
 		strcat(buf, network);
 		strcat(buf, "\">");
 		strcat(buf, network);
@@ -686,10 +688,16 @@ void animationMeteorPulseRegion(
 	bool directionDown = true,
 	int16_t startPixel = 0,
 	uint8_t pulseCount = 2,
-	int16_t offset = 10)
+	int16_t offset = 10,
+	bool randomizeOffset = false)
 {
+
+	// Stagger the starting pixel
+	if (randomizeOffset == true) startPixel = startPixel - random(0, 12);
+
 	for (int i = 0; i < pulseCount; i++) {
 		int16_t pixel = i + startPixel + (i * offset * -1);
+		if (randomizeOffset == true) pixel = pixel - random(0, 3);
 		createMeteor(region, directionDown, pixel);
 	}
 }
@@ -715,7 +723,7 @@ void animationMeteorPulseRing(
  * Gets called every loop();
  * 
 */
-void updateAnimation(char * spacecraftName, bool nameChanged, bool hasDownSignal, bool hasUpSignal)
+void updateAnimation(char * spacecraftName, bool nameChanged, bool hasDownSignal, char * downSignalRate, bool hasUpSignal, char * upSignalRate)
 {
 	// Update brightness from potentiometer
 	au.updateBrightness();
@@ -734,16 +742,32 @@ void updateAnimation(char * spacecraftName, bool nameChanged, bool hasDownSignal
 	if ((millis() - animationTimer) > 3000)
 	{
 		if (hasUpSignal == true) {
-			animationMeteorPulseRegion(4, false, 0, 1, 12);
-			animationMeteorPulseRegion(5, false, 0, 2, 12);
-			animationMeteorPulseRegion(6, false, 0, 3, 12);
-			animationMeteorPulseRegion(7, false, 0, 4, 12);
+			int upSignalRateInt = strtol(upSignalRate, nullptr, 10);
+			int pulseCountUp = 1;
+
+			if (upSignalRateInt > 1024) pulseCountUp = 2;
+			if (upSignalRateInt > (1024 * 1024)) pulseCountUp = 3;
+			// Serial.print("upSignalRateInt: "); Serial.println(upSignalRateInt);
+			// Serial.println(1024 * 1024);
+			// Serial.println(upSignalRateInt > (1024 * 1024));
+
+
+			animationMeteorPulseRegion(4, false, 0, pulseCountUp, 12, true);
+			animationMeteorPulseRegion(5, false, 0, pulseCountUp, 12, true);
+			animationMeteorPulseRegion(6, false, 0, pulseCountUp, 12, true);
+			animationMeteorPulseRegion(7, false, 0, pulseCountUp, 12, true);
 		}	
 		if (hasDownSignal == true) {
-			animationMeteorPulseRegion(8, true, 0, 1, 12);
-			animationMeteorPulseRegion(9, true, 0, 2, 12);
-			animationMeteorPulseRegion(10, true, 0, 3, 12);
-			animationMeteorPulseRegion(11, true, 0, 4, 12);
+			int downSignalRateInt = strtol(downSignalRate, nullptr, 10);
+			int pulseCountDown = 1;
+
+			if (downSignalRateInt > 1024) pulseCountDown = 2;
+			if (downSignalRateInt > (1024 * 1024)) pulseCountDown = 3;
+
+			animationMeteorPulseRegion(8, true, 0, pulseCountDown, 12, true);
+			animationMeteorPulseRegion(9, true, 0, pulseCountDown, 12, true);
+			animationMeteorPulseRegion(10, true, 0, pulseCountDown, 12, true);
+			animationMeteorPulseRegion(11, true, 0, pulseCountDown, 12, true);
 		}
 		animationTimer = millis(); // Set animation timer to current millis()
 	}
@@ -909,7 +933,7 @@ void getData(void *parameter)
 				// Send HTTP GET request
 				int httpResponseCode = http.GET();
 
-				if (httpResponseCode > 0)
+				if (httpResponseCode == 200)
 				{
 					if (SHOW_SERIAL == 1)
 					{
@@ -917,8 +941,14 @@ void getData(void *parameter)
 						Serial.println(httpResponseCode);
 					}
 
-					String payload = http.getString();
-					// Serial.println(payload);
+					String payload;
+
+					try {
+						payload = http.getString();
+					} catch (...) {
+						Serial.println("----------->>> Dummy XML <<<-------------");
+						payload = dummyXmlData;
+					}
 
 					// XML Parsing
 					XMLDocument xmlDocument; // Create variable for XML document
@@ -927,7 +957,7 @@ void getData(void *parameter)
 					{ // Handle XML parsing error
 						Serial.println("Error parsing");
 						return;
-					};
+					}
 
 					// Find XML elements
 					XMLNode *root = xmlDocument.FirstChild();					  // Find document root node
@@ -1211,18 +1241,21 @@ void loop()
 
 			for (int i = 0; i < 10; i++) {
 				const char* signalDirection = stations[stationCount].dishes[dishCount].signals[i].direction;
+				const char* signalType = stations[stationCount].dishes[dishCount].signals[i].type;
 				const char* signalTarget = stations[stationCount].dishes[dishCount].signals[i].spacecraft;
 				
 				if (signalDirection == NULL) break;	// Once we hit a non-existent array item, we can assume there aren't any more existing items so we end the loop
 				
-				if (signalDirection == downSignal_string && signalTarget == callsign_string ) {
+				if (signalDirection == downSignal_string && signalTarget == callsign_string && signalType == string ("data") ) {
 					hasDownSignal = true;
 					downSignalRate = (char*)stations[stationCount].dishes[dishCount].signals[i].rate;
+					Serial.print("downSignalRate: "); Serial.println(downSignalRate);
 				}
 
 				if (signalDirection == upSignal_string && signalTarget == callsign_string) {
 					hasUpSignal = true;
 					upSignalRate = (char*)stations[stationCount].dishes[dishCount].signals[i].rate;
+					Serial.print("upSignalRate: "); Serial.println(upSignalRate);
 				}
 			}
 
@@ -1334,7 +1367,7 @@ void loop()
 
 	if (spacecraftCallsign == NULL) spacecraftCallsign = "";
 	if (displaySpacecraftName == NULL) displaySpacecraftName = "";
-	updateAnimation(displaySpacecraftName, nameChanged, hasDownSignal, hasUpSignal);
+	updateAnimation(displaySpacecraftName, nameChanged, hasDownSignal, downSignalRate, hasUpSignal, upSignalRate);
 	nameChanged = false;
 
 	// if ( millis() - lastUpdateP1 > pattern1Interval ) updatePattern1();
