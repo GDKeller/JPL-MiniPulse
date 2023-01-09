@@ -20,9 +20,10 @@ AnimationUtils::AnimationUtils(int pin) {
  * @return Potentiometer value mapped to 0-255
 */
 int AnimationUtils::readBrightness() {
-  int potValue = analogRead(potPin);
-  int potBrightness = map(potValue, 0, 4095, 64, 255);
-  return potBrightness;
+	//   int potValue = analogRead(potPin);
+	//   int potBrightness = map(potValue, 0, 4095, 127, 255);
+	int potBrightness = 255;
+	return potBrightness;
 }
 
 /**

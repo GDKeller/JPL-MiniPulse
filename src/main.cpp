@@ -32,7 +32,7 @@ using namespace std;
 #define BOTTOM_PIN 16
 #define WIFI_RST 21
 #define OUTPUT_ENABLE 22
-#define BRIGHTNESS 255 // Global brightness value. 8bit, 0-255
+#define BRIGHTNESS 16 // Global brightness value. 8bit, 0-255
 #define POTENTIOMETER 32
 
 // Diagnostic utilities, all 0 is normal operation
@@ -334,6 +334,7 @@ const int innerChunks = 12;
 const int bottomChunks = 1;
 
 const int innerPixelsChunkLength = innerPixelsTotal / innerChunks;
+const int outerPixelsChunkLength = outerPixelsTotal / outerChunks;
 
 // Define NeoPixel objects - NAME(PIXEL_COUNT, PIN, PIXEL_TYPE)
 Adafruit_NeoPixel
@@ -352,7 +353,7 @@ Adafruit_NeoPixel *allStrips[4] = {
 int allStripsLength = sizeof(allStrips) / sizeof(allStrips[0]);
 void allStripsShow(void)
 {
-	for (int i = 0; i < allStripsLength; i++)
+	for (int i = 0; i < 4; i++)
 	{
 		allStrips[i]->show();
 	}
@@ -664,27 +665,28 @@ void scrollLetters(char * spacecraftName, int wordSize, bool nameChanged)
 
 
 // Create Meteor object
-void createMeteor(int region, bool directionDown = true,  int startPixel = 0) {
+void createMeteor(int strip, int region, bool directionDown = true,  int startPixel = 0) {
 	animate.ActiveMeteors[animate.ActiveMeteorsSize++] = new Meteor {
 		directionDown,					// directionDown
 		startPixel,						// firstPixel
 		region,							// region
-		(int) innerPixelsChunkLength,	// regionLength
+		(int) outerPixelsChunkLength,	// regionLength
 		mpColors.purple.pointer,		// pColor
 		1,								// meteorSize
 		false,							// meteorTrailDecay
-		true,							// meteorRandomDecay
+		false,							// meteorRandomDecay
 		240,							// tailHueStart
 		true,							// tailHueAdd
 		0.75,							// tailHueExponent
 		255,							// tailHueSaturation
-		allStrips[0]					// rStrip
+	allStrips[strip]					// rStrip
 	};
 	
 	if (animate.ActiveMeteorsSize > 50) animate.ActiveMeteorsSize = 0;
 }
 
 void animationMeteorPulseRegion(
+	uint8_t strip,
 	uint8_t region,
 	bool directionDown = true,
 	int16_t startPixel = 0,
@@ -694,25 +696,26 @@ void animationMeteorPulseRegion(
 {
 
 	// Stagger the starting pixel
-	if (randomizeOffset == true) startPixel = startPixel - random(0, 12);
+	if (randomizeOffset == true) startPixel = startPixel - random(0, 4);
 
 	for (int i = 0; i < pulseCount; i++) {
 		int16_t pixel = i + startPixel + (i * offset * -1);
 		if (randomizeOffset == true) pixel = pixel - random(0, 3);
-		createMeteor(region, directionDown, pixel);
+		createMeteor(strip, region, directionDown, pixel);
 	}
 }
 
 
 void animationMeteorPulseRing(
-	// uint8_t ring
-	uint8_t pulseCount,
-	uint8_t offset
-)
+	uint8_t strip,
+	bool directionDown = true,
+	uint8_t pulseCount = 2,
+	int16_t offset = 10,
+	bool randomizeOffset = false)
 {
-	for (int i = 0; i < innerChunks; i++) {
-		if (i < 4) continue;
-		animationMeteorPulseRegion(i, true, 0 - i, pulseCount, offset);
+	for (int i = 0; i < outerChunks; i++) {
+		// if (i < 4) continue;
+		animationMeteorPulseRegion(strip, i, directionDown, 0, pulseCount, offset, randomizeOffset);
 	}
 }
 
@@ -753,10 +756,11 @@ void updateAnimation(char * spacecraftName, bool nameChanged, bool hasDownSignal
 			// Serial.println(upSignalRateInt > (1024 * 1024));
 
 
-			animationMeteorPulseRegion(4, false, 0, pulseCountUp, 12, true);
-			animationMeteorPulseRegion(5, false, 0, pulseCountUp, 12, true);
-			animationMeteorPulseRegion(6, false, 0, pulseCountUp, 12, true);
-			animationMeteorPulseRegion(7, false, 0, pulseCountUp, 12, true);
+			animationMeteorPulseRing(1, false, pulseCountUp, 16, true);
+			// animationMeteorPulseRegion(1, 4, false, 0, pulseCountUp, 12, true);
+			// animationMeteorPulseRegion(1, 5, false, 0, pulseCountUp, 12, true);
+			// animationMeteorPulseRegion(1, 6, false, 0, pulseCountUp, 12, true);
+			// animationMeteorPulseRegion(1, 7, false, 0, pulseCountUp, 12, true);
 		}	
 		if (hasDownSignal == true) {
 			int downSignalRateInt = strtol(downSignalRate, nullptr, 10);
@@ -765,10 +769,11 @@ void updateAnimation(char * spacecraftName, bool nameChanged, bool hasDownSignal
 			if (downSignalRateInt > 1024) pulseCountDown = 2;
 			if (downSignalRateInt > (1024 * 1024)) pulseCountDown = 3;
 
-			animationMeteorPulseRegion(8, true, 0, pulseCountDown, 12, true);
-			animationMeteorPulseRegion(9, true, 0, pulseCountDown, 12, true);
-			animationMeteorPulseRegion(10, true, 0, pulseCountDown, 12, true);
-			animationMeteorPulseRegion(11, true, 0, pulseCountDown, 12, true);
+			animationMeteorPulseRing(2, true, pulseCountDown, 12, true);
+			// animationMeteorPulseRegion(2, 8, true, 0, pulseCountDown, 12, true);
+			// animationMeteorPulseRegion(2, 9, true, 0, pulseCountDown, 12, true);
+			// animationMeteorPulseRegion(2, 10, true, 0, pulseCountDown, 12, true);
+			// animationMeteorPulseRegion(2, 11, true, 0, pulseCountDown, 12, true);
 		}
 		animationTimer = millis(); // Set animation timer to current millis()
 	}
@@ -782,7 +787,12 @@ void updateAnimation(char * spacecraftName, bool nameChanged, bool hasDownSignal
 
 
 	// Illuminate LEDs
-	allStrips[0]->show();
+	// allStripsShow();
+	allStripsShow();
+	// allStrips[0]->show();
+	// allStrips[1]->show();
+	// allStrips[2]->show();
+	// allStrips[3]->show();
 
 
 	/* After Showing LEDs */
@@ -790,7 +800,7 @@ void updateAnimation(char * spacecraftName, bool nameChanged, bool hasDownSignal
 	/* Update first pixel location for all active Meteors in array */
 	for (int i = 0; i < 50; i++) {
 		if (animate.ActiveMeteors[i] != nullptr){
-			animate.ActiveMeteors[i]->firstPixel++;
+			animate.ActiveMeteors[i]->firstPixel = animate.ActiveMeteors[i]->firstPixel + 2;
 
 			// If meteor is beyond the display region, unallocate memory and remove array item
 			if (animate.ActiveMeteors[i]->firstPixel > animate.ActiveMeteors[i]->regionLength * 2) {
@@ -799,6 +809,8 @@ void updateAnimation(char * spacecraftName, bool nameChanged, bool hasDownSignal
 			}
 		}
 	}
+
+	// delay(1000);
 }
 
 // Create data structure objects
@@ -1103,7 +1115,7 @@ void setup()
 	// then goes into a blocking loop awaiting configuration and will return success result
 
 	bool res;
-	res = wm.autoConnect("AutoConnectAP"); // non-password protected ap
+	res = wm.autoConnect(AP_SSID); // non-password protected ap
 
 	if(!res) {
 		Serial.println("Failed to connect");

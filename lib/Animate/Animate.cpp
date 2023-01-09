@@ -22,7 +22,7 @@ void Animate::animateMeteor(Meteor* meteor)
 	int tailHueSaturation = meteor->tailHueSaturation;
 	int beginPixel = meteor->firstPixel;
 
-
+	uint32_t *pRepeatColor = pColor;
 	int hue = degreeToSixteenbit(tailHueStart);
 
 	// First pixel of each region
@@ -51,6 +51,10 @@ void Animate::animateMeteor(Meteor* meteor)
 			if (currentPixel >= regionEnd) continue;
 		}
 
+		if (d % 2 == 0) {
+			aUtilAnimate.setPixelColor(*strip, currentPixel, pRepeatColor);
+			continue;
+		}
 
 		// Draw meteor
 		if (d < meteorSize + 1)
@@ -59,7 +63,9 @@ void Animate::animateMeteor(Meteor* meteor)
 			continue;
 		}
 
+
 		// Draw tail
+		uint8_t brightValue;
 		uint32_t trailColor;
 		if (meteorTrailDecay == true) {
 			int satExpo = ceil(tailHueSaturation * log(d + 1)); // Calculate logarithmic growth
@@ -73,19 +79,19 @@ void Animate::animateMeteor(Meteor* meteor)
 			int hueRandom = hue + (random(randVal) - (randVal / 2));
 			trailColor = strip->ColorHSV(hueRandom, satValue, brightValue);
 		} else {
-			int satCalc = tailHueSaturation - (d * 16);
-			satCalc += random(32) - 16;
-			uint8_t satValue = satCalc < 0 ? 0 : satCalc;
-			int brightCalc = 255 - (d * 32);
-			brightCalc += random(32) - 16;
-			uint8_t brightValue = brightCalc < 0 ? 0 : brightCalc;
+			// int satCalc = tailHueSaturation - (d * 16);
+			// satCalc += random(32) - 16;
+			// uint8_t satValue = satCalc < 0 ? 0 : satCalc;
+			int satValue = tailHueSaturation;
+			int brightCalc = 255 - (d * 16);
+			// brightCalc += random(32) - 16;
+			brightValue = brightCalc < 0 ? 0 : brightCalc;
 			trailColor = strip->ColorHSV(hue, satValue, brightValue);
 		}
-		
 		uint32_t *pTrailColor = &trailColor;
 
 		// Cycle hue through time
-		tailHueAdd == true ? hue += ceil(4096 * mPower(tailHueExponent, d)) : hue -= ceil(4096 * mPower(tailHueExponent, d));
+		// tailHueAdd == true ? hue += ceil(4096 * mPower(tailHueExponent, d)) : hue -= ceil(4096 * mPower(tailHueExponent, d));
 
 		// Make sure the pixel right after the meteor will get drawn so meteor values aren't repeated
 		if (d < (meteorSize + 2))
@@ -100,5 +106,9 @@ void Animate::animateMeteor(Meteor* meteor)
 		} else {
 			aUtilAnimate.setPixelColor(*strip, currentPixel, pTrailColor);
 		}
+
+		pRepeatColor = pTrailColor;
+
+		if (brightValue == 0) continue;
 	}
 }
