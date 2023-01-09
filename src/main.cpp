@@ -1,8 +1,8 @@
 /* LIBRARIES */
 #include <Arduino.h>
-#include <WiFi.h>
+// #include <WiFi.h>
 #include <HTTPClient.h>
-#include <WebServer.h>
+// #include <WebServer.h>
 #include <Adafruit_NeoPixel.h>
 #include <tinyxml2.h>
 #include <iostream>
@@ -14,6 +14,7 @@
 #include <AnimationUtils.h> // Custom animation utilities lib
 #include <Animate.h>		// Custom animate lib
 #include <SpacecraftData.h>
+#include <WiFiManager.h>
 
 /* NAMESPACES */
 using namespace tinyxml2;
@@ -21,8 +22,8 @@ using namespace std;
 
 /* CONFIG */
 
-const char *ssid = "PlanetExpress";
-const char *password = "futurama";
+// const char *ssid = "PlanetExpress";
+// const char *password = "futurama";
 #define AP_SSID "MiniPulse"
 
 #define OUTER_PIN 17
@@ -32,7 +33,7 @@ const char *password = "futurama";
 #define WIFI_RST 21
 #define OUTPUT_ENABLE 22
 #define BRIGHTNESS 255 // Global brightness value. 8bit, 0-255
-#define POTENTIOMETER 36
+#define POTENTIOMETER 32
 
 // Diagnostic utilities, all 0 is normal operation
 #define TEST_CORES 0
@@ -187,7 +188,7 @@ void wifiOnDisconnect()
 {
 	Serial.println("STA Disconnected");
 	delay(1000);
-	WiFi.begin(ssid, password);
+	// WiFi.begin(ssid, password);
 }
 
 void WiFiEvent(WiFiEvent_t event)
@@ -311,8 +312,8 @@ void wifiSetup()
 {
 	WiFi.disconnect(true);
 	delay(100);
-	WiFi.onEvent(WiFiEvent);
-	WiFi.mode(WIFI_MODE_APSTA);
+	// WiFi.onEvent(WiFiEvent);
+	WiFi.mode(WIFI_MODE_STA);
 	// WiFi.config(local_IP, gateway, subnet);
 	WiFi.setHostname("minipulse"); // Set custom hostname
 	WiFi.softAPConfig(ap_ip, ap_gateway, ap_subnet);
@@ -1060,14 +1061,14 @@ void getData(void *parameter)
 			{
 				Serial.println("WiFi Disconnected");
 
-				WiFi.begin(ssid, password);
-				Serial.println("Connecting");
-				// while(WiFi.status() != WL_CONNECTED) {
-				//   Serial.print(".");
-				// }
-				Serial.println("");
-				Serial.print("Connected to WiFi network with IP Address: ");
-				Serial.println(WiFi.localIP());
+				// WiFi.begin(ssid, password);
+				// Serial.println("Connecting");
+				// // while(WiFi.status() != WL_CONNECTED) {
+				// //   Serial.print(".");
+				// // }
+				// Serial.println("");
+				// Serial.print("Connected to WiFi network with IP Address: ");
+				// Serial.println(WiFi.localIP());
 			}
 
 			lastTime = millis(); // Sync reference variable for timer
@@ -1078,7 +1079,41 @@ void getData(void *parameter)
 // setup() function -- runs once at startup --------------------------------
 void setup()
 {
+	WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
+
 	Serial.begin(115200); // Begin serial communications, ESP32 uses 115200 rate
+
+	//WiFiManager, Local intialization. Once its business is done, there is no need to keep it around
+	WiFiManager wm;
+
+	// reset settings - wipe stored credentials for testing
+	// these are stored by the esp library
+	//wm.resetSettings();
+
+	Serial.setDebugOutput(true);
+	wm.setDebugOutput(true);
+	wm.setConnectRetries(3);
+	wm.setConnectTimeout(30); // connect attempt fails after n seconds
+	// wm.setSaveConnectTimeout(5);
+	wm.setCleanConnect(true);
+
+	// Automatically connect using saved credentials,
+	// if connection fails, it starts an access point with the specified name ( "AutoConnectAP"),
+	// if empty will auto generate SSID, if password is blank it will be anonymous AP (wm.autoConnect())
+	// then goes into a blocking loop awaiting configuration and will return success result
+
+	bool res;
+	res = wm.autoConnect("AutoConnectAP"); // non-password protected ap
+
+	if(!res) {
+		Serial.println("Failed to connect");
+		ESP.restart();
+	} 
+	else {
+		//if you get here you have connected to the WiFi    
+		Serial.println("connected...yeey :)");
+	}
+
 
 	if (TEST_CORES == 1)
 	{
@@ -1113,6 +1148,7 @@ void setup()
 
 	// Turn off all NeoPixels
 	allStripsShow();
+	allStripsOff();
 
 	// Identify Neopixel strips by filling with unique colors
 	if (ID_LEDS == 1)
@@ -1120,55 +1156,94 @@ void setup()
 		Serial.println("ID LED strips");
 		const uint32_t *colors[] = {mpColors.red.pointer, mpColors.green.pointer, mpColors.blue.pointer, mpColors.purple.pointer, mpColors.white.pointer};
 
-		for (int c = 0; c < sizeof(colors) / sizeof(colors[0]); c++)
-		{
-			for (int i = 0; i < allStripsLength; i++)
-			{
-				allStrips[i]->fill(*colors[c]);
-			}
-			allStripsShow();
-			delay(1000);
-		}
+		au.updateBrightness(); // Update brightness from potentiometer
+
+		// for (int c = 0; c < sizeof(colors) / sizeof(colors[0]); c++)
+		// {
+		// 	for (int i = 0; i < allStripsLength; i++)
+		// 	{
+		// 		allStrips[i]->fill(*colors[c]);
+		// 	}
+		// 	allStripsShow();
+		// 	delay(5000);
+		// }
 
 		outer_pixels.fill(*mpColors.blue.pointer);
-		inner_pixels.fill(*mpColors.green.pointer);
-		middle_pixels.fill(*mpColors.red.pointer);
 		bottom_pixels.fill(*mpColors.purple.pointer);
+		outer_pixels.show();
+		bottom_pixels.show();
+		delay(10000);
 
+
+		
+		allStrips[0]->fill(*mpColors.red.pointer);
+		allStrips[1]->fill(*mpColors.green.pointer);
+		allStrips[2]->fill(*mpColors.blue.pointer);
+		allStrips[3]->fill(*mpColors.purple.pointer);
 		allStripsShow();
-		delay(2000);
+		delay(10000);
+		allStripsOff();
+		delay(3000);
+
+		hueCycle(*allStrips[0], 10);
+		allStripsOff();
+		hueCycle(*allStrips[1], 10);
+		allStripsOff();
+		hueCycle(*allStrips[2], 10);
+		allStripsOff();
+		hueCycle(*allStrips[3], 10);
+		allStripsOff();
+		delay(3000);
+
+		colorWipe(*allStrips[0], mpColors.red.pointer, 10);
+		colorWipe(*allStrips[1], mpColors.green.pointer, 10);
+		colorWipe(*allStrips[2], mpColors.blue.pointer, 10);
+		colorWipe(*allStrips[3], mpColors.yellow.pointer, 10);
+
+		// allStripsShow();
+		delay(10000);
+		// rainbow(*allStrips[0], 10);             // Flowing rainbow cycle along the whole strip
+		// rainbow(*allStrips[1], 10);             // Flowing rainbow cycle along the whole strip
+		// rainbow(*allStrips[2], 10);             // Flowing rainbow cycle along the whole strip
+		// rainbow(*allStrips[3], 10);             // Flowing rainbow cycle along the whole strip
+
 		allStripsOff();
 	}
 
 	if (DISABLE_WIFI == 0)
 	{
 		// Connect to WiFi
-		wifiSetup();
-		delay(100);
-		printWifiMode();
-		scanWifiNetworks(); // Scan for available WiFi networks
-		delay(1000);
-		printWifiStatus(); // Print WiFi status
-		delay(1000);
+		// wifiSetup();
+		// delay(100);
+		// printWifiMode();
+		// scanWifiNetworks(); // Scan for available WiFi networks
+		// delay(1000);
+		// printWifiStatus(); // Print WiFi status
+		// delay(1000);
 
-		WiFi.begin(ssid, password); // Attempt to connect to WiFi
-		Serial.println("Connecting...");
-		while (WiFi.waitForConnectResult() != WL_CONNECTED)
-		{
-			delay(1000);
-			Serial.print(".");
-		}
-		delay(1000);
-		Serial.print("hostname: ");
-		Serial.println(WiFi.getHostname());
-		Serial.println();
-		printWifiStatus();
-		Serial.print("Connected to WiFi network with IP Address: ");
-		Serial.println(WiFi.localIP());
-		delay(1000);
+		// WiFi.begin(ssid, password); // Attempt to connect to WiFi
+		// Serial.println("Connecting...");
+		// while (WiFi.waitForConnectResult() != WL_CONNECTED)
+		// {
+		// 	delay(1000);
+		// 	Serial.print(".");
+		// }
+		// delay(1000);
+		// Serial.print("hostname: ");
+		// Serial.println(WiFi.getHostname());
+		// Serial.println();
+		// printWifiStatus();
+		// Serial.print("Connected to WiFi network with IP Address: ");
+		// Serial.println(WiFi.localIP());
+		// delay(1000);
 
-		serverSetup();
-		delay(1000);
+		// serverSetup();
+		// delay(1000);
+
+		
+		
+		
+
 	}
 
 	// Initialize task for core 1
@@ -1362,7 +1437,7 @@ void loop()
 		}
 	}
 
-	server.handleClient();
+	// server.handleClient();
 	
 
 	if (spacecraftCallsign == NULL) spacecraftCallsign = "";
