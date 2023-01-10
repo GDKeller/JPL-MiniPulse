@@ -44,11 +44,11 @@ void Animate::animateMeteor(Meteor* meteor)
 		if (meteor->directionDown == true) {
 			currentPixel = drawPixel + d + 1;
 			if (currentPixel >= regionEnd) break;
-			if (currentPixel < regionStart) continue;
+			if (currentPixel < regionStart - 1) continue;
 		} else {
 			currentPixel = drawPixel - d - 1;
 			if (currentPixel < regionStart) break;
-			if (currentPixel >= regionEnd) continue;
+			if (currentPixel > regionEnd) continue;
 		}
 
 		if (d % 2 == 0) {

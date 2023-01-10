@@ -338,10 +338,10 @@ const int outerPixelsChunkLength = outerPixelsTotal / outerChunks;
 
 // Define NeoPixel objects - NAME(PIXEL_COUNT, PIN, PIXEL_TYPE)
 Adafruit_NeoPixel
-	outer_pixels(outerPixelsTotal, OUTER_PIN, NEO_GBR + NEO_KHZ800),
-	middle_pixels(middlePixelsTotal, MIDDLE_PIN, NEO_GBR + NEO_KHZ800),
-	inner_pixels(innerPixelsTotal, INNER_PIN, NEO_GBR + NEO_KHZ800),
-	bottom_pixels(bottomPixelsTotal, BOTTOM_PIN, NEO_GBR + NEO_KHZ800);
+	outer_pixels(outerPixelsTotal, OUTER_PIN, NEO_GRB + NEO_KHZ800),
+	middle_pixels(middlePixelsTotal, MIDDLE_PIN, NEO_GRB + NEO_KHZ800),
+	inner_pixels(innerPixelsTotal, INNER_PIN, NEO_GRB + NEO_KHZ800),
+	bottom_pixels(bottomPixelsTotal, BOTTOM_PIN, NEO_GRB + NEO_KHZ800);
 
 Adafruit_NeoPixel *allStrips[4] = {
 	&inner_pixels,	// ID: Green
@@ -648,7 +648,7 @@ void scrollLetters(char * spacecraftName, int wordSize, bool nameChanged)
 		
 		char theLetter = spacecraftName[i];
 		doLetterRegions(theLetter, 0, letterPixel);
-		// doLetterRegions(theLetter, 6, letterPixel);
+		doLetterRegions(theLetter, 7, letterPixel);
 		// doLetterRegions(theLetter, 8, letterPixel);
 
 		letterPixel = letterPixel - letterSpacing - characterKerning;
@@ -696,11 +696,11 @@ void animationMeteorPulseRegion(
 {
 
 	// Stagger the starting pixel
-	if (randomizeOffset == true) startPixel = startPixel - random(0, 4);
+	if (randomizeOffset == true) startPixel = startPixel - (random(0, 4) * 2);
 
 	for (int i = 0; i < pulseCount; i++) {
 		int16_t pixel = i + startPixel + (i * offset * -1);
-		if (randomizeOffset == true) pixel = pixel - random(0, 3);
+		if (randomizeOffset == true) pixel = pixel - (random(0, 3) * 2);
 		createMeteor(strip, region, directionDown, pixel);
 	}
 }
@@ -769,7 +769,7 @@ void updateAnimation(char * spacecraftName, bool nameChanged, bool hasDownSignal
 			if (downSignalRateInt > 1024) pulseCountDown = 2;
 			if (downSignalRateInt > (1024 * 1024)) pulseCountDown = 3;
 
-			animationMeteorPulseRing(2, true, pulseCountDown, 12, true);
+			animationMeteorPulseRing(2, true, pulseCountDown, 16, true);
 			// animationMeteorPulseRegion(2, 8, true, 0, pulseCountDown, 12, true);
 			// animationMeteorPulseRegion(2, 9, true, 0, pulseCountDown, 12, true);
 			// animationMeteorPulseRegion(2, 10, true, 0, pulseCountDown, 12, true);
@@ -1102,12 +1102,13 @@ void setup()
 	// these are stored by the esp library
 	//wm.resetSettings();
 
-	Serial.setDebugOutput(true);
-	wm.setDebugOutput(true);
-	wm.setConnectRetries(3);
+	// Serial.setDebugOutput(true);
+	// wm.setDebugOutput(true);
+	wm.setCleanConnect(true);
+	wm.setConnectRetries(5);
 	wm.setConnectTimeout(30); // connect attempt fails after n seconds
 	// wm.setSaveConnectTimeout(5);
-	wm.setCleanConnect(true);
+	wm.setConfigPortalTimeout(120);
 
 	// Automatically connect using saved credentials,
 	// if connection fails, it starts an access point with the specified name ( "AutoConnectAP"),
@@ -1159,8 +1160,8 @@ void setup()
 	}
 
 	// Turn off all NeoPixels
-	allStripsShow();
 	allStripsOff();
+	
 
 	// Identify Neopixel strips by filling with unique colors
 	if (ID_LEDS == 1)
@@ -1180,40 +1181,57 @@ void setup()
 		// 	delay(5000);
 		// }
 
-		outer_pixels.fill(*mpColors.blue.pointer);
-		bottom_pixels.fill(*mpColors.purple.pointer);
-		outer_pixels.show();
-		bottom_pixels.show();
-		delay(10000);
+		// outer_pixels.fill(*mpColors.blue.pointer);
+		// // bottom_pixels.fill(*mpColors.purple.pointer);
+		// outer_pixels.show();
+		// bottom_pixels.show();
+		
+		allStrips[0]->fill(*mpColors.red.pointer);
+		allStrips[1]->fill(*mpColors.red.pointer);
+		allStrips[2]->fill(*mpColors.red.pointer);
+		allStripsShow();
+		delay(5000);
+
+		allStrips[0]->fill(*mpColors.green.pointer);
+		allStrips[1]->fill(*mpColors.green.pointer);
+		allStrips[2]->fill(*mpColors.green.pointer);
+		allStripsShow();
+		delay(5000);
+
+		allStrips[0]->fill(*mpColors.blue.pointer);
+		allStrips[1]->fill(*mpColors.blue.pointer);
+		allStrips[2]->fill(*mpColors.blue.pointer);
+		allStripsShow();
+		delay(5000);
 
 
 		
-		allStrips[0]->fill(*mpColors.red.pointer);
-		allStrips[1]->fill(*mpColors.green.pointer);
-		allStrips[2]->fill(*mpColors.blue.pointer);
-		allStrips[3]->fill(*mpColors.purple.pointer);
-		allStripsShow();
-		delay(10000);
-		allStripsOff();
-		delay(3000);
+		// allStrips[0]->fill(*mpColors.red.pointer);
+		// allStrips[1]->fill(*mpColors.green.pointer);
+		// allStrips[2]->fill(*mpColors.blue.pointer);
+		// allStrips[3]->fill(*mpColors.purple.pointer);
+		// allStripsShow();
+		// delay(10000);
+		// allStripsOff();
+		// delay(3000);
 
-		hueCycle(*allStrips[0], 10);
-		allStripsOff();
-		hueCycle(*allStrips[1], 10);
-		allStripsOff();
-		hueCycle(*allStrips[2], 10);
-		allStripsOff();
-		hueCycle(*allStrips[3], 10);
-		allStripsOff();
-		delay(3000);
+		// hueCycle(*allStrips[0], 10);
+		// allStripsOff();
+		// hueCycle(*allStrips[1], 10);
+		// allStripsOff();
+		// hueCycle(*allStrips[2], 10);
+		// allStripsOff();
+		// hueCycle(*allStrips[3], 10);
+		// allStripsOff();
+		// delay(3000);
 
-		colorWipe(*allStrips[0], mpColors.red.pointer, 10);
-		colorWipe(*allStrips[1], mpColors.green.pointer, 10);
-		colorWipe(*allStrips[2], mpColors.blue.pointer, 10);
-		colorWipe(*allStrips[3], mpColors.yellow.pointer, 10);
+		// colorWipe(*allStrips[0], mpColors.red.pointer, 10);
+		// colorWipe(*allStrips[1], mpColors.green.pointer, 10);
+		// colorWipe(*allStrips[2], mpColors.blue.pointer, 10);
+		// colorWipe(*allStrips[3], mpColors.yellow.pointer, 10);
 
 		// allStripsShow();
-		delay(10000);
+		// delay(10000);
 		// rainbow(*allStrips[0], 10);             // Flowing rainbow cycle along the whole strip
 		// rainbow(*allStrips[1], 10);             // Flowing rainbow cycle along the whole strip
 		// rainbow(*allStrips[2], 10);             // Flowing rainbow cycle along the whole strip
