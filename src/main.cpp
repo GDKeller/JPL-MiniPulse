@@ -343,7 +343,7 @@ Adafruit_NeoPixel
 	inner_pixels(innerPixelsTotal, INNER_PIN, NEO_GRB + NEO_KHZ800),
 	bottom_pixels(bottomPixelsTotal, BOTTOM_PIN, NEO_GRB + NEO_KHZ800);
 
-Adafruit_NeoPixel *allStrips[4] = {
+Adafruit_NeoPixel* allStrips[4] = {
 	&inner_pixels,	// ID: Green
 	&middle_pixels, // ID: Red
 	&outer_pixels,	// ID: Blue
@@ -629,17 +629,17 @@ void doLetterRegions(char theLetter, int regionStart, int startingPixel)
 }
 
 // Updates scrolling letters on inner strips
-void scrollLetters(char * spacecraftName, int wordSize, bool nameChanged)
+void scrollLetters(const char * spacecraftName, int wordArraySize, bool nameChanged)
 {
 	int regionStart = 4;
 
 	// Serial.println(spacecraftName);
 	static int startPixel = 0;
+	int wordSize = 0;
 
 	int letterPixel = startPixel;
-	int wrapPixel = innerPixelsChunkLength + (wordSize * (characterHeight + characterKerning));
 
-	for (int i = 0; i < wordSize; i++)
+	for (int i = 0; i < wordArraySize; i++)
 	{
 		int previousArrayIndex = i - 1;
 		if (previousArrayIndex < 0)
@@ -647,6 +647,12 @@ void scrollLetters(char * spacecraftName, int wordSize, bool nameChanged)
 
 		
 		char theLetter = spacecraftName[i];
+		
+		if (theLetter == 0) {
+			wordSize = i;
+			break;
+		}
+
 		doLetterRegions(theLetter, 0, letterPixel);
 		doLetterRegions(theLetter, 7, letterPixel);
 		// doLetterRegions(theLetter, 8, letterPixel);
@@ -654,6 +660,8 @@ void scrollLetters(char * spacecraftName, int wordSize, bool nameChanged)
 		letterPixel = letterPixel - letterSpacing - characterKerning;
 	}
 
+
+	int wrapPixel = innerPixelsChunkLength + (wordSize * (characterHeight + characterKerning));
 	startPixel++;
 
 	if (startPixel > wrapPixel) {
@@ -727,7 +735,7 @@ void animationMeteorPulseRing(
  * Gets called every loop();
  * 
 */
-void updateAnimation(char * spacecraftName, bool nameChanged, bool hasDownSignal, char * downSignalRate, bool hasUpSignal, char * upSignalRate)
+void updateAnimation(const char* spacecraftName, int spacecraftNameSize, bool nameChanged, bool hasDownSignal, char * downSignalRate, bool hasUpSignal, char * upSignalRate)
 {
 	// Update brightness from potentiometer
 	au.updateBrightness();
@@ -735,10 +743,10 @@ void updateAnimation(char * spacecraftName, bool nameChanged, bool hasDownSignal
 	/* Update Scrolling letters animation */
 	if ((millis() - wordLastTime) > wordScrollInterval)
 	{
-		string wordLength = (string) spacecraftName;
-		int wordSize = wordLength.length();
+		// string wordLength = (string) spacecraftName;
+		// int wordSize = wordLength.length();
 
-		if (nameScrollDone == false) scrollLetters(spacecraftName, wordSize, nameChanged);
+		if (nameScrollDone == false) scrollLetters(spacecraftName, spacecraftNameSize, nameChanged);
 		wordLastTime = millis(); // Set word timer to current millis()
 	}
 
@@ -1091,9 +1099,9 @@ void getData(void *parameter)
 // setup() function -- runs once at startup --------------------------------
 void setup()
 {
-	WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
-
 	Serial.begin(115200); // Begin serial communications, ESP32 uses 115200 rate
+
+	WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
 
 	//WiFiManager, Local intialization. Once its business is done, there is no need to keep it around
 	WiFiManager wm;
@@ -1298,15 +1306,16 @@ void setup()
 }
 
 
-char * spacecraftCallsign = "";
-char * displaySpacecraftName = "";
+char spacecraftCallsign[16] = {};
+char displaySpacecraftName[100] = {};
+int displaySpacecraftNameSize;
 // char * displaySpacecraftName = "abcdefghijklmnopqrstuvwxyz 1234567890";
 bool nameChanged = true;
 
 bool hasDownSignal = false;
-char * downSignalRate = "";
+char downSignalRate[16] = {};
 bool hasUpSignal = false;
-char * upSignalRate = "";
+char upSignalRate[16] = {};
 
 int stationCount = 0;
 int dishCount = 0;
@@ -1330,19 +1339,22 @@ void loop()
 	if (xQueueReceive(queue, &stations, 1) == pdPASS)
 	{
 		if (nameScrollDone == true) {
+			memset(spacecraftCallsign, 0, 16);
+			memset(displaySpacecraftName, 0, 100);
 			nameScrollDone = false;
 			hasDownSignal = false;
-			downSignalRate = "";
+			memset(downSignalRate, 0, 16);
 			hasUpSignal = false;
-			upSignalRate = "";
+			memset(upSignalRate, 0, 16);
 
 			string upSignal_string("upSignal");
 			string downSignal_string("downSignal");		
 			
 			Serial.println("-----------------------------");
 
-			spacecraftCallsign = (char*) stations[stationCount].dishes[dishCount].targets[targetCount].name;
-			string callsign_string(spacecraftCallsign);
+			// Copy callsign value into char[]
+			strcpy(spacecraftCallsign, stations[stationCount].dishes[dishCount].targets[targetCount].name);
+			displaySpacecraftNameSize = sizeof(displaySpacecraftName) / sizeof(displaySpacecraftName[0]);
 
 			for (int i = 0; i < 10; i++) {
 				const char* signalDirection = stations[stationCount].dishes[dishCount].signals[i].direction;
@@ -1350,16 +1362,17 @@ void loop()
 				const char* signalTarget = stations[stationCount].dishes[dishCount].signals[i].spacecraft;
 				
 				if (signalDirection == NULL) break;	// Once we hit a non-existent array item, we can assume there aren't any more existing items so we end the loop
-				
-				if (signalDirection == downSignal_string && signalTarget == callsign_string && signalType == string ("data") ) {
+
+
+				if (signalDirection == downSignal_string && signalTarget == string(spacecraftCallsign) && signalType == string ("data") ) {
 					hasDownSignal = true;
-					downSignalRate = (char*)stations[stationCount].dishes[dishCount].signals[i].rate;
+					strcpy(downSignalRate, stations[stationCount].dishes[dishCount].signals[i].rate);
 					Serial.print("downSignalRate: "); Serial.println(downSignalRate);
 				}
 
-				if (signalDirection == upSignal_string && signalTarget == callsign_string) {
+				if (signalDirection == upSignal_string && signalTarget == spacecraftCallsign) {
 					hasUpSignal = true;
-					upSignalRate = (char*)stations[stationCount].dishes[dishCount].signals[i].rate;
+					strcpy(upSignalRate, stations[stationCount].dishes[dishCount].signals[i].rate);
 					Serial.print("upSignalRate: "); Serial.println(upSignalRate);
 				}
 			}
@@ -1369,7 +1382,7 @@ void loop()
 			Serial.print("Name: "); Serial.println(spacecraftCallsign);
 			const char* fullName = data.callsignToName(spacecraftCallsign);
 			Serial.print("Full name: "); Serial.println(fullName);
-			displaySpacecraftName = (char *) fullName;
+			if (fullName != "") strcpy(displaySpacecraftName, fullName);
 
 			targetCount++;
 			const char * nextTargetName = stations[stationCount].dishes[dishCount].targets[targetCount].name;
@@ -1470,9 +1483,10 @@ void loop()
 	// server.handleClient();
 	
 
-	if (spacecraftCallsign == NULL) spacecraftCallsign = "";
-	if (displaySpacecraftName == NULL) displaySpacecraftName = "";
-	updateAnimation(displaySpacecraftName, nameChanged, hasDownSignal, downSignalRate, hasUpSignal, upSignalRate);
+	if (spacecraftCallsign == NULL) memset(spacecraftCallsign, 0, 16);
+	if (displaySpacecraftName == NULL) memset(displaySpacecraftName, 0, 100);
+	// Serial.print("displayName"); Serial.println(displaySpacecraftName);
+	updateAnimation(displaySpacecraftName, displaySpacecraftNameSize, nameChanged, hasDownSignal, downSignalRate, hasUpSignal, upSignalRate);
 	nameChanged = false;
 
 	// if ( millis() - lastUpdateP1 > pattern1Interval ) updatePattern1();

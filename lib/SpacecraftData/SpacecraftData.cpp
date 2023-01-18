@@ -102,7 +102,8 @@ void SpacecraftData::loadJson() {
     Serial.println("Spacecraft callsigns loaded");
 }
 
-const char* SpacecraftData::callsignToName(char* key) {
-    const char* result = spacecraftNamesJson[key];
-    return result;
+const char* SpacecraftData::callsignToName(const char* key) {
+  const char* notfound = "NA";
+  const char* result = spacecraftNamesJson[key] != nullptr ? spacecraftNamesJson[key] : notfound;
+  return result;
 }

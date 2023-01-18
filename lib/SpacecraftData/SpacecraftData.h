@@ -13,7 +13,7 @@ class SpacecraftData {
     public:
         StaticJsonDocument<1536> spacecraftNamesJson;
         void loadJson();
-        const char* callsignToName(char* key);
+        const char* callsignToName(const char* key);
 };
 
 #endif
