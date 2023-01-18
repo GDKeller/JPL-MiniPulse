@@ -103,7 +103,7 @@ void SpacecraftData::loadJson() {
 }
 
 const char* SpacecraftData::callsignToName(const char* key) {
-  const char* notfound = "NA";
+  const char* notfound = "JPL";
   const char* result = spacecraftNamesJson[key] != nullptr ? spacecraftNamesJson[key] : notfound;
   return result;
 }

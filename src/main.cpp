@@ -1,8 +1,6 @@
 /* LIBRARIES */
 #include <Arduino.h>
-// #include <WiFi.h>
 #include <HTTPClient.h>
-// #include <WebServer.h>
 #include <Adafruit_NeoPixel.h>
 #include <tinyxml2.h>
 #include <iostream>
@@ -22,7 +20,6 @@ using namespace std;
 
 /* CONFIG */
 
-// const char *ssid = "PlanetExpress";
 // const char *password = "futurama";
 #define AP_SSID "MiniPulse"
 
@@ -75,250 +72,7 @@ TaskHandle_t HandleData; // Task for fetching and parsing data
 QueueHandle_t queue;	 // Queue to pass data between tasks
 
 /* NETWORKING */
-WebServer server(80); // Set server port
-IPAddress local_IP(192, 168, 100, 100);
-IPAddress gateway(192, 168, 1, 1);
-IPAddress subnet(255, 255, 0, 0);
-IPAddress ap_ip(192, 168, 0, 1);
-IPAddress ap_gateway(192, 168, 0, 1);
-IPAddress ap_subnet(255, 255, 255, 0);
-String hostname = "minipulse";
-String header; // Variable to store the HTTP request
-
-static char buf[2048];
-const size_t CAPACITY = JSON_ARRAY_SIZE(50);
-StaticJsonDocument<CAPACITY> jsonDoc;
-JsonArray networksArray = jsonDoc.to<JsonArray>();
-
-void createHtml()
-{
-	char html[] = PROGMEM R"=====(
-	<!DOCTYPE html>
-	<html lang="en">
-	<head>
-	<style>
-	body { align-items: center; display: flex; flex-direction: column; padding: 20px; font-size: 18px; }
-	form { display: flex; flex-direction: column; }
-	input { margin-bottom: 2rem; padding: 1.2rem; }
-	select { font-size: 2rem; margin: 0 auto; }
-	</style>
-	</head>
-	<body>
-	<h1>MiniPulse</h1>
-	<form>
-	)=====";
-
-	strcpy(buf, html);
-
-	strcat(buf, "<select name=\"networks\" id=\"networks\">");
-
-	for (JsonVariant v : networksArray)
-	{
-
-		strcat(buf, "<option value=\"");
-		const char *network = v.as<const char *>();
-		strcat(buf, network);
-		strcat(buf, "\">");
-		strcat(buf, network);
-		strcat(buf, "</option>");
-	}
-	strcat(buf, "</select>");
-
-	char newhtml[] = PROGMEM R"=====(
-	<label for="password">WiFi Network Password:</label>
-	<input type="text" id="password" name="password">
-	<input type="submit" value="Apply & Restart">
-	</form>
-	</body>
-	</html>
-	)=====";
-
-	strcat(buf, newhtml);
-}
-
-void sendWebsite()
-{
-	Serial.println("Handling HTTP request...");
-	server.send(200, "text/html", buf);
-}
-
-void serverSetup()
-{
-	createHtml();
-	server.on("/", sendWebsite);
-	// server.on("/xml", SendXML);
-	server.begin();
-}
-
-static volatile bool wifi_connected = false;
-
-const char *rssiToString(uint rssi)
-{
-	if (rssi > -31)
-		return "Amazing";
-	if (rssi > -68)
-		return "Very Good";
-	if (rssi > -71)
-		return "Okay";
-	if (rssi > -81)
-		return "Not Good";
-	if (rssi > -91)
-		return "Unusable";
-	return "Unknown";
-}
-
-void wifiOnConnect()
-{
-	Serial.println("STA Connected");
-	Serial.print("Network: ");
-	Serial.println(WiFi.SSID());
-	Serial.print("STA IPv4: ");
-	Serial.println(WiFi.localIP());
-
-	const uint rssi = WiFi.RSSI();
-	Serial.print("Connection Strength: ");
-	Serial.print(rssiToString(rssi));
-	Serial.print(" (RSSI: ");
-	Serial.print(WiFi.RSSI());
-	Serial.print("dBm)");
-	Serial.println();
-}
-
-void wifiOnDisconnect()
-{
-	Serial.println("STA Disconnected");
-	delay(1000);
-	// WiFi.begin(ssid, password);
-}
-
-void WiFiEvent(WiFiEvent_t event)
-{
-	switch (event)
-	{
-
-	case ARDUINO_EVENT_WIFI_AP_START:
-		// can set ap hostname here
-		WiFi.softAPsetHostname(AP_SSID);
-		// enable ap ipv6 here
-		WiFi.softAPenableIpV6();
-		Serial.print("AP IP Address: ");
-		Serial.println(WiFi.softAPIP());
-		delay(10000);
-		break;
-
-	case ARDUINO_EVENT_WIFI_STA_START:
-		// set sta hostname here
-		WiFi.setHostname(AP_SSID);
-		break;
-	case ARDUINO_EVENT_WIFI_STA_CONNECTED:
-		// enable sta ipv6 here
-		WiFi.enableIpV6();
-		break;
-	case ARDUINO_EVENT_WIFI_STA_GOT_IP6:
-		Serial.print("STA IPv6: ");
-		Serial.println(WiFi.localIPv6());
-		break;
-	case ARDUINO_EVENT_WIFI_AP_GOT_IP6:
-		Serial.print("AP IPv6: ");
-		Serial.println(WiFi.softAPIPv6());
-		break;
-	case ARDUINO_EVENT_WIFI_STA_GOT_IP:
-		wifiOnConnect();
-		wifi_connected = true;
-		break;
-	case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
-		wifi_connected = false;
-		wifiOnDisconnect();
-		break;
-	default:
-		break;
-	}
-}
-
-void scanWifiNetworks()
-{
-	Serial.println("Scanning available WiFi networks...");
-	// WiFi.scanNetworks will return the number of networks found
-	int n = WiFi.scanNetworks();
-	Serial.println("Scan complete");
-	if (n == 0)
-	{
-		Serial.println("No networks found");
-	}
-	else
-	{
-		Serial.print(n);
-		Serial.println(" networks found");
-		for (int i = 0; i < n; ++i)
-		{
-			// Print SSID and RSSI for each network found
-			Serial.print(i + 1);
-			Serial.print(": ");
-			Serial.print(WiFi.SSID(i));
-			Serial.print(" (");
-			Serial.print(WiFi.RSSI(i));
-			Serial.print(")");
-			Serial.print(WiFi.encryptionType(i));
-			Serial.println((WiFi.encryptionType(i) == WIFI_AUTH_OPEN) ? " " : "*");
-			networksArray.add(WiFi.SSID(i));
-			delay(10);
-		}
-	}
-	Serial.println("");
-	delay(500);
-	return;
-}
-
-void printWifiMode()
-{
-	Serial.print("WiFi Mode: ");
-	Serial.println(WiFi.getMode());
-	Serial.println();
-	delay(100);
-}
-
-const char *wl_status_to_string(wl_status_t status)
-{
-	switch (status)
-	{
-	case WL_NO_SHIELD:
-		return "WL_NO_SHIELD";
-	case WL_IDLE_STATUS:
-		return "WL_IDLE_STATUS";
-	case WL_NO_SSID_AVAIL:
-		return "WL_NO_SSID_AVAIL";
-	case WL_SCAN_COMPLETED:
-		return "WL_SCAN_COMPLETED";
-	case WL_CONNECTED:
-		return "WL_CONNECTED";
-	case WL_CONNECT_FAILED:
-		return "WL_CONNECT_FAILED";
-	case WL_CONNECTION_LOST:
-		return "WL_CONNECTION_LOST";
-	case WL_DISCONNECTED:
-		return "WL_DISCONNECTED";
-	default:
-		return "WiFi status code unknown";
-	}
-}
-
-void printWifiStatus()
-{
-	Serial.print("WiFi Status: ");
-	Serial.println(wl_status_to_string(WiFi.status()));
-}
-
-void wifiSetup()
-{
-	WiFi.disconnect(true);
-	delay(100);
-	// WiFi.onEvent(WiFiEvent);
-	WiFi.mode(WIFI_MODE_STA);
-	// WiFi.config(local_IP, gateway, subnet);
-	WiFi.setHostname("minipulse"); // Set custom hostname
-	WiFi.softAPConfig(ap_ip, ap_gateway, ap_subnet);
-	WiFi.softAP(AP_SSID);
-}
+WiFiManager wm;
 
 /* HARDWARDE */
 Adafruit_NeoPixel neopixel;
@@ -1096,15 +850,46 @@ void getData(void *parameter)
 	}
 }
 
+
+// Force Wifi portal
+void checkWifiButton(){
+  // check for button press
+  if ( digitalRead(WIFI_RST) == LOW ) {
+    // poor mans debounce/press-hold, code not ideal for production
+    delay(50);
+    if( digitalRead(WIFI_RST) == LOW ){
+      Serial.println("Button Pressed");
+      // still holding button for 3000 ms, reset settings, code not ideaa for production
+      delay(3000); // reset delay hold
+      if( digitalRead(WIFI_RST) == LOW ){
+        Serial.println("Button Held");
+        Serial.println("Erasing Config, restarting");
+        wm.resetSettings();
+        ESP.restart();
+      }
+      
+      // start portal w delay
+      Serial.println("Starting config portal");
+      wm.setConfigPortalTimeout(120);
+      
+      if (!wm.startConfigPortal(AP_SSID)) {
+        Serial.println("failed to connect or hit timeout");
+        delay(3000);
+        // ESP.restart();
+      } else {
+        //if you get here you have connected to the WiFi
+        Serial.println("connected...yeey :)");
+      }
+    }
+  }
+}
+
 // setup() function -- runs once at startup --------------------------------
 void setup()
 {
 	Serial.begin(115200); // Begin serial communications, ESP32 uses 115200 rate
 
 	WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
-
-	//WiFiManager, Local intialization. Once its business is done, there is no need to keep it around
-	WiFiManager wm;
 
 	// reset settings - wipe stored credentials for testing
 	// these are stored by the esp library
@@ -1132,7 +917,7 @@ void setup()
 	} 
 	else {
 		//if you get here you have connected to the WiFi    
-		Serial.println("connected...yeey :)");
+		Serial.println("Connected to WiFi");
 	}
 
 
@@ -1324,6 +1109,7 @@ int signalCount = 0;
 // loop() function -- runs repeatedly as long as board is on ---------------
 void loop()
 {
+	checkWifiButton();
 
 	if (TEST_CORES == 1)
 	{
