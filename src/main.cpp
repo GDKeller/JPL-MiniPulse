@@ -796,8 +796,16 @@ void getData(void *parameter)
 							int t2 = 0; // Create target elements counter
 							for (XMLElement *xmlTarget = xmlDish->FirstChildElement("target"); xmlTarget != NULL; xmlTarget = xmlTarget->NextSiblingElement("target"))
 							{
-								newStation.dishes[n].targets[t2].name = xmlTarget->Attribute("name");
-								t2++;
+								const char* target = xmlTarget->Attribute("name");
+								const char* fullName = data.callsignToName(target);
+								fullName == nullptr
+								? (
+									Serial.print("?--> Unknown callsign, skipping "),
+									Serial.println(target)
+								 ) : (
+									newStation.dishes[n].targets[t2].name = target,
+									t2++
+								 );
 							}
 
 							n++; // Iterate dish element counter
@@ -1090,7 +1098,7 @@ void setup()
 
 char spacecraftCallsign[16] = {};
 char displaySpacecraftName[100] = {};
-int displaySpacecraftNameSize;
+int displaySpacecraftNameSize = 100; // This must match the array size of displaySpacecraftName
 bool nameChanged = true;
 
 bool hasDownSignal = false;
@@ -1102,6 +1110,27 @@ int stationCount = 0;
 int dishCount = 0;
 int targetCount = 0;
 int signalCount = 0;
+
+
+void nextDataTarget() {
+	targetCount++;
+	const char * nextTargetName = stations[stationCount].dishes[dishCount].targets[targetCount].name;
+	if (nextTargetName == NULL) {
+		dishCount++;
+		targetCount = 0;
+	}
+	const char * nextDishName = stations[stationCount].dishes[dishCount].name;
+	Serial.print("Next dish int: "); Serial.println(dishCount);
+	Serial.print("Next Dish name: "); Serial.println(nextDishName);
+
+	if (nextDishName == NULL) {
+		stationCount ++;
+		dishCount = 0;
+	}			
+	if (stationCount > 2) stationCount = 0;
+	Serial.print("Station int: "); Serial.println(stationCount);
+}
+
 
 // loop() function -- runs repeatedly as long as board is on ---------------
 void loop()
@@ -1129,15 +1158,15 @@ void loop()
 			memset(downSignalRate, 0, 16);
 			hasUpSignal = false;
 			memset(upSignalRate, 0, 16);
-
-			string upSignal_string("upSignal");
-			string downSignal_string("downSignal");		
 			
 			Serial.println("-----------------------------");
 
 			// Copy callsign value into char[]
-			strcpy(spacecraftCallsign, stations[stationCount].dishes[dishCount].targets[targetCount].name);
-			displaySpacecraftNameSize = sizeof(displaySpacecraftName) / sizeof(displaySpacecraftName[0]);
+			try {
+				strcpy(spacecraftCallsign, stations[stationCount].dishes[dishCount].targets[targetCount].name);
+			} catch (...) {
+				Serial.println("ERROR: Could not copy callsign string from data queue");
+			}
 
 			for (int i = 0; i < 10; i++) {
 				const char* signalDirection = stations[stationCount].dishes[dishCount].signals[i].direction;
@@ -1146,43 +1175,26 @@ void loop()
 				
 				if (signalDirection == NULL) break;	// Once we hit a non-existent array item, we can assume there aren't any more existing items so we end the loop
 
-
-				if (signalDirection == downSignal_string && signalTarget == string(spacecraftCallsign) && signalType == string ("data") ) {
+				if (signalTarget != string(spacecraftCallsign)) continue;
+				if (signalDirection == string ("downSignal") && signalTarget == string(spacecraftCallsign) && signalType == string ("data") ) {
 					hasDownSignal = true;
 					strcpy(downSignalRate, stations[stationCount].dishes[dishCount].signals[i].rate);
 					Serial.print("downSignalRate: "); Serial.println(downSignalRate);
 				}
 
-				if (signalDirection == upSignal_string && signalTarget == spacecraftCallsign) {
+				if (signalDirection == string ("upSignal") && signalTarget == spacecraftCallsign) {
 					hasUpSignal = true;
 					strcpy(upSignalRate, stations[stationCount].dishes[dishCount].signals[i].rate);
 					Serial.print("upSignalRate: "); Serial.println(upSignalRate);
 				}
 			}
-
-
 			
 			Serial.print("Name: "); Serial.println(spacecraftCallsign);
 			const char* fullName = data.callsignToName(spacecraftCallsign);
 			Serial.print("Full name: "); Serial.println(fullName);
 			if (fullName != "") strcpy(displaySpacecraftName, fullName);
 
-			targetCount++;
-			const char * nextTargetName = stations[stationCount].dishes[dishCount].targets[targetCount].name;
-			if (nextTargetName == NULL) {
-				dishCount++;
-				targetCount = 0;
-			}
-			const char * nextDishName = stations[stationCount].dishes[dishCount].name;
-			Serial.print("Next dish int: "); Serial.println(dishCount);
-			Serial.print("Next Dish name: "); Serial.println(nextDishName);
-
-			if (nextDishName == NULL) {
-				stationCount ++;
-				dishCount = 0;
-			}			
-			if (stationCount > 2) stationCount = 0;
-			Serial.print("Station int: "); Serial.println(stationCount);
+			nextDataTarget();
 
 			targetChangeTimer = millis();
 		}
