@@ -19,8 +19,6 @@ using namespace tinyxml2;
 using namespace std;
 
 /* CONFIG */
-
-// const char *password = "futurama";
 #define AP_SSID "MiniPulse"
 
 #define OUTER_PIN 17
@@ -130,7 +128,6 @@ int letterSpacing = 7;
 int letterTotalPixels = 28;
 
 /* ANIMATION UTILITIES */
-
 // Do not change these
 
 // Init reference variables for when last update occurred
@@ -851,7 +848,7 @@ void getData(void *parameter)
 }
 
 
-// Force Wifi portal
+// Force Wifi portal when WiFi reset button is pressed
 void checkWifiButton(){
   // check for button press
   if ( digitalRead(WIFI_RST) == LOW ) {
@@ -1094,7 +1091,6 @@ void setup()
 char spacecraftCallsign[16] = {};
 char displaySpacecraftName[100] = {};
 int displaySpacecraftNameSize;
-// char * displaySpacecraftName = "abcdefghijklmnopqrstuvwxyz 1234567890";
 bool nameChanged = true;
 
 bool hasDownSignal = false;
@@ -1106,6 +1102,7 @@ int stationCount = 0;
 int dishCount = 0;
 int targetCount = 0;
 int signalCount = 0;
+
 // loop() function -- runs repeatedly as long as board is on ---------------
 void loop()
 {
@@ -1265,60 +1262,9 @@ void loop()
 			}
 		}
 	}
-
-	// server.handleClient();
 	
-
 	if (spacecraftCallsign == NULL) memset(spacecraftCallsign, 0, 16);
 	if (displaySpacecraftName == NULL) memset(displaySpacecraftName, 0, 100);
-	// Serial.print("displayName"); Serial.println(displaySpacecraftName);
 	updateAnimation(displaySpacecraftName, displaySpacecraftNameSize, nameChanged, hasDownSignal, downSignalRate, hasUpSignal, upSignalRate);
 	nameChanged = false;
-
-	// if ( millis() - lastUpdateP1 > pattern1Interval ) updatePattern1();
-	// if( millis() - lastUpdateP2 > pattern2Interval ) updatePattern2();
-	// if( millis() - lastUpdateP3 > pattern3Interval ) updatePattern3();
-	// if( millis() - lastUpdateP4 > pattern4Interval ) updatePattern4();
-
-	// Fill along the length of the strip in various colors...
-	// colorWipe(outer_pixels, outer_pixels.Color(0,   0,   255), 50); // Red
-	// colorWipe(inner_pixels, inner_pixels.Color(255,   0,   0), 50); // Red
-	// colorWipe(middle_pixels, middle_pixels.Color(255,   0,   0), 50); // Red
-	// colorWipe(bottom_pixels, bottom_pixels.Color(255,   0,   0), 50); // Red
-
-	// colorWipe(outer_pixels, outer_pixels.Color(  0, 255,   0), 50); // Green
-	// colorWipe(inner_pixels, inner_pixels.Color(  0, 255,   0), 50); // Green
-	// colorWipe(middle_pixels, middle_pixels.Color(  0, 255,   0), 50); // Green
-	// colorWipe(bottom_pixels, bottom_pixels.Color(  0, 255,   0), 50); // Green
-
-	// colorWipe(outer_pixels, outer_pixels.Color(  0,   0, 255), 50); // Blue
-	// colorWipe(inner_pixels, inner_pixels.Color(  0,   0, 255), 50); // Blue
-	// colorWipe(middle_pixels, middle_pixels.Color(  0,   0, 255), 50); // Blue
-	// colorWipe(bottom_pixels, bottom_pixels.Color(  0,   0, 255), 50); // Blue
-
-	// Do a theater marquee effect in various colors...
-	// theaterChase(outer_pixels, outer_pixels.Color(127, 127, 127), 50); // White, half brightness
-	// theaterChase(inner_pixels, inner_pixels.Color(127, 127, 127), 50); // White, half brightness
-	// theaterChase(middle_pixels, middle_pixels.Color(127, 127, 127), 50); // White, half brightness
-	// theaterChase(bottom_pixels, bottom_pixels.Color(127, 127, 127), 50); // White, half brightness
-
-	// theaterChase(outer_pixels, outer_pixels.Color(127,   0,   0), 50); // Red, half brightness
-	// theaterChase(inner_pixels, inner_pixels.Color(127,   0,   0), 50); // Red, half brightness
-	// theaterChase(middle_pixels, middle_pixels.Color(127,   0,   0), 50); // Red, half brightness
-	// theaterChase(bottom_pixels, bottom_pixels.Color(127,   0,   0), 50); // Red, half brightness
-
-	// theaterChase(outer_pixels, outer_pixels.Color(  0,   0, 127), 50); // Blue, half brightness
-	// theaterChase(inner_pixels, inner_pixels.Color(  0,   0, 127), 50); // Blue, half brightness
-	// theaterChase(middle_pixels, middle_pixels.Color(  0,   0, 127), 50); // Blue, half brightness
-	// theaterChase(bottom_pixels, bottom_pixels.Color(  0,   0, 127), 50); // Blue, half brightness
-
-	// rainbow(outer_pixels, 10);             // Flowing rainbow cycle along the whole strip
-	// rainbow(inner_pixels, 10);             // Flowing rainbow cycle along the whole strip
-	// rainbow(middle_pixels, 10);             // Flowing rainbow cycle along the whole strip
-	// rainbow(bottom_pixels, 10);             // Flowing rainbow cycle along the whole strip
-
-	// theaterChaseRainbow(outer_pixels, 50); // Rainbow-enhanced theaterChase variant
-	// theaterChaseRainbow(inner_pixels, 50); // Rainbow-enhanced theaterChase variant
-	// theaterChaseRainbow(middle_pixels, 50); // Rainbow-enhanced theaterChase variant
-	// theaterChaseRainbow(bottom_pixels, 50); // Rainbow-enhanced theaterChase variant
 }
