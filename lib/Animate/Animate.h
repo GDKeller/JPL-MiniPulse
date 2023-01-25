@@ -30,7 +30,7 @@ struct Meteor {
 class Animate {
     static AnimationUtils aUtilAnimate;
     public:
-        Meteor* ActiveMeteors[100] = {nullptr};
+        Meteor* ActiveMeteors[500] = {nullptr};
         size_t ActiveMeteorsSize = 0;
         void animateMeteor(Meteor* meteor);
 

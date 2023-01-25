@@ -110,11 +110,17 @@ const char* termColor(const char* color) {
 }
 
 void printFreeHeap() {
-	Serial.print(termColor("blue"));
-	Serial.print("MEM Free Heap: ");
-	Serial.print(ESP.getFreeHeap());
-	Serial.print(",");
-	Serial.println(termColor("reset"));
+	String printString;
+
+	printString += "\n";
+	printString += termColor("blue");
+	printString += "MEM Free Heap: ";
+	printString += ESP.getFreeHeap();
+	printString += ",";
+	printString += termColor("reset");
+	printString += "\n";
+
+	Serial.println(printString);
 }
 
 void handleException() {
@@ -136,6 +142,43 @@ void handleException() {
 	Serial.println(termColor("reset"));
 }
 
+void printMeteorArray() {
+		
+	String printString = "\n---------------[ METEOR ARRAY ]---------------\n";
+;
+	
+	for (int i = 0; i < 500; i++) {
+		// String iPad;
+		// printf("%03d", i, iPad);
+
+		if (animate.ActiveMeteors[i] == nullptr){
+			// Serial.print("["); Serial.print(termColor("red")); Serial.print(i); Serial.print(" = null"); Serial.print("]");
+			printString += "[";
+			printString += termColor("red");
+			printString += i;
+			printString += " = nul";
+			printString += "]";
+		}
+		else {
+			// Serial.print("["); Serial.print(termColor("green")); Serial.print(i); Serial.print(" = "); Serial.print(animate.ActiveMeteors[i]->firstPixel); Serial.print("]");
+			printString += "[";
+			printString += termColor("green");
+			printString += i;
+			printString += " = ";
+			printString += animate.ActiveMeteors[i]->firstPixel;
+			printString += "]";
+		}
+		printString += termColor("reset");
+
+		if (i != 0 && i % 10 == 0) {
+			printString += "\n";
+		}
+	}
+
+	printString += "\n------------------------------\n";
+
+	Serial.println(printString);
+}
 
 
 
@@ -477,23 +520,35 @@ void scrollLetters(const char * spacecraftName, int wordArraySize, bool nameChan
 
 // Create Meteor object
 void createMeteor(int strip, int region, bool directionDown = true,  int startPixel = 0) {
-	animate.ActiveMeteors[animate.ActiveMeteorsSize++] = new Meteor {
-		directionDown,					// directionDown
-		startPixel,						// firstPixel
-		region,							// region
-		(int) outerPixelsChunkLength,	// regionLength
-		mpColors.purple.pointer,		// pColor
-		1,								// meteorSize
-		false,							// meteorTrailDecay
-		false,							// meteorRandomDecay
-		240,							// tailHueStart
-		true,							// tailHueAdd
-		0.75,							// tailHueExponent
-		255,							// tailHueSaturation
-	allStrips[strip]					// rStrip
-	};
 	
-	if (animate.ActiveMeteorsSize > 100) animate.ActiveMeteorsSize = 0;
+	for (int i = 0; i < 500; i++) {
+		if (animate.ActiveMeteors[i] != nullptr) {
+			// Serial.print("Could not create meteor #"); Serial.print(i); Serial.print(" startPixel: "); Serial.println(animate.ActiveMeteors[i]->firstPixel);
+			continue;
+		}
+		
+		// Serial.print(">>>> ADDING METEOR #"); Serial.println(i);
+		animate.ActiveMeteors[i] = new Meteor {
+			directionDown,					// directionDown
+			startPixel,						// firstPixel
+			region,							// region
+			(int) outerPixelsChunkLength,	// regionLength
+			mpColors.purple.pointer,		// pColor
+			1,								// meteorSize
+			false,							// meteorTrailDecay
+			false,							// meteorRandomDecay
+			240,							// tailHueStart
+			true,							// tailHueAdd
+			0.75,							// tailHueExponent
+			255,							// tailHueSaturation
+			allStrips[strip]					// rStrip
+		};
+
+		break;
+		
+	}
+	
+	if (animate.ActiveMeteorsSize > 499) animate.ActiveMeteorsSize = 0;
 }
 
 void animationMeteorPulseRegion(
@@ -556,6 +611,7 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, bool na
 
 	if ((millis() - animationTimer) > 3000)
 	{
+		// printMeteorArray();
 		
 		if (hasUpSignal == true) {
 			int upSignalRateInt = strtol(upSignalRate, nullptr, 10);
@@ -634,13 +690,14 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, bool na
 	/* After Showing LEDs */
 
 	/* Update first pixel location for all active Meteors in array */
-	for (int i = 0; i < 100; i++) {
+	for (int i = 0; i < 500; i++) {
 		if (animate.ActiveMeteors[i] != nullptr){
 			animate.ActiveMeteors[i]->firstPixel = animate.ActiveMeteors[i]->firstPixel + 2;
 
 			// If meteor is beyond the display region, unallocate memory and remove array item
 			if (animate.ActiveMeteors[i]->firstPixel > animate.ActiveMeteors[i]->regionLength * 2) {
 				delete animate.ActiveMeteors[i];
+				// Serial.print("Deleted meteor #"); Serial.println(i);
 				animate.ActiveMeteors[i] = nullptr;
 			}
 		}
@@ -686,6 +743,16 @@ struct DSN_Station
 };
 
 struct DSN_Station stations[3];
+
+struct currentSpacecraft {
+	const char* callsign;
+	const char* name;
+	bool hasDownSignal;
+	int downSignalRate;
+	bool hasUpSignal;
+	int upSignalRate;
+};
+
 
 
 void parseData(const char* payload) {
@@ -801,7 +868,7 @@ void parseData(const char* payload) {
 				// }
 
 				// if (hasSignal == true) {
-				if (target == "") {
+				if (target == nullptr) {
 					Serial.println("Skipping target bc I think it's empty?");
 					continue;
 				}
@@ -860,7 +927,7 @@ void fetchData() {
 		}
 
 		// Serial.print("WiFi Status: ");
-		Serial.println(WiFi.status()); 
+		// Serial.println(WiFi.status());
 
 		// Check WiFi connection status
 		if (WiFi.status() != WL_CONNECTED) {
@@ -1206,8 +1273,8 @@ void setup()
 }
 
 
-char spacecraftCallsign[16] = {};
-char displaySpacecraftName[100] = {};
+char spacecraftCallsign[16] = {0};
+char displaySpacecraftName[100] = {0};
 int displaySpacecraftNameSize = 100; // This must match the array size of displaySpacecraftName
 bool nameChanged = true;
 
@@ -1286,6 +1353,7 @@ void loop()
 				}
 			} catch (...) {
 				Serial.println("ERROR: Could not copy callsign string from data queue");
+				handleException();
 			}
 
 			for (int i = 0; i < 10; i++) {
@@ -1293,21 +1361,27 @@ void loop()
 				const char* signalType = stations[stationCount].dishes[dishCount].signals[i].type;
 				const char* signalTarget = stations[stationCount].dishes[dishCount].signals[i].spacecraft;
 				
+				if (hasDownSignal == true && hasUpSignal == true) break; // Both signals have values, don't look for more
+
 				if (signalDirection == NULL) {	// Once we hit a non-existent array item, we can assume there aren't any more existing items so we end the loop
 					Serial.println("signalDirection is null");
 					break;
 				}
 
-				if (strcmp(signalTarget, &spacecraftCallsign[0]) != 0) continue;
+				if (signalTarget == nullptr) continue;
+				Serial.print("signalTarget: "); Serial.println(signalTarget);
+				Serial.print("spacecraftCallsign: ");Serial.println(spacecraftCallsign);
+				if (strcmp(signalTarget, &spacecraftCallsign[0]) != 0) continue; // Check that this signal iteraion has the spaceraft callsign
+				
 				Serial.print("signalDirection: "); Serial.println(signalDirection);
 				Serial.print("downSignal_string: "); Serial.println(downSignal_string);
-				if (strcmp(signalDirection, downSignal_string) == 0 && strcmp(signalTarget, &spacecraftCallsign[0]) == 0 && strcmp(signalType, datasignal_string) == 0 ) {
+				if (hasDownSignal == false && strcmp(signalDirection, downSignal_string) == 0 && strcmp(signalTarget, &spacecraftCallsign[0]) == 0 && strcmp(signalType, datasignal_string) == 0 ) {
 					hasDownSignal = true;
 					strcpy(downSignalRate, stations[stationCount].dishes[dishCount].signals[i].rate);
 					Serial.print("downSignalRate: "); Serial.println(downSignalRate);
 				}
 
-				if (strcmp(signalDirection, upSignal_string) == 0 && strcmp(signalTarget, spacecraftCallsign) == 0 && strcmp(signalType, datasignal_string) == 0) {
+				if (hasUpSignal == false && strcmp(signalDirection, upSignal_string) == 0 && strcmp(signalTarget, spacecraftCallsign) == 0 && strcmp(signalType, datasignal_string) == 0) {
 					hasUpSignal = true;
 					strcpy(upSignalRate, stations[stationCount].dishes[dishCount].signals[i].rate);
 					Serial.print("upSignalRate: "); Serial.println(upSignalRate);
