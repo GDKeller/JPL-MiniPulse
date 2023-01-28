@@ -14,6 +14,9 @@ class SpacecraftData {
         StaticJsonDocument<1536> spacecraftNamesJson;
         void loadJson();
         const char* callsignToName(const char* key);
+        StaticJsonDocument<100> spacecraftBlacklistJson;
+        void blacklist();
+        bool checkBlacklist(const char* callsign);
 };
 
 #endif
