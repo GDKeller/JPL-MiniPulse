@@ -53,5 +53,6 @@ void AnimationUtils::setPixelColor(Adafruit_NeoPixel &strip, uint16_t n, const u
 	// if (newColor > 4294967295) newColor = 4294967295;
 	// if (newColor < 0) newColor = 0;
 	// uint32_t gammaCorrected = Adafruit_NeoPixel::gamma32(newColor);
-	strip.setPixelColor(n, Adafruit_NeoPixel::gamma32(*color));
+	// strip.setPixelColor(n, Adafruit_NeoPixel::gamma32(*color));
+	strip.setPixelColor(n, *color);
 }

@@ -592,7 +592,7 @@ void animationMeteorPulseRing(
 	bool randomizeOffset = false)
 {
 	for (int i = 0; i < outerChunks; i++) {
-		// if (i < 4) continue;
+		if (strip == 1 && directionDown == false && i == 1) continue;
 		animationMeteorPulseRegion(strip, i, directionDown, 0, pulseCount, offset, randomizeOffset);
 	}
 }
@@ -626,6 +626,25 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, bool na
 		// printMeteorArray();
 		Serial.println("-------- fire meteors ------------");
 		
+
+		// Testing middle strip
+		// animationMeteorPulseRegion(1, 0, false, 0, 1, 12, true);
+		// // animationMeteorPulseRegion(1, 1, false, 0, 1, 12, true);
+		// animationMeteorPulseRegion(1, 2, false, 0, 1, 12, true);
+		// animationMeteorPulseRegion(1, 3, false, 0, 1, 12, true);
+		// animationMeteorPulseRegion(1, 4, false, 0, 1, 12, true);
+		// animationMeteorPulseRegion(1, 5, false, 0, 1, 12, true);
+		// animationMeteorPulseRegion(1, 6, false, 0, 1, 12, true);
+		// animationMeteorPulseRegion(1, 7, false, 0, 1, 12, true);
+		// animationMeteorPulseRegion(1, 8, false, 0, 1, 12, true);
+		// animationMeteorPulseRegion(1, 9, false, 0, 1, 12, true);
+
+
+
+
+
+
+
 		if (hasUpSignal == true) {
 			int upSignalRateInt = strtol(upSignalRate, nullptr, 10);
 			int pulseCountUp = 1;
@@ -644,17 +663,18 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, bool na
 				animationMeteorPulseRegion(1, random(10), false, 0, pulseCountUp, 12, true);
 				animationMeteorPulseRegion(1, random(10), false, 0, pulseCountUp, 12, true);
 			}
-			// Serial.print("upSignalRateInt: "); Serial.println(upSignalRateInt);
-			// Serial.println(1024 * 1024);
-			// Serial.println(upSignalRateInt > (1024 * 1024));
+			Serial.print("upSignalRateInt: "); Serial.println(upSignalRateInt);
+			Serial.println(1024 * 1024);
+			Serial.println(upSignalRateInt > (1024 * 1024));
 
 
-			// animationMeteorPulseRing(1, false, pulseCountUp, 16, true);
-			// animationMeteorPulseRegion(1, 4, false, 0, pulseCountUp, 12, true);
-			// animationMeteorPulseRegion(1, 5, false, 0, pulseCountUp, 12, true);
-			// animationMeteorPulseRegion(1, 6, false, 0, pulseCountUp, 12, true);
-			// animationMeteorPulseRegion(1, 7, false, 0, pulseCountUp, 12, true);
+			animationMeteorPulseRing(1, false, pulseCountUp, 16, true);
+			animationMeteorPulseRegion(1, 4, false, 0, pulseCountUp, 12, true);
+			animationMeteorPulseRegion(1, 5, false, 0, pulseCountUp, 12, true);
+			animationMeteorPulseRegion(1, 6, false, 0, pulseCountUp, 12, true);
+			animationMeteorPulseRegion(1, 7, false, 0, pulseCountUp, 12, true);
 		} else {
+			allStrips[1]->clear();
 			Serial.print("[Upsignal -- ]");
 		}
 		if (hasDownSignal == true) {
@@ -682,10 +702,11 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, bool na
 			// animationMeteorPulseRegion(2, 10, true, 0, pulseCountDown, 12, true);
 			// animationMeteorPulseRegion(2, 11, true, 0, pulseCountDown, 12, true);
 		} else {
+			allStrips[2]->clear();
 			Serial.print("[Downsignal -- ]");
 		}
 
-		Serial.println("");
+		Serial.println();
 		animationTimer = millis(); // Set animation timer to current millis()
 	}
 
@@ -700,10 +721,6 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, bool na
 	// Illuminate LEDs
 	// allStripsShow();
 	allStripsShow();
-	// allStrips[0]->show();
-	// allStrips[1]->show();
-	// allStrips[2]->show();
-	// allStrips[3]->show();
 
 
 	/* After Showing LEDs */
@@ -725,8 +742,7 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, bool na
 	// delay(1000);
 }
 
-// Create data structure objects
-
+/* Create data structure objects */
 // Target struct
 struct DSN_Target
 {
@@ -932,14 +948,9 @@ void parseData(const char* payload) {
 			n++; // Iterate dish element counter
 		}
 
-		Serial.print("OKKOKOKOKKKKKK");
-		Serial.println(newStation.name);
-
 		stations[i] = newStation; // Add data to top-level station struct array
 		i++;					  // Iterate station element counter
 	}
-
-	return;
 }
 
 
@@ -1019,19 +1030,26 @@ void fetchData() {
 
 		Serial.print("Using dummy data? "); Serial.println(usingDummyData);
 
-		if (usingDummyData == true) parseData(dummyXmlData);
+		if (usingDummyData == true) {
+			Serial.print(termColor("purple"));
+			Serial.print("Using dummy xml data!!");
+			Serial.println(termColor("reset"));
+			parseData(dummyXmlData);
+		}
 
 		if (usingDummyData == false && noTargetFoundCounter > noTargetLimit) {
-			Serial.println("Target not found limit reach - using dummy xml data");
+			Serial.print(termColor("purple"));
+			Serial.print("Target not found limit reach - using dummy xml data");
+			Serial.println(termColor("reset"));
 			usingDummyData = true;
 			Serial.println(usingDummyData);
 			noTargetFoundCounter = 0;
 			parseData(dummyXmlData);
 		}
 
-		if (usingDummyData = false) {
+		if (usingDummyData == false && noTargetFoundCounter < noTargetLimit + 1) {
 			if (httpResponseCode != 200) {
-				Serial.print("Error code: ");
+				Serial.print("HTTP Response: ");
 				Serial.println(httpResponseCode);
 
 				usingDummyData = true;
@@ -1050,7 +1068,7 @@ void fetchData() {
 					String res = http.getString();
 					const char* charRes = res.c_str();
 
-					// Serial.println("===========!!!!!!!! PAYLOAD STRING !!!!!!!!!!!==============");
+					Serial.println("===========!!!!!!!! PAYLOAD STRING !!!!!!!!!!!==============");
 					// Serial.println(charRes);
 					// pPayload = pRes;
 					usingDummyData = false;
@@ -1059,9 +1077,12 @@ void fetchData() {
 					Serial.println("dunno");
 				}
 			}
-
-			http.end(); // Free up resources
 		}
+
+		Serial.print(termColor("yellow"));
+		Serial.print("---->>> Freeing resources <<<----");
+		Serial.println(termColor("reset"));
+		http.end(); // Free up resources
 		
 		return;
 }
@@ -1421,6 +1442,7 @@ void loop()
 					strcpy(spacecraftCallsign, dataTargetCallsign);
 				} else {
 					Serial.println("NULL !");
+					noTargetFoundCounter++;
 				}
 			} catch (...) {
 				Serial.println("ERROR: Could not copy callsign string from data queue");
@@ -1437,7 +1459,6 @@ void loop()
 
 				if (signalDirection == nullptr) {	// Once we hit a non-existent array item, we can assume there aren't any more existing items so we end the loop
 					Serial.println("signalDirection is null");
-					noTargetFoundCounter++;
 					break;
 				}
 
