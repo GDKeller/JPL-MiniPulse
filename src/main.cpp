@@ -83,6 +83,27 @@ WiFiManager wm;			// Used for connecting to WiFi
 HTTPClient http;		// Used for fetching data
 
 
+/* Data */
+uint stationCount = 0;
+uint dishCount = 0;
+uint targetCount = 0;
+uint signalCount = 0;
+
+
+struct craftDisplay {
+	const char* callsign;
+	const char* name;
+	uint nameLength;
+	uint upSignal;
+	uint downSignal;
+};
+// Create a buffer to hold the data
+craftDisplay craftDisplayBuffer;
+craftDisplay* pCraftDisplayBuffer = &craftDisplayBuffer;
+
+
+
+
 /* LEDs Config */
 const int outerPixelsTotal = 800;
 const int middlePixelsTotal = 800;
@@ -487,29 +508,15 @@ void doLetterRegions(char theLetter, int regionStart, int startingPixel)
 }
 
 // Updates scrolling letters on inner strips
-void scrollLetters(const char * spacecraftName, int wordArraySize, bool nameChanged)
+void scrollLetters(const char * spacecraftName, int wordArraySize)
 {
 	int regionStart = 4;
-
-	// Serial.println(spacecraftName);
 	static int startPixel = 0;
-	int wordSize = 0;
-
 	int letterPixel = startPixel;
 
 	for (int i = 0; i < wordArraySize; i++)
-	{
-		int previousArrayIndex = i - 1;
-		if (previousArrayIndex < 0)
-			previousArrayIndex = 0;
-
-		
+	{		
 		char theLetter = spacecraftName[i];
-		
-		if (theLetter == 0) {
-			wordSize = i;
-			break;
-		}
 
 		doLetterRegions(theLetter, 0, letterPixel);
 		doLetterRegions(theLetter, 7, letterPixel);
@@ -519,7 +526,7 @@ void scrollLetters(const char * spacecraftName, int wordArraySize, bool nameChan
 	}
 
 
-	int wrapPixel = innerPixelsChunkLength + (wordSize * (characterHeight + characterKerning));
+	int wrapPixel = innerPixelsChunkLength + (wordArraySize * (characterHeight + characterKerning));
 	startPixel++;
 
 	if (startPixel > wrapPixel) {
@@ -605,7 +612,7 @@ void animationMeteorPulseRing(
  * Gets called every loop();
  * 
 */
-void updateAnimation(const char* spacecraftName, int spacecraftNameSize, bool nameChanged, bool hasDownSignal, char * downSignalRate, bool hasUpSignal, char * upSignalRate)
+void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int downSignalRate, int upSignalRate)
 {
 	// Update brightness from potentiometer
 	au.updateBrightness();
@@ -616,7 +623,16 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, bool na
 		// string wordLength = (string) spacecraftName;
 		// int wordSize = wordLength.length();
 
-		if (nameScrollDone == false) scrollLetters(spacecraftName, spacecraftNameSize, nameChanged);
+		// print all parameters
+		// Serial.println("-------- updateAnimation ------------");
+		// Serial.print("nameScrollDone: "); Serial.println(nameScrollDone);
+		// Serial.print("spacecraftName: "); Serial.println(spacecraftName);
+		// Serial.print("spacecraftNameSize: "); Serial.println(spacecraftNameSize);
+		// Serial.print("downSignalRate: "); Serial.println(downSignalRate);
+		// Serial.print("upSignalRate: "); Serial.println(upSignalRate);
+
+
+		if (nameScrollDone == false) scrollLetters(spacecraftName, spacecraftNameSize);
 		wordLastTime = millis(); // Set word timer to current millis()
 	}
 
@@ -625,86 +641,101 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, bool na
 	{
 		// printMeteorArray();
 		Serial.println("-------- fire meteors ------------");
-		
 
-		// Testing middle strip
-		// animationMeteorPulseRegion(1, 0, false, 0, 1, 12, true);
-		// // animationMeteorPulseRegion(1, 1, false, 0, 1, 12, true);
-		// animationMeteorPulseRegion(1, 2, false, 0, 1, 12, true);
-		// animationMeteorPulseRegion(1, 3, false, 0, 1, 12, true);
-		// animationMeteorPulseRegion(1, 4, false, 0, 1, 12, true);
-		// animationMeteorPulseRegion(1, 5, false, 0, 1, 12, true);
-		// animationMeteorPulseRegion(1, 6, false, 0, 1, 12, true);
-		// animationMeteorPulseRegion(1, 7, false, 0, 1, 12, true);
-		// animationMeteorPulseRegion(1, 8, false, 0, 1, 12, true);
-		// animationMeteorPulseRegion(1, 9, false, 0, 1, 12, true);
-
-
-
-
-
-
-
-		if (hasUpSignal == true) {
-			int upSignalRateInt = strtol(upSignalRate, nullptr, 10);
+		if (upSignalRate > 0) {
 			int pulseCountUp = 1;
 
-			
-			if (upSignalRateInt > (1024 * 1024)) {
-				pulseCountUp = 3;
-				Serial.print("[Upsignal Gb]");
-				animationMeteorPulseRing(1, false, pulseCountUp, 16, true);
-			} else if (upSignalRateInt > 1024) {
-				 pulseCountUp = 2;
-				 Serial.print("[Upsignal kb]");
-				 animationMeteorPulseRing(1, false, pulseCountUp, 16, true);
-			} else {
-				Serial.print("[Upsignal slow]");
-				animationMeteorPulseRegion(1, random(10), false, 0, pulseCountUp, 12, true);
-				animationMeteorPulseRegion(1, random(10), false, 0, pulseCountUp, 12, true);
+			switch(upSignalRate) {
+				case 6:	// 1gbps
+					pulseCountUp = 5;
+					Serial.print("[Upsignal Gb]");
+					animationMeteorPulseRing(1, false, pulseCountUp, 16, true);
+					break;
+				case 5:	// 1mbps
+					pulseCountUp = 4;
+					Serial.print("[Upsignal kb]");
+					animationMeteorPulseRing(1, false, pulseCountUp, 16, true);
+					break;
+				case 4: // 10lbps
+					pulseCountUp = 3;
+					Serial.print("[Upsignal kb]");
+					animationMeteorPulseRing(1, false, pulseCountUp, 16, true);
+					break;
+				case 3:
+					pulseCountUp = 2;
+					Serial.print("[Upsignal kb]");
+					animationMeteorPulseRing(1, false, pulseCountUp, 16, true);
+					break;
+				case 2:
+					pulseCountUp = 1;
+					Serial.print("[Upsignal kb]");
+					animationMeteorPulseRing(1, false, pulseCountUp, 16, true);
+					break;
+				case 1:
+					Serial.print("[Upsignal slow]");
+					animationMeteorPulseRegion(1, random(10), false, 0, pulseCountUp, 12, true);
+					animationMeteorPulseRegion(1, random(10), false, 0, pulseCountUp, 12, true);
+					break;
+				case 0:
+					allStrips[1]->clear();
+					Serial.print("[Upsignal -- ]");
+					break;
+				default:
+					allStrips[1]->clear();
+					Serial.print("[Upsignal n/a ]");			
 			}
-			Serial.print("upSignalRateInt: "); Serial.println(upSignalRateInt);
-			Serial.println(1024 * 1024);
-			Serial.println(upSignalRateInt > (1024 * 1024));
-
-
-			animationMeteorPulseRing(1, false, pulseCountUp, 16, true);
-			animationMeteorPulseRegion(1, 4, false, 0, pulseCountUp, 12, true);
-			animationMeteorPulseRegion(1, 5, false, 0, pulseCountUp, 12, true);
-			animationMeteorPulseRegion(1, 6, false, 0, pulseCountUp, 12, true);
-			animationMeteorPulseRegion(1, 7, false, 0, pulseCountUp, 12, true);
 		} else {
 			allStrips[1]->clear();
 			Serial.print("[Upsignal -- ]");
 		}
-		if (hasDownSignal == true) {
-			int downSignalRateInt = strtol(downSignalRate, nullptr, 10);
+
+		if (downSignalRate > 0) {
 			int pulseCountDown = 1;
 
-			
-			if (downSignalRateInt > (1024 * 1024)) {
-				pulseCountDown = 3;
-				Serial.print("[Downsignal Gb]");
-				animationMeteorPulseRing(2, true, pulseCountDown, 16, true);
-			} else if (downSignalRateInt > 1024) {
-				pulseCountDown = 2;
-				Serial.print("[Downsignal kb]");
-				animationMeteorPulseRing(2, true, pulseCountDown, 16, true);
-			} else {
-				Serial.print("[Downsignal slow]");
-				animationMeteorPulseRegion(2, random(10), true, 0, pulseCountDown, 12, true);
-				animationMeteorPulseRegion(2, random(10), true, 0, pulseCountDown, 12, true);
+			switch(downSignalRate) {
+				case 6:	// 1gbps
+					pulseCountDown = 5;
+					Serial.print("[Downsignal Gb]");
+					animationMeteorPulseRing(2, true, pulseCountDown, 16, true);
+					break;
+				case 5:	// 1mbps
+					pulseCountDown = 4;
+					Serial.print("[Downsignal kb]");
+					animationMeteorPulseRing(2, true, pulseCountDown, 16, true);
+					break;
+				case 4: // 10lbps
+					pulseCountDown = 3;
+					Serial.print("[Downsignal kb]");
+					animationMeteorPulseRing(2, true, pulseCountDown, 16, true);
+					break;
+				case 3:
+					pulseCountDown = 2;
+					Serial.print("[Downsignal kb]");
+					animationMeteorPulseRing(2, true, pulseCountDown, 16, true);
+					break;
+				case 2:
+					pulseCountDown = 1;
+					Serial.print("[Downsignal kb]");
+					animationMeteorPulseRing(2, true, pulseCountDown, 16, true);
+					break;
+				case 1:
+					Serial.print("[Downsignal slow]");
+					animationMeteorPulseRegion(2, random(10), true, 0, pulseCountDown, 12, true);
+					animationMeteorPulseRegion(2, random(10), true, 0, pulseCountDown, 12, true);
+					break;
+				case 0:
+					allStrips[2]->clear();
+					Serial.print("[Downsignal -- ]");
+					break;
+				default:
+					allStrips[2]->clear();
+					Serial.print("[Downsignal n/a ]");			
 			}
-
-			// animationMeteorPulseRing(2, true, pulseCountDown, 16, true);
-			// animationMeteorPulseRegion(2, 8, true, 0, pulseCountDown, 12, true);
-			// animationMeteorPulseRegion(2, 9, true, 0, pulseCountDown, 12, true);
-			// animationMeteorPulseRegion(2, 10, true, 0, pulseCountDown, 12, true);
-			// animationMeteorPulseRegion(2, 11, true, 0, pulseCountDown, 12, true);
 		} else {
 			allStrips[2]->clear();
 			Serial.print("[Downsignal -- ]");
 		}
+
 
 		Serial.println();
 		animationTimer = millis(); // Set animation timer to current millis()
@@ -779,14 +810,24 @@ struct DSN_Station
 
 struct DSN_Station stations[3];
 
-// struct currentSpacecraft {
-// 	const char* callsign;
-// 	const char* name;
-// 	bool hasDownSignal;
-// 	int downSignalRate;
-// 	bool hasUpSignal;
-// 	int upSignalRate;
-// };
+
+unsigned int rateLongToRateClass(unsigned long rate) {
+	if (rate > (1024 * 1000000)) {
+		return 6;						// > 1gbps
+	} else if (rate > (1024 * 1024)) {
+		return 5;						// > 1mbps
+	} else if (rate > (1024 * 100)) {
+		return 4;						// > 100kbps
+	} else if (rate > (1024 * 5)) {
+		return 3;						// > 5kbps
+	} else if (rate > 1024) {
+		return 2;						// > 1kbps
+	} else if (rate > 0) {
+		return 1;						// > < 1kbps
+	} else {
+		return 0;						// 0
+	}
+}
 
 
 
@@ -836,121 +877,276 @@ void parseData(const char* payload) {
 	// memset(stations, 0, sizeof(stations));
 
 
+	// print stationcount, dishcount, targetcount
+	Serial.print("stationCount: "); Serial.println(stationCount);
+	Serial.print("dishCount: "); Serial.println(dishCount);
+	Serial.print("targetCount: "); Serial.println(targetCount);
+
+
 	// Find XML elements
 	XMLNode *root = xmlDocument.RootElement();					  // Find document root node
 	XMLElement *timestamp = root->FirstChildElement("timestamp"); // Find XML timestamp element
 
-	uint64_t timestampInt;
-	timestamp->QueryUnsigned64Text(&timestampInt); // Convert timestamp to int
-
-	DSN_Station newStation;
+	craftDisplay newCraft {
+		"",
+		"",
+		0,
+		0,
+		0
+	};
 	
-	int i = 0; // Create station elements counter
-	for (XMLElement *xmlStation = root->FirstChildElement("station"); xmlStation != NULL; xmlStation = xmlStation->NextSiblingElement("station"))
-	{		
-		newStation.fetchTimestamp = timestampInt;
-		newStation.callsign = xmlStation->Attribute("name");
-		newStation.name = xmlStation->Attribute("friendlyName");
+	for (int i = 0; i < 20; i++) {
 
-		// print callsign and name
-		Serial.print(">>>> FETCH Station: ");
-		Serial.print(newStation.callsign);
-		Serial.print(" - ");
-		Serial.println(newStation.name);
-
-
-		for (int d2 = 0; d2 < 10; d2++)
-		{
-			newStation.dishes[d2] = {0}; // Reset this array struct to blank
-		}
-
-		// Find dish elements that are associated with this station
-		const char* dish_string = "dish";			   // Convert from string to char, as XMLElement->Value returns char
-		int n = 0;							   // Create dish elements counter
-		for (XMLElement *xmlDish = xmlStation->NextSiblingElement(); xmlDish != NULL; xmlDish = xmlDish->NextSiblingElement())
-		{
-			const char *elementValue = xmlDish->Value(); // Get element value (tag type)
-
-			if ( strcmp(elementValue, dish_string) != 0)
-			{ // If the element isn't a dish, exit the loop
-				break;
+		int s = 0; // Create station elements counter
+		for (XMLElement *xmlStation = root->FirstChildElement("station"); xmlStation != NULL; xmlStation = xmlStation->NextSiblingElement("station"))
+		{	
+			if (s > 2) s = 0;
+			if (s != stationCount) {
+				s++;				
+				continue;
 			}
 
-			newStation.dishes[n].name = xmlDish->Attribute("name"); // Add dish name to data struct array
-
-			// Find all signal elements within this dish element
-			int sig2 = 0; // Create target elements counter
-			for (XMLElement *xmlSignal = xmlDish->FirstChildElement(); xmlSignal != NULL; xmlSignal = xmlSignal->NextSiblingElement())
-			{
-				const char * spacecraft = xmlSignal->Attribute("spacecraft");
-				
-				// Serial.println(data.checkBlacklist(spacecraft));
-				if (data.checkBlacklist(spacecraft) == true || spacecraft == nullptr) continue; // Skip this spacecraft
-				Serial.print("fetch spacecraft: "); Serial.println(spacecraft);
-				
-				const char *elementValue = xmlSignal->Value();
-
-				// If element is not an up/down signal, skip it
-				if (strcmp(elementValue, upSignal_string) != 0 && strcmp(elementValue, downSignal_string) != 0) continue;
-
-				newStation.dishes[n].signals[sig2] = {
-					elementValue,							// direction
-					xmlSignal->Attribute("signalType"),		// type
-					xmlSignal->Attribute("dataRate"),		// rate
-					xmlSignal->Attribute("frequency"),		// frequency
-					spacecraft,		// spacecraft
-					xmlSignal->Attribute("spacecraftID"),	// spacecraftID
-				};
-
-				sig2++;
-			}
-
-			// Find all target elements within this dish element
-			int t2 = 0; // Create target elements counter
-			for (XMLElement *xmlTarget = xmlDish->FirstChildElement("target"); xmlTarget != NULL; xmlTarget = xmlTarget->NextSiblingElement("target"))
-			{
-				// Serial.print("Found target #");
-				// Serial.println(t2);
-				const char* target = xmlTarget->Attribute("name");
-				// Serial.print("Target name: "); Serial.println(target);
-
-				// bool hasSignal = false;
-				// for (int sig3 = 0; sig3 < 10; sig3++) {
-				// 	Serial.println(newStation.dishes[n].signals[sig3].spacecraft);
-				// 	Serial.println(target);
-				// 	Serial.println("------");
-				// 	if (newStation.dishes[n].signals[sig3].spacecraft == target) {
-				// 		hasSignal = true;
-				// 		break;
-				// 	}
-				// }
-
-				// if (hasSignal == true) {
-				if (target == nullptr) {
-					Serial.println("Skipping target bc I think it's empty?");
+			int d = 0; // Create dish elements counter
+			for (XMLElement *xmlDish = xmlStation->NextSiblingElement(); xmlDish != NULL; xmlDish = xmlDish->NextSiblingElement()) {
+				if (d > 9) {
+					stationCount++;
+					d = 0;
+				}
+				if (d != dishCount) {
+					d++;
 					continue;
 				}
-					const char* fullName = data.callsignToName(target);
-					fullName == nullptr
-					? (
-						Serial.print("?--> Unknown callsign, skipping "),
-						Serial.println(target)
-					) : (
-						newStation.dishes[n].targets[t2].name = target,
-						t2++
-					);
-				// } else {
-				// 	Serial.print("No signal found for ");
-				// 	Serial.println(target);
-				// }
-			}
 
-			n++; // Iterate dish element counter
+				int t = 0; // Create target elements counter
+				for (XMLElement *xmlTarget = xmlDish->FirstChildElement("target"); xmlTarget != NULL; xmlTarget = xmlTarget->NextSiblingElement("target")) {
+					if (t > 9) {
+						t = 0;
+					}
+					if (t != targetCount) {
+						
+						t++;
+						continue;
+					}
+					const char* target = xmlTarget->Attribute("name");
+					if (data.checkBlacklist(target) == true) {
+						t++;
+						continue;
+					}
+					// Serial.print("NEW FETCH target: ");
+					// Serial.println(target);
+					newCraft.callsign = target;
+					const char* name = data.callsignToName(target);
+					newCraft.name = name;
+					newCraft.nameLength = strlen(name);
+					break;
+				}
+
+				// Loop through XML signal elements and find the one that matches the target
+				for (XMLElement *xmlSignal = xmlDish->FirstChildElement(); xmlSignal != NULL; xmlSignal = xmlSignal->NextSiblingElement("downSignal"))
+				{
+					if (strcmp(xmlSignal->Attribute("signalType"), "data") != 0) continue;
+					if (strcmp(xmlSignal->Attribute("spacecraft"), newCraft.callsign) != 0) continue;
+					const char* rate = xmlSignal->Attribute("dataRate");
+					// Serial.print("NEW FETCH down rate: ");
+					// Serial.println(rate);
+					unsigned long rateLong = stol(rate, nullptr, 10);
+					// Serial.print("NEW FETCH down rateLong: ");
+					// Serial.println(rateLong);
+					unsigned int rateClass = rateLongToRateClass(rateLong);
+					// Serial.print("NEW FETCH down rateClass: ");
+					// Serial.println(rateClass);
+					newCraft.downSignal = rateClass;
+					break;
+				}
+
+				for (XMLElement *xmlSignal = xmlDish->FirstChildElement(); xmlSignal != NULL; xmlSignal = xmlSignal->NextSiblingElement("upSignal"))
+				{
+					if (strcmp(xmlSignal->Attribute("signalType"), "data") != 0) continue;
+					if (strcmp(xmlSignal->Attribute("spacecraft"), newCraft.callsign) != 0) continue;
+					const char* rate = xmlSignal->Attribute("dataRate");
+					// Serial.print("NEW FETCH up rate: ");
+					// Serial.println(rate);
+					unsigned long rateLong = stol(rate, nullptr, 10);
+					unsigned int rateClass = rateLongToRateClass(rateLong);
+					newCraft.upSignal = rateClass;
+					break;
+				}
+
+
+				break;
+			}
+			break;
 		}
 
-		stations[i] = newStation; // Add data to top-level station struct array
-		i++;					  // Iterate station element counter
+		if (strcmp(newCraft.name, "") != 0) {
+			break;
+		} else {
+			targetCount++;
+			if (targetCount > 9) {
+				targetCount = 0;
+				dishCount++;
+			}
+			if (dishCount > 9) {
+				dishCount = 0;
+				stationCount++;
+			}
+			if (stationCount > 2) {
+				stationCount = 0;
+			}
+		}
+
 	}
+
+	Serial.println("---------- sending to queue ----------");
+	Serial.print("NEW FETCH callsign: ");
+	Serial.println(newCraft.callsign);
+	Serial.print("NEW FETCH name: ");
+	Serial.println(newCraft.name);
+	Serial.print("NEW FETCH nameLength: ");
+	Serial.println(newCraft.nameLength);
+	Serial.print("NEW FETCH downSignal: ");
+	Serial.println(newCraft.downSignal);
+	Serial.print("NEW FETCH upSignal: ");
+	Serial.println(newCraft.upSignal);
+
+
+	// Add data to queue, to be passed to another task
+	if (xQueueSend(queue, &newCraft, 1))
+	{
+		Serial.println("Added to queue");
+	} else {
+		Serial.println("Failed to add to queue");
+	}
+
+	targetCount++;
+	if (targetCount > 9) {
+		targetCount = 0;
+		dishCount++;
+	}
+	if (dishCount > 9) {
+		dishCount = 0;
+		stationCount++;
+	}
+	if (stationCount > 2) {
+		stationCount = 0;
+	}
+
+
+
+	// ---------------------------------
+
+	// DSN_Station newStation;
+
+	// uint64_t timestampInt;
+	// timestamp->QueryUnsigned64Text(&timestampInt); // Convert timestamp to int
+
+
+	// int i = 0; // Create station elements counter
+	// for (XMLElement *xmlStation = root->FirstChildElement("station"); xmlStation != NULL; xmlStation = xmlStation->NextSiblingElement("station"))
+	// {		
+	// 	newStation.fetchTimestamp = timestampInt;
+	// 	newStation.callsign = xmlStation->Attribute("name");
+	// 	newStation.name = xmlStation->Attribute("friendlyName");
+
+	// 	// print callsign and name
+	// 	Serial.print(">>>> FETCH Station: ");
+	// 	Serial.print(newStation.callsign);
+	// 	Serial.print(" - ");
+	// 	Serial.println(newStation.name);
+
+
+	// 	for (int d2 = 0; d2 < 10; d2++)
+	// 	{
+	// 		newStation.dishes[d2] = {0}; // Reset this array struct to blank
+	// 	}
+
+	// 	// Find dish elements that are associated with this station
+	// 	const char* dish_string = "dish";			   // Convert from string to char, as XMLElement->Value returns char
+	// 	int n = 0;							   // Create dish elements counter
+	// 	for (XMLElement *xmlDish = xmlStation->NextSiblingElement(); xmlDish != NULL; xmlDish = xmlDish->NextSiblingElement())
+	// 	{
+	// 		const char *elementValue = xmlDish->Value(); // Get element value (tag type)
+
+	// 		if ( strcmp(elementValue, dish_string) != 0)
+	// 		{ // If the element isn't a dish, exit the loop
+	// 			break;
+	// 		}
+
+	// 		newStation.dishes[n].name = xmlDish->Attribute("name"); // Add dish name to data struct array
+
+	// 		// Find all signal elements within this dish element
+	// 		int sig2 = 0; // Create target elements counter
+	// 		for (XMLElement *xmlSignal = xmlDish->FirstChildElement(); xmlSignal != NULL; xmlSignal = xmlSignal->NextSiblingElement())
+	// 		{
+	// 			const char * spacecraft = xmlSignal->Attribute("spacecraft");
+				
+	// 			// Serial.println(data.checkBlacklist(spacecraft));
+	// 			if (data.checkBlacklist(spacecraft) == true || spacecraft == nullptr) continue; // Skip this spacecraft
+	// 			Serial.print("fetch spacecraft: "); Serial.println(spacecraft);
+				
+	// 			const char *elementValue = xmlSignal->Value();
+
+	// 			// If element is not an up/down signal, skip it
+	// 			if (strcmp(elementValue, upSignal_string) != 0 && strcmp(elementValue, downSignal_string) != 0) continue;
+
+	// 			newStation.dishes[n].signals[sig2] = {
+	// 				elementValue,							// direction
+	// 				xmlSignal->Attribute("signalType"),		// type
+	// 				xmlSignal->Attribute("dataRate"),		// rate
+	// 				xmlSignal->Attribute("frequency"),		// frequency
+	// 				spacecraft,		// spacecraft
+	// 				xmlSignal->Attribute("spacecraftID"),	// spacecraftID
+	// 			};
+
+	// 			sig2++;
+	// 		}
+
+	// 		// Find all target elements within this dish element
+	// 		int t2 = 0; // Create target elements counter
+	// 		for (XMLElement *xmlTarget = xmlDish->FirstChildElement("target"); xmlTarget != NULL; xmlTarget = xmlTarget->NextSiblingElement("target"))
+	// 		{
+	// 			// Serial.print("Found target #");
+	// 			// Serial.println(t2);
+	// 			const char* target = xmlTarget->Attribute("name");
+	// 			// Serial.print("Target name: "); Serial.println(target);
+
+	// 			// bool hasSignal = false;
+	// 			// for (int sig3 = 0; sig3 < 10; sig3++) {
+	// 			// 	Serial.println(newStation.dishes[n].signals[sig3].spacecraft);
+	// 			// 	Serial.println(target);
+	// 			// 	Serial.println("------");
+	// 			// 	if (newStation.dishes[n].signals[sig3].spacecraft == target) {
+	// 			// 		hasSignal = true;
+	// 			// 		break;
+	// 			// 	}
+	// 			// }
+
+	// 			// if (hasSignal == true) {
+	// 			if (target == nullptr) {
+	// 				Serial.println("Skipping target bc I think it's empty?");
+	// 				continue;
+	// 			}
+	// 				const char* fullName = data.callsignToName(target);
+	// 				fullName == nullptr
+	// 				? (
+	// 					Serial.print("?--> Unknown callsign, skipping "),
+	// 					Serial.println(target)
+	// 				) : (
+	// 					newStation.dishes[n].targets[t2].name = target,
+	// 					t2++
+	// 				);
+	// 			// } else {
+	// 			// 	Serial.print("No signal found for ");
+	// 			// 	Serial.println(target);
+	// 			// }
+	// 		}
+
+	// 		n++; // Iterate dish element counter
+	// 	}
+
+	// 	stations[i] = newStation; // Add data to top-level station struct array
+	// 	i++;					  // Iterate station element counter
+	// }
 }
 
 
@@ -1052,7 +1248,7 @@ void fetchData() {
 				Serial.print("HTTP Response: ");
 				Serial.println(httpResponseCode);
 
-				usingDummyData = true;
+				// usingDummyData = true;
 				Serial.println("----------->>> Dummy XML <<<-------------");
 				try {
 					// Serial.println(dummyXmlData);
@@ -1096,16 +1292,7 @@ void getData(void *parameter)
 
 		// Send an HTTP POST request every 5 seconds
 		if ((millis() - lastTime) > timerDelay) {
-			fetchData();
-
-			// Add data to queue, to be passed to another task
-			if (xQueueSend(queue, stations, portMAX_DELAY))
-			{
-				// success
-			} else {
-
-			}
-	
+			fetchData();	
 			lastTime = millis(); // Sync reference variable for timer
 		}
 	}
@@ -1330,6 +1517,9 @@ void setup()
 
 	}
 
+	Serial.print("Size of craft queue: ");
+	Serial.println(sizeof(craftDisplay));
+
 	// Initialize task for core 1
 	xTaskCreatePinnedToCore(
 		getData,	 /* Function to implement the task */
@@ -1341,7 +1531,7 @@ void setup()
 		0);			 /* Core where the task should run */
 
 	// Create queue to pass data between tasks on separate cores
-	queue = xQueueCreate(1, sizeof(uint64_t)); // Create queue
+	queue = xQueueCreate(1, sizeof(craftDisplay)); // Create queue
 
 	if (queue == NULL)
 	{ // Check that queue was created successfully
@@ -1353,23 +1543,20 @@ void setup()
 }
 
 
-char spacecraftCallsign[16] = {0};
-char displaySpacecraftName[100] = {0};
-int displaySpacecraftNameSize = 100; // This must match the array size of displaySpacecraftName
-bool nameChanged = true;
+// char spacecraftCallsign[16] = {0};
+// char displaySpacecraftName[100] = {0};
+// int displaySpacecraftNameSize = 100; // This must match the array size of displaySpacecraftName
+// bool nameChanged = true;
 
-bool hasDownSignal = false;
-char downSignalRate[16] = {};
-bool hasUpSignal = false;
-char upSignalRate[16] = {};
-
-int stationCount = 0;
-int dishCount = 0;
-int targetCount = 0;
-int signalCount = 0;
+// bool hasDownSignal = false;
+// char downSignalRate[16] = {};
+// bool hasUpSignal = false;
+// char upSignalRate[16] = {};
 
 
 
+
+craftDisplay dataBuffer;
 
 void nextDataTarget() {
 	targetCount++;
@@ -1391,6 +1578,7 @@ void nextDataTarget() {
 }
 
 
+
 // loop() function -- runs repeatedly as long as board is on ---------------
 void loop()
 {
@@ -1405,12 +1593,38 @@ void loop()
 		}
 	}
 
-
 	if (nameScrollDone == true) {
 		// Receive from queue (data task on core 1)
-		if (xQueueReceive(queue, &stations, 1) == pdPASS)
+
+		craftDisplay infoBuffer;
+		
+		if (xQueueReceive(queue, &infoBuffer, 1) == pdPASS)
 		{
+			// print all values of dataBuffer
+			Serial.println("------- DATA BUFFER ----------");
+			Serial.print("callsign: "); Serial.println(dataBuffer.callsign);
+			Serial.print("name: "); Serial.println(dataBuffer.name);
+			Serial.print("nameLength: "); Serial.println(dataBuffer.nameLength);
+			Serial.print("downSignal: "); Serial.println(dataBuffer.downSignal);
+			Serial.print("upSignal: "); Serial.println(dataBuffer.upSignal);
 			printFreeHeap();
+
+			nameScrollDone = false;
+			// print everything in queueBuffer
+			Serial.println("------- DATA RECEIVED ----------");
+			Serial.print("callsign: "); Serial.println(infoBuffer.callsign);
+			Serial.print("name: "); Serial.println(infoBuffer.name);
+			Serial.print("nameLength: "); Serial.println(infoBuffer.nameLength);
+			Serial.print("downSignal: "); Serial.println(infoBuffer.downSignal);
+			Serial.print("upSignal: "); Serial.println(infoBuffer.upSignal);
+
+			if (strcmp(infoBuffer.name, "") != 0) {
+				Serial.println("OGOGOGOGO");
+				dataBuffer = infoBuffer;
+			}
+
+			
+
 
 
 			// Reset storage variables
@@ -1419,80 +1633,81 @@ void loop()
 			// memset(downSignalRate, 0, sizeof(downSignalRate));
 			// memset(upSignalRate, 0, sizeof(upSignalRate));
 
-			nameScrollDone = false;
-			hasDownSignal = false;
-			hasUpSignal = false;
+			
+		// 	hasDownSignal = false;
+		// 	hasUpSignal = false;
 
 
-			Serial.println("------- DATA RECEIVED ----------");
-			Serial.print("Station: "); Serial.println(stations[stationCount].name);
-			Serial.print("Dish: "); Serial.println(stations[stationCount].dishes[dishCount].name);
-			Serial.print("Target: "); Serial.println(stations[stationCount].dishes[dishCount].targets[targetCount].name);
+		// 	Serial.println("------- DATA RECEIVED ----------");
+		// 	Serial.print("Station: "); Serial.println(stations[stationCount].name);
+		// 	Serial.print("Dish: "); Serial.println(stations[stationCount].dishes[dishCount].name);
+		// 	Serial.print("Target: "); Serial.println(stations[stationCount].dishes[dishCount].targets[targetCount].name);
 
 
 			
-			Serial.println("-----------------------------");
+		// 	Serial.println("-----------------------------");
 
-			// Copy callsign value into char[]
-			try {
-				const char* dataTargetCallsign = stations[stationCount].dishes[dishCount].targets[targetCount].name;
-				Serial.print("Loop target name/callsign: ");
-				if (dataTargetCallsign != 0) {
-					Serial.println(dataTargetCallsign);
-					strcpy(spacecraftCallsign, dataTargetCallsign);
-				} else {
-					Serial.println("NULL !");
-					noTargetFoundCounter++;
-				}
-			} catch (...) {
-				Serial.println("ERROR: Could not copy callsign string from data queue");
-				handleException();
-			}
+		// 	// Copy callsign value into char[]
+		// 	try {
+		// 		const char* dataTargetCallsign = stations[stationCount].dishes[dishCount].targets[targetCount].name;
+		// 		Serial.print("Loop target name/callsign: ");
+		// 		if (dataTargetCallsign != 0) {
+		// 			Serial.println(dataTargetCallsign);
+		// 			strcpy(spacecraftCallsign, dataTargetCallsign);
+		// 		} else {
+		// 			Serial.println("NULL !");
+		// 			noTargetFoundCounter++;
+		// 		}
+		// 	} catch (...) {
+		// 		Serial.println("ERROR: Could not copy callsign string from data queue");
+		// 		handleException();
+		// 	}
 
-			for (int i = 0; i < 10; i++) {
-				Serial.println("------- SIGNAL CHECK ----------");
-				const char* signalDirection = stations[stationCount].dishes[dishCount].signals[i].direction;
-				const char* signalType = stations[stationCount].dishes[dishCount].signals[i].type;
-				const char* signalTarget = stations[stationCount].dishes[dishCount].signals[i].spacecraft;
+		// 	for (int i = 0; i < 10; i++) {
+		// 		Serial.println("------- SIGNAL CHECK ----------");
+		// 		const char* signalDirection = stations[stationCount].dishes[dishCount].signals[i].direction;
+		// 		const char* signalType = stations[stationCount].dishes[dishCount].signals[i].type;
+		// 		const char* signalTarget = stations[stationCount].dishes[dishCount].signals[i].spacecraft;
 				
-				if (hasDownSignal == true && hasUpSignal == true) break; // Both signals have values, don't look for more
+		// 		if (hasDownSignal == true && hasUpSignal == true) break; // Both signals have values, don't look for more
 
-				if (signalDirection == nullptr) {	// Once we hit a non-existent array item, we can assume there aren't any more existing items so we end the loop
-					Serial.println("signalDirection is null");
-					break;
-				}
+		// 		if (signalDirection == nullptr) {	// Once we hit a non-existent array item, we can assume there aren't any more existing items so we end the loop
+		// 			Serial.println("signalDirection is null");
+		// 			break;
+		// 		}
 
-				if (signalTarget == nullptr) continue;
-				Serial.print("signalTarget: "); Serial.println(signalTarget);
-				Serial.print("spacecraftCallsign: ");Serial.println(spacecraftCallsign);
-				if (strcmp(signalTarget, &spacecraftCallsign[0]) != 0) continue; // Check that this signal iteraion has the spaceraft callsign
+		// 		if (signalTarget == nullptr) continue;
+		// 		Serial.print("signalTarget: "); Serial.println(signalTarget);
+		// 		Serial.print("spacecraftCallsign: ");Serial.println(spacecraftCallsign);
+		// 		if (strcmp(signalTarget, &spacecraftCallsign[0]) != 0) continue; // Check that this signal iteraion has the spaceraft callsign
 				
-				Serial.print("signalDirection: "); Serial.println(signalDirection);
-				Serial.print("downSignal_string: "); Serial.println(downSignal_string);
-				if (hasDownSignal == false && strcmp(signalDirection, downSignal_string) == 0 && strcmp(signalTarget, &spacecraftCallsign[0]) == 0 && strcmp(signalType, datasignal_string) == 0 ) {
-					hasDownSignal = true;
-					strcpy(downSignalRate, stations[stationCount].dishes[dishCount].signals[i].rate);
-					Serial.print("downSignalRate: "); Serial.println(downSignalRate);
-				}
+		// 		Serial.print("signalDirection: "); Serial.println(signalDirection);
+		// 		Serial.print("downSignal_string: "); Serial.println(downSignal_string);
+		// 		if (hasDownSignal == false && strcmp(signalDirection, downSignal_string) == 0 && strcmp(signalTarget, &spacecraftCallsign[0]) == 0 && strcmp(signalType, datasignal_string) == 0 ) {
+		// 			hasDownSignal = true;
+		// 			strcpy(downSignalRate, stations[stationCount].dishes[dishCount].signals[i].rate);
+		// 			Serial.print("downSignalRate: "); Serial.println(downSignalRate);
+		// 		}
 
-				if (hasUpSignal == false && strcmp(signalDirection, upSignal_string) == 0 && strcmp(signalTarget, &spacecraftCallsign[0]) == 0 && strcmp(signalType, datasignal_string) == 0) {
-					hasUpSignal = true;
-					strcpy(upSignalRate, stations[stationCount].dishes[dishCount].signals[i].rate);
-					Serial.print("upSignalRate: "); Serial.println(upSignalRate);
-				}
+		// 		if (hasUpSignal == false && strcmp(signalDirection, upSignal_string) == 0 && strcmp(signalTarget, &spacecraftCallsign[0]) == 0 && strcmp(signalType, datasignal_string) == 0) {
+		// 			hasUpSignal = true;
+		// 			strcpy(upSignalRate, stations[stationCount].dishes[dishCount].signals[i].rate);
+		// 			Serial.print("upSignalRate: "); Serial.println(upSignalRate);
+		// 		}
 			
-				Serial.print("\n---------------------------------\n");
-			}
+		// 		Serial.print("\n---------------------------------\n");
+		// 	}
 			
-			Serial.print("Name: "); Serial.println(spacecraftCallsign);
-			const char* fullName = data.callsignToName(spacecraftCallsign);
-			Serial.print("Full name: "); Serial.println(fullName);
-			if (fullName != "") strcpy(displaySpacecraftName, fullName);
+		// 	Serial.print("Name: "); Serial.println(spacecraftCallsign);
+		// 	const char* fullName = data.callsignToName(spacecraftCallsign);
+		// 	Serial.print("Full name: "); Serial.println(fullName);
+		// 	if (fullName != "") strcpy(displaySpacecraftName, fullName);
 
-			nextDataTarget();
+		// 	nextDataTarget();
 
-			Serial.println("-----------------------------");
-			targetChangeTimer = millis();
+		// 	Serial.println("-----------------------------");
+		// 	targetChangeTimer = millis();
+		// }
 		}
 
 		if (SHOW_SERIAL == 1)
@@ -1571,9 +1786,10 @@ void loop()
 		}
 	}
 	
+	updateAnimation(dataBuffer.name, dataBuffer.nameLength, dataBuffer.downSignal, dataBuffer.upSignal);
 
-	if (spacecraftCallsign == NULL) memset(spacecraftCallsign, 0, 16);
-	if (displaySpacecraftName == NULL) memset(displaySpacecraftName, 0, 100);
-	updateAnimation(displaySpacecraftName, displaySpacecraftNameSize, nameChanged, hasDownSignal, downSignalRate, hasUpSignal, upSignalRate);
-	nameChanged = false;
+	// if (spacecraftCallsign == NULL) memset(spacecraftCallsign, 0, 16);
+	// if (displaySpacecraftName == NULL) memset(displaySpacecraftName, 0, 100);
+	// updateAnimation(displaySpacecraftName, displaySpacecraftNameSize, nameChanged, hasDownSignal, downSignalRate, hasUpSignal, upSignalRate);
+	// nameChanged = false;
 }
