@@ -20,6 +20,7 @@ using namespace std;			// C++ I/O
 
 /* CONFIG */
 #define AP_SSID "MiniPulse"		// WiFi AP SSID
+#define AP_PASS ""		// WiFi AP password
 #define OUTER_PIN 17			// Outer ring pin
 #define MIDDLE_PIN 18			// Middle ring pin
 #define INNER_PIN 19			// Inner ring pin
@@ -46,10 +47,10 @@ char fetchUrl[45];	// DSN XML fetch URL - random number is appended when used to
 // Placeholder for XML data
 const char* dummyXmlData = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?><dsn><station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" /><dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS24" windSpeed="5.556"><downSignal dataRate="28000000" frequency="25900000000" power="-91.3965" signalType="data" spacecraft="JWST" spacecraftID="-170" /><downSignal dataRate="40000" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="JWST" spacecraftID="-170" /><upSignal dataRate="16000" frequency="2090" power="4.804" signalType="data" spacecraft="JWST" spacecraftID="-170" /><target downlegRange="1.653e+06" id="170" name="JWST" rtlt="11.03" uplegRange="1.653e+06" /></dish><dish azimuthAngle="287.7" elevationAngle="18.74" isArray="false" isDDOR="false" isMSPA="false" name="DSS26" windSpeed="5.556"><downSignal dataRate="4000000" frequency="8439000000" power="-138.1801" signalType="none" spacecraft="MRO" spacecraftID="-74" /><upSignal dataRate="2000" frequency="7183" power="0.0000" signalType="none" spacecraft="MRO" spacecraftID="-74" /><target downlegRange="8.207e+07" id="74" name="MRO" rtlt="547.5" uplegRange="8.207e+07" /></dish><station friendlyName="Madrid" name="mdscc" timeUTC="1670419133000" timeZoneOffset="3600000" /><dish azimuthAngle="103.0" elevationAngle="80.19" isArray="false" isDDOR="false" isMSPA="false" name="DSS56" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="2250000000" power="-478.1842" signalType="none" spacecraft="CHDR" spacecraftID="-151" /><target downlegRange="1.417e+05" id="151" name="CHDR" rtlt="0.9455" uplegRange="1.417e+05" /></dish><dish azimuthAngle="196.5" elevationAngle="30.71" isArray="false" isDDOR="false" isMSPA="false" name="DSS65" windSpeed="5.556"><downSignal dataRate="87650" frequency="2278000000" power="-112.7797" signalType="data" spacecraft="ACE" spacecraftID="-92" /><upSignal dataRate="1000" frequency="2098" power="0.2630" signalType="data" spacecraft="ACE" spacecraftID="-92" /><target downlegRange="1.389e+06" id="92" name="ACE" rtlt="9.266" uplegRange="1.389e+06" /></dish><dish azimuthAngle="124.5" elevationAngle="53.41" isArray="false" isDDOR="false" isMSPA="false" name="DSS53" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8436000000" power="-170.1741" signalType="none" spacecraft="LICI" spacecraftID="-210" /><target downlegRange="4.099e+06" id="210" name="LICI" rtlt="27.34" uplegRange="4.099e+06" /></dish><dish azimuthAngle="219.7" elevationAngle="22.84" isArray="false" isDDOR="false" isMSPA="false" name="DSS54" windSpeed="5.556"><upSignal dataRate="2000" frequency="2066" power="1.758" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><downSignal dataRate="245800" frequency="2245000000" power="-110.7082" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><target downlegRange="1.331e+06" id="21" name="SOHO" rtlt="8.882" uplegRange="1.331e+06" /></dish><dish azimuthAngle="120.0" elevationAngle="46.53" isArray="false" isDDOR="false" isMSPA="false" name="DSS63" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8415000000" power="-478.2658" signalType="none" spacecraft="TEST" spacecraftID="-99" /><target downlegRange="-1.000e+00" id="99" name="TEST" rtlt="-1.0000" uplegRange="-1.000e+00" /></dish><station friendlyName="Canberra" name="cdscc" timeUTC="1670419133000" timeZoneOffset="39600000" /><dish azimuthAngle="330.6" elevationAngle="37.39" isArray="false" isDDOR="false" isMSPA="false" name="DSS34" windSpeed="3.087"><upSignal dataRate="250000" frequency="2041" power="0.2421" signalType="data" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="974200" frequency="2217000000" power="-116.4022" signalType="none" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="2000000" frequency="2216000000" power="-107.4503" signalType="carrier" spacecraft="EM1" spacecraftID="-23" /><target downlegRange="3.870e+05" id="23" name="EM1" rtlt="2.581" uplegRange="3.869e+05" /></dish><dish azimuthAngle="10.27" elevationAngle="28.97" isArray="false" isDDOR="false" isMSPA="false" name="DSS35" windSpeed="3.087"><downSignal dataRate="11.63" frequency="8446000000" power="-141.8096" signalType="data" spacecraft="MVN" spacecraftID="-202" /><upSignal dataRate="7.813" frequency="7189" power="8.303" signalType="data" spacecraft="MVN" spacecraftID="-202" /><target downlegRange="8.207e+07" id="202" name="MVN" rtlt="547.5" uplegRange="8.207e+07" /></dish><dish azimuthAngle="207.0" elevationAngle="15.51" isArray="false" isDDOR="false" isMSPA="false" name="DSS43" windSpeed="3.087"><upSignal dataRate="16.00" frequency="2114" power="20.20" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><downSignal dataRate="160.0" frequency="8420000000" power="-156.2618" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><target downlegRange="1.984e+10" id="32" name="VGR2" rtlt="132300" uplegRange="1.984e+10" /></dish><dish azimuthAngle="7.205" elevationAngle="26.82" isArray="false" isDDOR="false" isMSPA="false" name="DSS36" windSpeed="3.087"><downSignal dataRate="8500000" frequency="8475000000" power="-120.3643" signalType="none" spacecraft="KPLO" spacecraftID="-155" /><downSignal dataRate="8192" frequency="2261000000" power="-104.9668" signalType="data" spacecraft="KPLO" spacecraftID="-155" /><target downlegRange="4.405e+05" id="155" name="KPLO" rtlt="2.939" uplegRange="4.405e+05" /></dish><timestamp>1670419133000</timestamp></dsn>)==--==";
 bool usingDummyData = false;					// If true, use dummy data instead of actual data
-int noTargetFoundCounter = 0;					// Keeps track of how many times target is not found
-int noTargetLimit = 3;							// After target is not found this many times, switch to dummy XML data
-int retryDataFetchCounter = 0;					// Keeps track of how many times data fetch failed
-int retryDataFetchLimit = 10;					// After dummy data is used this many times, try to get actual data again
+uint8_t noTargetFoundCounter = 0;					// Keeps track of how many times target is not found
+uint8_t noTargetLimit = 3;							// After target is not found this many times, switch to dummy XML data
+uint8_t retryDataFetchCounter = 0;					// Keeps track of how many times data fetch failed
+uint8_t retryDataFetchLimit = 10;					// After dummy data is used this many times, try to get actual data again
 
 // Time is measured in milliseconds and will become a bigger number
 // than can be stored in an int, so long is used
@@ -97,7 +98,7 @@ struct craftDisplay {
 };
 
 craftDisplay currentCraftBuffer;	// Holds current craft to be animated
-
+static bool nameScrollDone = true;
 
 
 
@@ -250,6 +251,7 @@ void allStripsShow(void)
 		allStrips[i]->show();
 	}
 }
+
 void allStripsOff(void)
 {
 	for (int i = 0; i < allStripsLength; i++)
@@ -388,58 +390,6 @@ void theaterChaseRainbow(Adafruit_NeoPixel &strip, int wait)
 }
 
 
-
-static bool nameScrollDone = true;
-
-// Display letter from array
-void doLetter(char theLetter, int startingPixel)
-{
-	int *ledCharacter = textCharacter.getCharacter(theLetter);
-	const uint32_t *character_array[20] = {};
-
-	// Map character array to LED colors
-	for (int i = 0; i < 20; i++)
-	{
-		switch (ledCharacter[i])
-		{
-		case 0:
-			character_array[i] = mpColors.off.pointer;
-			break;
-		case 1:
-			character_array[i] = mpColors.blue.pointer;
-			break;
-		default:
-			character_array[i] = mpColors.off.pointer;
-		}
-	}
-
-	int pixel = 0 + startingPixel;
-	int previousPixel = startingPixel - letterSpacing + 1;
-
-	for (int i = 0; i < 20; i++)
-	{
-		int j = i + 1;
-		int stripInt = j % 4;
-		if (stripInt == 0)
-			stripInt = 4;
-		--stripInt;
-
-		Adafruit_NeoPixel *&target = allStrips[stripInt];
-
-		// Serial.print(*character_array[i]); Serial.print("/"); Serial.println(pixel); Serial.println();
-		if (-1 < previousPixel < innerPixelsChunkLength)
-			au.setPixelColor(*target, previousPixel, mpColors.off.pointer);
-		if (-1 < pixel < innerPixelsChunkLength)
-			au.setPixelColor(*target, pixel, character_array[i]);
-		if (stripInt == allStripsLength - 1)
-			pixel--; // Move to next pixel
-	}
-
-	for (int p = 0; p < 4; p++)
-	{
-		allStrips[p]->show();
-	}
-}
 
 // Display letter from array
 void doLetterRegions(char theLetter, int regionStart, int startingPixel)
@@ -800,13 +750,6 @@ void parseData(const char* payload) {
 	}
 
 
-	// print stationcount, dishcount, targetcount
-	Serial.println("");
-	Serial.print("stationCount: "); Serial.println(stationCount);
-	Serial.print("dishCount: "); Serial.println(dishCount);
-	Serial.print("targetCount: "); Serial.println(targetCount);
-	Serial.println("");
-
 	// Find XML elements
 	XMLNode *root = xmlDocument.RootElement();					  // Find document root node
 	XMLElement *timestamp = root->FirstChildElement("timestamp"); // Find XML timestamp element
@@ -819,7 +762,15 @@ void parseData(const char* payload) {
 		0
 	};
 	
-	for (int i = 0; i < 20; i++) {
+	for (int i = 0; i < 100; i++) {
+		Serial.print("->>> Parse loop: ");
+		Serial.println(i);
+		// print stationcount, dishcount, targetcount
+		Serial.println("");
+		Serial.print("stationCount: "); Serial.println(stationCount);
+		Serial.print("dishCount: "); Serial.println(dishCount);
+		Serial.print("targetCount: "); Serial.println(targetCount);
+		Serial.println("");
 
 		int s = 0; // Create station elements counter
 		for (XMLElement *xmlStation = root->FirstChildElement("station"); xmlStation != NULL; xmlStation = xmlStation->NextSiblingElement("station"))
@@ -834,6 +785,9 @@ void parseData(const char* payload) {
 			for (XMLElement *xmlDish = xmlStation->NextSiblingElement(); xmlDish != NULL; xmlDish = xmlDish->NextSiblingElement()) {
 				if (d > 9) {
 					stationCount++;
+					if (stationCount > 2) {
+						stationCount = 0;
+					}
 					d = 0;
 				}
 				if (d != dishCount) {
@@ -1139,7 +1093,7 @@ void setup()
 	// then goes into a blocking loop awaiting configuration and will return success result
 
 	bool res;
-	res = wm.autoConnect(AP_SSID); // non-password protected ap
+	res = wm.autoConnect(AP_SSID, AP_PASS); // non-password protected ap
 
 	if(!res) {
 		Serial.println("Failed to connect");
@@ -1167,6 +1121,8 @@ void setup()
 	pinMode(POTENTIOMETER, INPUT);
 	digitalWrite(OUTPUT_ENABLE, HIGH);
 
+	Serial.print("allStripsLength: ");
+	Serial.println(allStripsLength);
 	// Initialize NeoPixel objects
 	for (int i = 0; i < allStripsLength; i++)
 	{
