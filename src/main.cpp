@@ -566,103 +566,106 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 
 	if ((millis() - animationTimer) > 3000) {
 		// printMeteorArray();
-		Serial.println("-------- fire meteors ------------");
+		if (nameScrollDone == false) {
+			Serial.println("-------- fire meteors ------------");
+			if (upSignalRate > 0) {
+				int pulseCountUp = 1;
 
-		if (upSignalRate > 0) {
-			int pulseCountUp = 1;
-
-			switch(upSignalRate) {
-				case 6:	// 1gbps
-					pulseCountUp = 5;
-					Serial.print("[Upsignal Gb]");
-					animationMeteorPulseRing(1, false, pulseCountUp, 16, true);
-					break;
-				case 5:	// 1mbps
-					pulseCountUp = 4;
-					Serial.print("[Upsignal kb]");
-					animationMeteorPulseRing(1, false, pulseCountUp, 16, true);
-					break;
-				case 4: // 10lbps
-					pulseCountUp = 3;
-					Serial.print("[Upsignal kb]");
-					animationMeteorPulseRing(1, false, pulseCountUp, 16, true);
-					break;
-				case 3:
-					pulseCountUp = 2;
-					Serial.print("[Upsignal kb]");
-					animationMeteorPulseRing(1, false, pulseCountUp, 16, true);
-					break;
-				case 2:
-					pulseCountUp = 1;
-					Serial.print("[Upsignal kb]");
-					animationMeteorPulseRing(1, false, pulseCountUp, 16, true);
-					break;
-				case 1:
-					Serial.print("[Upsignal slow]");
-					animationMeteorPulseRegion(1, random(10), false, 0, pulseCountUp, 12, true);
-					animationMeteorPulseRegion(1, random(10), false, 0, pulseCountUp, 12, true);
-					break;
-				case 0:
-					allStrips[1]->clear();
-					Serial.print("[Upsignal -- ]");
-					break;
-				default:
-					allStrips[1]->clear();
-					Serial.print("[Upsignal n/a ]");			
+				switch(upSignalRate) {
+					case 6:	// 1gbps
+						pulseCountUp = 5;
+						Serial.print("[Upsignal Gb]");
+						animationMeteorPulseRing(1, false, pulseCountUp, 16, true);
+						break;
+					case 5:	// 1mbps
+						pulseCountUp = 4;
+						Serial.print("[Upsignal kb]");
+						animationMeteorPulseRing(1, false, pulseCountUp, 16, true);
+						break;
+					case 4: // 10lbps
+						pulseCountUp = 3;
+						Serial.print("[Upsignal kb]");
+						animationMeteorPulseRing(1, false, pulseCountUp, 16, true);
+						break;
+					case 3:
+						pulseCountUp = 2;
+						Serial.print("[Upsignal kb]");
+						animationMeteorPulseRing(1, false, pulseCountUp, 16, true);
+						break;
+					case 2:
+						pulseCountUp = 1;
+						Serial.print("[Upsignal kb]");
+						animationMeteorPulseRing(1, false, pulseCountUp, 16, true);
+						break;
+					case 1:
+						Serial.print("[Upsignal slow]");
+						animationMeteorPulseRegion(1, random(10), false, 0, pulseCountUp, 12, true);
+						animationMeteorPulseRegion(1, random(10), false, 0, pulseCountUp, 12, true);
+						break;
+					case 0:
+						allStrips[1]->clear();
+						Serial.print("[Upsignal -- ]");
+						break;
+					default:
+						allStrips[1]->clear();
+						Serial.print("[Upsignal n/a ]");			
+				}
+			} else {
+				allStrips[1]->clear();
+				Serial.print("[Upsignal -- ]");
 			}
-		} else {
-			allStrips[1]->clear();
-			Serial.print("[Upsignal -- ]");
-		}
 
-		if (downSignalRate > 0) {
-			int pulseCountDown = 1;
+			if (downSignalRate > 0) {
+				int pulseCountDown = 1;
 
-			switch(downSignalRate) {
-				case 6:	// 1gbps
-					pulseCountDown = 5;
-					Serial.print("[Downsignal Gb]");
-					animationMeteorPulseRing(2, true, pulseCountDown, 16, true);
-					break;
-				case 5:	// 1mbps
-					pulseCountDown = 4;
-					Serial.print("[Downsignal kb]");
-					animationMeteorPulseRing(2, true, pulseCountDown, 16, true);
-					break;
-				case 4: // 10lbps
-					pulseCountDown = 3;
-					Serial.print("[Downsignal kb]");
-					animationMeteorPulseRing(2, true, pulseCountDown, 16, true);
-					break;
-				case 3:
-					pulseCountDown = 2;
-					Serial.print("[Downsignal kb]");
-					animationMeteorPulseRing(2, true, pulseCountDown, 16, true);
-					break;
-				case 2:
-					pulseCountDown = 1;
-					Serial.print("[Downsignal kb]");
-					animationMeteorPulseRing(2, true, pulseCountDown, 16, true);
-					break;
-				case 1:
-					Serial.print("[Downsignal slow]");
-					animationMeteorPulseRegion(2, random(10), true, 0, pulseCountDown, 12, true);
-					animationMeteorPulseRegion(2, random(10), true, 0, pulseCountDown, 12, true);
-					break;
-				case 0:
-					allStrips[2]->clear();
-					Serial.print("[Downsignal -- ]");
-					break;
-				default:
-					allStrips[2]->clear();
-					Serial.print("[Downsignal n/a ]");			
+				switch(downSignalRate) {
+					case 6:	// 1gbps
+						pulseCountDown = 5;
+						Serial.print("[Downsignal Gb]");
+						animationMeteorPulseRing(2, true, pulseCountDown, 16, true);
+						break;
+					case 5:	// 1mbps
+						pulseCountDown = 4;
+						Serial.print("[Downsignal kb]");
+						animationMeteorPulseRing(2, true, pulseCountDown, 16, true);
+						break;
+					case 4: // 10lbps
+						pulseCountDown = 3;
+						Serial.print("[Downsignal kb]");
+						animationMeteorPulseRing(2, true, pulseCountDown, 16, true);
+						break;
+					case 3:
+						pulseCountDown = 2;
+						Serial.print("[Downsignal kb]");
+						animationMeteorPulseRing(2, true, pulseCountDown, 16, true);
+						break;
+					case 2:
+						pulseCountDown = 1;
+						Serial.print("[Downsignal kb]");
+						animationMeteorPulseRing(2, true, pulseCountDown, 16, true);
+						break;
+					case 1:
+						Serial.print("[Downsignal slow]");
+						animationMeteorPulseRegion(2, random(10), true, 0, pulseCountDown, 12, true);
+						animationMeteorPulseRegion(2, random(10), true, 0, pulseCountDown, 12, true);
+						break;
+					case 0:
+						allStrips[2]->clear();
+						Serial.print("[Downsignal -- ]");
+						break;
+					default:
+						allStrips[2]->clear();
+						Serial.print("[Downsignal n/a ]");			
+				}
+			} else {
+				allStrips[2]->clear();
+				Serial.print("[Downsignal -- ]");
 			}
-		} else {
-			allStrips[2]->clear();
-			Serial.print("[Downsignal -- ]");
-		}
 
-		Serial.println();
+			Serial.println();
+		}
+		
+		
 		animationTimer = millis(); // Set animation timer to current millis()
 	}
 
@@ -763,18 +766,17 @@ void parseData(const char* payload) {
 	};
 	
 	for (int i = 0; i < 100; i++) {
-		Serial.print("->>> Parse loop: ");
-		Serial.println(i);
-		// print stationcount, dishcount, targetcount
-		Serial.println("");
-		Serial.print("stationCount: "); Serial.println(stationCount);
-		Serial.print("dishCount: "); Serial.println(dishCount);
-		Serial.print("targetCount: "); Serial.println(targetCount);
-		Serial.println("");
+		// Serial.print("->>> Parse loop: ");
+		// Serial.println(i);
+		// // print stationcount, dishcount, targetcount
+		// Serial.println("");
+		// Serial.print("stationCount: "); Serial.println(stationCount);
+		// Serial.print("dishCount: "); Serial.println(dishCount);
+		// Serial.print("targetCount: "); Serial.println(targetCount);
+		// Serial.println("");
 
 		int s = 0; // Create station elements counter
-		for (XMLElement *xmlStation = root->FirstChildElement("station"); xmlStation != NULL; xmlStation = xmlStation->NextSiblingElement("station"))
-		{	
+		for (XMLElement *xmlStation = root->FirstChildElement("station"); xmlStation != NULL; xmlStation = xmlStation->NextSiblingElement("station")) {	
 			if (s > 2) s = 0;
 			if (s != stationCount) {
 				s++;				
@@ -812,6 +814,10 @@ void parseData(const char* payload) {
 					}
 
 					newCraft.callsign = target;
+					// print callsign
+					Serial.print(termColor("yellow"));
+					Serial.print("PARSED callsign: "); Serial.println(newCraft.callsign);
+					Serial.println(termColor("reset"));
 					const char* name = data.callsignToName(target);
 					newCraft.name = name;
 					newCraft.nameLength = strlen(name);
@@ -819,13 +825,14 @@ void parseData(const char* payload) {
 				}
 
 				// Loop through XML signal elements and find the one that matches the target
-				for (XMLElement *xmlSignal = xmlDish->FirstChildElement(); xmlSignal != NULL; xmlSignal = xmlSignal->NextSiblingElement("downSignal"))
-				{
+				for (XMLElement *xmlSignal = xmlDish->FirstChildElement(); xmlSignal != NULL; xmlSignal = xmlSignal->NextSiblingElement("downSignal")) {
 					if (strcmp(xmlSignal->Attribute("signalType"), "data") != 0) continue;
 					if (strcmp(xmlSignal->Attribute("spacecraft"), newCraft.callsign) != 0) continue;
 					const char* rate = xmlSignal->Attribute("dataRate");
 					unsigned long rateLong = stol(rate, nullptr, 10);
+					if (rateLong == 0) continue;
 					unsigned int rateClass = rateLongToRateClass(rateLong);
+					if (rateClass == 0) continue;
 					newCraft.downSignal = rateClass;
 					break;
 				}
@@ -836,7 +843,9 @@ void parseData(const char* payload) {
 					if (strcmp(xmlSignal->Attribute("spacecraft"), newCraft.callsign) != 0) continue;
 					const char* rate = xmlSignal->Attribute("dataRate");
 					unsigned long rateLong = stol(rate, nullptr, 10);
+					if (rateLong == 0) continue;
 					unsigned int rateClass = rateLongToRateClass(rateLong);
+					if (rateClass == 0) continue;
 					newCraft.upSignal = rateClass;
 					break;
 				}
@@ -847,11 +856,11 @@ void parseData(const char* payload) {
 			break;
 		}
 
-		if (strcmp(newCraft.name, "") != 0) {
-			Serial.println("---------- found craft ----------");
+		if (strcmp(newCraft.name, "") != 0 && (newCraft.downSignal != 0 || newCraft.upSignal != 0)) {
+			// Serial.println("---------- found craft ----------");
 			break;
 		} else {
-			Serial.println("---------- no craft found ----------");
+			// Serial.println("---------- no craft found ----------");
 			targetCount++;
 			if (targetCount > 9) {
 				targetCount = 0;
@@ -883,7 +892,7 @@ void parseData(const char* payload) {
 	Serial.println();
 
 	// Add data to queue, to be passed to another task
-	if (xQueueSend(queue, &newCraft, 1))
+	if (xQueueSend(queue, &newCraft, 100))
 	{
 		Serial.print(termColor("green"));
 		Serial.print("Added to queue");
@@ -1264,11 +1273,13 @@ void setup()
 		0);			 /* Core where the task should run */
 
 	// Create queue to pass data between tasks on separate cores
-	queue = xQueueCreate(1, sizeof(craftDisplay)); // Create queue
+	queue = xQueueCreate(5, sizeof(craftDisplay) * 2); // Create queue
 
 	if (queue == NULL)
 	{ // Check that queue was created successfully
 		Serial.println("Error creating the queue");
+		delay(3000);
+		ESP.restart();
 	}
 
 	http.setReuse(true);
@@ -1292,6 +1303,21 @@ void loop()
 	if (nameScrollDone == true) {		
 		craftDisplay infoBuffer;	// Create buffer to hold data from queue
 		
+		// print all items in queueu without removing them
+		// Serial.print(termColor("purple"));
+		// Serial.print("------- QUEUE ----------");
+		// Serial.println(termColor("reset"));
+		// for (int i = 0; i < uxQueueMessagesWaiting(queue); i++){
+		// 	xQueuePeek(queue, &infoBuffer, i);
+		// 	Serial.print("Queue item "); Serial.print(i); Serial.println("");
+		// 	Serial.print("callsign: "); Serial.println(infoBuffer.callsign);
+		// 	Serial.print("name: "); Serial.println(infoBuffer.name);
+		// 	Serial.print("nameLength: "); Serial.println(infoBuffer.nameLength);
+		// 	Serial.print("downSignal: "); Serial.println(infoBuffer.downSignal);
+		// 	Serial.print("upSignal: "); Serial.println(infoBuffer.upSignal);
+		// 	printFreeHeap();
+		// }
+
 		// Receive from queue (data task on core 1)
 		if (xQueueReceive(queue, &infoBuffer, 1) == pdPASS)
 		{
@@ -1313,15 +1339,32 @@ void loop()
 			Serial.print("downSignal: "); Serial.println(infoBuffer.downSignal);
 			Serial.print("upSignal: "); Serial.println(infoBuffer.upSignal);
 
-			if (strcmp(infoBuffer.name, "") != 0) {
-				currentCraftBuffer = infoBuffer;
+			try {
+				if (strcmp(infoBuffer.name, "") != 0) {
+					try {
+						memset(&currentCraftBuffer, 0, sizeof(currentCraftBuffer));
+						currentCraftBuffer = infoBuffer;
+					} catch(...) {
+						Serial.println("Error copying data from queue to buffer");
+						handleException();
+					}
+				}
+			} catch(...) {
+				Serial.println("Error copying data from queue to buffer");
+				handleException();
 			}
+
 		} else {
 			Serial.print(termColor("red"));
 			Serial.println("No data received");
 			Serial.print(termColor("reset"));
 		}
 	}
-	
-	updateAnimation(currentCraftBuffer.name, currentCraftBuffer.nameLength, currentCraftBuffer.downSignal, currentCraftBuffer.upSignal);
+
+	try {
+		updateAnimation(currentCraftBuffer.name, currentCraftBuffer.nameLength, currentCraftBuffer.downSignal, currentCraftBuffer.upSignal);
+	} catch(...) {
+		Serial.println("Error updating animation");
+		handleException();
+	}
 }
