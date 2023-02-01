@@ -51,6 +51,7 @@ uint8_t noTargetFoundCounter = 0;					// Keeps track of how many times target is
 uint8_t noTargetLimit = 3;							// After target is not found this many times, switch to dummy XML data
 uint8_t retryDataFetchCounter = 0;					// Keeps track of how many times data fetch failed
 uint8_t retryDataFetchLimit = 10;					// After dummy data is used this many times, try to get actual data again
+bool dataStarted = false;
 
 // Time is measured in milliseconds and will become a bigger number
 // than can be stored in an int, so long is used
@@ -541,7 +542,7 @@ void animationMeteorPulseRing(
 	bool randomizeOffset = false)
 {
 	for (int i = 0; i < outerChunks; i++) {
-		if (strip == 1 && directionDown == false && i == 1) continue;
+		// if (strip == 1 && directionDown == false && i == 1) continue;
 		animationMeteorPulseRegion(strip, i, directionDown, 0, pulseCount, offset, randomizeOffset);
 	}
 }
@@ -573,53 +574,53 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 		// printMeteorArray();
 		if (nameScrollDone == false) {
 			try {
-				Serial.println("-------- fire meteors ------------");
-				Serial.println(spacecraftName);
+				// Serial.println("-------- fire meteors ------------");
+				// Serial.println(spacecraftName);
 				if (upSignalRate > 0) {
 					int pulseCountUp = 1;
 
 					switch(upSignalRate) {
 						case 6:	// 1gbps
 							pulseCountUp = 5;
-							Serial.print("[Upsignal Gb]");
+							// Serial.print("[Upsignal Gb]");
 							animationMeteorPulseRing(1, false, pulseCountUp, 16, true);
 							break;
 						case 5:	// 1mbps
 							pulseCountUp = 4;
-							Serial.print("[Upsignal kb]");
+							// Serial.print("[Upsignal kb]");
 							animationMeteorPulseRing(1, false, pulseCountUp, 16, true);
 							break;
 						case 4: // 10lbps
 							pulseCountUp = 3;
-							Serial.print("[Upsignal kb]");
+							// Serial.print("[Upsignal kb]");
 							animationMeteorPulseRing(1, false, pulseCountUp, 16, true);
 							break;
 						case 3:
 							pulseCountUp = 2;
-							Serial.print("[Upsignal kb]");
+							// Serial.print("[Upsignal kb]");
 							animationMeteorPulseRing(1, false, pulseCountUp, 16, true);
 							break;
 						case 2:
 							pulseCountUp = 1;
-							Serial.print("[Upsignal kb]");
+							// Serial.print("[Upsignal kb]");
 							animationMeteorPulseRing(1, false, pulseCountUp, 16, true);
 							break;
 						case 1:
-							Serial.print("[Upsignal slow]");
+							// Serial.print("[Upsignal slow]");
 							animationMeteorPulseRegion(1, random(10), false, 0, pulseCountUp, 12, true);
 							animationMeteorPulseRegion(1, random(10), false, 0, pulseCountUp, 12, true);
 							break;
 						case 0:
 							allStrips[1]->clear();
-							Serial.print("[Upsignal -- ]");
+							// Serial.print("[Upsignal -- ]");
 							break;
 						default:
 							allStrips[1]->clear();
-							Serial.print("[Upsignal n/a ]");			
+							// Serial.print("[Upsignal n/a ]");			
 					}
 				} else {
 					allStrips[1]->clear();
-					Serial.print("[Upsignal -- ]");
+					// Serial.print("[Upsignal -- ]");
 				}
 
 				if (downSignalRate > 0) {
@@ -628,41 +629,41 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 					switch(downSignalRate) {
 						case 6:	// 1gbps
 							pulseCountDown = 5;
-							Serial.print("[Downsignal Gb]");
+							// Serial.print("[Downsignal Gb]");
 							animationMeteorPulseRing(2, true, pulseCountDown, 16, true);
 							break;
 						case 5:	// 1mbps
 							pulseCountDown = 4;
-							Serial.print("[Downsignal kb]");
+							// Serial.print("[Downsignal kb]");
 							animationMeteorPulseRing(2, true, pulseCountDown, 16, true);
 							break;
 						case 4: // 10lbps
 							pulseCountDown = 3;
-							Serial.print("[Downsignal kb]");
+							// Serial.print("[Downsignal kb]");
 							animationMeteorPulseRing(2, true, pulseCountDown, 16, true);
 							break;
 						case 3:
 							pulseCountDown = 2;
-							Serial.print("[Downsignal kb]");
+							// Serial.print("[Downsignal kb]");
 							animationMeteorPulseRing(2, true, pulseCountDown, 16, true);
 							break;
 						case 2:
 							pulseCountDown = 1;
-							Serial.print("[Downsignal kb]");
+							// Serial.print("[Downsignal kb]");
 							animationMeteorPulseRing(2, true, pulseCountDown, 16, true);
 							break;
 						case 1:
-							Serial.print("[Downsignal slow]");
+							// Serial.print("[Downsignal slow]");
 							animationMeteorPulseRegion(2, random(10), true, 0, pulseCountDown, 12, true);
 							animationMeteorPulseRegion(2, random(10), true, 0, pulseCountDown, 12, true);
 							break;
 						case 0:
 							allStrips[2]->clear();
-							Serial.print("[Downsignal -- ]");
+							// Serial.print("[Downsignal -- ]");
 							break;
 						default:
 							allStrips[2]->clear();
-							Serial.print("[Downsignal n/a ]");			
+							// Serial.print("[Downsignal n/a ]");			
 					}
 				} else {
 					allStrips[2]->clear();
@@ -851,54 +852,79 @@ void parseData(const char* payload) {
 				// Loop through XML signal elements and find the one that matches the target
 				for (XMLElement *xmlSignal = xmlDish->FirstChildElement(); xmlSignal != NULL; xmlSignal = xmlSignal->NextSiblingElement("downSignal")) {
 					const char* spacecraft = xmlSignal->Attribute("spacecraft");
+					const char* signalType = xmlSignal->Attribute("signalType");
+					Serial.print("signalType: "); Serial.println(signalType);
 
 					try {
-						if (strcmp(xmlSignal->Attribute("signalType"), "data") != 0) continue;
-					} catch (...) {
+						if (strcmp(signalType, "data") != 0) {
+							Serial.println("Not a data signal, skipping...");
+							continue;
+						}
+						if (strcmp(spacecraft, newCraft->callsign) != 0) {
+							Serial.print(spacecraft); Serial.print(" != "); Serial.println(newCraft->callsign);
+							Serial.println("Not the right spacecraft, skipping...");
+							continue;
+						}
+					}
+					catch (...) {
 						Serial.print(termColor("red"));
 						Serial.println("Problem parsing payload:");
 						Serial.println(termColor("reset"));
 						handleException();
 						return;
 					}
-					
-					try {
-						if (strcmp(spacecraft, newCraft->callsign) != 0) continue;
-					} catch (...) {
-						Serial.print(termColor("red"));
-						Serial.println("Problem parsing payload:");
-						Serial.println(termColor("reset"));
-						handleException();
-						return;
-					}
+					Serial.println("---");
 
-					const char* rate = xmlSignal->Attribute("dataRate");
-					unsigned long rateLong = stol(rate, nullptr, 10);
-					if (rateLong == 0) continue;
-					unsigned int rateClass = rateLongToRateClass(rateLong);
-					if (rateClass == 0) continue;
-					newCraft->downSignal = rateClass;
+					const char* downRate = xmlSignal->Attribute("dataRate");
+					// print rate
+					Serial.print(termColor("yellow"));
+					Serial.print("PARSED down rate: "); Serial.println(downRate);
+					Serial.println(termColor("reset"));
+					unsigned long downRateLong = stol(downRate, nullptr, 10);
+					if (downRateLong == 0) continue;
+					unsigned int downRateClass = rateLongToRateClass(downRateLong);
+					if (downRateClass == 0) continue;
+					newCraft->downSignal = downRateClass;
 					break;
 				}
 
 				for (XMLElement *xmlSignal = xmlDish->FirstChildElement(); xmlSignal != NULL; xmlSignal = xmlSignal->NextSiblingElement("upSignal"))
 				{
+					const char* spacecraft = xmlSignal->Attribute("spacecraft");
+					const char* signalType = xmlSignal->Attribute("signalType");
+					Serial.print("signalType: "); Serial.println(signalType);
+
+
 					try {
-						if (strcmp(xmlSignal->Attribute("signalType"), "data") != 0) continue;
-						if (strcmp(xmlSignal->Attribute("spacecraft"), newCraft->callsign) != 0) continue;
-					} catch (...) {
+						if (strcmp(xmlSignal->Attribute("signalType"), "data") != 0) {
+							// Serial.println("Not a data signal, skipping...");
+							continue;
+						}
+						if (strcmp(spacecraft, newCraft->callsign) != 0) {
+							Serial.print(spacecraft); Serial.print(" != "); Serial.println(newCraft->callsign);
+							Serial.println("Not the right spacecraft, skipping...");
+							continue;
+						}
+					}
+					catch (...) {
 						Serial.print(termColor("red"));
 						Serial.println("Problem parsing payload:");
 						Serial.println(termColor("reset"));
 						handleException();
 						return;
 					}
-					const char* rate = xmlSignal->Attribute("dataRate");
-					unsigned long rateLong = stol(rate, nullptr, 10);
-					if (rateLong == 0) continue;
-					unsigned int rateClass = rateLongToRateClass(rateLong);
-					if (rateClass == 0) continue;
-					newCraft->upSignal = rateClass;
+					Serial.println("---");
+					
+					const char* upRate = xmlSignal->Attribute("dataRate");
+					// print rate
+					Serial.print(termColor("yellow"));
+					Serial.print("PARSED up rate: "); Serial.println(upRate);
+					Serial.println(termColor("reset"));
+					unsigned long upRateLong = stol(upRate, nullptr, 10);
+					if (upRateLong == 0) continue;
+					unsigned int upRateClass = rateLongToRateClass(upRateLong);
+					if (upRateClass == 0) continue;
+					newCraft->upSignal = upRateClass;
 					break;
 				}
 
@@ -909,7 +935,11 @@ void parseData(const char* payload) {
 		}
 
 		if (newCraft->name != 0 && (newCraft->downSignal != 0 || newCraft->upSignal != 0)) {
-			// Serial.println("---------- found craft ----------");
+			Serial.println("---------- found craft ----------");
+			Serial.println(newCraft->name);
+			Serial.println(newCraft->callsign);
+			Serial.println(newCraft->downSignal);
+			Serial.println(newCraft->upSignal);
 			break;
 		} else {
 			// Serial.println("---------- no craft found ----------");
@@ -929,44 +959,48 @@ void parseData(const char* payload) {
 
 	}
 
-	// Serial.println();
-	Serial.println("---------- sending to queue ----------");
-	Serial.print("NEW FETCH callsign: ");
-	Serial.println(newCraft->callsign);
-	// Serial.print("NEW FETCH name: ");
-	// Serial.println(newCraft->name);
-	// Serial.print("NEW FETCH nameLength: ");
-	// Serial.println(newCraft->nameLength);
-	// Serial.print("NEW FETCH downSignal: ");
-	// Serial.println(newCraft->downSignal);
-	// Serial.print("NEW FETCH upSignal: ");
-	// Serial.println(newCraft->upSignal);
-	// Serial.println();
+	if (newCraft->name != 0 && (newCraft->downSignal != 0 || newCraft->upSignal != 0)) {
 
-	// Add data to queue, to be passed to another task
-	if (xQueueSend(queue, newCraft, portMAX_DELAY))
-	{
-		Serial.print(termColor("green"));
-		Serial.print("Added to queue");
-		Serial.println(termColor("reset"));
-	} else {
-		Serial.println(termColor("red"));
-		Serial.print("Failed to add to queue");
-		Serial.println(termColor("reset"));
-	}
+		Serial.println();
+		Serial.println("---------- sending to queue ----------");
+		Serial.print("NEW FETCH callsign: ");
+		Serial.println(newCraft->callsign);
+		Serial.print("NEW FETCH name: ");
+		Serial.println(newCraft->name);
+		Serial.print("NEW FETCH nameLength: ");
+		Serial.println(newCraft->nameLength);
+		Serial.print("NEW FETCH downSignal: ");
+		Serial.println(newCraft->downSignal);
+		Serial.print("NEW FETCH upSignal: ");
+		Serial.println(newCraft->upSignal);
+		Serial.println();
 
-	// Increment target counters
-	targetCount++;
-	if (targetCount > 9) {
-		targetCount = 0;
-		dishCount++;
-	}
-	if (dishCount > 9) {
-		dishCount = 0;
-		stationCount++;
-	}
-	if (stationCount > 2) {
+		// Add data to queue, to be passed to another task
+		if (xQueueSend(queue, newCraft, portMAX_DELAY))
+		{
+			Serial.print(termColor("green"));
+			Serial.print("Added to queue");
+			Serial.println(termColor("reset"));
+		} else {
+			delete newCraft;
+			Serial.println(termColor("red"));
+			Serial.print("Failed to add to queue");
+			Serial.println(termColor("reset"));
+		}
+
+		// Increment target counters
+		targetCount++;
+		if (targetCount > 9) {
+			targetCount = 0;
+			dishCount++;
+		}
+		if (dishCount > 9) {
+			dishCount = 0;
+			stationCount++;
+		}
+		if (stationCount > 2) {
 		stationCount = 0;
+	}
 	}
 }
 
@@ -1079,7 +1113,8 @@ void fetchData() {
 		// Serial.print("---->>> Freeing resources <<<----");
 		// Serial.println(termColor("reset"));
 		http.end(); // Free up resources
-		
+		if (dataStarted == false) dataStarted = true;
+
 		return;
 }
 
@@ -1351,7 +1386,7 @@ void loop()
 		}
 	}
 
-	if (nameScrollDone == true) {
+	if (dataStarted == true && nameScrollDone == true) {
 		Serial.println("nameScrollDone == true");
 		CraftQueueItem infoBuffer;	// Create buffer to hold data from queue
 		CraftQueueItem* pInfoBuffer;
@@ -1403,15 +1438,15 @@ void loop()
 			}
 
 			try {
-				if (infoBuffer.name != 0) {
+				if (infoBuffer.name != 0 && strlen(infoBuffer.name) > 0 ) {
 					try {
 						Serial.println("Copying data from queue to buffer...");
-						// print size of CraftQueueItem
-						Serial.print("Size of CraftQueueItem: "); Serial.println(sizeof(CraftQueueItem));
-						//print size of infoBuffer
-						Serial.print("Size of infoBuffer: "); Serial.println(sizeof(infoBuffer));
-						// print size of CurrentCraftBuffer
-						Serial.print("Size of currentCraftBuffer: "); Serial.println(sizeof(currentCraftBuffer));
+						// // print size of CraftQueueItem
+						// Serial.print("Size of CraftQueueItem: "); Serial.println(sizeof(CraftQueueItem));
+						// //print size of infoBuffer
+						// Serial.print("Size of infoBuffer: "); Serial.println(sizeof(infoBuffer));
+						// // print size of CurrentCraftBuffer
+						// Serial.print("Size of currentCraftBuffer: "); Serial.println(sizeof(currentCraftBuffer));
 
 						// memset(&currentCraftBuffer, 0, sizeof(struct CraftQueueItem));
 
@@ -1424,7 +1459,6 @@ void loop()
 						// currentCraftBuffer.upSignal = infoBuffer.upSignal;
 
 						nameScrollDone = false;
-						delete pInfoBuffer;
 
 						try {
 							// print all values of currentCraftBuffer
@@ -1444,11 +1478,16 @@ void loop()
 						Serial.println("Error copying data from queue to buffer");
 						handleException();
 					}
+				} else {
+					Serial.println("Callsign is empty");
+					noTargetFoundCounter++;
 				}
 			} catch(...) {
 				Serial.println("Error copying data from queue to buffer");
 				handleException();
 			}
+
+			delete pInfoBuffer;
 
 		} else {
 			Serial.print(termColor("red"));
