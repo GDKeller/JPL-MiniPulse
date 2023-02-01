@@ -140,4 +140,3 @@ void SpacecraftData::blacklist() {
 bool SpacecraftData::checkBlacklist(const char* key) {
   return spacecraftBlacklistJson[key] != nullptr ? true : false;
 }
-

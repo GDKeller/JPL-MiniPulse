@@ -19,4 +19,16 @@ class SpacecraftData {
         bool checkBlacklist(const char* callsign);
 };
 
+struct CraftQueueItem {
+    char callsignArray[10] = {0};
+    const char* callsign = &callsignArray[0];
+    char nameArray[100] = {0};
+    const char* name = &nameArray[0];
+    uint nameLength = 0;
+    uint upSignal = 0;
+    uint downSignal = 0;
+};
+
+
+
 #endif
