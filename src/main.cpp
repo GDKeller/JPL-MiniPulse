@@ -663,11 +663,11 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 							break;
 						default:
 							allStrips[2]->clear();
-							// Serial.print("[Downsignal n/a ]");			
+							// Serial.print("[Downsignal n/a ]");			 
 					}
 				} else {
 					allStrips[2]->clear();
-					Serial.print("[Downsignal -- ]");
+					// Serial.print("[Downsignal -- ]");
 				}
 			} catch (...) {
 				Serial.println("Error in signal animation");
@@ -853,16 +853,16 @@ void parseData(const char* payload) {
 				for (XMLElement *xmlSignal = xmlDish->FirstChildElement(); xmlSignal != NULL; xmlSignal = xmlSignal->NextSiblingElement("downSignal")) {
 					const char* spacecraft = xmlSignal->Attribute("spacecraft");
 					const char* signalType = xmlSignal->Attribute("signalType");
-					Serial.print("signalType: "); Serial.println(signalType);
+					// Serial.print("signalType: "); Serial.println(signalType);
 
 					try {
 						if (strcmp(signalType, "data") != 0) {
-							Serial.println("Not a data signal, skipping...");
+							// Serial.println("Not a data signal, skipping...");
 							continue;
 						}
 						if (strcmp(spacecraft, newCraft->callsign) != 0) {
 							Serial.print(spacecraft); Serial.print(" != "); Serial.println(newCraft->callsign);
-							Serial.println("Not the right spacecraft, skipping...");
+							// Serial.println("Not the right spacecraft, skipping...");
 							continue;
 						}
 					}
@@ -892,7 +892,7 @@ void parseData(const char* payload) {
 				{
 					const char* spacecraft = xmlSignal->Attribute("spacecraft");
 					const char* signalType = xmlSignal->Attribute("signalType");
-					Serial.print("signalType: "); Serial.println(signalType);
+					// Serial.print("signalType: "); Serial.println(signalType);
 
 
 					try {
@@ -901,7 +901,7 @@ void parseData(const char* payload) {
 							continue;
 						}
 						if (strcmp(spacecraft, newCraft->callsign) != 0) {
-							Serial.print(spacecraft); Serial.print(" != "); Serial.println(newCraft->callsign);
+							// Serial.print(spacecraft); Serial.print(" != "); Serial.println(newCraft->callsign);
 							Serial.println("Not the right spacecraft, skipping...");
 							continue;
 						}
