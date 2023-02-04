@@ -692,7 +692,7 @@ unsigned int rateLongToRateClass(unsigned long rate) {
 	}
 }
 
-
+int parseCounter = 0;
 void parseData(const char* payload) {
 	if (CHECK_MEMORY == 1) {
 		// Serial.print("parseData() top of func: ");
@@ -742,6 +742,8 @@ void parseData(const char* payload) {
 
 	CraftQueueItem* newCraft = new CraftQueueItem;
 	
+
+
 	for (int i = 0; i < 100; i++) {		// Arbitray loop number to prevent infinite loop, but ensure we try to parse all elements
 		if (SHOW_SERIAL == 1) {
 			Serial.print("->>> Parse loop: ");
@@ -961,6 +963,7 @@ void parseData(const char* payload) {
 			if (stationCount > 2) {
 				stationCount = 0;
 			}
+			parseCounter++;
 		}
 	}
 
@@ -1554,5 +1557,7 @@ void loop()
 	uxHighWaterMark = uxTaskGetStackHighWaterMark( xHandleData );
 	printFreeHeap();
 	Serial.print("high_water_mark:"); Serial.print(uxHighWaterMark); Serial.print(",");
+	Serial.print("ParseCounter:"); Serial.print(parseCounter * 1000); Serial.print(",");
 	Serial.println();
+	parseCounter = 0;
 }
