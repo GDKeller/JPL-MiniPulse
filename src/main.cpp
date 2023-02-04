@@ -43,22 +43,22 @@ Animate animate;					// Instantiate animate
 SpacecraftData data;				// Instantiate spacecraft data
 
 const char* serverName = "https://eyes.nasa.gov/dsn/data/dsn.xml?r=";	// DSN XML server
-char fetchUrl[45];	// DSN XML fetch URL - random number is appended when used to prevent caching
+char fetchUrl[50];	// DSN XML fetch URL - random number is appended when used to prevent caching
 
 // Placeholder for XML data
 const char* dummyXmlData = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?><dsn><station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" /><dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS24" windSpeed="5.556"><downSignal dataRate="28000000" frequency="25900000000" power="-91.3965" signalType="data" spacecraft="JWST" spacecraftID="-170" /><downSignal dataRate="40000" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="JWST" spacecraftID="-170" /><upSignal dataRate="16000" frequency="2090" power="4.804" signalType="data" spacecraft="JWST" spacecraftID="-170" /><target downlegRange="1.653e+06" id="170" name="JWST" rtlt="11.03" uplegRange="1.653e+06" /></dish><dish azimuthAngle="287.7" elevationAngle="18.74" isArray="false" isDDOR="false" isMSPA="false" name="DSS26" windSpeed="5.556"><downSignal dataRate="4000000" frequency="8439000000" power="-138.1801" signalType="none" spacecraft="MRO" spacecraftID="-74" /><upSignal dataRate="2000" frequency="7183" power="0.0000" signalType="none" spacecraft="MRO" spacecraftID="-74" /><target downlegRange="8.207e+07" id="74" name="MRO" rtlt="547.5" uplegRange="8.207e+07" /></dish><station friendlyName="Madrid" name="mdscc" timeUTC="1670419133000" timeZoneOffset="3600000" /><dish azimuthAngle="103.0" elevationAngle="80.19" isArray="false" isDDOR="false" isMSPA="false" name="DSS56" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="2250000000" power="-478.1842" signalType="none" spacecraft="CHDR" spacecraftID="-151" /><target downlegRange="1.417e+05" id="151" name="CHDR" rtlt="0.9455" uplegRange="1.417e+05" /></dish><dish azimuthAngle="196.5" elevationAngle="30.71" isArray="false" isDDOR="false" isMSPA="false" name="DSS65" windSpeed="5.556"><downSignal dataRate="87650" frequency="2278000000" power="-112.7797" signalType="data" spacecraft="ACE" spacecraftID="-92" /><upSignal dataRate="1000" frequency="2098" power="0.2630" signalType="data" spacecraft="ACE" spacecraftID="-92" /><target downlegRange="1.389e+06" id="92" name="ACE" rtlt="9.266" uplegRange="1.389e+06" /></dish><dish azimuthAngle="124.5" elevationAngle="53.41" isArray="false" isDDOR="false" isMSPA="false" name="DSS53" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8436000000" power="-170.1741" signalType="none" spacecraft="LICI" spacecraftID="-210" /><target downlegRange="4.099e+06" id="210" name="LICI" rtlt="27.34" uplegRange="4.099e+06" /></dish><dish azimuthAngle="219.7" elevationAngle="22.84" isArray="false" isDDOR="false" isMSPA="false" name="DSS54" windSpeed="5.556"><upSignal dataRate="2000" frequency="2066" power="1.758" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><downSignal dataRate="245800" frequency="2245000000" power="-110.7082" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><target downlegRange="1.331e+06" id="21" name="SOHO" rtlt="8.882" uplegRange="1.331e+06" /></dish><dish azimuthAngle="120.0" elevationAngle="46.53" isArray="false" isDDOR="false" isMSPA="false" name="DSS63" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8415000000" power="-478.2658" signalType="none" spacecraft="TEST" spacecraftID="-99" /><target downlegRange="-1.000e+00" id="99" name="TEST" rtlt="-1.0000" uplegRange="-1.000e+00" /></dish><station friendlyName="Canberra" name="cdscc" timeUTC="1670419133000" timeZoneOffset="39600000" /><dish azimuthAngle="330.6" elevationAngle="37.39" isArray="false" isDDOR="false" isMSPA="false" name="DSS34" windSpeed="3.087"><upSignal dataRate="250000" frequency="2041" power="0.2421" signalType="data" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="974200" frequency="2217000000" power="-116.4022" signalType="none" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="2000000" frequency="2216000000" power="-107.4503" signalType="carrier" spacecraft="EM1" spacecraftID="-23" /><target downlegRange="3.870e+05" id="23" name="EM1" rtlt="2.581" uplegRange="3.869e+05" /></dish><dish azimuthAngle="10.27" elevationAngle="28.97" isArray="false" isDDOR="false" isMSPA="false" name="DSS35" windSpeed="3.087"><downSignal dataRate="11.63" frequency="8446000000" power="-141.8096" signalType="data" spacecraft="MVN" spacecraftID="-202" /><upSignal dataRate="7.813" frequency="7189" power="8.303" signalType="data" spacecraft="MVN" spacecraftID="-202" /><target downlegRange="8.207e+07" id="202" name="MVN" rtlt="547.5" uplegRange="8.207e+07" /></dish><dish azimuthAngle="207.0" elevationAngle="15.51" isArray="false" isDDOR="false" isMSPA="false" name="DSS43" windSpeed="3.087"><upSignal dataRate="16.00" frequency="2114" power="20.20" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><downSignal dataRate="160.0" frequency="8420000000" power="-156.2618" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><target downlegRange="1.984e+10" id="32" name="VGR2" rtlt="132300" uplegRange="1.984e+10" /></dish><dish azimuthAngle="7.205" elevationAngle="26.82" isArray="false" isDDOR="false" isMSPA="false" name="DSS36" windSpeed="3.087"><downSignal dataRate="8500000" frequency="8475000000" power="-120.3643" signalType="none" spacecraft="KPLO" spacecraftID="-155" /><downSignal dataRate="8192" frequency="2261000000" power="-104.9668" signalType="data" spacecraft="KPLO" spacecraftID="-155" /><target downlegRange="4.405e+05" id="155" name="KPLO" rtlt="2.939" uplegRange="4.405e+05" /></dish><timestamp>1670419133000</timestamp></dsn>)==--==";
-bool usingDummyData = false;					// If true, use dummy data instead of actual data
-uint8_t noTargetFoundCounter = 0;					// Keeps track of how many times target is not found
-uint8_t noTargetLimit = 3;							// After target is not found this many times, switch to dummy XML data
-uint8_t retryDataFetchCounter = 0;					// Keeps track of how many times data fetch failed
-uint8_t retryDataFetchLimit = 10;					// After dummy data is used this many times, try to get actual data again
+bool usingDummyData = false;			// If true, use dummy data instead of actual data
+uint8_t noTargetFoundCounter = 0;		// Keeps track of how many times target is not found
+uint8_t noTargetLimit = 3;				// After target is not found this many times, switch to dummy XML data
+uint8_t retryDataFetchCounter = 0;		// Keeps track of how many times data fetch failed
+uint8_t retryDataFetchLimit = 10;		// After dummy data is used this many times, try to get actual data again
 bool dataStarted = false;
 
 // Time is measured in milliseconds and will become a bigger number
 // than can be stored in an int, so long is used
 unsigned long lastTime = 0;				// Init reference variable for timer
 unsigned long wordLastTime = 0;
-unsigned long timerDelay = 5000;		// Set timer to 5 seconds (5000)
+unsigned long timerDelay = 10000;		// Set timer to 5 seconds (5000)
 unsigned long animationTimer = 0;
 unsigned long targetChangeTimer = 0;
 unsigned long meteorsTimer = 0;
@@ -75,7 +75,8 @@ unsigned long targetChangeInterval = 5000;
 
 
 /* TASKS */
-TaskHandle_t HandleData; // Task for fetching and parsing data
+TaskHandle_t xHandleData; // Task for fetching and parsing data
+TaskStatus_t xHandleDataDetails; // Task details for HandleData
 QueueHandle_t queue;	 // Queue to pass data between tasks
 
 /* NETWORKING */
@@ -182,15 +183,15 @@ const char* termColor(const char* color) {
 void printFreeHeap() {
 	String printString;
 
-	printString += "\n";
-	printString += termColor("blue");
-	printString += "MEM Free Heap: ";
+	// printString += "\n";
+	// printString += termColor("blue");
+	printString += "MEM_Free_Heap:";
 	printString += ESP.getFreeHeap();
 	printString += ",";
-	printString += termColor("reset");
-	printString += "\n";
+	// printString += termColor("reset");
+	// printString += "\n";
 
-	Serial.println(printString);
+	Serial.print(printString);
 }
 
 void handleException() {
@@ -207,7 +208,7 @@ void handleException() {
     } catch (const char *p) {
         Serial.println(p);
     } catch (...) {
-        Serial.println("nope, sorry, I really have no clue what that is");
+        Serial.println("Exception unknown");
     }
 	Serial.println(termColor("reset"));
 }
@@ -694,8 +695,8 @@ unsigned int rateLongToRateClass(unsigned long rate) {
 
 void parseData(const char* payload) {
 	if (CHECK_MEMORY == 1) {
-		Serial.println("parseData() top of func, free heap: ");
-		printFreeHeap();
+		// Serial.print("parseData() top of func: ");
+		// printFreeHeap();
 	}
 
 	// XML Parsing
@@ -706,9 +707,11 @@ void parseData(const char* payload) {
 	// Handle XML parsing error	
 	try {
 		if (xmlDocument.Parse(charPayload) == XML_SUCCESS) {
-			Serial.print(termColor("green"));
-			Serial.print("XML Parsed Succcessfully");
-			Serial.println(termColor("reset"));
+			if (SHOW_SERIAL == 1) {
+				Serial.print(termColor("green"));
+				Serial.print("XML Parsed Succcessfully");
+				Serial.println(termColor("reset"));
+			}
 		} else {
 			Serial.print(termColor("red"));
 			Serial.println("Unable to parse XML");
@@ -792,9 +795,11 @@ void parseData(const char* payload) {
 					try {
 						strlcpy(newCraft->callsignArray, target, 10);
 					} catch (...) {
-						Serial.print(termColor("red"));
-						Serial.println("Problem copying callsign to newCraft->callsignArray");
-						Serial.println(termColor("reset"));
+						if (SHOW_SERIAL == 1) {
+							Serial.print(termColor("red"));
+							Serial.println("Problem copying callsign to newCraft->callsignArray");
+							Serial.println(termColor("reset"));
+						}
 						handleException();
 						return;
 					}
@@ -834,8 +839,11 @@ void parseData(const char* payload) {
 				for (XMLElement *xmlSignal = xmlDish->FirstChildElement(); xmlSignal != NULL; xmlSignal = xmlSignal->NextSiblingElement("downSignal")) {
 					const char* spacecraft = xmlSignal->Attribute("spacecraft");
 					const char* signalType = xmlSignal->Attribute("signalType");
-					// Serial.print("signalType: "); Serial.println(signalType);
-					Serial.print("looking for "); Serial.println(newCraft->callsign);
+					
+					if (SHOW_SERIAL == 1) {
+						// Serial.print("signalType: "); Serial.println(signalType);
+						Serial.print("looking for "); Serial.println(newCraft->callsign);
+					}
 
 					try {
 						if (strcmp(signalType, "data") != 0) {
@@ -843,7 +851,7 @@ void parseData(const char* payload) {
 							continue;
 						}
 						if (strcmp(spacecraft, newCraft->callsign) != 0) {
-							Serial.print(spacecraft); Serial.print(" != "); Serial.println(newCraft->callsign);
+							// Serial.print(spacecraft); Serial.print(" != "); Serial.println(newCraft->callsign);
 							// Serial.println("Not the right spacecraft, skipping...");
 							continue;
 						}
@@ -857,13 +865,18 @@ void parseData(const char* payload) {
 						}
 						return;
 					}
-					Serial.println("---");
+
+					if (SHOW_SERIAL == 1) Serial.println("---");
 
 					const char* downRate = xmlSignal->Attribute("dataRate");
-					// print rate
-					Serial.print(termColor("yellow"));
-					Serial.print("PARSED down rate: "); Serial.println(downRate);
-					Serial.println(termColor("reset"));
+					
+					if (SHOW_SERIAL == 1) {
+						// print rate
+						Serial.print(termColor("yellow"));
+						Serial.print("PARSED down rate: "); Serial.println(downRate);
+						Serial.println(termColor("reset"));
+					}
+
 					unsigned long downRateLong = stol(downRate, nullptr, 10);
 					if (downRateLong == 0) continue;
 					unsigned int downRateClass = rateLongToRateClass(downRateLong);
@@ -891,19 +904,26 @@ void parseData(const char* payload) {
 						}
 					}
 					catch (...) {
-						Serial.print(termColor("red"));
-						Serial.println("Problem parsing payload:");
-						Serial.println(termColor("reset"));
+						if (SHOW_SERIAL == 1) {
+							Serial.print(termColor("red"));
+							Serial.println("Problem parsing payload:");
+							Serial.println(termColor("reset"));
+						}
 						handleException();
 						return;
 					}
-					Serial.println("---");
+
+					if (SHOW_SERIAL == 1) Serial.println("---");
 					
 					const char* upRate = xmlSignal->Attribute("dataRate");
-					// print rate
-					Serial.print(termColor("yellow"));
-					Serial.print("PARSED up rate: "); Serial.println(upRate);
-					Serial.println(termColor("reset"));
+
+					if (SHOW_SERIAL == 1) {
+						// print rate
+						Serial.print(termColor("yellow"));
+						Serial.print("PARSED up rate: "); Serial.println(upRate);
+						Serial.println(termColor("reset"));
+					}
+
 					unsigned long upRateLong = stol(upRate, nullptr, 10);
 					if (upRateLong == 0) continue;
 					unsigned int upRateClass = rateLongToRateClass(upRateLong);
@@ -919,11 +939,13 @@ void parseData(const char* payload) {
 		}
 
 		if (newCraft->name != 0 && (newCraft->downSignal != 0 || newCraft->upSignal != 0)) {
-			Serial.println("---------- found craft ----------");
-			Serial.println(newCraft->name);
-			Serial.println(newCraft->callsign);
-			Serial.println(newCraft->downSignal);
-			Serial.println(newCraft->upSignal);
+			if (SHOW_SERIAL == 1) {
+				Serial.println("---------- found craft ----------");
+				Serial.println(newCraft->name);
+				Serial.println(newCraft->callsign);
+				Serial.println(newCraft->downSignal);
+				Serial.println(newCraft->upSignal);
+			}
 			break;
 		} else {
 			// Serial.println("---------- no craft found ----------");
@@ -944,35 +966,42 @@ void parseData(const char* payload) {
 
 	if (newCraft->name != 0 && (newCraft->downSignal != 0 || newCraft->upSignal != 0)) {
 
-		Serial.println();
-		Serial.println("---------- sending to queue ----------");
-		Serial.print("NEW FETCH callsign: ");
-		Serial.println(newCraft->callsign);
-		Serial.print("NEW FETCH name: ");
-		Serial.println(newCraft->name);
-		Serial.print("NEW FETCH nameLength: ");
-		Serial.println(newCraft->nameLength);
-		Serial.print("NEW FETCH downSignal: ");
-		Serial.println(newCraft->downSignal);
-		Serial.print("NEW FETCH upSignal: ");
-		Serial.println(newCraft->upSignal);
-		Serial.println();
+		if (SHOW_SERIAL == 1) {
+			Serial.println();
+			Serial.println("---------- sending to queue ----------");
+			Serial.print("NEW FETCH callsign: ");
+			Serial.println(newCraft->callsign);
+			Serial.print("NEW FETCH name: ");
+			Serial.println(newCraft->name);
+			Serial.print("NEW FETCH nameLength: ");
+			Serial.println(newCraft->nameLength);
+			Serial.print("NEW FETCH downSignal: ");
+			Serial.println(newCraft->downSignal);
+			Serial.print("NEW FETCH upSignal: ");
+			Serial.println(newCraft->upSignal);
+			Serial.println();
+		}
 
 		if (CHECK_MEMORY == 1) {
-			Serial.println("parseData() before add to queue, free heap: ");
-			printFreeHeap();
+			// Serial.print("parseData() before add to queue: ");
+			// printFreeHeap();
 		}
 
 		// Add data to queue, to be passed to another task
 		if (xQueueSend(queue, newCraft, portMAX_DELAY)) {
-			Serial.print(termColor("green"));
-			Serial.print("Added to queue");
-			Serial.println(termColor("reset"));
+			if (SHOW_SERIAL == 1) {
+				Serial.print(termColor("green"));
+				Serial.print("Added to queue");
+				Serial.println(termColor("reset"));
+			}
 		} else {
 			delete newCraft;
-			Serial.println(termColor("red"));
-			Serial.print("Failed to add to queue");
-			Serial.println(termColor("reset"));
+
+			if (SHOW_SERIAL == 1) {
+				Serial.println(termColor("red"));
+				Serial.print("Failed to add to queue");
+				Serial.println(termColor("reset"));
+			}
 		}
 
 		// Increment target counters
@@ -996,140 +1025,155 @@ void parseData(const char* payload) {
 
 void fetchData() {
 	if (CHECK_MEMORY == 1) {
-		Serial.print("fetchData() top of func: ");
-		printFreeHeap();
+		// Serial.print("fetchData() top of func: ");
+		// printFreeHeap();
 	}
-
 
 	if (TEST_CORES == 1)
 		{
-			Serial.print("getData() running on core ");
-			Serial.println(xPortGetCoreID());
-		}
+		Serial.print("getData() running on core ");
+		Serial.println(xPortGetCoreID());
+	}
 
-		// Serial.print("WiFi Status: ");
-		// Serial.println(WiFi.status());
+	// Serial.print("WiFi Status: ");
+	// Serial.println(WiFi.status());
 
-		// Check WiFi connection status
-		if (WiFi.status() != WL_CONNECTED) {
-			if (SHOW_SERIAL == 1) Serial.println("WiFi Disconnected");
+	// Check WiFi connection status
+	if (WiFi.status() != WL_CONNECTED) {
+		if (SHOW_SERIAL == 1) Serial.println("WiFi Disconnected");
 
-			// WiFi.begin(ssid, password);
-			// Serial.println("Connecting");
-			// // while(WiFi.status() != WL_CONNECTED) {
-			// //   Serial.print(".");
-			// // }
-			// Serial.println("");
-			// Serial.print("Connected to WiFi network with IP Address: ");
-			// Serial.println(WiFi.localIP());
-
-			return;
-		}
-
-		// set fetchUrl to empty
-		memset(fetchUrl, 0, sizeof(fetchUrl));
-		strcpy(fetchUrl, serverName);
-		
-		try {
-			char randBuffer[3];
-			ltoa(random(300), randBuffer, 10);
-			strcat(fetchUrl, randBuffer);
-		} catch (...) {
-			handleException();
-		}
-
-		if (SHOW_SERIAL == 1) {
-			// print fetchUrl
-			Serial.print(termColor("purple"));
-			Serial.print("fetchUrl: ");
-			Serial.println(fetchUrl);
-			Serial.println(termColor("reset"));
-		}
-
-		// Use WiFiClient class to create TCP connections
-		http.begin(fetchUrl);
-
-		// Send HTTP GET request
-		http.addHeader("Content-Type", "text/xml");
-		int httpResponseCode = http.GET();
-
-		if (SHOW_SERIAL == 1) {
-			Serial.print("Using dummy data? ");
-
-			if (usingDummyData == true) {
-				Serial.println("TRUE");
-			} else {
-				Serial.println("FALSE");
-			}
-		}
-
-		if (usingDummyData == true) {
-			if (SHOW_SERIAL == 1) {
-				Serial.print(termColor("purple"));
-				Serial.print("Using dummy xml data!!");
-				Serial.println(termColor("reset"));
-			}
-
-			parseData(dummyXmlData);
-		}
-
-		if (usingDummyData == false && noTargetFoundCounter > noTargetLimit) {
-			Serial.print(termColor("purple"));
-			Serial.print("Target not found limit reach - using dummy xml data");
-			Serial.println(termColor("reset"));
-			usingDummyData = true;
-			Serial.println(usingDummyData);
-			noTargetFoundCounter = 0;
-			parseData(dummyXmlData);
-		}
-
-		if (usingDummyData == false && noTargetFoundCounter < noTargetLimit + 1) {
-			if (httpResponseCode != 200) {
-				Serial.print("HTTP Response: ");
-				Serial.println(httpResponseCode);
-
-				usingDummyData = true;
-				Serial.println("----------->>> Dummy XML <<<-------------");
-				try {
-					parseData(dummyXmlData);
-					
-				} catch(...) {
-					Serial.println("nope!");
-				}
-			} else {
-				try {
-					String res = http.getString();
-					const char* charRes = res.c_str();
-
-					if (SHOW_SERIAL == 1) Serial.println("HTTP response received");
-					usingDummyData = false;
-					parseData(charRes);
-				} catch (...) {
-					handleException();
-				}
-			}
-		}
-
-		http.end(); // Free up resources
-		if (dataStarted == false) dataStarted = true;
-
-		if (CHECK_MEMORY == 1) {
-			Serial.print("after parseData() returns: ");
-			printFreeHeap();
-		}
+		// WiFi.begin(ssid, password);
+		// Serial.println("Connecting");
+		// // while(WiFi.status() != WL_CONNECTED) {
+		// //   Serial.print(".");
+		// // }
+		// Serial.println("");
+		// Serial.print("Connected to WiFi network with IP Address: ");
+		// Serial.println(WiFi.localIP());
 
 		return;
+	}
+
+	
+	try {
+		memset(fetchUrl, 0, sizeof(fetchUrl));		// set fetchUrl to empty
+		strcpy(fetchUrl, serverName);				// copy serverName to fetchUrl
+		char randBuffer[9];							// buffer for random number cache buster
+		ltoa(random(999999999), randBuffer, 10);	// convert random number to string
+		strcat(fetchUrl, randBuffer);				// append random number to fetchUrl
+	} catch (...) {
+		handleException();
+	}
+
+	if (SHOW_SERIAL == 1) {
+		// print fetchUrl
+		Serial.print(termColor("purple"));
+		Serial.print("fetchUrl: ");
+		Serial.println(fetchUrl);
+
+		Serial.println(termColor("reset"));
+	}
+
+	// Use WiFiClient class to create TCP connections
+	if (!http.begin(fetchUrl)) {
+		if (SHOW_SERIAL == 1) {
+			Serial.println("Failed to connect to server");
+		}
+		return;
+	}
+
+	// Send HTTP GET request
+	http.setTimeout(10000);
+	http.addHeader("Content-Type", "text/xml");
+	int httpResponseCode = http.GET();
+
+	if (SHOW_SERIAL == 1) {
+		Serial.print("Using dummy data? ");
+
+		if (usingDummyData == true) {
+			Serial.println("TRUE");
+		} else {
+			Serial.println("FALSE");
+		}
+	}
+
+	if (usingDummyData == true) {
+		if (SHOW_SERIAL == 1) {
+			Serial.print(termColor("purple"));
+			Serial.print("Using dummy xml data!!");
+			Serial.println(termColor("reset"));
+		}
+
+		parseData(dummyXmlData);
+	}
+
+	if (usingDummyData == false && noTargetFoundCounter > noTargetLimit) {
+		Serial.print(termColor("purple"));
+		Serial.print("Target not found limit reach - using dummy xml data");
+		Serial.println(termColor("reset"));
+		usingDummyData = true;
+		noTargetFoundCounter = 0;
+		parseData(dummyXmlData);
+	}
+
+	if (usingDummyData == false && noTargetFoundCounter < noTargetLimit + 1) {
+		if (httpResponseCode != 200) {
+			Serial.print("HTTP Response: ");
+			Serial.print(httpResponseCode);
+			Serial.print(" - ");
+			Serial.println(http.errorToString(httpResponseCode));
+			noTargetFoundCounter++;
+
+			// usingDummyData = true;
+			// Serial.println("----------->>> Dummy XML <<<-------------");
+			// try {
+			// 	parseData(dummyXmlData);
+				
+			// } catch(...) {
+			// 	Serial.println("nope!");
+			// }
+		} else {
+			try {
+				String res = http.getString();
+				const char* charRes = res.c_str();
+
+				if (SHOW_SERIAL == 1) Serial.println("HTTP response received");
+				usingDummyData = false;
+				parseData(charRes);
+			} catch (...) {
+				handleException();
+			}
+		}
+	}
+
+	http.end(); // Free up resources
+	if (dataStarted == false) dataStarted = true;
+
+	if (CHECK_MEMORY == 1) {
+		// Serial.print("after parseData() returns: ");
+		// printFreeHeap();
+	}
+
+	return;
 }
 
 // Fetch XML data from HTTP & parse for use in animations
 void getData(void *parameter) 
 {
+	// UBaseType_t uxHighWaterMark;
+	// uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
+	// Serial.print("high_water_mark:"); Serial.print(uxHighWaterMark); Serial.print(",");
+
 	for (;;)
 	{
 
 		// Send an HTTP POST request every 5 seconds
 		if ((millis() - lastTime) > timerDelay) {
 			fetchData();
+
+			// uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
+			// Serial.print("high_water_mark:"); Serial.print(uxHighWaterMark); Serial.print(",");
+
 			lastTime = millis(); // Sync reference variable for timer
 		}
 	}
@@ -1180,8 +1224,11 @@ void setup()
 	// these are stored by the esp library
 	//wm.resetSettings();
 
-	// Serial.setDebugOutput(true);
-	// wm.setDebugOutput(true);
+	// if (SHOW_SERIAL == 1) {
+		Serial.setDebugOutput(false);
+		wm.setDebugOutput(false);
+	// }
+
 	wm.setCleanConnect(true);
 	wm.setConnectRetries(5);
 	wm.setConnectTimeout(30); // connect attempt fails after n seconds
@@ -1355,10 +1402,10 @@ void setup()
 	xTaskCreatePinnedToCore(
 		getData,	 /* Function to implement the task */
 		"getData",	 /* Name of the task */
-		50000,		 /* Stack size in words */
+		8192,		 /* Stack size in words */
 		NULL,		 /* Task input parameter */
 		0,			 /* Priority of the task */
-		&HandleData, /* Task handle. */
+		&xHandleData, /* Task handle. */
 		0);			 /* Core where the task should run */
 
 	// Create queue to pass data between tasks on separate cores
@@ -1372,6 +1419,7 @@ void setup()
 	}
 
 	http.setReuse(true);
+
 	data.loadJson();
 }
 
@@ -1501,4 +1549,10 @@ void loop()
 		}
 		handleException();
 	}
+
+	UBaseType_t uxHighWaterMark;
+	uxHighWaterMark = uxTaskGetStackHighWaterMark( xHandleData );
+	printFreeHeap();
+	Serial.print("high_water_mark:"); Serial.print(uxHighWaterMark); Serial.print(",");
+	Serial.println();
 }
