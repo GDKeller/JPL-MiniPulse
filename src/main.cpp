@@ -42,6 +42,14 @@ AnimationUtils::Colors mpColors;	// Instantiate colors
 Animate animate;					// Instantiate animate
 SpacecraftData data;				// Instantiate spacecraft data
 
+/**
+ * Color Theme
+ *
+ * 0 - Snow
+ * 1 - Cyber
+*/
+const uint8_t colorTheme = 0;
+
 const char* serverName = "https://eyes.nasa.gov/dsn/data/dsn.xml?r=";	// DSN XML server
 char fetchUrl[50];	// DSN XML fetch URL - random number is appended when used to prevent caching
 
@@ -437,7 +445,20 @@ uint32_t brightnessAdjust(uint32_t color)
 // Display letter from array
 void doLetterRegions(char theLetter, int regionStart, int startingPixel)
 {
-	uint32_t* letterColor = usingDummyData == false ? mpColors.teal.pointer : mpColors.red.pointer;
+	uint32_t* letterColor;
+
+	switch (colorTheme) {
+		case 0:
+			letterColor = usingDummyData == false ? mpColors.white.pointer : mpColors.red.pointer;
+			break;
+		case 1:
+			letterColor = usingDummyData == false ? mpColors.teal.pointer : mpColors.red.pointer;
+			break;
+		default:
+			letterColor = usingDummyData == false ? mpColors.white.pointer : mpColors.red.pointer;
+	}
+
+
 	int *ledCharacter = textCharacter.getCharacter(theLetter);
 	const uint32_t *character_array[letterTotalPixels] = {};
 
@@ -523,20 +544,32 @@ void scrollLetters(const char * spacecraftName, int wordArraySize)
 
 // Create Meteor object
 void createMeteor(int strip, int region, bool directionDown = true,  int startPixel = 0) {
-	
+	uint32_t* meteorColor;
+
+	switch (colorTheme) {
+		case 0:
+			meteorColor = mpColors.white.pointer;
+			break;
+		case 1:
+			meteorColor = mpColors.purple.pointer;
+			break;
+		default:
+			meteorColor = mpColors.white.pointer;
+	}
+
+
 	for (int i = 0; i < 500; i++) {
 		if (animate.ActiveMeteors[i] != nullptr) {
 			// Serial.print("Could not create meteor #"); Serial.print(i); Serial.print(" startPixel: "); Serial.println(animate.ActiveMeteors[i]->firstPixel);
 			continue;
 		}
-		
-		// Serial.print(">>>> ADDING METEOR #"); Serial.println(i);
+
 		animate.ActiveMeteors[i] = new Meteor {
 			directionDown,					// directionDown
 			startPixel,						// firstPixel
 			region,							// region
 			(int) outerPixelsChunkLength,	// regionLength
-			mpColors.purple.pointer,		// pColor
+			meteorColor,					// pColor
 			1,								// meteorSize
 			false,							// meteorTrailDecay
 			false,							// meteorRandomDecay
@@ -1521,10 +1554,10 @@ void loop()
 		uxHighWaterMark = uxTaskGetStackHighWaterMark( xHandleData );
 		printFreeHeap();	// Value might be being multiplied in printFreeHeap() function for ease of visualization on plotter
 		// Serial.print("high_water_mark:"); Serial.print(uxHighWaterMark); Serial.print(",");
-		Serial.print("ParseCounter:"); Serial.print(parseCounter * 1000); Serial.print(",");	// Multiplied by 10 for ease of visualization on plotter
-		// Serial.print("ParseCounter:"); Serial.print(parseCounter); Serial.print(",");	// This is the actual value
 		// Serial.print("PerfTimer:"); Serial.print(perfDiff); Serial.print(",");
 		Serial.print("QueueSize:"); Serial.print(uxQueueMessagesWaiting(queue) * 1000); Serial.print(",");
+		Serial.print("ParseCounter:"); Serial.print(parseCounter * 1000); Serial.print(",");	// Multiplied by 10 for ease of visualization on plotter
+		// Serial.print("ParseCounter:"); Serial.print(parseCounter); Serial.print(",");	// This is the actual value
 		Serial.println();
 		parseCounter = 0;
 		perfTimer = millis();
