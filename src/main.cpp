@@ -188,7 +188,8 @@ void printFreeHeap() {
 	// printString += "\n";
 	// printString += termColor("blue");
 	printString += "MEM_Free_Heap:";
-	printString += ESP.getFreeHeap();
+	// printString += ESP.getFreeHeap() * 0.01; // Value being divided for visualization on plotter
+	printString += ESP.getFreeHeap();	// This is the actual value
 	printString += ",";
 	// printString += termColor("reset");
 	// printString += "\n";
@@ -696,7 +697,7 @@ unsigned int rateLongToRateClass(unsigned long rate) {
 
 int parseCounter = 0;
 void parseData(const char* payload) {
-	if (CHECK_MEMORY == 1) {
+	if (DIAG_MEASURE == 1) {
 		// Serial.print("parseData() top of func: ");
 		// printFreeHeap();
 	}
@@ -987,10 +988,6 @@ void parseData(const char* payload) {
 			Serial.println();
 		}
 
-		if (CHECK_MEMORY == 1) {
-			// Serial.print("parseData() before add to queue: ");
-			// printFreeHeap();
-		}
 
 		// Add data to queue, to be passed to another task
 		if (xQueueSend(queue, newCraft, portMAX_DELAY)) {
@@ -1029,10 +1026,6 @@ void parseData(const char* payload) {
 
 
 void fetchData() {
-	if (CHECK_MEMORY == 1) {
-		// Serial.print("fetchData() top of func: ");
-		// printFreeHeap();
-	}
 
 	if (TEST_CORES == 1)
 		{
@@ -1154,11 +1147,6 @@ void fetchData() {
 	http.end(); // Free up resources
 	if (dataStarted == false) dataStarted = true;
 
-	if (CHECK_MEMORY == 1) {
-		// Serial.print("after parseData() returns: ");
-		// printFreeHeap();
-	}
-
 	return;
 }
 
@@ -1227,10 +1215,10 @@ void setup()
 	// these are stored by the esp library
 	//wm.resetSettings();
 
-	// if (SHOW_SERIAL == 1) {
+	#if SHOW_SERIAL == 0
 		Serial.setDebugOutput(false);
 		wm.setDebugOutput(false);
-	// }
+	#endif
 
 	wm.setCleanConnect(true);
 	wm.setConnectRetries(5);
@@ -1405,7 +1393,7 @@ void setup()
 	xTaskCreatePinnedToCore(
 		getData,	 /* Function to implement the task */
 		"getData",	 /* Name of the task */
-		8192,		 /* Stack size in words */
+		4096,		 /* Stack size in words */
 		NULL,		 /* Task input parameter */
 		0,			 /* Priority of the task */
 		&xHandleData, /* Task handle. */
@@ -1543,8 +1531,6 @@ void loop()
 	}
 
 	try {
-		// if (CHECK_MEMORY == 1) printFreeHeap();
-
 		updateAnimation(currentCraftBuffer.name, currentCraftBuffer.nameLength, currentCraftBuffer.downSignal, currentCraftBuffer.upSignal);
 	} catch(...) {
 		if (SHOW_SERIAL == 1) {
@@ -1555,13 +1541,16 @@ void loop()
 
 
 	#if DIAG_MEASURE == 1
-		perfDiff = (millis() - perfTimer) * 1000;
+		perfDiff = (millis() - perfTimer) * 10;	// Multiplied by 10 for ease of visualization on plotter
+		// perfDiff = (millis() - perfTimer);	// This is the actual value
 		UBaseType_t uxHighWaterMark;
 		uxHighWaterMark = uxTaskGetStackHighWaterMark( xHandleData );
-		printFreeHeap();
-		Serial.print("high_water_mark:"); Serial.print(uxHighWaterMark); Serial.print(",");
-		Serial.print("ParseCounter:"); Serial.print(parseCounter * 1000); Serial.print(",");
-		Serial.print("PerfTimer:"); Serial.print(perfDiff); Serial.print(",");
+		printFreeHeap();	// Value is being multiplied in printFreeHeap() function for ease of visualization on plotter
+		// Serial.print("high_water_mark:"); Serial.print(uxHighWaterMark); Serial.print(",");
+		Serial.print("ParseCounter:"); Serial.print(parseCounter * 1000); Serial.print(",");	// Multiplied by 10 for ease of visualization on plotter
+		// Serial.print("ParseCounter:"); Serial.print(parseCounter); Serial.print(",");	// This is the actual value
+		// Serial.print("PerfTimer:"); Serial.print(perfDiff); Serial.print(",");
+		Serial.print("QueueSize:"); Serial.print(uxQueueMessagesWaiting(queue) * 1000); Serial.print(",");
 		Serial.println();
 		parseCounter = 0;
 		perfTimer = millis();
