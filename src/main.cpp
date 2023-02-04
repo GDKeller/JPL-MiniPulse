@@ -60,12 +60,15 @@ unsigned long perfTimer = 0;
 unsigned long perfDiff = 0;
 unsigned long lastTime = 0;				// Init reference variable for timer
 unsigned long wordLastTime = 0;
-unsigned long timerDelay = 10000;		// Set timer to 5 seconds (5000)
+unsigned long timerDelay = 10000;		// Timer for how often to fetch data
 unsigned long animationTimer = 0;
 unsigned long targetChangeTimer = 0;
 unsigned long meteorsTimer = 0;
 unsigned long tick = 0;
 unsigned long tickAfter = 0;
+unsigned long displayMinDuration = 20000;	// Minimum time to display a craft before switching to next craft
+unsigned long displayDurationTimer = 20000;		// Timer to keep track of how long craft has been displayed, set at minimum for no startup delay
+
 
 // how often each pattern updates
 unsigned long wordScrollInterval = 0;
@@ -1261,8 +1264,6 @@ void setup()
 	pinMode(POTENTIOMETER, INPUT);
 	digitalWrite(OUTPUT_ENABLE, HIGH);
 
-	Serial.print("allStripsLength: ");
-	Serial.println(allStripsLength);
 	// Initialize NeoPixel objects
 	for (int i = 0; i < allStripsLength; i++)
 	{
@@ -1280,10 +1281,13 @@ void setup()
 	// Identify Neopixel strips by filling with unique colors
 	if (ID_LEDS == 1)
 	{
-		Serial.println("ID LED strips");
-		const uint32_t *colors[] = {mpColors.red.pointer, mpColors.green.pointer, mpColors.blue.pointer, mpColors.purple.pointer, mpColors.white.pointer};
+		#if SHOW_SERIAL == 1
+			Serial.println("ID LED strips");
+		#endif
 
 		au.updateBrightness(); // Update brightness from potentiometer
+
+		// const uint32_t *colors[] = {mpColors.red.pointer, mpColors.green.pointer, mpColors.blue.pointer, mpColors.purple.pointer, mpColors.white.pointer};
 
 		// for (int c = 0; c < sizeof(colors) / sizeof(colors[0]); c++)
 		// {
@@ -1354,41 +1358,6 @@ void setup()
 		allStripsOff();
 	}
 
-	if (DISABLE_WIFI == 0)
-	{
-		// Connect to WiFi
-		// wifiSetup();
-		// delay(100);
-		// printWifiMode();
-		// scanWifiNetworks(); // Scan for available WiFi networks
-		// delay(1000);
-		// printWifiStatus(); // Print WiFi status
-		// delay(1000);
-
-		// WiFi.begin(ssid, password); // Attempt to connect to WiFi
-		// Serial.println("Connecting...");
-		// while (WiFi.waitForConnectResult() != WL_CONNECTED)
-		// {
-		// 	delay(1000);
-		// 	Serial.print(".");
-		// }
-		// delay(1000);
-		// Serial.print("hostname: ");
-		// Serial.println(WiFi.getHostname());
-		// Serial.println();
-		// printWifiStatus();
-		// Serial.print("Connected to WiFi network with IP Address: ");
-		// Serial.println(WiFi.localIP());
-		// delay(1000);
-
-		// serverSetup();
-		// delay(1000);
-
-		
-		
-		
-
-	}
 
 	// Initialize task for core 1
 	xTaskCreatePinnedToCore(
@@ -1430,7 +1399,7 @@ void loop()
 		}
 	}
 
-	if (dataStarted == true && nameScrollDone == true) {
+	if ((millis() - displayDurationTimer > displayMinDuration) && dataStarted == true && nameScrollDone == true) {
 		CraftQueueItem infoBuffer;	// Create buffer to hold data from queue
 		CraftQueueItem* pInfoBuffer;
 		
@@ -1523,6 +1492,8 @@ void loop()
 
 			delete pInfoBuffer;
 
+			displayDurationTimer = millis();
+
 		} else {
 			if (SHOW_SERIAL == 1) {
 				Serial.print(termColor("red"));
@@ -1541,8 +1512,9 @@ void loop()
 		handleException();
 	}
 
-
 	#if DIAG_MEASURE == 1
+		// print displayDurationTimer
+		Serial.print("Duration:"); Serial.print(millis() - displayDurationTimer); Serial.print(",");
 		perfDiff = (millis() - perfTimer) * 10;	// Multiplied by 10 for ease of visualization on plotter
 		// perfDiff = (millis() - perfTimer);	// This is the actual value
 		UBaseType_t uxHighWaterMark;
