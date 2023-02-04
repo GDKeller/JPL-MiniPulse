@@ -1172,12 +1172,10 @@ void getData(void *parameter)
 
 		// Send an HTTP POST request every 5 seconds
 		if ((millis() - lastTime) > timerDelay) {
-			fetchData();
-
-			// uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
-			// Serial.print("high_water_mark:"); Serial.print(uxHighWaterMark); Serial.print(",");
-
-			lastTime = millis(); // Sync reference variable for timer
+			if (uxQueueSpacesAvailable( queue ) > 0) {
+				fetchData();
+				lastTime = millis(); // Sync reference variable for timer
+			}
 		}
 	}
 }
