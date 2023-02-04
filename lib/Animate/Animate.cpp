@@ -1,7 +1,4 @@
-#include <Arduino.h>
 #include <Animate.h>
-#include <AnimationUtils.h>
-#include <Adafruit_NeoPixel.h>
 
 Animate::Animate() {}
 

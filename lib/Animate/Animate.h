@@ -3,13 +3,16 @@
     Created by Grant Keller, November 2022
 */
 
-#include <Arduino.h>
+#ifndef ADAFRUIT_NEOPIXEL_H
 #include <Adafruit_NeoPixel.h>
-#include <MathHelpers.h>
-#include <AnimationUtils.h>
+#endif
 
-#ifndef Animate_h
-#define Animate_h
+#ifndef ANIMATIONUTILS_H
+#include <AnimationUtils.h>
+#endif
+
+#ifndef ANIMATE_H
+#define ANIMATE_H
 
 struct Meteor {
     bool directionDown;

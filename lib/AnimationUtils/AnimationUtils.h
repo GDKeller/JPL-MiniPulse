@@ -3,13 +3,16 @@
     Created by Grant Keller, November 2022
 */
 
-#include <Arduino.h>
-#include <Adafruit_NeoPixel.h>
-#include <MathHelpers.h>
+#ifndef ADAFRUIT_NEOPIXEL_H
+    #include <Adafruit_NeoPixel.h>
+#endif
 
-#ifndef AnimationUtils_h
-#define AnimationUtils_h
+#ifndef MATHHELPERS_H
+    #include <MathHelpers.h>
+#endif
 
+#ifndef ANIMATIONUTILS_H
+#define ANIMATIONUTILS_H
 
 class AnimationUtils {
     public:

@@ -3,11 +3,10 @@
     Created by Grant Keller, November 2022
 */
 
-#include <Arduino.h>
 #include <ArduinoJson.h>
 
-#ifndef SpacecraftData_h
-#define SpacecraftData_h
+#ifndef SPACECRAFTDATA_H
+#define SPACECRAFTDATA_H
 
 class SpacecraftData {
     public:
@@ -28,7 +27,5 @@ struct CraftQueueItem {
     uint upSignal = 0;
     uint downSignal = 0;
 };
-
-
 
 #endif

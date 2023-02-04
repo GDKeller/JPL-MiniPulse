@@ -1,6 +1,4 @@
-#include <Arduino.h>
 #include <AnimationUtils.h>
-#include <Adafruit_NeoPixel.h>
 
 /* Initialize global brightness */
 int AnimationUtils::brightness = 255;

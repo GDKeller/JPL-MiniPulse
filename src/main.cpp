@@ -35,7 +35,7 @@ using namespace std;			// C++ I/O
 #define SHOW_SERIAL 0			// Show serial output
 #define ID_LEDS 0				// ID LEDs
 #define DISABLE_WIFI 0			// Disable WiFi
-#define CHECK_MEMORY 1			// Check memory
+#define DIAG_MEASURE 1			// Output memory & performance info for plotter
 
 AnimationUtils au(POTENTIOMETER);	// Instantiate animation utils
 AnimationUtils::Colors mpColors;	// Instantiate colors
@@ -56,6 +56,8 @@ bool dataStarted = false;
 
 // Time is measured in milliseconds and will become a bigger number
 // than can be stored in an int, so long is used
+unsigned long perfTimer = 0;
+unsigned long perfDiff = 0;
 unsigned long lastTime = 0;				// Init reference variable for timer
 unsigned long wordLastTime = 0;
 unsigned long timerDelay = 10000;		// Set timer to 5 seconds (5000)
@@ -1551,11 +1553,18 @@ void loop()
 		handleException();
 	}
 
-	UBaseType_t uxHighWaterMark;
-	uxHighWaterMark = uxTaskGetStackHighWaterMark( xHandleData );
-	printFreeHeap();
-	Serial.print("high_water_mark:"); Serial.print(uxHighWaterMark); Serial.print(",");
-	Serial.print("ParseCounter:"); Serial.print(parseCounter * 1000); Serial.print(",");
-	Serial.println();
-	parseCounter = 0;
+
+	#if DIAG_MEASURE == 1
+		perfDiff = (millis() - perfTimer) * 1000;
+		UBaseType_t uxHighWaterMark;
+		uxHighWaterMark = uxTaskGetStackHighWaterMark( xHandleData );
+		printFreeHeap();
+		Serial.print("high_water_mark:"); Serial.print(uxHighWaterMark); Serial.print(",");
+		Serial.print("ParseCounter:"); Serial.print(parseCounter * 1000); Serial.print(",");
+		Serial.print("PerfTimer:"); Serial.print(perfDiff); Serial.print(",");
+		Serial.println();
+		parseCounter = 0;
+		perfTimer = millis();
+	#endif
+
 }
