@@ -576,7 +576,7 @@ void createMeteor(int strip, int region, bool directionDown = true,  int startPi
 			meteorColor,					// pColor
 			1,								// meteorSize
 			false,							// meteorTrailDecay
-			false,							// meteorRandomDecay
+			true,							// meteorRandomDecay
 			currentColors.tailHue,			// tailHueStart
 			true,							// tailHueAdd
 			0.75,							// tailHueExponent
@@ -606,7 +606,7 @@ void animationMeteorPulseRegion(
 
 	for (int i = 0; i < pulseCount; i++) {
 		int16_t pixel = i + startPixel + (i * offset * -1);
-		if (randomizeOffset == true) pixel = pixel - (random(0, 3) * 2);
+		if (randomizeOffset == true) pixel = pixel - (random(0, 6) * 2);
 		createMeteor(strip, region, directionDown, pixel);
 	}
 }
@@ -633,29 +633,28 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass) {
 		return;
 	}
 
-
 	int pulseCount = 1;
 
 	switch(rateClass) {
 		case 6:	// 1gbps
 			pulseCount = 5;
 			// Serial.print("[Downsignal Gb]");
-			animationMeteorPulseRing(stripId, isDown, pulseCount, 16, true);
+			animationMeteorPulseRing(stripId, isDown, pulseCount, 32, true);
 			break;
 		case 5:	// 1mbps
 			pulseCount = 4;
 			// Serial.print("[Downsignal kb]");
-			animationMeteorPulseRing(stripId, isDown, pulseCount, 16, true);
+			animationMeteorPulseRing(stripId, isDown, pulseCount, 32, true);
 			break;
 		case 4: // 10lbps
 			pulseCount = 3;
 			// Serial.print("[Downsignal kb]");
-			animationMeteorPulseRing(stripId, isDown, pulseCount, 16, true);
+			animationMeteorPulseRing(stripId, isDown, pulseCount, 32, true);
 			break;
 		case 3:
 			pulseCount = 2;
 			// Serial.print("[Downsignal kb]");
-			animationMeteorPulseRing(stripId, isDown, pulseCount, 16, true);
+			animationMeteorPulseRing(stripId, isDown, pulseCount, 32, true);
 			break;
 		case 2:
 			pulseCount = 1;
