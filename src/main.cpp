@@ -67,19 +67,15 @@ bool dataStarted = false;
 unsigned long perfTimer = 0;
 unsigned long perfDiff = 0;
 unsigned long lastTime = 0;				// Init reference variable for timer
-unsigned long wordLastTime = 0;
 unsigned long timerDelay = 10000;		// Timer for how often to fetch data
 unsigned long animationTimer = 0;
-unsigned long targetChangeTimer = 0;
-unsigned long meteorsTimer = 0;
-unsigned long tick = 0;
-unsigned long tickAfter = 0;
+unsigned long craftDelayTimer = 0;
+unsigned long craftDelay = 3000;	// Wait this long after finishing for new craft to be dipslayed
 unsigned long displayMinDuration = 20000;	// Minimum time to display a craft before switching to next craft
 unsigned long displayDurationTimer = 20000;		// Timer to keep track of how long craft has been displayed, set at minimum for no startup delay
 
 
 // how often each pattern updates
-unsigned long wordScrollInterval = 0;
 unsigned long pattern1Interval = 500;
 unsigned long pattern2Interval = 500;
 unsigned long pattern3Interval = 500;
@@ -352,6 +348,7 @@ uint32_t brightnessAdjust(uint32_t color)
 // 	}
 // }
 
+
 // // Theater-marquee-style chasing lights. Pass in a color (32-bit value,
 // // a la strip.Color(r,g,b) as mentioned above), and a delay time (in ms)
 // // between frames.
@@ -536,7 +533,10 @@ void scrollLetters(const char * spacecraftName, int wordArraySize)
 
 	if (startPixel > wrapPixel) {
 		startPixel = 0;
-		nameScrollDone = true;
+		if (millis() - displayDurationTimer > displayMinDuration) {
+			nameScrollDone = true;
+			craftDelayTimer = millis();
+		}
 	}
 }
 
@@ -616,7 +616,7 @@ void animationMeteorPulseRing(
 	bool randomizeOffset = false)
 {
 	for (int i = 0; i < outerChunks; i++) {
-		if (strip == 1 && directionDown == false && i == 1) continue;
+		// if (strip == 1 && directionDown == false && i == 1) continue;
 		animationMeteorPulseRegion(strip, i, directionDown, 0, pulseCount, offset, randomizeOffset);
 	}
 }
@@ -685,17 +685,14 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 	au.updateBrightness();
 
 	/* Update Scrolling letters animation */
-	if ((millis() - wordLastTime) > wordScrollInterval) {
-		try {
-			if (nameScrollDone == false) scrollLetters(spacecraftName, spacecraftNameSize);
-		} catch (...) {
-			Serial.println("Error in scrollLetters()");
-		}
-		wordLastTime = millis(); // Set word timer to current millis()
+	try {
+		if (nameScrollDone == false) scrollLetters(spacecraftName, spacecraftNameSize);
+	} catch (...) {
+		Serial.println("Error in scrollLetters()");
 	}
 
-
-	if ((millis() - animationTimer) > 3000) {
+	// Fire meteors
+	if (displayDurationTimer > 3000 && (millis() - animationTimer) > 3000) {
 		// printMeteorArray();
 		if (nameScrollDone == false) {
 			try {
@@ -712,26 +709,21 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 
 			if (SHOW_SERIAL == 1) Serial.println();
 		}
-		
-		
+
 		animationTimer = millis(); // Set animation timer to current millis()
 	}
-
 
 	// Update meteor animations
 	for (int i = 0; i < 100; i++) {	
 		if (animate.ActiveMeteors[i] != nullptr) animate.animateMeteor(animate.ActiveMeteors[i]);
 	}
 
-
-
 	// Illuminate LEDs
 	allStripsShow();
 
 
 	/* After Showing LEDs */
-
-	/* Update first pixel location for all active Meteors in array */
+	// Update first pixel location for all active Meteors in array
 	for (int i = 0; i < 500; i++) {
 		if (animate.ActiveMeteors[i] != nullptr){
 			animate.ActiveMeteors[i]->firstPixel = animate.ActiveMeteors[i]->firstPixel + 2;
@@ -1432,7 +1424,8 @@ void loop()
 		}
 	}
 
-	if ((millis() - displayDurationTimer > displayMinDuration) && dataStarted == true && nameScrollDone == true) {
+
+	if ((dataStarted == true && nameScrollDone == true && millis() - displayDurationTimer > displayMinDuration && millis() - craftDelayTimer > craftDelay)) {
 		CraftQueueItem infoBuffer;	// Create buffer to hold data from queue
 		CraftQueueItem* pInfoBuffer;
 		
@@ -1548,6 +1541,7 @@ void loop()
 	#if DIAG_MEASURE == 1
 		// print displayDurationTimer
 		Serial.print("Duration:"); Serial.print(millis() - displayDurationTimer); Serial.print(",");
+		Serial.print("Delay:"); Serial.print(millis() - craftDelayTimer); Serial.print(",");
 		perfDiff = (millis() - perfTimer) * 10;	// Multiplied by 10 for ease of visualization on plotter
 		// perfDiff = (millis() - perfTimer);	// This is the actual value
 		UBaseType_t uxHighWaterMark;
