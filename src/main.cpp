@@ -50,6 +50,42 @@ SpacecraftData data;				// Instantiate spacecraft data
 */
 const uint8_t colorTheme = 0;
 
+struct ColorTheme {
+	uint32_t* letter;
+	uint32_t* meteor;
+	uint16_t tailHue;
+	uint8_t tailSaturation;
+};
+
+ColorTheme currentColors;
+
+void setColorTheme(uint8_t colorTheme) {
+	switch (colorTheme) {
+		case 0:
+			currentColors.letter = mpColors.white.pointer;
+			currentColors.meteor = mpColors.white.pointer;
+			currentColors.tailHue = 240;
+			currentColors.tailSaturation = 127;
+
+			break;
+		case 1:
+			currentColors.letter = mpColors.teal.pointer;
+			currentColors.meteor = mpColors.teal.pointer;
+			currentColors.tailHue = 240;
+			currentColors.tailSaturation = 255;
+
+			break;
+		default:
+			currentColors.letter = mpColors.white.pointer;
+			currentColors.meteor = mpColors.white.pointer;
+			currentColors.tailHue = 240;
+			currentColors.tailSaturation = 127;
+	}
+}
+
+
+
+
 const char* serverName = "https://eyes.nasa.gov/dsn/data/dsn.xml?r=";	// DSN XML server
 char fetchUrl[50];	// DSN XML fetch URL - random number is appended when used to prevent caching
 
@@ -73,14 +109,6 @@ unsigned long craftDelayTimer = 0;
 unsigned long craftDelay = 3000;	// Wait this long after finishing for new craft to be dipslayed
 unsigned long displayMinDuration = 20000;	// Minimum time to display a craft before switching to next craft
 unsigned long displayDurationTimer = 20000;		// Timer to keep track of how long craft has been displayed, set at minimum for no startup delay
-
-
-// how often each pattern updates
-unsigned long pattern1Interval = 500;
-unsigned long pattern2Interval = 500;
-unsigned long pattern3Interval = 500;
-unsigned long pattern4Interval = 500;
-unsigned long targetChangeInterval = 5000;
 
 
 /* TASKS */
@@ -442,21 +470,9 @@ uint32_t brightnessAdjust(uint32_t color)
 // Display letter from array
 void doLetterRegions(char theLetter, int regionStart, int startingPixel)
 {
-	uint32_t* letterColor;
+	const uint32_t* letterColor = currentColors.letter;
 
-	switch (colorTheme) {
-		case 0:
-			letterColor = usingDummyData == false ? mpColors.white.pointer : mpColors.red.pointer;
-			break;
-		case 1:
-			letterColor = usingDummyData == false ? mpColors.teal.pointer : mpColors.red.pointer;
-			break;
-		default:
-			letterColor = usingDummyData == false ? mpColors.white.pointer : mpColors.red.pointer;
-	}
-
-
-	int *ledCharacter = textCharacter.getCharacter(theLetter);
+	const int *ledCharacter = textCharacter.getCharacter(theLetter);
 	const uint32_t *character_array[letterTotalPixels] = {};
 
 	// Map character array to LED colors
@@ -477,11 +493,11 @@ void doLetterRegions(char theLetter, int regionStart, int startingPixel)
 
 	Adafruit_NeoPixel *&target = allStrips[0];
 
-	int regionOffset = innerPixelsChunkLength * regionStart;
+	const uint16_t regionOffset = innerPixelsChunkLength * regionStart;
 
-	int pixel = 0 + startingPixel + regionOffset;
+	int16_t pixel = 0 + startingPixel + regionOffset;
 
-	int previousPixel = startingPixel + regionOffset - letterSpacing;
+	const int16_t previousPixel = startingPixel + regionOffset - letterSpacing;
 
 	for (int i = 0; i < letterTotalPixels; i++)
 	{
@@ -544,19 +560,7 @@ void scrollLetters(const char * spacecraftName, int wordArraySize)
 
 // Create Meteor object
 void createMeteor(int strip, int region, bool directionDown = true,  int startPixel = 0) {
-	uint32_t* meteorColor;
-
-	switch (colorTheme) {
-		case 0:
-			meteorColor = mpColors.white.pointer;
-			break;
-		case 1:
-			meteorColor = mpColors.purple.pointer;
-			break;
-		default:
-			meteorColor = mpColors.white.pointer;
-	}
-
+	uint32_t* meteorColor = currentColors.meteor;
 
 	for (int i = 0; i < 500; i++) {
 		if (animate.ActiveMeteors[i] != nullptr) {
@@ -573,11 +577,11 @@ void createMeteor(int strip, int region, bool directionDown = true,  int startPi
 			1,								// meteorSize
 			false,							// meteorTrailDecay
 			false,							// meteorRandomDecay
-			240,							// tailHueStart
+			currentColors.tailHue,			// tailHueStart
 			true,							// tailHueAdd
 			0.75,							// tailHueExponent
-			255,							// tailHueSaturation
-			allStrips[strip]					// rStrip
+			currentColors.tailSaturation,	// tailHueSaturation
+			allStrips[strip]				// rStrip
 		};
 
 		break;
@@ -1409,6 +1413,8 @@ void setup()
 	http.setReuse(true);
 
 	data.loadJson();
+
+	setColorTheme(colorTheme);
 }
 
 // loop() function -- runs repeatedly as long as board is on ---------------
