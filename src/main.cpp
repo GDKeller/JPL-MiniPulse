@@ -17,10 +17,11 @@
 /* NAMESPACES */
 using namespace tinyxml2;		// XML parser
 using namespace std;			// C++ I/O
-
-/* CONFIG */
+ 
+/* HARDWARE CONFIG */
+#pragma region
 #define AP_SSID "MiniPulse"		// WiFi AP SSID
-#define AP_PASS ""		// WiFi AP password
+#define AP_PASS ""				// WiFi AP password
 #define OUTER_PIN 17			// Outer ring pin
 #define MIDDLE_PIN 18			// Middle ring pin
 #define INNER_PIN 19			// Inner ring pin
@@ -29,18 +30,38 @@ using namespace std;			// C++ I/O
 #define OUTPUT_ENABLE 22		// Output enable pin
 #define BRIGHTNESS 16			// Global brightness value. 8bit, 0-255
 #define POTENTIOMETER 32		// Brightness potentiometer pin
+#pragma endregion
 
-// Diagnostic utilities, all 0 is normal operation
+
+/* DIAGNOSTICS */
+// all 0 is normal operation
 #define TEST_CORES 0			// Test cores
 #define SHOW_SERIAL 0			// Show serial output
 #define ID_LEDS 0				// ID LEDs
 #define DISABLE_WIFI 0			// Disable WiFi
 #define DIAG_MEASURE 1			// Output memory & performance info for plotter
 
+
+
+#pragma region CLASS INSTANTIATIONS
+// Animations
 AnimationUtils au(POTENTIOMETER);	// Instantiate animation utils
 AnimationUtils::Colors mpColors;	// Instantiate colors
 Animate animate;					// Instantiate animate
+
+// Data
 SpacecraftData data;				// Instantiate spacecraft data
+
+// Tasks
+TaskHandle_t xHandleData; // Task for fetching and parsing data
+TaskStatus_t xHandleDataDetails; // Task details for HandleData
+QueueHandle_t queue;	 // Queue to pass data between tasks
+
+// Networking
+WiFiManager wm;			// Used for connecting to WiFi
+HTTPClient http;		// Used for fetching data
+#pragma endregion
+
 
 /**
  * Color Theme
@@ -49,42 +70,6 @@ SpacecraftData data;				// Instantiate spacecraft data
  * 1 - Cyber
 */
 const uint8_t colorTheme = 0;
-
-struct ColorTheme {
-	uint32_t* letter;
-	uint32_t* meteor;
-	uint16_t tailHue;
-	uint8_t tailSaturation;
-};
-
-ColorTheme currentColors;
-
-void setColorTheme(uint8_t colorTheme) {
-	switch (colorTheme) {
-		case 0:
-			currentColors.letter = mpColors.white.pointer;
-			currentColors.meteor = mpColors.white.pointer;
-			currentColors.tailHue = 240;
-			currentColors.tailSaturation = 127;
-
-			break;
-		case 1:
-			currentColors.letter = mpColors.teal.pointer;
-			currentColors.meteor = mpColors.teal.pointer;
-			currentColors.tailHue = 240;
-			currentColors.tailSaturation = 255;
-
-			break;
-		default:
-			currentColors.letter = mpColors.white.pointer;
-			currentColors.meteor = mpColors.white.pointer;
-			currentColors.tailHue = 240;
-			currentColors.tailSaturation = 127;
-	}
-}
-
-
-
 
 const char* serverName = "https://eyes.nasa.gov/dsn/data/dsn.xml?r=";	// DSN XML server
 char fetchUrl[50];	// DSN XML fetch URL - random number is appended when used to prevent caching
@@ -109,17 +94,8 @@ unsigned long craftDelayTimer = 0;
 unsigned long craftDelay = 3000;	// Wait this long after finishing for new craft to be dipslayed
 unsigned long displayMinDuration = 20000;	// Minimum time to display a craft before switching to next craft
 unsigned long displayDurationTimer = 20000;		// Timer to keep track of how long craft has been displayed, set at minimum for no startup delay
-uint8_t meteorOffset = 32;
-
-
-/* TASKS */
-TaskHandle_t xHandleData; // Task for fetching and parsing data
-TaskStatus_t xHandleDataDetails; // Task details for HandleData
-QueueHandle_t queue;	 // Queue to pass data between tasks
-
-/* NETWORKING */
-WiFiManager wm;			// Used for connecting to WiFi
-HTTPClient http;		// Used for fetching data
+const uint8_t meteorOffset = 32;
+const uint8_t offsetHalf = meteorOffset * 0.5;
 
 
 /* DATA */
@@ -128,9 +104,10 @@ unsigned int stationCount = 0;
 unsigned int dishCount = 0;
 unsigned int targetCount = 0;
 unsigned int signalCount = 0;
+int parseCounter = 0;
 
 // Holds current craft to be animated
-static CraftQueueItem currentCraftBuffer ;
+static CraftQueueItem currentCraftBuffer;
 static bool nameScrollDone = true;
 
 /* LED HARDWARE CONFIG */
@@ -189,6 +166,32 @@ Adafruit_NeoPixel* allStrips[4] = {
 
 
 /* GENERAL UTILITIES */
+ColorTheme currentColors;
+
+void setColorTheme(uint8_t colorTheme) {
+	switch (colorTheme) {
+		case 0:
+			currentColors.letter = mpColors.white.pointer;
+			currentColors.meteor = mpColors.white.pointer;
+			currentColors.tailHue = 240;
+			currentColors.tailSaturation = 127;
+
+			break;
+		case 1:
+			currentColors.letter = mpColors.teal.pointer;
+			currentColors.meteor = mpColors.teal.pointer;
+			currentColors.tailHue = 240;
+			currentColors.tailSaturation = 255;
+
+			break;
+		default:
+			currentColors.letter = mpColors.white.pointer;
+			currentColors.meteor = mpColors.white.pointer;
+			currentColors.tailHue = 240;
+			currentColors.tailSaturation = 127;
+	}
+}
+
 const char* termColor(const char* color) {
 	if (color == "black") return "\e[0;30m";
 	if (color == "red") return "\e[0;31m";
@@ -347,109 +350,7 @@ uint32_t brightnessAdjust(uint32_t color)
 	return Adafruit_NeoPixel::Color(((AnimationUtils::brightness * channelR) / 255), ((AnimationUtils::brightness * channelG) / 255), ((AnimationUtils::brightness * channelB) / 255));
 }
 
-// // Fill strip pixels one after another with a color. Strip is NOT cleared
-// // first; anything there will be covered pixel by pixel. Pass in color
-// // (as a single 'packed' 32-bit value, which you can get by calling
-// // strip.Color(red, green, blue) as shown in the loop() function above),
-// // and a delay time (in milliseconds) between pixels.
-// void colorWipe(Adafruit_NeoPixel &strip, uint32_t *color, int wait)
-// {
-// 	for (int i = 0; i < strip.numPixels(); i++)
-// 	{									   // For each pixel in strip...
-// 		au.setPixelColor(strip, i, color); //  Set pixel's color (in RAM)
-// 		strip.show();					   //  Update strip to match
-// 		delay(wait);					   //  Pause for a moment
-// 	}
-// }
 
-
-// // Theater-marquee-style chasing lights. Pass in a color (32-bit value,
-// // a la strip.Color(r,g,b) as mentioned above), and a delay time (in ms)
-// // between frames.
-// void theaterChase(Adafruit_NeoPixel &strip, uint32_t *color, int wait)
-// {
-// 	for (int a = 0; a < 10; a++)
-// 	{ // Repeat 10 times...
-// 		for (int b = 0; b < 3; b++)
-// 		{				   //  'b' counts from 0 to 2...
-// 			strip.clear(); //   Set all pixels in RAM to 0 (off)
-
-// 			// 'c' counts up from 'b' to end of strip in steps of 3...
-// 			for (int c = b; c < strip.numPixels(); c += 3)
-// 			{
-// 				au.setPixelColor(strip, c, color); // Set pixel 'c' to value 'color'
-// 			}
-// 			strip.show(); // Update strip with new contents
-// 			delay(wait);  // Pause for a moment
-// 		}
-// 	}
-// }
-
-// // Rainbow cycle along whole strip. Pass delay time (in ms) between frames.
-// void rainbow(Adafruit_NeoPixel &strip, int wait)
-// {
-// 	// Hue of first pixel runs 5 complete loops through the color wheel.
-// 	// Color wheel has a range of 65536 but it's OK if we roll over, so
-// 	// just count from 0 to 5*65536. Adding 256 to firstPixelHue each time
-// 	// means we'll make 5*65536/256 = 1280 passes through this loop:
-// 	for (long firstPixelHue = 0; firstPixelHue < 1 * 65536; firstPixelHue += 256)
-// 	{
-// 		// strip.rainbow() can take a single argument (first pixel hue) or
-// 		// optionally a few extras: number of rainbow repetitions (default 1),
-// 		// saturation and value (brightness) (both 0-255, similar to the
-// 		// ColorHSV() function, default 255), and a true/false flag for whether
-// 		// to apply gamma correction to provide 'truer' colors (default true).
-// 		au.updateBrightness();
-// 		strip.rainbow(firstPixelHue, 1, 255, AnimationUtils::brightness, true);
-// 		// Above line is equivalent to:
-// 		// strip.rainbow(firstPixelHue, 1, 255, 255, true);
-// 		strip.show(); // Update strip with new contents
-// 		delay(wait);  // Pause for a moment
-// 	}
-// }
-
-// // Rainbow cycle along whole strip. Pass delay time (in ms) between frames.
-// void hueCycle(Adafruit_NeoPixel &strip, int wait)
-// {
-// 	// Hue of first pixel runs 5 complete loops through the color wheel.
-// 	// Color wheel has a range of 65536 but it's OK if we roll over, so
-// 	// just count from 0 to 5*65536. Adding 256 to firstPixelHue each time
-// 	// means we'll make 5*65536/256 = 1280 passes through this loop:
-// 	for (long hue = 0; hue < 1 * 65536; hue += 256)
-// 	{
-// 		au.updateBrightness();
-// 		strip.fill(Adafruit_NeoPixel::gamma32(Adafruit_NeoPixel::ColorHSV(hue, 255, AnimationUtils::brightness)));
-// 		strip.show(); // Update strip with new contents
-// 		delay(wait);  // Pause for a moment
-// 	}
-// }
-
-// // Rainbow-enhanced theater marquee. Pass delay time (in ms) between frames.
-// void theaterChaseRainbow(Adafruit_NeoPixel &strip, int wait)
-// {
-// 	int firstPixelHue = 0; // First pixel starts at red (hue 0)
-// 	for (int a = 0; a < 30; a++)
-// 	{ // Repeat 30 times...
-// 		for (int b = 0; b < 3; b++)
-// 		{				   //  'b' counts from 0 to 2...
-// 			strip.clear(); //   Set all pixels in RAM to 0 (off)
-// 			// 'c' counts up from 'b' to end of strip in increments of 3...
-// 			for (int c = b; c < strip.numPixels(); c += 3)
-// 			{
-// 				// hue of pixel 'c' is offset by an amount to make one full
-// 				// revolution of the color wheel (range 65536) along the length
-// 				// of the strip (strip.numPixels() steps):
-// 				int hue = firstPixelHue + c * 65536L / strip.numPixels();
-// 				uint32_t color = strip.ColorHSV(hue); // hue -> RGB
-// 				const uint32_t *pColor = &color;
-// 				au.setPixelColor(strip, c, pColor); // Set pixel 'c' to value 'color'
-// 			}
-// 			strip.show();				 // Update strip with new contents
-// 			delay(wait);				 // Pause for a moment
-// 			firstPixelHue += 65536 / 90; // One cycle of color wheel over 90 frames
-// 		}
-// 	}
-// }
 
 
 
@@ -588,7 +489,6 @@ void animationMeteorPulseRegion(
 {
 
 	// Stagger the starting pixel
-	int8_t offsetHalf = offset * 0.5;
 	if (randomizeOffset == true) startPixel = startPixel - ((rand() % offsetHalf + 1) * 2);
 
 	for (int i = 0; i < pulseCount; i++) {
@@ -607,7 +507,6 @@ void animationMeteorPulseRing(
 	bool randomizeOffset = false)
 {
 	for (int i = 0; i < outerChunks; i++) {
-		// if (strip == 1 && directionDown == false && i == 1) continue;
 		animationMeteorPulseRegion(strip, i, directionDown, 0, pulseCount, offset, randomizeOffset);
 	}
 }
@@ -663,6 +562,13 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset) {
 	}
 }
 
+void drawMeteors() {
+	// Update meteor animations
+	for (int i = 0; i < 100; i++) {	
+		if (animate.ActiveMeteors[i] != nullptr) animate.animateMeteor(animate.ActiveMeteors[i]);
+	}
+}
+
 void updateMeteors() {
 	// Update first pixel location for all active Meteors in array
 	for (int i = 0; i < 500; i++) {
@@ -678,22 +584,21 @@ void updateMeteors() {
 	}
 }
 
-/**
- * Main Animation update function
- * 
+/** Main Animation update function
  * Gets called every loop();
- * 
-*/
+ */
 void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int downSignalRate, int upSignalRate)
 {
 	// Update brightness from potentiometer
 	au.updateBrightness();
 
 	/* Update Scrolling letters animation */
-	try {
-		// if (nameScrollDone == false) scrollLetters(spacecraftName, spacecraftNameSize);
-	} catch (...) {
-		Serial.println("Error in scrollLetters()");
+	if (nameScrollDone == false) {
+		try {
+			scrollLetters(spacecraftName, spacecraftNameSize);
+		} catch (...) {
+			Serial.println("Error in scrollLetters()");
+		}
 	}
 
 	// Fire meteors
@@ -704,37 +609,21 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 		// animationMeteorPulseRegion(2, 1, true, 0, 2, meteorOffset, true);
 
 		if (nameScrollDone == false) {
-			try {
-				// Serial.println("-------- fire meteors ------------");
-				// Serial.println(spacecraftName);
-				
+			try {				
 				doRateBasedAnimation(true, downSignalRate, meteorOffset);
-				doRateBasedAnimation(false, upSignalRate, meteorOffset);
-
-				
+				doRateBasedAnimation(false, upSignalRate, meteorOffset);				
 			} catch (...) {
 				Serial.println("Error in signal animation");
 			}
-
-			if (SHOW_SERIAL == 1) Serial.println();
 		}
 
-		animationTimer = millis(); // Set animation timer to current millis()
+		animationTimer = millis(); // Reset meteor animation timer
 	}
 
-	// Update meteor animations
-	for (int i = 0; i < 100; i++) {	
-		if (animate.ActiveMeteors[i] != nullptr) animate.animateMeteor(animate.ActiveMeteors[i]);
-	}
-
-	// Illuminate LEDs
-	allStripsShow();
-
-
-	/* After Showing LEDs */
-	updateMeteors();
+	drawMeteors(); // Assign new pixels for meteors
+	allStripsShow(); // Illuminate LEDs
+	updateMeteors(); // Update first pixel location for all active Meteors in array
 }
-
 
 unsigned int rateLongToRateClass(unsigned long rate) {
 	if (rate > (1024 * 1000000)) {
@@ -754,7 +643,6 @@ unsigned int rateLongToRateClass(unsigned long rate) {
 	}
 }
 
-int parseCounter = 0;
 void parseData(const char* payload) {
 	if (DIAG_MEASURE == 1) {
 		// Serial.print("parseData() top of func: ");
@@ -1537,18 +1425,17 @@ void loop()
 	}
 
 	#if DIAG_MEASURE == 1
-		// print displayDurationTimer
-		Serial.print("Duration:"); Serial.print(millis() - displayDurationTimer); Serial.print(",");
-		Serial.print("Delay:"); Serial.print(millis() - craftDelayTimer); Serial.print(",");
-		perfDiff = (millis() - perfTimer) * 10;	// Multiplied by 10 for ease of visualization on plotter
-		// perfDiff = (millis() - perfTimer);	// This is the actual value
+		// Serial.print("Duration:"); Serial.print(millis() - displayDurationTimer); Serial.print(",");
+		// Serial.print("Delay:"); Serial.print(millis() - craftDelayTimer); Serial.print(",");
+		// perfDiff = (millis() - perfTimer) * 10;	// Multiplied by 10 for ease of visualization on plotter
+		perfDiff = (millis() - perfTimer);	// This is the actual value
 		UBaseType_t uxHighWaterMark;
 		uxHighWaterMark = uxTaskGetStackHighWaterMark( xHandleData );
 		printFreeHeap();	// Value might be being multiplied in printFreeHeap() function for ease of visualization on plotter
-		// Serial.print("high_water_mark:"); Serial.print(uxHighWaterMark); Serial.print(",");
-		// Serial.print("PerfTimer:"); Serial.print(perfDiff); Serial.print(",");
-		Serial.print("QueueSize:"); Serial.print(uxQueueMessagesWaiting(queue) * 1000); Serial.print(",");
-		Serial.print("ParseCounter:"); Serial.print(parseCounter * 1000); Serial.print(",");	// Multiplied by 10 for ease of visualization on plotter
+		Serial.print("high_water_mark:"); Serial.print(uxHighWaterMark); Serial.print(",");
+		Serial.print("PerfTimer:"); Serial.print(perfDiff); Serial.print(",");
+		// Serial.print("QueueSize:"); Serial.print(uxQueueMessagesWaiting(queue) * 1000); Serial.print(",");
+		// Serial.print("ParseCounter:"); Serial.print(parseCounter * 1000); Serial.print(",");	// Multiplied by 10 for ease of visualization on plotter
 		// Serial.print("ParseCounter:"); Serial.print(parseCounter); Serial.print(",");	// This is the actual value
 		Serial.println();
 		parseCounter = 0;

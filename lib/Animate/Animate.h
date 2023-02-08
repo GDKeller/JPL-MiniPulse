@@ -14,6 +14,13 @@
 #ifndef ANIMATE_H
 #define ANIMATE_H
 
+struct ColorTheme {
+    uint32_t* letter;
+    uint32_t* meteor;
+    uint16_t tailHue;
+    uint8_t tailSaturation;
+};
+
 struct Meteor {
     bool directionDown;
     int firstPixel;
