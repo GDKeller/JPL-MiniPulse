@@ -109,6 +109,7 @@ unsigned long craftDelayTimer = 0;
 unsigned long craftDelay = 3000;	// Wait this long after finishing for new craft to be dipslayed
 unsigned long displayMinDuration = 20000;	// Minimum time to display a craft before switching to next craft
 unsigned long displayDurationTimer = 20000;		// Timer to keep track of how long craft has been displayed, set at minimum for no startup delay
+uint8_t meteorOffset = 32;
 
 
 /* TASKS */
@@ -121,43 +122,35 @@ WiFiManager wm;			// Used for connecting to WiFi
 HTTPClient http;		// Used for fetching data
 
 
-/* Data */
+/* DATA */
+// Counters to track during XML parsing
 unsigned int stationCount = 0;
 unsigned int dishCount = 0;
 unsigned int targetCount = 0;
 unsigned int signalCount = 0;
 
-
-// Struct to pass data via queue
-// struct craftDisplay {
-// 	const char* callsign;
-// 	const char* name;
-// 	uint nameLength;
-// 	uint upSignal;
-// 	uint downSignal;
-// };
-
 // Holds current craft to be animated
 static CraftQueueItem currentCraftBuffer ;
 static bool nameScrollDone = true;
 
-
-
-/* LEDs Config */
+/* LED HARDWARE CONFIG */
+// Totaly number of pixels (diodes) in each strip
 const int outerPixelsTotal = 800;
 const int middlePixelsTotal = 800;
 const int innerPixelsTotal = 960;
 const int bottomPixelsTotal = 5;
 
+// Total number of LED sticks per strip
 const int outerChunks = 10;
 const int middleChunks = 10;
 const int innerChunks = 12;
 const int bottomChunks = 1;
 
+// Calculate lengths of each LED stick
 const int innerPixelsChunkLength = innerPixelsTotal / innerChunks;
 const int outerPixelsChunkLength = outerPixelsTotal / outerChunks;
 
-/* Text Utilities */
+/* TEXT UTILITIES */
 TextCharacter textCharacter;
 const int characterWidth = 4;
 const int characterHeight = 7;
@@ -173,13 +166,6 @@ unsigned long lastUpdateP1 = 0;
 unsigned long lastUpdateP2 = 0;
 unsigned long lastUpdateP3 = 0;
 unsigned long lastUpdateP4 = 0;
-
-// Init state variables for patterns, tracks which pixel to animate
-int p1State = 0;
-int p1StateExtend = 0;
-int p2State = 0;
-int p3State = 0;
-int p4State = 0;
 
 
 
@@ -597,12 +583,13 @@ void animationMeteorPulseRegion(
 	bool directionDown = true,
 	int16_t startPixel = 0,
 	uint8_t pulseCount = 2,
-	int16_t offset = 10,
+	int8_t offset = 10,
 	bool randomizeOffset = false)
 {
 
 	// Stagger the starting pixel
-	if (randomizeOffset == true) startPixel = startPixel - (random(12, offset));
+	int8_t offsetHalf = offset * 0.5;
+	if (randomizeOffset == true) startPixel = startPixel - ((rand() % offsetHalf + 1) * 2);
 
 	for (int i = 0; i < pulseCount; i++) {
 		int16_t pixel = i + startPixel + (i * offset * -1);
@@ -616,7 +603,7 @@ void animationMeteorPulseRing(
 	uint8_t strip,
 	bool directionDown = true,
 	uint8_t pulseCount = 2,
-	int16_t offset = 10,
+	int8_t offset = 32,
 	bool randomizeOffset = false)
 {
 	for (int i = 0; i < outerChunks; i++) {
@@ -625,7 +612,7 @@ void animationMeteorPulseRing(
 	}
 }
 
-void doRateBasedAnimation(bool isDown, uint8_t rateClass) {
+void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset) {
 	int stripId = isDown == true ? 2 : 1;
 
 	if (rateClass == 0) {
@@ -639,22 +626,22 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass) {
 		case 6:	// 1gbps
 			pulseCount = 5;
 			// Serial.print("[Downsignal Gb]");
-			animationMeteorPulseRing(stripId, isDown, pulseCount, 32, true);
+			animationMeteorPulseRing(stripId, isDown, pulseCount, offset, true);
 			break;
 		case 5:	// 1mbps
 			pulseCount = 4;
 			// Serial.print("[Downsignal kb]");
-			animationMeteorPulseRing(stripId, isDown, pulseCount, 32, true);
+			animationMeteorPulseRing(stripId, isDown, pulseCount, offset, true);
 			break;
 		case 4: // 10lbps
 			pulseCount = 3;
 			// Serial.print("[Downsignal kb]");
-			animationMeteorPulseRing(stripId, isDown, pulseCount, 32, true);
+			animationMeteorPulseRing(stripId, isDown, pulseCount, offset, true);
 			break;
 		case 3:
 			pulseCount = 2;
 			// Serial.print("[Downsignal kb]");
-			animationMeteorPulseRing(stripId, isDown, pulseCount, 32, true);
+			animationMeteorPulseRing(stripId, isDown, pulseCount, offset, true);
 			break;
 		case 2:
 			pulseCount = 1;
@@ -673,6 +660,21 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass) {
 		default:
 			allStrips[stripId]->clear();
 			// Serial.print("[Downsignal n/a ]");			 
+	}
+}
+
+void updateMeteors() {
+	// Update first pixel location for all active Meteors in array
+	for (int i = 0; i < 500; i++) {
+		if (animate.ActiveMeteors[i] != nullptr){
+			animate.ActiveMeteors[i]->firstPixel = animate.ActiveMeteors[i]->firstPixel + 2;
+
+			// If meteor is beyond the display region, unallocate memory and remove array item
+			if (animate.ActiveMeteors[i]->firstPixel > animate.ActiveMeteors[i]->regionLength * 2) {
+				delete animate.ActiveMeteors[i];
+				animate.ActiveMeteors[i] = nullptr;
+			}
+		}
 	}
 }
 
@@ -697,25 +699,25 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 	// Fire meteors
 	if (displayDurationTimer > 6000 && (millis() - animationTimer) > 3000) {
 		// printMeteorArray();
-		// animationMeteorPulseRing(2, true, 2, 32, true);
-		animationMeteorPulseRegion(2, 0, true, 0, 2, 32, true);
-		animationMeteorPulseRegion(2, 1, true, 0, 2, 32, true);
+		// animationMeteorPulseRing(2, true, 2, meteorOffset, true);
+		// animationMeteorPulseRegion(2, 0, true, 0, 2, meteorOffset, true);
+		// animationMeteorPulseRegion(2, 1, true, 0, 2, meteorOffset, true);
 
-		// if (nameScrollDone == false) {
-		// 	try {
-		// 		// Serial.println("-------- fire meteors ------------");
-		// 		// Serial.println(spacecraftName);
+		if (nameScrollDone == false) {
+			try {
+				// Serial.println("-------- fire meteors ------------");
+				// Serial.println(spacecraftName);
 				
-		// 		doRateBasedAnimation(true, downSignalRate);
-		// 		doRateBasedAnimation(false, upSignalRate);
+				doRateBasedAnimation(true, downSignalRate, meteorOffset);
+				doRateBasedAnimation(false, upSignalRate, meteorOffset);
 
 				
-		// 	} catch (...) {
-		// 		Serial.println("Error in signal animation");
-		// 	}
+			} catch (...) {
+				Serial.println("Error in signal animation");
+			}
 
-		// 	if (SHOW_SERIAL == 1) Serial.println();
-		// }
+			if (SHOW_SERIAL == 1) Serial.println();
+		}
 
 		animationTimer = millis(); // Set animation timer to current millis()
 	}
@@ -730,18 +732,7 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 
 
 	/* After Showing LEDs */
-	// Update first pixel location for all active Meteors in array
-	for (int i = 0; i < 500; i++) {
-		if (animate.ActiveMeteors[i] != nullptr){
-			animate.ActiveMeteors[i]->firstPixel = animate.ActiveMeteors[i]->firstPixel + 2;
-
-			// If meteor is beyond the display region, unallocate memory and remove array item
-			if (animate.ActiveMeteors[i]->firstPixel > animate.ActiveMeteors[i]->regionLength * 2) {
-				delete animate.ActiveMeteors[i];
-				animate.ActiveMeteors[i] = nullptr;
-			}
-		}
-	}
+	updateMeteors();
 }
 
 
@@ -1423,7 +1414,6 @@ void setup()
 // loop() function -- runs repeatedly as long as board is on ---------------
 void loop()
 {
-
 	if (TEST_CORES == 1)
 	{
 		if (millis() - lastTime > 4000 && millis() - lastTime < 4500)
@@ -1432,7 +1422,6 @@ void loop()
 			Serial.println(xPortGetCoreID());
 		}
 	}
-
 
 	if ((dataStarted == true && nameScrollDone == true && millis() - displayDurationTimer > displayMinDuration && millis() - craftDelayTimer > craftDelay)) {
 		CraftQueueItem infoBuffer;	// Create buffer to hold data from queue
@@ -1565,7 +1554,4 @@ void loop()
 		parseCounter = 0;
 		perfTimer = millis();
 	#endif
-
-	delay(100);
-
 }
