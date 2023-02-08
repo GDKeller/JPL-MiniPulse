@@ -41,7 +41,7 @@ void Animate::animateMeteor(Meteor* meteor)
 		if (meteor->directionDown == true) {
 			currentPixel = drawPixel + d + 1;
 			if (currentPixel >= regionEnd) break;
-			if (currentPixel < regionStart - 1) continue;
+			if (currentPixel < regionStart) continue;
 		} else {
 			currentPixel = drawPixel - d - 1;
 			if (currentPixel < regionStart) break;
@@ -91,7 +91,7 @@ void Animate::animateMeteor(Meteor* meteor)
 		// tailHueAdd == true ? hue += ceil(4096 * mPower(tailHueExponent, d)) : hue -= ceil(4096 * mPower(tailHueExponent, d));
 
 		// Make sure the pixel right after the meteor will get drawn so meteor values aren't repeated
-		if (d < (meteorSize + 2))
+		if (d < (meteorSize + 1))
 		{
 			aUtilAnimate.setPixelColor(*strip, currentPixel, pTrailColor);
 			continue;

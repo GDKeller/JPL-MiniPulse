@@ -576,7 +576,7 @@ void createMeteor(int strip, int region, bool directionDown = true,  int startPi
 			meteorColor,					// pColor
 			1,								// meteorSize
 			false,							// meteorTrailDecay
-			true,							// meteorRandomDecay
+			false,							// meteorRandomDecay
 			currentColors.tailHue,			// tailHueStart
 			true,							// tailHueAdd
 			0.75,							// tailHueExponent
@@ -602,7 +602,7 @@ void animationMeteorPulseRegion(
 {
 
 	// Stagger the starting pixel
-	if (randomizeOffset == true) startPixel = startPixel - (random(0, 4) * 2);
+	if (randomizeOffset == true) startPixel = startPixel - (random(12, offset));
 
 	for (int i = 0; i < pulseCount; i++) {
 		int16_t pixel = i + startPixel + (i * offset * -1);
@@ -689,29 +689,33 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 
 	/* Update Scrolling letters animation */
 	try {
-		if (nameScrollDone == false) scrollLetters(spacecraftName, spacecraftNameSize);
+		// if (nameScrollDone == false) scrollLetters(spacecraftName, spacecraftNameSize);
 	} catch (...) {
 		Serial.println("Error in scrollLetters()");
 	}
 
 	// Fire meteors
-	if (displayDurationTimer > 3000 && (millis() - animationTimer) > 3000) {
+	if (displayDurationTimer > 6000 && (millis() - animationTimer) > 3000) {
 		// printMeteorArray();
-		if (nameScrollDone == false) {
-			try {
-				// Serial.println("-------- fire meteors ------------");
-				// Serial.println(spacecraftName);
+		// animationMeteorPulseRing(2, true, 2, 32, true);
+		animationMeteorPulseRegion(2, 0, true, 0, 2, 32, true);
+		animationMeteorPulseRegion(2, 1, true, 0, 2, 32, true);
+
+		// if (nameScrollDone == false) {
+		// 	try {
+		// 		// Serial.println("-------- fire meteors ------------");
+		// 		// Serial.println(spacecraftName);
 				
-				doRateBasedAnimation(true, downSignalRate);
-				doRateBasedAnimation(false, upSignalRate);
+		// 		doRateBasedAnimation(true, downSignalRate);
+		// 		doRateBasedAnimation(false, upSignalRate);
 
 				
-			} catch (...) {
-				Serial.println("Error in signal animation");
-			}
+		// 	} catch (...) {
+		// 		Serial.println("Error in signal animation");
+		// 	}
 
-			if (SHOW_SERIAL == 1) Serial.println();
-		}
+		// 	if (SHOW_SERIAL == 1) Serial.println();
+		// }
 
 		animationTimer = millis(); // Set animation timer to current millis()
 	}
@@ -1561,5 +1565,7 @@ void loop()
 		parseCounter = 0;
 		perfTimer = millis();
 	#endif
+
+	delay(100);
 
 }
