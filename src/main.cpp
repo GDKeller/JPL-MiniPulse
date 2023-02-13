@@ -39,7 +39,7 @@ using namespace std;			// C++ I/O
 #define SHOW_SERIAL 0			// Show serial output
 #define ID_LEDS 0				// ID LEDs
 #define DISABLE_WIFI 0			// Disable WiFi
-#define DIAG_MEASURE 1			// Output memory & performance info for plotter
+#define DIAG_MEASURE 0			// Output memory & performance info for plotter
 
 
 
@@ -82,6 +82,7 @@ uint8_t noTargetLimit = 3;				// After target is not found this many times, swit
 uint8_t retryDataFetchCounter = 0;		// Keeps track of how many times data fetch failed
 uint8_t retryDataFetchLimit = 10;		// After dummy data is used this many times, try to get actual data again
 bool dataStarted = false;
+WiFiManagerParameter custom_field; // global param ( for non blocking w params )
 
 // Time is measured in milliseconds and will become a bigger number
 // than can be stored in an int, so long is used
@@ -175,14 +176,18 @@ void setColorTheme(uint8_t colorTheme) {
 			currentColors.meteor = mpColors.white.pointer;
 			currentColors.tailHue = 240;
 			currentColors.tailSaturation = 127;
-
 			break;
 		case 1:
 			currentColors.letter = mpColors.teal.pointer;
 			currentColors.meteor = mpColors.teal.pointer;
 			currentColors.tailHue = 240;
 			currentColors.tailSaturation = 255;
-
+			break;
+		case 2:
+			currentColors.letter = mpColors.pink.pointer;
+			currentColors.meteor = mpColors.pink.pointer;
+			currentColors.tailHue = 270;
+			currentColors.tailSaturation = 255;
 			break;
 		default:
 			currentColors.letter = mpColors.white.pointer;
@@ -1119,6 +1124,33 @@ void getData(void *parameter)
 }
 
 
+String getParam(String name){
+	//read parameter from server, for customhmtl input
+	if (wm.server->hasArg(name) == 0) {
+		return "0";
+	}
+
+	String value = wm.server->arg(name);
+	return value;
+}
+
+void saveColorThemeCallback() {
+	try {
+		String colorTheme = getParam("customfieldid");
+		const int colorThemeId = atoi(colorTheme.c_str());
+
+		Serial.println("[CALLBACK] saveColorThemeCallback fired");
+		Serial.print("PARAM customfieldid = "); Serial.println(colorTheme);
+
+		setColorTheme(colorThemeId);
+	} catch (...) {
+		handleException();
+	}
+
+	
+}
+
+
 // setup() function -- runs once at startup --------------------------------
 void setup()
 {
@@ -1134,6 +1166,21 @@ void setup()
 		Serial.setDebugOutput(false);
 		wm.setDebugOutput(false);
 	#endif
+
+
+	
+	// test custom html(radio)
+	const char* custom_radio_str = "<br/><label for='customfieldid'>Custom Field Label</label><br/><input type='radio' name='customfieldid' value='0' checked> Snow<br><input type='radio' name='customfieldid' value='1'> Cyber<br><input type='radio' name='customfieldid' value='2'> Valentine";
+	new (&custom_field) WiFiManagerParameter(custom_radio_str); // custom html input
+	
+	wm.addParameter(&custom_field);
+	wm.setSaveParamsCallback(saveColorThemeCallback);
+	 std::vector<const char *> menu = {"wifi","info","param","sep","restart","exit"};
+	wm.setMenu(menu);
+
+	// set dark theme
+	wm.setClass("invert");
+
 
 	wm.setCleanConnect(true);
 	wm.setConnectRetries(5);
@@ -1295,6 +1342,8 @@ void setup()
 	http.setReuse(true);
 
 	data.loadJson();
+
+
 
 	setColorTheme(colorTheme);
 }
