@@ -19,8 +19,8 @@
 #define ANIMATE_H
 
 struct ColorTheme {
-    CRGB letter;
-    CRGB::HTMLColorCode meteor;
+    CHSV letter;
+    CHSV meteor;
     uint16_t tailHue;
     uint8_t tailSaturation;
 };
@@ -30,7 +30,7 @@ struct Meteor {
     int firstPixel;
     int region;
     int regionLength;
-    CRGB::HTMLColorCode pColor;
+    CHSV pColor;
     int meteorSize;
     bool meteorTrailDecay;
     bool meteorRandomDecay;

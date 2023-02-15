@@ -34,137 +34,56 @@ class AnimationUtils {
 
         class Colors {
             struct Color {
-                CRGB::HTMLColorCode value;
+                CHSV value;
             };
             public:
-                // Color red = {
-                //     Adafruit_NeoPixel::ColorHSV(
-                //         degreeToSixteenbit(0),
-                //         255,
-                //         255
-                //     ),
-                //     &red.value,
-                // };
+                Color red = {
+                    CHSV(0, 255, 255)
 
-                // Color redFaint = {
-                //     Adafruit_NeoPixel::ColorHSV(
-                //         degreeToSixteenbit(0),
-                //         128,
-                //         255
-                //     ),
-                //     &redFaint.value,
-                // };
-
-                // Color orange = {
-                //     Adafruit_NeoPixel::ColorHSV(
-                //         degreeToSixteenbit(30),
-                //         255,
-                //         255
-                //     ),
-                //     &orange.value,
-                // };
-
-                // Color yellow = {
-                //     Adafruit_NeoPixel::ColorHSV(
-                //         degreeToSixteenbit(60),
-                //         255,
-                //         255
-                //     ),
-                //     &yellow.value,
-                // };
-
-                // Color green = {
-                //     Adafruit_NeoPixel::ColorHSV(
-                //         degreeToSixteenbit(120),
-                //         255,
-                //         255
-                //     ),
-                //     &green.value,
-                // };
-
-                // Color teal = {
-                //     Adafruit_NeoPixel::ColorHSV(
-                //         degreeToSixteenbit(150),
-                //         255,
-                //         255
-                //     ),
-                //     &teal.value,
-                // };
-
-                // Color cyan = {
-                //     Adafruit_NeoPixel::ColorHSV(
-                //         degreeToSixteenbit(180),
-                //         255,
-                //         255
-                //     ),
-                //     &cyan.value,
-                // };
-
-                // Color sky = {
-                //     Adafruit_NeoPixel::ColorHSV(
-                //         degreeToSixteenbit(210),
-                //         255,
-                //         255
-                //     ),
-                //     &sky.value,
-                // };
-
-                // Color blue = {
-                //     Adafruit_NeoPixel::ColorHSV(
-                //         degreeToSixteenbit(240),
-                //         255,
-                //         255
-                //     ),
-                //     &blue.value,
-                // };
-
-                // Color violet = {
-                //     Adafruit_NeoPixel::ColorHSV(
-                //         degreeToSixteenbit(270),
-                //         255,
-                //         255
-                //     ),
-                //     &violet.value,
-                // };
-
-                // Color purple = {
-                //     Adafruit_NeoPixel::ColorHSV(
-                //         degreeToSixteenbit(300),
-                //         255,
-                //         255
-                //     ),
-                //     &purple.value,
-                // };
-
-                // Color pink = {
-                //     Adafruit_NeoPixel::ColorHSV(
-                //         degreeToSixteenbit(330),
-                //         255,
-                //         255
-                //     ),
-                //     &pink.value,
-                // };
-
-                Color white = {
-                    CRGB::White
                 };
 
-                // Color dim = {
-                //     Adafruit_NeoPixel::ColorHSV(
-                //         0,
-                //         0,
-                //         64
-                //     ),
-                //     &dim.value,
-                // };
+                Color redFaint = {
+                    CHSV(0, 128, 255)
+                };
+
+                Color orange = {
+                    CHSV(32, 255, 255)
+                };
+
+                Color yellow = {
+                    CHSV(64, 255, 255)
+                };
+
+                Color green = {
+                    CHSV(96, 255, 255)
+                };
+
+                Color aqua = {
+                    CHSV(128, 255, 255)
+                };
+
+                Color blue = {
+                    CHSV(160, 255, 255)
+                };
+
+                Color purple = {
+                    CHSV(192, 255, 255)
+                };
+
+                Color pink = {
+                    CHSV(224, 255, 255)
+                };
+
+                Color white = {
+                    CHSV(0, 0, 255)
+                };
+
+                Color dim = {
+                    CHSV(0, 0, 64)
+                };
 
                 Color off = {
-                    // Adafruit_NeoPixel::ColorHSV(
-                    //     0,
-                    //     0,
-                    //     0
-                    // ),
-                    CRGB::Black
+                    CHSV(0, 0, 0)
                 };
         };
 };

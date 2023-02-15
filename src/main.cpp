@@ -31,6 +31,7 @@ using namespace std;			// C++ I/O
 #define OUTPUT_ENABLE 22		// Output enable pin
 #define BRIGHTNESS 16			// Global brightness value. 8bit, 0-255
 #define POTENTIOMETER 32		// Brightness potentiometer pin
+#define FPS 30					// Frames per second
 #pragma endregion
 
 
@@ -88,6 +89,7 @@ WiFiManagerParameter custom_field; // global param ( for non blocking w params )
 
 // Time is measured in milliseconds and will become a bigger number
 // than can be stored in an int, so long is used
+unsigned long fpsTimer = 0;
 unsigned long perfTimer = 0;
 unsigned long perfDiff = 0;
 unsigned long lastTime = 0;				// Init reference variable for timer
@@ -141,6 +143,8 @@ int letterTotalPixels = 28;
 /* ANIMATION UTILITIES */
 // Do not change these
 
+uint8_t fpsInMs = 1000 / FPS;
+
 // Init reference variables for when last update occurred
 unsigned long lastUpdateP1 = 0;
 unsigned long lastUpdateP2 = 0;
@@ -187,27 +191,27 @@ ColorTheme currentColors;
 void setColorTheme(uint8_t colorTheme) {
 	switch (colorTheme) {
 		case 0:
-			currentColors.letter = CRGB::White;
-			currentColors.meteor = CRGB::White;
-			currentColors.tailHue = 240;
+			currentColors.letter = mpColors.white.value;
+			currentColors.meteor = mpColors.white.value;
+			currentColors.tailHue = 160;
 			currentColors.tailSaturation = 127;
 			break;
 		case 1:
-			currentColors.letter = CRGB::Teal;
-			currentColors.meteor = CRGB::Teal;
-			currentColors.tailHue = 240;
+			currentColors.letter = mpColors.aqua.value;
+			currentColors.meteor = mpColors.aqua.value;
+			currentColors.tailHue = 160;
 			currentColors.tailSaturation = 255;
 			break;
 		case 2:
-			currentColors.letter = CRGB::Pink;
-			currentColors.meteor = CRGB::Pink;
-			currentColors.tailHue = 270;
+			currentColors.letter = mpColors.pink.value;
+			currentColors.meteor = mpColors.pink.value;
+			currentColors.tailHue = 192;
 			currentColors.tailSaturation = 255;
 			break;
 		default:
-			currentColors.letter = CRGB::White;
-			currentColors.meteor = CRGB::White;
-			currentColors.tailHue = 240;
+			currentColors.letter = mpColors.white.value;
+			currentColors.meteor = mpColors.white.value;
+			currentColors.tailHue = 160;
 			currentColors.tailSaturation = 127;
 	}
 }
@@ -381,10 +385,10 @@ uint32_t brightnessAdjust(uint32_t color)
 // Display letter from array
 void doLetterRegions(char theLetter, int regionStart, int startingPixel)
 {
-	// CRGB letterColor = currentColors.letter;
+	// CHSV letterColor = currentColors.letter;
 
 	const int *ledCharacter = textCharacter.getCharacter(theLetter);
-	// CRGB character_array[letterTotalPixels] = {};
+	// CHSV character_array[letterTotalPixels] = {};
 
 	// // Map character array to LED colors
 	// for (int i = 0; i < letterTotalPixels; i++)
@@ -392,13 +396,13 @@ void doLetterRegions(char theLetter, int regionStart, int startingPixel)
 	// 	switch (ledCharacter[i])
 	// 	{
 	// 	case 0:
-	// 		character_array[i] = CRGB::Black;
+	// 		character_array[i] = CHSV::Black;
 	// 		break;
 	// 	case 1:
 	// 		character_array[i] = letterColor;
 	// 		break;
 	// 	default:
-	// 		character_array[i] = CRGB::Black;
+	// 		character_array[i] = CHSV::Black;
 	// 	}
 	// }
 
@@ -426,14 +430,14 @@ void doLetterRegions(char theLetter, int regionStart, int startingPixel)
 
 		if (regionStart <= drawPreviousPixel && drawPreviousPixel < regionEnd) {
 			// au.setPixelColor(*target, drawPreviousPixel, mpColors.off.pointer);
-			inner_leds[drawPreviousPixel] = CRGB::Black;
+			inner_leds[drawPreviousPixel] = mpColors.off.value;
 		}
 		if (regionStart <= drawPixel && drawPixel < regionEnd) {
 			// au.setPixelColor(*target, drawPixel, character_array[i]);
 			if (ledCharacter[i] == 1)
 				inner_leds[drawPixel] = currentColors.letter;
 			else
-				inner_leds[drawPixel] = CRGB::Black;
+				inner_leds[drawPixel] = mpColors.off.value;
 
 		}
 
@@ -477,7 +481,7 @@ void scrollLetters(const char * spacecraftName, int wordArraySize)
 
 // Create Meteor object
 void createMeteor(int strip, int region, bool directionDown = true,  int startPixel = 0) {
-	CRGB::HTMLColorCode meteorColor = currentColors.meteor;
+	CHSV meteorColor = currentColors.meteor;
 
 	for (int i = 0; i < 500; i++) {
 		if (animate.ActiveMeteors[i] != nullptr) {
@@ -654,7 +658,7 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 	}
 
 	drawMeteors(); // Assign new pixels for meteors
-	allStripsShow(); // Illuminate LEDs
+	FastLED.delay(1000/FPS);
 	updateMeteors(); // Update first pixel location for all active Meteors in array
 
 	FastLED.countFPS();
@@ -1356,13 +1360,13 @@ void setup()
 
 	
 
-	// CRGB* stuff = allStrips[2];
+	// CHSV* stuff = allStrips[2];
 
 	// for(int dot = 0; dot < outerPixelsTotal; dot++) { 
-	// 	stuff[dot] = CRGB::Purple;
+	// 	stuff[dot] = CHSV::Purple;
 	// 	FastLED.show();
 	// 	// clear this led for the next time around the loop
-	// 	if (dot > 0) stuff[dot - 1] = CRGB::Black;
+	// 	if (dot > 0) stuff[dot - 1] = CHSV::Black;
 	// 	// delay(30);
 	// }
 
@@ -1417,6 +1421,7 @@ void loop()
 		}
 	}
 
+	
 	if ((dataStarted == true && nameScrollDone == true && millis() - displayDurationTimer > displayMinDuration && millis() - craftDelayTimer > craftDelay)) {
 		CraftQueueItem infoBuffer;	// Create buffer to hold data from queue
 		CraftQueueItem* pInfoBuffer;
@@ -1524,12 +1529,13 @@ void loop()
 	try {
 		updateAnimation(currentCraftBuffer.name, currentCraftBuffer.nameLength, currentCraftBuffer.downSignal, currentCraftBuffer.upSignal);
 	} catch(...) {
-		if (SHOW_SERIAL == 1) {
-			Serial.println("Error updating animation");
-		}
-		handleException();
+	if (SHOW_SERIAL == 1) {
+		Serial.println("Error updating animation");
 	}
+	handleException();
+}
 
+	
 	#if DIAG_MEASURE == 1
 		// Serial.print("Duration:"); Serial.print(millis() - displayDurationTimer); Serial.print(",");
 		// Serial.print("Delay:"); Serial.print(millis() - craftDelayTimer); Serial.print(",");
