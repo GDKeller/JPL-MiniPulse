@@ -6,10 +6,10 @@ AnimationUtils Animate::aUtilAnimate = AnimationUtils();
 
 void Animate::animateMeteor(Meteor* meteor)
 {
-	Adafruit_NeoPixel *&strip = meteor->rStrip;
+	CRGB* strip = meteor->rStrip;
 	int region = meteor->region;
 	int regionLength = meteor->regionLength;
-	uint32_t *pColor = meteor->pColor; 
+	CRGB pColor = meteor->pColor; 
 	int meteorSize = meteor->meteorSize;
 	bool meteorTrailDecay = meteor->meteorTrailDecay;
 	bool meteorRandomDecay = meteor->meteorRandomDecay;
@@ -19,7 +19,7 @@ void Animate::animateMeteor(Meteor* meteor)
 	int tailHueSaturation = meteor->tailHueSaturation;
 	int beginPixel = meteor->firstPixel;
 
-	uint32_t *pRepeatColor = pColor;
+	CRGB pRepeatColor = pColor;
 	int hue = degreeToSixteenbit(tailHueStart);
 
 	// First pixel of each region
@@ -49,43 +49,45 @@ void Animate::animateMeteor(Meteor* meteor)
 		}
 
 		if (d - 1 % 2 == 0) {
-			aUtilAnimate.setPixelColor(*strip, currentPixel, pRepeatColor);
+			// aUtilAnimate.setPixelColor(*strip, currentPixel, pRepeatColor);
+			strip[currentPixel] = pRepeatColor;
 			continue;
 		}
 
 		// Draw meteor
 		if (d < meteorSize + 1)
 		{
-			aUtilAnimate.setPixelColor(*strip, currentPixel, pColor);
+			// aUtilAnimate.setPixelColor(*strip, currentPixel, pColor);
+			strip[currentPixel] = pColor;
 			continue;
 		}
 
 
 		// Draw tail
 		uint8_t brightValue;
-		uint32_t trailColor;
-		if (meteorTrailDecay == true) {
-			int satExpo = ceil(tailHueSaturation * log(d + 1)); // Calculate logarithmic growth
-			satExpo += random(32) - 16;							// Add random variance to saturation
-			uint8_t satValue = satExpo > tailHueSaturation ? tailHueSaturation : (satExpo < 0 ? 0 : satExpo);
-			int brightExpo = ceil(255 * mPower(0.85, d)); // Calculate exponential decay
-			brightExpo += random(32) - 16;				  // Add randomvariance to brightness
-			uint8_t brightValue = brightExpo > 255 ? 255 : (brightExpo < 0 ? 0 : brightExpo);
-			int brightValueMap = map(brightValue, 0, 255, 0, AnimationUtils::brightness);
-			int randVal = (4 * d) * (4 * d);
-			int hueRandom = hue + (random(randVal) - (randVal / 2));
-			trailColor = strip->ColorHSV(hueRandom, satValue, brightValue);
-		} else {
-			// int satCalc = tailHueSaturation - (d * 16);
-			// satCalc += random(32) - 16;
-			// uint8_t satValue = satCalc < 0 ? 0 : satCalc;
-			int satValue = tailHueSaturation;
-			int brightCalc = 255 - (d * 16);
-			// brightCalc += random(32) - 16;
-			brightValue = brightCalc < 0 ? 0 : brightCalc;
-			trailColor = strip->ColorHSV(hue, satValue, brightValue);
-		}
-		uint32_t *pTrailColor = &trailColor;
+		CRGB trailColor;
+		// if (meteorTrailDecay == true) {
+		// 	int satExpo = ceil(tailHueSaturation * log(d + 1)); // Calculate logarithmic growth
+		// 	satExpo += random(32) - 16;							// Add random variance to saturation
+		// 	uint8_t satValue = satExpo > tailHueSaturation ? tailHueSaturation : (satExpo < 0 ? 0 : satExpo);
+		// 	int brightExpo = ceil(255 * mPower(0.85, d)); // Calculate exponential decay
+		// 	brightExpo += random(32) - 16;				  // Add randomvariance to brightness
+		// 	uint8_t brightValue = brightExpo > 255 ? 255 : (brightExpo < 0 ? 0 : brightExpo);
+		// 	int brightValueMap = map(brightValue, 0, 255, 0, AnimationUtils::brightness);
+		// 	int randVal = (4 * d) * (4 * d);
+		// 	int hueRandom = hue + (random(randVal) - (randVal / 2));
+		// 	trailColor = strip->ColorHSV(hueRandom, satValue, brightValue);
+		// } else {
+		// 	// int satCalc = tailHueSaturation - (d * 16);
+		// 	// satCalc += random(32) - 16;
+		// 	// uint8_t satValue = satCalc < 0 ? 0 : satCalc;
+		// 	int satValue = tailHueSaturation;
+		// 	int brightCalc = 255 - (d * 16);
+		// 	// brightCalc += random(32) - 16;
+		// 	brightValue = brightCalc < 0 ? 0 : brightCalc;
+		// 	trailColor = strip->ColorHSV(hue, satValue, brightValue);
+		// }
+		// uint32_t *pTrailColor = &trailColor;
 
 		// Cycle hue through time
 		// tailHueAdd == true ? hue += ceil(4096 * mPower(tailHueExponent, d)) : hue -= ceil(4096 * mPower(tailHueExponent, d));
@@ -93,18 +95,21 @@ void Animate::animateMeteor(Meteor* meteor)
 		// Make sure the pixel right after the meteor will get drawn so meteor values aren't repeated
 		if (d < (meteorSize + 1))
 		{
-			aUtilAnimate.setPixelColor(*strip, currentPixel, pTrailColor);
+			// aUtilAnimate.setPixelColor(*strip, currentPixel, pTrailColor);
+			strip[currentPixel] = trailColor;
 			continue;
 		}
 
 		// Roll the dice on showing each pixel for a "fizzle" effect
 		if (meteorRandomDecay == true) {
-			if (random(10) < 5) aUtilAnimate.setPixelColor(*strip, currentPixel, pTrailColor);
+			// if (random(10) < 5) aUtilAnimate.setPixelColor(*strip, currentPixel, trailColor);
+			if (random(10) < 5) strip[currentPixel] = trailColor;
 		} else {
-			aUtilAnimate.setPixelColor(*strip, currentPixel, pTrailColor);
+			// aUtilAnimate.setPixelColor(*strip, currentPixel, trailColor);
+			strip[currentPixel] = trailColor;
 		}
 
-		pRepeatColor = pTrailColor;
+		pRepeatColor = trailColor;
 
 		if (brightValue == 0) continue;
 	}

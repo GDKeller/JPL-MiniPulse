@@ -1,7 +1,7 @@
 #include <AnimationUtils.h>
 
 /* Initialize global brightness */
-int AnimationUtils::brightness = 255;
+int AnimationUtils::brightness = 16;
 
 AnimationUtils::AnimationUtils() {
   // be happy
@@ -20,7 +20,7 @@ AnimationUtils::AnimationUtils(int pin) {
 int AnimationUtils::readBrightness() {
 	//   int potValue = analogRead(potPin);
 	//   int potBrightness = map(potValue, 0, 4095, 127, 255);
-	int potBrightness = 255;
+	int potBrightness = 16;
 	return potBrightness;
 }
 
@@ -29,6 +29,7 @@ int AnimationUtils::readBrightness() {
 */
 void AnimationUtils::updateBrightness() {
   brightness = readBrightness();
+  FastLED.setBrightness(brightness);
 }
 
 /**

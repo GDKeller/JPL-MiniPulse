@@ -66,9 +66,10 @@ HTTPClient http;		// Used for fetching data
 
 /**
  * Color Theme
- *
- * 0 - Snow
- * 1 - Cyber
+ * ID - Name		(Letter/Meteor/Meteor tail)
+ * 0  - Snow		(White/white/blue tint)
+ * 1  - Cyber		(Teal/teal/blue tint)
+ * 2  - Valentine	(pink/pink/purple tint)
 */
 const uint8_t colorTheme = 0;
 
@@ -149,26 +150,34 @@ unsigned long lastUpdateP4 = 0;
 
 
 /* HARDWARDE */
-Adafruit_NeoPixel neopixel;
+// Adafruit_NeoPixel neopixel;
 
 // Define NeoPixel objects - NAME(PIXEL_COUNT, PIN, PIXEL_TYPE)
-Adafruit_NeoPixel
-	outer_pixels(outerPixelsTotal, OUTER_PIN, NEO_GRB + NEO_KHZ800),
-	middle_pixels(middlePixelsTotal, MIDDLE_PIN, NEO_GRB + NEO_KHZ800),
-	inner_pixels(innerPixelsTotal, INNER_PIN, NEO_GRB + NEO_KHZ800),
-	bottom_pixels(bottomPixelsTotal, BOTTOM_PIN, NEO_GRB + NEO_KHZ800);
+// Adafruit_NeoPixel
+// 	outer_pixels(outerPixelsTotal, OUTER_PIN, NEO_GRB + NEO_KHZ800),
+// 	middle_pixels(middlePixelsTotal, MIDDLE_PIN, NEO_GRB + NEO_KHZ800),
+// 	inner_pixels(innerPixelsTotal, INNER_PIN, NEO_GRB + NEO_KHZ800),
+// 	bottom_pixels(bottomPixelsTotal, BOTTOM_PIN, NEO_GRB + NEO_KHZ800);
 
-Adafruit_NeoPixel* allStrips[4] = {
-	&inner_pixels,	// ID: Green
-	&middle_pixels, // ID: Red
-	&outer_pixels,	// ID: Blue
-	&bottom_pixels, // ID: Purple
-};
+// Adafruit_NeoPixel* allStrips[4] = {
+// 	&inner_pixels,	// ID: Green
+// 	&middle_pixels, // ID: Red
+// 	&outer_pixels,	// ID: Blue
+// 	&bottom_pixels, // ID: Purple
+// };
 
-CRGB outer_leds[outerPixelsTotal];
-CRGB middle_leds[middlePixelsTotal];
+
 CRGB inner_leds[innerPixelsTotal];
+CRGB middle_leds[middlePixelsTotal];
+CRGB outer_leds[outerPixelsTotal];
 CRGB bottom_leds[bottomPixelsTotal];
+
+CRGB* allStrips[4] = {
+	inner_leds,	// ID: Green
+	middle_leds, // ID: Red
+	outer_leds,	// ID: Blue
+	bottom_leds, // ID: Purple
+};
 
 
 
@@ -393,7 +402,7 @@ void doLetterRegions(char theLetter, int regionStart, int startingPixel)
 	// 	}
 	// }
 
-	Adafruit_NeoPixel *&target = allStrips[0];
+	// Adafruit_NeoPixel *&target = allStrips[0];
 
 	const uint16_t regionOffset = innerPixelsChunkLength * regionStart;
 
@@ -468,35 +477,35 @@ void scrollLetters(const char * spacecraftName, int wordArraySize)
 
 // Create Meteor object
 void createMeteor(int strip, int region, bool directionDown = true,  int startPixel = 0) {
-	// uint32_t* meteorColor = currentColors.meteor;
+	CRGB::HTMLColorCode meteorColor = currentColors.meteor;
 
-	// for (int i = 0; i < 500; i++) {
-	// 	if (animate.ActiveMeteors[i] != nullptr) {
-	// 		// Serial.print("Could not create meteor #"); Serial.print(i); Serial.print(" startPixel: "); Serial.println(animate.ActiveMeteors[i]->firstPixel);
-	// 		continue;
-	// 	}
+	for (int i = 0; i < 500; i++) {
+		if (animate.ActiveMeteors[i] != nullptr) {
+			// Serial.print("Could not create meteor #"); Serial.print(i); Serial.print(" startPixel: "); Serial.println(animate.ActiveMeteors[i]->firstPixel);
+			continue;
+		}
 
-	// 	animate.ActiveMeteors[i] = new Meteor {
-	// 		directionDown,					// directionDown
-	// 		startPixel,						// firstPixel
-	// 		region,							// region
-	// 		(int) outerPixelsChunkLength,	// regionLength
-	// 		meteorColor,					// pColor
-	// 		1,								// meteorSize
-	// 		false,							// meteorTrailDecay
-	// 		false,							// meteorRandomDecay
-	// 		currentColors.tailHue,			// tailHueStart
-	// 		true,							// tailHueAdd
-	// 		0.75,							// tailHueExponent
-	// 		currentColors.tailSaturation,	// tailHueSaturation
-	// 		allStrips[strip]				// rStrip
-	// 	};
+		animate.ActiveMeteors[i] = new Meteor {
+			directionDown,					// directionDown
+			startPixel,						// firstPixel
+			region,							// region
+			(int) outerPixelsChunkLength,	// regionLength
+			meteorColor,					// pColor
+			1,								// meteorSize
+			false,							// meteorTrailDecay
+			false,							// meteorRandomDecay
+			currentColors.tailHue,			// tailHueStart
+			true,							// tailHueAdd
+			0.75,							// tailHueExponent
+			currentColors.tailSaturation,	// tailHueSaturation
+			allStrips[strip]				// rStrip
+		};
 
-	// 	break;
+		break;
 		
-	// }
+	}
 	
-	// if (animate.ActiveMeteorsSize > 499) animate.ActiveMeteorsSize = 0;
+	if (animate.ActiveMeteorsSize > 499) animate.ActiveMeteorsSize = 0;
 }
 
 void animationMeteorPulseRegion(
@@ -536,7 +545,8 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset) {
 	int stripId = isDown == true ? 2 : 1;
 
 	if (rateClass == 0) {
-		allStrips[stripId]->clear();
+		// allStrips[stripId]->clear();
+		FastLED.clear(allStrips[stripId]);
 		return;
 	}
 
@@ -574,11 +584,13 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset) {
 			animationMeteorPulseRegion(stripId, random(10), isDown, 0, pulseCount, 12, true);
 			break;
 		case 0:
-			allStrips[stripId]->clear();
+			// allStrips[stripId]->clear();
+			FastLED.clear(allStrips[stripId]);
 			// Serial.print("[Downsignal -- ]");
 			break;
 		default:
-			allStrips[stripId]->clear();
+			// allStrips[stripId]->clear();
+			FastLED.clear(allStrips[stripId]);
 			// Serial.print("[Downsignal n/a ]");			 
 	}
 }
@@ -610,13 +622,15 @@ void updateMeteors() {
  */
 void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int downSignalRate, int upSignalRate)
 {
+	Serial.print("FPS: "); Serial.println(FastLED.getFPS());
+
+
 	// Update brightness from potentiometer
 	au.updateBrightness();
 
 	/* Update Scrolling letters animation */
 	if (nameScrollDone == false) {
 		try {
-			Serial.println("Scrolling letters");
 			scrollLetters(spacecraftName, spacecraftNameSize);
 		} catch (...) {
 			Serial.println("Error in scrollLetters()");
@@ -624,27 +638,26 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 	}
 
 	// Fire meteors
-	// if (displayDurationTimer > 6000 && (millis() - animationTimer) > 3000) {
-	// 	// printMeteorArray();
-	// 	// animationMeteorPulseRing(2, true, 2, meteorOffset, true);
-	// 	// animationMeteorPulseRegion(2, 0, true, 0, 2, meteorOffset, true);
-	// 	// animationMeteorPulseRegion(2, 1, true, 0, 2, meteorOffset, true);
+	if (displayDurationTimer > 6000 && (millis() - animationTimer) > 3000) {
+		// printMeteorArray();
 
-	// 	if (nameScrollDone == false) {
-	// 		try {				
-	// 			doRateBasedAnimation(true, downSignalRate, meteorOffset);
-	// 			doRateBasedAnimation(false, upSignalRate, meteorOffset);				
-	// 		} catch (...) {
-	// 			Serial.println("Error in signal animation");
-	// 		}
-	// 	}
+		if (nameScrollDone == false) {
+			try {				
+				doRateBasedAnimation(true, downSignalRate, meteorOffset);
+				doRateBasedAnimation(false, upSignalRate, meteorOffset);				
+			} catch (...) {
+				Serial.println("Error in signal animation");
+			}
+		}
 
-	// 	animationTimer = millis(); // Reset meteor animation timer
-	// }
+		animationTimer = millis(); // Reset meteor animation timer
+	}
 
-	// drawMeteors(); // Assign new pixels for meteors
+	drawMeteors(); // Assign new pixels for meteors
 	allStripsShow(); // Illuminate LEDs
-	// updateMeteors(); // Update first pixel location for all active Meteors in array
+	updateMeteors(); // Update first pixel location for all active Meteors in array
+
+	FastLED.countFPS();
 }
 
 unsigned int rateLongToRateClass(unsigned long rate) {
@@ -1250,6 +1263,7 @@ void setup()
 	// {
 	// 	allStrips[i]->setBrightness(BRIGHTNESS);
 	// }
+	FastLED.setBrightness(BRIGHTNESS);
 
 	// allStripsOff();	// Turn off all NeoPixels
 	
@@ -1342,12 +1356,14 @@ void setup()
 
 	
 
+	// CRGB* stuff = allStrips[2];
+
 	// for(int dot = 0; dot < outerPixelsTotal; dot++) { 
-	// 	outer_leds[dot] = CRGB::Blue;
+	// 	stuff[dot] = CRGB::Purple;
 	// 	FastLED.show();
 	// 	// clear this led for the next time around the loop
-	// 	if (dot > 0) outer_leds[dot - 1] = CRGB::Black;
-	// 	delay(30);
+	// 	if (dot > 0) stuff[dot - 1] = CRGB::Black;
+	// 	// delay(30);
 	// }
 
 

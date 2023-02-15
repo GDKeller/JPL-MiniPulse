@@ -20,7 +20,7 @@
 
 struct ColorTheme {
     CRGB letter;
-    CRGB meteor;
+    CRGB::HTMLColorCode meteor;
     uint16_t tailHue;
     uint8_t tailSaturation;
 };
@@ -30,7 +30,7 @@ struct Meteor {
     int firstPixel;
     int region;
     int regionLength;
-    uint32_t *pColor;
+    CRGB::HTMLColorCode pColor;
     int meteorSize;
     bool meteorTrailDecay;
     bool meteorRandomDecay;
@@ -38,7 +38,7 @@ struct Meteor {
     bool tailHueAdd;
     double tailHueExponent;
     int tailHueSaturation;
-    Adafruit_NeoPixel *&rStrip;
+    CRGB *&rStrip;
 };
 
 class Animate {
