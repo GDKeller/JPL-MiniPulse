@@ -7,6 +7,10 @@
 #include <Adafruit_NeoPixel.h>
 #endif
 
+#ifndef FASTLED_H
+#include <FastLED.h>
+#endif
+
 #ifndef ANIMATIONUTILS_H
 #include <AnimationUtils.h>
 #endif
@@ -15,8 +19,8 @@
 #define ANIMATE_H
 
 struct ColorTheme {
-    uint32_t* letter;
-    uint32_t* meteor;
+    CRGB letter;
+    CRGB meteor;
     uint16_t tailHue;
     uint8_t tailSaturation;
 };
