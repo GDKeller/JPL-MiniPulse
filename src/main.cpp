@@ -85,7 +85,15 @@ uint8_t noTargetLimit = 3;				// After target is not found this many times, swit
 uint8_t retryDataFetchCounter = 0;		// Keeps track of how many times data fetch failed
 uint8_t retryDataFetchLimit = 10;		// After dummy data is used this many times, try to get actual data again
 bool dataStarted = false;
-WiFiManagerParameter custom_field; // global param ( for non blocking w params )
+WiFiManagerParameter field_color_theme; // global param ( for non blocking w params )
+WiFiManagerParameter field_meteor_tail_decay; // global param ( for non blocking w params )
+WiFiManagerParameter field_meteor_tail_random; // global param ( for non blocking w params )
+
+uint16_t wmTimout = 120;
+unsigned long wmStartTime = millis();
+bool portalRunning = false;
+bool startAP = false;			// start AP and webserver if true, else start only webserver
+
 
 // Time is measured in milliseconds and will become a bigger number
 // than can be stored in an int, so long is used
@@ -144,12 +152,8 @@ int letterTotalPixels = 28;
 // Do not change these
 
 uint8_t fpsInMs = 1000 / FPS;
-
-// Init reference variables for when last update occurred
-unsigned long lastUpdateP1 = 0;
-unsigned long lastUpdateP2 = 0;
-unsigned long lastUpdateP3 = 0;
-unsigned long lastUpdateP4 = 0;
+bool meteorTailDecay = false;
+bool meteorTailRandom = false;
 
 
 
@@ -315,17 +319,53 @@ void checkWifiButton(){
       
       // start portal w delay
       Serial.println("Starting config portal");
-      wm.setConfigPortalTimeout(120);
-      
-      if (!wm.startConfigPortal(AP_SSID)) {
-        Serial.println("failed to connect or hit timeout");
-        delay(3000);
-        // ESP.restart();
-      } else {
-        //if you get here you have connected to the WiFi
-        Serial.println("Connected to WiFi)");
-      }
+    //   wm.setConfigPortalTimeout(120);
+	  try {
+		if (!wm.startConfigPortal(AP_SSID, AP_PASS)) {
+			Serial.println("Failed to connect or hit timeout");
+			delay(3000);
+			// ESP.restart();
+		} else {
+			//if you get here you have connected to the WiFi
+			Serial.println("Connected to WiFi)");
+		}
+	  } catch (...) {
+		  handleException();
+	  }
     }
+  }
+}
+void doWiFiManager(){
+  // is auto timeout portal running
+  if(portalRunning){
+    wm.process(); // do processing
+
+    // check for timeout
+    if((millis() - wmStartTime) > (wmTimout * 1000)){
+      Serial.println("portaltimeout");
+      portalRunning = false;
+      if(startAP){
+        wm.stopConfigPortal();
+      }
+      else{
+        wm.stopWebPortal();
+      } 
+   }
+  }
+
+  // is configuration portal requested?
+  if(digitalRead(WIFI_RST) == LOW && (!portalRunning)) {
+    if(startAP){
+      Serial.println("Button Pressed, Starting Config Portal");
+      wm.setConfigPortalBlocking(false);
+      wm.startConfigPortal(AP_SSID, AP_PASS);
+    }  
+    else{
+      Serial.println("Button Pressed, Starting Web Portal");
+      wm.startWebPortal();
+    }  
+    portalRunning = true;
+    wmStartTime = millis();
   }
 }
 
@@ -385,29 +425,7 @@ uint32_t brightnessAdjust(uint32_t color)
 // Display letter from array
 void doLetterRegions(char theLetter, int regionStart, int startingPixel)
 {
-	// CHSV letterColor = currentColors.letter;
-
 	const int *ledCharacter = textCharacter.getCharacter(theLetter);
-	// CHSV character_array[letterTotalPixels] = {};
-
-	// // Map character array to LED colors
-	// for (int i = 0; i < letterTotalPixels; i++)
-	// {
-	// 	switch (ledCharacter[i])
-	// 	{
-	// 	case 0:
-	// 		character_array[i] = CHSV::Black;
-	// 		break;
-	// 	case 1:
-	// 		character_array[i] = letterColor;
-	// 		break;
-	// 	default:
-	// 		character_array[i] = CHSV::Black;
-	// 	}
-	// }
-
-	// Adafruit_NeoPixel *&target = allStrips[0];
-
 	const uint16_t regionOffset = innerPixelsChunkLength * regionStart;
 
 	int16_t pixel = 0 + startingPixel + regionOffset;
@@ -496,8 +514,8 @@ void createMeteor(int strip, int region, bool directionDown = true,  int startPi
 			(int) outerPixelsChunkLength,	// regionLength
 			meteorColor,					// pColor
 			1,								// meteorSize
-			false,							// meteorTrailDecay
-			false,							// meteorRandomDecay
+			meteorTailDecay,				// meteorTrailDecay
+			meteorTailRandom,				// meteorRandomDecay
 			currentColors.tailHue,			// tailHueStart
 			true,							// tailHueAdd
 			0.75,							// tailHueExponent
@@ -626,7 +644,7 @@ void updateMeteors() {
  */
 void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int downSignalRate, int upSignalRate)
 {
-	Serial.print("FPS: "); Serial.println(FastLED.getFPS());
+	// Serial.print("FPS: "); Serial.println(FastLED.getFPS());
 
 
 	// Update brightness from potentiometer
@@ -1022,6 +1040,8 @@ void fetchData() {
 	// Serial.print("WiFi Status: ");
 	// Serial.println(WiFi.status());
 
+	uint16_t httpResponseCode;
+
 	// Check WiFi connection status
 	if (WiFi.status() != WL_CONNECTED) {
 		if (SHOW_SERIAL == 1) Serial.println("WiFi Disconnected");
@@ -1035,41 +1055,44 @@ void fetchData() {
 		// Serial.print("Connected to WiFi network with IP Address: ");
 		// Serial.println(WiFi.localIP());
 
-		return;
+		usingDummyData = true;
 	}
 
+	if (usingDummyData == false) {
 	
-	try {
-		memset(fetchUrl, 0, sizeof(fetchUrl));		// set fetchUrl to empty
-		strcpy(fetchUrl, serverName);				// copy serverName to fetchUrl
-		char randBuffer[9];							// buffer for random number cache buster
-		ltoa(random(999999999), randBuffer, 10);	// convert random number to string
-		strcat(fetchUrl, randBuffer);				// append random number to fetchUrl
-	} catch (...) {
-		handleException();
-	}
-
-	if (SHOW_SERIAL == 1) {
-		// print fetchUrl
-		Serial.print(termColor("purple"));
-		Serial.print("fetchUrl: ");
-		Serial.println(fetchUrl);
-
-		Serial.println(termColor("reset"));
-	}
-
-	// Use WiFiClient class to create TCP connections
-	if (!http.begin(fetchUrl)) {
-		if (SHOW_SERIAL == 1) {
-			Serial.println("Failed to connect to server");
+		try {
+			memset(fetchUrl, 0, sizeof(fetchUrl));		// set fetchUrl to empty
+			strcpy(fetchUrl, serverName);				// copy serverName to fetchUrl
+			char randBuffer[9];							// buffer for random number cache buster
+			ltoa(random(999999999), randBuffer, 10);	// convert random number to string
+			strcat(fetchUrl, randBuffer);				// append random number to fetchUrl
+		} catch (...) {
+			handleException();
 		}
-		return;
-	}
 
-	// Send HTTP GET request
-	http.setTimeout(10000);
-	http.addHeader("Content-Type", "text/xml");
-	int httpResponseCode = http.GET();
+		if (SHOW_SERIAL == 1) {
+			// print fetchUrl
+			Serial.print(termColor("purple"));
+			Serial.print("fetchUrl: ");
+			Serial.println(fetchUrl);
+
+
+			Serial.println(termColor("reset"));
+		}
+
+		// Use WiFiClient class to create TCP connections
+		if (!http.begin(fetchUrl)) {
+			if (SHOW_SERIAL == 1) {
+				Serial.println("Failed to connect to server");
+			}
+			return;
+		}
+
+		// Send HTTP GET request
+		http.setTimeout(10000);
+		http.addHeader("Content-Type", "text/xml");
+		httpResponseCode = http.GET();
+	}
 
 	if (SHOW_SERIAL == 1) {
 		Serial.print("Using dummy data? ");
@@ -1145,8 +1168,6 @@ void getData(void *parameter)
 
 	for (;;)
 	{
-		checkWifiButton();
-
 		// Send an HTTP POST request every 5 seconds
 		if ((millis() - lastTime) > timerDelay) {
 			if (uxQueueSpacesAvailable( queue ) > 0) {
@@ -1156,6 +1177,8 @@ void getData(void *parameter)
 		}
 	}
 }
+
+
 
 
 String getParam(String name){
@@ -1179,9 +1202,7 @@ void saveColorThemeCallback() {
 		setColorTheme(colorThemeId);
 	} catch (...) {
 		handleException();
-	}
-
-	
+	}	
 }
 
 
@@ -1191,6 +1212,7 @@ void setup()
 	Serial.begin(115200); // Begin serial communications, ESP32 uses 115200 rate
 
 	WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
+	Serial.println("Starting...");
 
 	// reset settings - wipe stored credentials for testing
 	// these are stored by the esp library
@@ -1201,50 +1223,6 @@ void setup()
 		wm.setDebugOutput(false);
 	#endif
 
-
-	
-	// test custom html(radio)
-	const char* custom_radio_str = "<br/><label for='customfieldid'>Custom Field Label</label><br/><input type='radio' name='customfieldid' value='0' checked> Snow<br><input type='radio' name='customfieldid' value='1'> Cyber<br><input type='radio' name='customfieldid' value='2'> Valentine";
-	new (&custom_field) WiFiManagerParameter(custom_radio_str); // custom html input
-	
-	wm.addParameter(&custom_field);
-	wm.setSaveParamsCallback(saveColorThemeCallback);
-	 std::vector<const char *> menu = {"wifi","info","param","sep","restart","exit"};
-	wm.setMenu(menu);
-
-	// set dark theme
-	wm.setClass("invert");
-
-
-	wm.setCleanConnect(true);
-	wm.setConnectRetries(5);
-	wm.setConnectTimeout(30); // connect attempt fails after n seconds
-	// wm.setSaveConnectTimeout(5);
-	wm.setConfigPortalTimeout(120);
-
-	// Automatically connect using saved credentials,
-	// if connection fails, it starts an access point with the specified name ( "AutoConnectAP"),
-	// if empty will auto generate SSID, if password is blank it will be anonymous AP (wm.autoConnect())
-	// then goes into a blocking loop awaiting configuration and will return success result
-
-	bool res;
-	res = wm.autoConnect(AP_SSID, AP_PASS); // non-password protected ap
-
-	if(!res) {
-		Serial.println("Failed to connect");
-		ESP.restart();
-	} 
-	else {
-		//if you get here you have connected to the WiFi    
-		Serial.println("Connected to WiFi");
-	}
-
-
-	if (TEST_CORES == 1)
-	{
-		Serial.print("setup() running on core ");
-		Serial.println(xPortGetCoreID());
-	}
 
 	// Set up pins
 	pinMode(OUTER_PIN, OUTPUT);
@@ -1358,6 +1336,8 @@ void setup()
 	FastLED.addLeds<NEOPIXEL, INNER_PIN>(inner_leds, innerPixelsTotal);
 	FastLED.addLeds<NEOPIXEL, BOTTOM_PIN>(bottom_leds, bottomPixelsTotal);
 
+	allStripsOff();
+
 	
 
 	// CHSV* stuff = allStrips[2];
@@ -1371,6 +1351,68 @@ void setup()
 	// }
 
 
+
+	wm.setConfigPortalBlocking(false);
+	// test custom html(radio)
+	const char* custom_radio_str = "<br/><label for='customfieldid'>Color Theme</label><br/><input type='radio' name='customfieldid' value='0' checked> Snow<br><input type='radio' name='customfieldid' value='1'> Cyber<br><input type='radio' name='customfieldid' value='2'> Valentine";
+	const char* meteor_decay_checkbox_str = "<br/><label for='meteorDecay'>Meteor Decay</label><br/><input type='checkbox' name='meteorDecay' value='0'>";
+	const char* meteor_random_checkbox_str = "<br/><label for='meteorRandom'>Meteor Tail</label><br/><input type='checkbox' name='meteorRandom' value='0'>";
+	new (&field_color_theme) WiFiManagerParameter(custom_radio_str); // custom html input
+	new (&field_meteor_tail_decay) WiFiManagerParameter(meteor_decay_checkbox_str); // custom html input
+	new (&field_meteor_tail_random) WiFiManagerParameter(meteor_random_checkbox_str); // custom html input
+
+	wm.addParameter(&field_color_theme);
+	wm.addParameter(&field_meteor_tail_decay);
+	wm.addParameter(&field_meteor_tail_random);
+	wm.setSaveParamsCallback(saveColorThemeCallback);
+	 std::vector<const char *> menu = {"wifi","info","param","sep","restart","exit"};
+	wm.setMenu(menu);
+
+	// set dark theme
+	wm.setClass("invert");
+
+
+	wm.setCleanConnect(true);
+	wm.setConnectRetries(5);
+	wm.setConnectTimeout(10); // connect attempt fails after n seconds
+	
+	// wm.setSaveConnectTimeout(5);
+	wm.setConfigPortalTimeout(120);
+	
+	// wm.startConfigPortal(AP_SSID, AP_PASS);
+
+	// Automatically connect using saved credentials,
+	// if connection fails, it starts an access point with the specified name ( AP_SSID ),
+	// if AP_PASSWORD is empty it will be a non-protected AP
+	// then goes into a blocking loop awaiting configuration and will return success result
+
+	Serial.println("Saved WiFi credentials? "); Serial.println(wm.getWiFiIsSaved());
+	if (wm.getWiFiIsSaved() == true) {
+		bool res;
+		res = wm.autoConnect(AP_SSID, AP_PASS); // non-password protected ap
+
+		if(!res) {
+			Serial.println("Failed to connect");
+			// ESP.restart();
+			// wm.startConfigPortal(AP_SSID, AP_PASS);
+		} 
+		else {
+			//if you get here you have connected to the WiFi    
+			Serial.println("Connected to WiFi");
+		}
+	} else {
+		wm.startConfigPortal(AP_SSID, AP_PASS);
+	    wm.startWebPortal();
+		portalRunning = true;
+		wmStartTime = millis();
+	}
+
+
+	if (TEST_CORES == 1)
+	{
+		Serial.print("setup() running on core ");
+		Serial.println(xPortGetCoreID());
+	}
 
 
 
@@ -1421,7 +1463,14 @@ void loop()
 		}
 	}
 
-	
+	try {
+		doWiFiManager();
+		
+	} catch (...) {
+		handleException();
+	}
+	checkWifiButton();
+
 	if ((dataStarted == true && nameScrollDone == true && millis() - displayDurationTimer > displayMinDuration && millis() - craftDelayTimer > craftDelay)) {
 		CraftQueueItem infoBuffer;	// Create buffer to hold data from queue
 		CraftQueueItem* pInfoBuffer;
