@@ -32,6 +32,7 @@ using namespace std;			// C++ I/O
 #define BRIGHTNESS 16			// Global brightness value. 8bit, 0-255
 #define POTENTIOMETER 32		// Brightness potentiometer pin
 #define FPS 30					// Frames per second
+uint8_t fpsRate = 30;
 #pragma endregion
 
 
@@ -88,6 +89,7 @@ bool dataStarted = false;
 WiFiManagerParameter field_color_theme; // global param ( for non blocking w params )
 WiFiManagerParameter field_meteor_tail_decay; // global param ( for non blocking w params )
 WiFiManagerParameter field_meteor_tail_random; // global param ( for non blocking w params )
+WiFiManagerParameter field_global_fps;
 
 uint16_t wmTimout = 120;
 unsigned long wmStartTime = millis();
@@ -151,7 +153,7 @@ int letterTotalPixels = 28;
 /* ANIMATION UTILITIES */
 // Do not change these
 
-uint8_t fpsInMs = 1000 / FPS;
+uint8_t fpsInMs = 1000 / fpsRate;
 bool meteorTailDecay = false;
 bool meteorTailRandom = false;
 
@@ -212,12 +214,24 @@ void setColorTheme(uint8_t colorTheme) {
 			currentColors.tailHue = 192;
 			currentColors.tailSaturation = 255;
 			break;
+		case 3:
+			currentColors.letter = mpColors.white.value;
+			currentColors.meteor = mpColors.white.value;
+			currentColors.tailHue = 160;
+			currentColors.tailSaturation = 0;
+			break;
 		default:
 			currentColors.letter = mpColors.white.value;
 			currentColors.meteor = mpColors.white.value;
 			currentColors.tailHue = 160;
 			currentColors.tailSaturation = 127;
 	}
+}
+
+void setAnimationParams(uint8_t newGlobalFps, bool newMeteorTailDecay, bool newMeteorTailRandom) {
+	fpsRate = newGlobalFps;
+	meteorTailDecay = newMeteorTailDecay == 1 ? 1 : 0;
+	meteorTailRandom = newMeteorTailRandom == 1 ? 1 : 0;
 }
 
 const char* termColor(const char* color) {
@@ -301,40 +315,6 @@ void printMeteorArray() {
 }
 
 // Force Wifi portal when WiFi reset button is pressed
-void checkWifiButton(){
-  // check for button press
-  if ( digitalRead(WIFI_RST) == LOW ) {
-    // poor mans debounce/press-hold to prevent accidental trigger
-    delay(50);
-    if( digitalRead(WIFI_RST) == LOW ){
-      Serial.println("WiFi Reset button pressed");
-      // still holding button for 3000 ms, reset settings
-      delay(3000); // reset delay hold
-      if( digitalRead(WIFI_RST) == LOW ){
-        Serial.println("Button Held");
-        Serial.println("Erasing Config, restarting");
-        wm.resetSettings();
-        ESP.restart();
-      }
-      
-      // start portal w delay
-      Serial.println("Starting config portal");
-    //   wm.setConfigPortalTimeout(120);
-	  try {
-		if (!wm.startConfigPortal(AP_SSID, AP_PASS)) {
-			Serial.println("Failed to connect or hit timeout");
-			delay(3000);
-			// ESP.restart();
-		} else {
-			//if you get here you have connected to the WiFi
-			Serial.println("Connected to WiFi)");
-		}
-	  } catch (...) {
-		  handleException();
-	  }
-    }
-  }
-}
 void doWiFiManager(){
   // is auto timeout portal running
   if(portalRunning){
@@ -676,7 +656,7 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 	}
 
 	drawMeteors(); // Assign new pixels for meteors
-	FastLED.delay(1000/FPS);
+	FastLED.delay(1000/fpsRate);
 	updateMeteors(); // Update first pixel location for all active Meteors in array
 
 	FastLED.countFPS();
@@ -1179,7 +1159,9 @@ void getData(void *parameter)
 }
 
 
-
+struct wmParams {
+	String customfieldid;
+};
 
 String getParam(String name){
 	//read parameter from server, for customhmtl input
@@ -1194,12 +1176,24 @@ String getParam(String name){
 void saveColorThemeCallback() {
 	try {
 		String colorTheme = getParam("customfieldid");
+		String inputMeteorTailDecay = getParam("meteorDecay");
+		String inputMeteorTailRandom = getParam("meteorRandom");
+		String inputGlobalFps = getParam("globalFps");
 		const int colorThemeId = atoi(colorTheme.c_str());
+		const int inputMeteorTailDecayValue = strcmp(inputMeteorTailDecay.c_str(), "on") == 0 ? 1 : 0;
+		const int inputMeteorTailRandomValue = strcmp(inputMeteorTailRandom.c_str(), "on") == 0 ? 1 : 0;
+		const int inputGlobalFpsValue = atoi(inputGlobalFps.c_str());
 
 		Serial.println("[CALLBACK] saveColorThemeCallback fired");
 		Serial.print("PARAM customfieldid = "); Serial.println(colorTheme);
+		Serial.print("PARAM meteorDecay = "); Serial.println(inputMeteorTailDecay);
+		Serial.print("PARAM meteorDecay = "); Serial.println(inputMeteorTailDecayValue);
+		Serial.print("PARAM meteorDecay = "); Serial.println(inputMeteorTailRandom);
+		Serial.print("PARAM meteorRandom = "); Serial.println(inputMeteorTailRandomValue);
+		Serial.print("PARAM globalFps = "); Serial.println(inputGlobalFpsValue);
 
 		setColorTheme(colorThemeId);
+		setAnimationParams(inputGlobalFpsValue, inputMeteorTailDecayValue, inputMeteorTailRandomValue);
 	} catch (...) {
 		handleException();
 	}	
@@ -1354,16 +1348,19 @@ void setup()
 
 	wm.setConfigPortalBlocking(false);
 	// test custom html(radio)
-	const char* custom_radio_str = "<br/><label for='customfieldid'>Color Theme</label><br/><input type='radio' name='customfieldid' value='0' checked> Snow<br><input type='radio' name='customfieldid' value='1'> Cyber<br><input type='radio' name='customfieldid' value='2'> Valentine";
-	const char* meteor_decay_checkbox_str = "<br/><label for='meteorDecay'>Meteor Decay</label><br/><input type='checkbox' name='meteorDecay' value='0'>";
-	const char* meteor_random_checkbox_str = "<br/><label for='meteorRandom'>Meteor Tail</label><br/><input type='checkbox' name='meteorRandom' value='0'>";
+	const char* custom_radio_str = "<br/><label for='customfieldid'>Color Theme</label><br/><input type='radio' name='customfieldid' value='0' checked> Snow<br><input type='radio' name='customfieldid' value='1'> Cyber<br><input type='radio' name='customfieldid' value='2'> Valentine<br><input type='radio' name='customfieldid' value='3'> White";
+	const char* meteor_decay_checkbox_str = "<br/><label for='meteorDecay'>Meteor Decay</label><br/><input type='checkbox' name='meteorDecay'>";
+	const char* meteor_random_checkbox_str = "<br/><label for='meteorRandom'>Meteor Tail</label><br/><input type='checkbox' name='meteorRandom'>";
+	const char* global_fps_str = "<br/><label for='globalFps'>Global FPS</label><br/><input type='number' name='globalFps' min='10' max='120' value='30'>";
 	new (&field_color_theme) WiFiManagerParameter(custom_radio_str); // custom html input
 	new (&field_meteor_tail_decay) WiFiManagerParameter(meteor_decay_checkbox_str); // custom html input
 	new (&field_meteor_tail_random) WiFiManagerParameter(meteor_random_checkbox_str); // custom html input
+	new (&field_global_fps) WiFiManagerParameter(global_fps_str); // custom html input
 
 	wm.addParameter(&field_color_theme);
 	wm.addParameter(&field_meteor_tail_decay);
 	wm.addParameter(&field_meteor_tail_random);
+	wm.addParameter(&field_global_fps);
 	wm.setSaveParamsCallback(saveColorThemeCallback);
 	 std::vector<const char *> menu = {"wifi","info","param","sep","restart","exit"};
 	wm.setMenu(menu);
@@ -1469,7 +1466,6 @@ void loop()
 	} catch (...) {
 		handleException();
 	}
-	checkWifiButton();
 
 	if ((dataStarted == true && nameScrollDone == true && millis() - displayDurationTimer > displayMinDuration && millis() - craftDelayTimer > craftDelay)) {
 		CraftQueueItem infoBuffer;	// Create buffer to hold data from queue
