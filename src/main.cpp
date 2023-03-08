@@ -107,9 +107,10 @@ unsigned long lastTime = 0;				// Init reference variable for timer
 unsigned long timerDelay = 10000;		// Timer for how often to fetch data
 unsigned long animationTimer = 0;
 unsigned long craftDelayTimer = 0;
-unsigned long craftDelay = 3000;	// Wait this long after finishing for new craft to be dipslayed
-unsigned long displayMinDuration = 20000;	// Minimum time to display a craft before switching to next craft
-unsigned long displayDurationTimer = 20000;		// Timer to keep track of how long craft has been displayed, set at minimum for no startup delay
+unsigned long craftDelay = 5000;	// Wait this long after finishing for new craft to be dipslayed
+unsigned long displayMinDuration = 1000;	// Minimum time to display a craft before switching to next craft
+unsigned long displayDurationTimer = 1000;		// Timer to keep track of how long craft has been displayed, set at minimum for no startup delay
+unsigned long textMeteorGap = 6000;
 const uint8_t meteorOffset = 32;
 const uint8_t offsetHalf = meteorOffset * 0.5;
 
@@ -641,7 +642,7 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 	}
 
 	// Fire meteors
-	if (displayDurationTimer > 6000 && (millis() - animationTimer) > 3000) {
+	if (displayDurationTimer > displayMinDuration && (millis() - animationTimer) > textMeteorGap) {
 		// printMeteorArray();
 
 		if (nameScrollDone == false) {
