@@ -69,9 +69,10 @@ HTTPClient http;		// Used for fetching data
 /**
  * Color Theme
  * ID - Name		(Letter/Meteor/Meteor tail)
- * 0  - Snow		(White/white/blue tint)
+ * 0  - White		(White/white/white tint)
  * 1  - Cyber		(Teal/teal/blue tint)
  * 2  - Valentine	(pink/pink/purple tint)
+ * 3  - Moonlight	(white/white/blue tint)
 */
 const uint8_t colorTheme = 0;
 
@@ -200,7 +201,7 @@ void setColorTheme(uint8_t colorTheme) {
 			currentColors.letter = mpColors.white.value;
 			currentColors.meteor = mpColors.white.value;
 			currentColors.tailHue = 160;
-			currentColors.tailSaturation = 127;
+			currentColors.tailSaturation = 0;
 			break;
 		case 1:
 			currentColors.letter = mpColors.aqua.value;
@@ -218,7 +219,7 @@ void setColorTheme(uint8_t colorTheme) {
 			currentColors.letter = mpColors.white.value;
 			currentColors.meteor = mpColors.white.value;
 			currentColors.tailHue = 160;
-			currentColors.tailSaturation = 0;
+			currentColors.tailSaturation = 127;
 			break;
 		default:
 			currentColors.letter = mpColors.white.value;
@@ -1348,7 +1349,7 @@ void setup()
 
 	wm.setConfigPortalBlocking(false);
 	// test custom html(radio)
-	const char* custom_radio_str = "<br/><label for='customfieldid'>Color Theme</label><br/><input type='radio' name='customfieldid' value='0' checked> Snow<br><input type='radio' name='customfieldid' value='1'> Cyber<br><input type='radio' name='customfieldid' value='2'> Valentine<br><input type='radio' name='customfieldid' value='3'> White";
+	const char* custom_radio_str = "<br/><label for='customfieldid'>Color Theme</label><br/><input type='radio' name='customfieldid' value='0' checked> White<br><input type='radio' name='customfieldid' value='1'> Cyber<br><input type='radio' name='customfieldid' value='2'> Valentine<br><input type='radio' name='customfieldid' value='3'> Moonlight";
 	const char* meteor_decay_checkbox_str = "<br/><label for='meteorDecay'>Meteor Decay</label><br/><input type='checkbox' name='meteorDecay'>";
 	const char* meteor_random_checkbox_str = "<br/><label for='meteorRandom'>Meteor Tail</label><br/><input type='checkbox' name='meteorRandom'>";
 	const char* global_fps_str = "<br/><label for='globalFps'>Global FPS</label><br/><input type='number' name='globalFps' min='10' max='120' value='30'>";
