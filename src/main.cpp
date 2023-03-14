@@ -18,7 +18,7 @@
 /* NAMESPACES */
 using namespace tinyxml2;		// XML parser
 using namespace std;			// C++ I/O
- 
+
 /* HARDWARE CONFIG */
 #pragma region
 #define AP_SSID "MiniPulse"		// WiFi AP SSID
@@ -31,8 +31,8 @@ using namespace std;			// C++ I/O
 #define OUTPUT_ENABLE 22		// Output enable pin
 #define BRIGHTNESS 16			// Global brightness value. 8bit, 0-255
 #define POTENTIOMETER 32		// Brightness potentiometer pin
-#define FPS 30					// Frames per second
-uint8_t fpsRate = 30;
+#define FPS 60					// Frames per second
+uint8_t fpsRate = 60;
 #pragma endregion
 
 
@@ -158,6 +158,17 @@ int letterTotalPixels = 28;
 uint8_t fpsInMs = 1000 / fpsRate;
 bool meteorTailDecay = false;
 bool meteorTailRandom = false;
+
+uint8_t counterHalfSpeed = 1;
+uint8_t counterThirdSpeed = 1;
+uint8_t counterQuarterSpeed = 1;
+
+void updateSpeedCounters() {
+	counterHalfSpeed == 2 ? counterHalfSpeed = 1 : counterHalfSpeed++;
+	counterThirdSpeed == 3 ? counterThirdSpeed = 1 : counterThirdSpeed++;
+	counterQuarterSpeed == 4 ? counterQuarterSpeed = 1 : counterQuarterSpeed++;	
+}
+
 
 
 
@@ -633,7 +644,7 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 	au.updateBrightness();
 
 	/* Update Scrolling letters animation */
-	if (nameScrollDone == false) {
+	if (nameScrollDone == false && counterHalfSpeed == 1) {
 		try {
 			scrollLetters(spacecraftName, spacecraftNameSize);
 		} catch (...) {
@@ -662,6 +673,7 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 	updateMeteors(); // Update first pixel location for all active Meteors in array
 
 	FastLED.countFPS();
+	updateSpeedCounters();
 }
 
 unsigned int rateLongToRateClass(unsigned long rate) {
