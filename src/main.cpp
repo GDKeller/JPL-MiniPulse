@@ -31,8 +31,8 @@ using namespace std;			// C++ I/O
 #define OUTPUT_ENABLE 22		// Output enable pin
 #define BRIGHTNESS 16			// Global brightness value. 8bit, 0-255
 #define POTENTIOMETER 32		// Brightness potentiometer pin
-#define FPS 60					// Frames per second
-uint8_t fpsRate = 60;
+#define FPS 90					// Frames per second
+uint8_t fpsRate = 90;
 #pragma endregion
 
 
@@ -125,7 +125,6 @@ int parseCounter = 0;
 
 // Holds current craft to be animated
 static CraftQueueItem currentCraftBuffer;
-static bool nameScrollDone = true;
 
 /* LED HARDWARE CONFIG */
 // Totaly number of pixels (diodes) in each strip
@@ -168,6 +167,13 @@ void updateSpeedCounters() {
 	counterThirdSpeed == 3 ? counterThirdSpeed = 1 : counterThirdSpeed++;
 	counterQuarterSpeed == 4 ? counterQuarterSpeed = 1 : counterQuarterSpeed++;	
 }
+
+
+static bool nameScrollDone = true;
+static bool animationTypeSetDown = false;
+static bool animationTypeSetUp = false;
+static uint8_t animationTypeDown = 0;
+static uint8_t animationTypeUp = 0;
 
 
 
@@ -483,6 +489,8 @@ void scrollLetters(const char * spacecraftName, int wordArraySize)
 		startPixel = 0;
 		if (millis() - displayDurationTimer > displayMinDuration) {
 			nameScrollDone = true;
+			animationTypeSetDown = false;
+			animationTypeSetUp = false;
 			craftDelayTimer = millis();
 		}
 	}
@@ -556,8 +564,25 @@ void animationMeteorPulseRing(
 	}
 }
 
-void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset) {
+void animationSpiralPulseRing(
+	uint8_t strip,
+	bool directionDown = true,
+	uint8_t pulseCount = 2,
+	int8_t offset = 0,
+	bool randomizeOffset = false)
+{
+	uint8_t spiralMultiplier = 3;
+
+	for (int i = 0; i < outerChunks; i++) {
+		animationMeteorPulseRegion(strip, i, directionDown, (i * spiralMultiplier * -1), 5, ((outerChunks + 1) * spiralMultiplier), false);
+	}
+}
+
+void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_t type) {
+	Serial.print("type: "); Serial.println(type);
+	Serial.print("rateClass: "); Serial.println(rateClass);
 	int stripId = isDown == true ? 2 : 1;
+	int pulseCount = 1;
 
 	if (rateClass == 0) {
 		// allStrips[stripId]->clear();
@@ -565,48 +590,116 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset) {
 		return;
 	}
 
-	int pulseCount = 1;
-
-	switch(rateClass) {
-		case 6:	// 1gbps
-			pulseCount = 5;
-			// Serial.print("[Downsignal Gb]");
-			animationMeteorPulseRing(stripId, isDown, pulseCount, offset, true);
-			break;
-		case 5:	// 1mbps
-			pulseCount = 4;
-			// Serial.print("[Downsignal kb]");
-			animationMeteorPulseRing(stripId, isDown, pulseCount, offset, true);
-			break;
-		case 4: // 10lbps
-			pulseCount = 3;
-			// Serial.print("[Downsignal kb]");
-			animationMeteorPulseRing(stripId, isDown, pulseCount, offset, true);
-			break;
-		case 3:
-			pulseCount = 2;
-			// Serial.print("[Downsignal kb]");
-			animationMeteorPulseRing(stripId, isDown, pulseCount, offset, true);
-			break;
-		case 2:
-			pulseCount = 1;
-			// Serial.print("[Downsignal kb]");
-			animationMeteorPulseRing(stripId, isDown, pulseCount, 16, true);
-			break;
-		case 1:
-			// Serial.print("[Downsignal slow]");
-			animationMeteorPulseRegion(stripId, random(10), isDown, 0, pulseCount, 12, true);
-			animationMeteorPulseRegion(stripId, random(10), isDown, 0, pulseCount, 12, true);
-			break;
-		case 0:
-			// allStrips[stripId]->clear();
-			FastLED.clear(allStrips[stripId]);
-			// Serial.print("[Downsignal -- ]");
-			break;
-		default:
-			// allStrips[stripId]->clear();
-			FastLED.clear(allStrips[stripId]);
-			// Serial.print("[Downsignal n/a ]");			 
+	switch (type) {
+		case 0: {
+			switch(rateClass) {
+				case 6: {	// 1gbps
+					pulseCount = 14;
+					// Serial.print("[Downsignal Gb]");
+					animationMeteorPulseRing(stripId, isDown, pulseCount, 12, true);
+					break;
+				}
+				case 5: {	// 1mbps
+					pulseCount = 8;
+					// Serial.print("[Downsignal kb]");
+					animationMeteorPulseRing(stripId, isDown, pulseCount, 16, true);
+					break;
+				}
+				case 4: { // 10kbps
+					pulseCount = 4;
+					// Serial.print("[Downsignal kb]");
+					uint8_t pickRandom = random8(2);
+					Serial.print("rate class 4, anim type: "); Serial.println(pickRandom);
+					animationMeteorPulseRing(stripId, isDown, pulseCount, offset, true); 
+					break;
+				}
+				case 3: {
+					pulseCount = 2;
+					// Serial.print("[Downsignal kb]");
+					animationMeteorPulseRing(stripId, isDown, pulseCount, offset, true);
+					break;
+				}
+				case 2: {
+					pulseCount = 1;
+					// Serial.print("[Downsignal kb]");
+					if (counterHalfSpeed == 1) animationMeteorPulseRing(stripId, isDown, pulseCount, 16, true);
+					break;
+				}
+				case 1: {
+					// Serial.print("[Downsignal slow]");
+					// animationMeteorPulseRegion(stripId, random(10), isDown, 0, pulseCount, 12, true);
+					// animationMeteorPulseRegion(stripId, random(10), isDown, 0, pulseCount, 12, true);
+					if (counterQuarterSpeed == 1) animationMeteorPulseRing(stripId, isDown, 1, 12, true);
+					break;
+				}
+				case 0: {
+					// allStrips[stripId]->clear();
+					FastLED.clear(allStrips[stripId]);
+					// Serial.print("[Downsignal -- ]");
+					break;
+				}
+				default: {
+					// allStrips[stripId]->clear();
+					FastLED.clear(allStrips[stripId]);
+					// Serial.print("[Downsignal n/a ]");
+				}
+			}
+		}
+		case 1: {
+			switch(rateClass) {
+				case 6: {	// 1gbps
+					pulseCount = 14;
+					// Serial.print("[Downsignal Gb]");
+					animationMeteorPulseRing(stripId, isDown, pulseCount, 10, false);
+					break;
+				}
+				case 5: {	// 1mbps
+					pulseCount = 8;
+					// Serial.print("[Downsignal kb]");
+					animationMeteorPulseRing(stripId, isDown, pulseCount, 16, false);
+					break;
+				}
+				case 4: { // 10kbps
+					pulseCount = 4;
+					// Serial.print("[Downsignal kb]");
+					animationMeteorPulseRing(stripId, isDown, pulseCount, 24, false);
+					break;
+				}
+				case 3: {
+					pulseCount = 2;
+					// Serial.print("[Downsignal kb]");
+					animationMeteorPulseRing(stripId, isDown, pulseCount, 32, false);
+					break;
+				}
+				case 2: {
+					pulseCount = 1;
+					// Serial.print("[Downsignal kb]");
+					if (counterHalfSpeed == 1) animationMeteorPulseRing(stripId, isDown, pulseCount, 38, false);
+					break;
+				}
+				case 1: {
+					// Serial.print("[Downsignal slow]");
+					// animationMeteorPulseRegion(stripId, random(10), isDown, 0, pulseCount, 12, false);
+					// animationMeteorPulseRegion(stripId, random(10), isDown, 0, pulseCount, 12, false);
+					if (counterQuarterSpeed == 1) animationMeteorPulseRing(stripId, isDown, 1, 42, false);
+					break;
+				}
+				case 0: {
+					// allStrips[stripId]->clear();
+					FastLED.clear(allStrips[stripId]);
+					// Serial.print("[Downsignal -- ]");
+					break;
+				}
+				default: {
+					// allStrips[stripId]->clear();
+					FastLED.clear(allStrips[stripId]);
+					// Serial.print("[Downsignal n/a ]");
+				}
+			}
+		}
+		case 2: {
+			animationSpiralPulseRing(stripId, isDown, pulseCount, 24, false);
+		}
 	}
 }
 
@@ -639,7 +732,6 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 {
 	// Serial.print("FPS: "); Serial.println(FastLED.getFPS());
 
-
 	// Update brightness from potentiometer
 	au.updateBrightness();
 
@@ -652,14 +744,30 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 		}
 	}
 
+
+	if (animationTypeSetDown == false) {
+		const uint8_t animationId = random8(2,2);
+		Serial.print("roll animation: "); Serial.println(animationId);
+
+		/**
+		* 0 = Meteor/Rain (default)
+		* 1 = Pulse
+		* 2 = Spiral
+		*/
+
+		animationTypeDown = animationId;
+		animationTypeUp = animationId;
+		animationTypeSetDown = true;		
+	}
+
 	// Fire meteors
 	if (displayDurationTimer > displayMinDuration && (millis() - animationTimer) > textMeteorGap) {
 		// printMeteorArray();
 
 		if (nameScrollDone == false) {
 			try {				
-				doRateBasedAnimation(true, downSignalRate, meteorOffset);
-				doRateBasedAnimation(false, upSignalRate, meteorOffset);				
+				doRateBasedAnimation(true, downSignalRate, meteorOffset, animationTypeDown);
+				doRateBasedAnimation(false, upSignalRate, meteorOffset, animationTypeUp);				
 			} catch (...) {
 				Serial.println("Error in signal animation");
 			}
@@ -670,7 +778,8 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 
 	drawMeteors(); // Assign new pixels for meteors
 	FastLED.delay(1000/fpsRate);
-	updateMeteors(); // Update first pixel location for all active Meteors in array
+	// if (counterHalfSpeed == 1)
+		updateMeteors(); // Update first pixel location for all active Meteors in array
 
 	FastLED.countFPS();
 	updateSpeedCounters();
