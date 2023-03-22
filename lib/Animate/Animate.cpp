@@ -11,6 +11,7 @@ void Animate::animateMeteor(Meteor* meteor)
 	int regionLength = meteor->regionLength;
 	CHSV pColor = meteor->pColor; 
 	int meteorSize = meteor->meteorSize;
+	bool hasTail = meteor->hasTail;
 	bool meteorTrailDecay = meteor->meteorTrailDecay;
 	bool meteorRandomDecay = meteor->meteorRandomDecay;
 	int tailHueStart = meteor->tailHueStart;
@@ -55,11 +56,19 @@ void Animate::animateMeteor(Meteor* meteor)
 		}
 
 		// Draw meteor
-		if (d < meteorSize + 1)
+		if (d < (meteorSize * 2) + 1)
 		{
 			// aUtilAnimate.setPixelColor(*strip, currentPixel, pColor);
 			strip[currentPixel] = pColor;
 			continue;
+		}
+
+		if (hasTail == false) {
+			if (d > (meteorSize * 2) - 1) // Multiply by two for pixel doubling on inward/outward LED pairs on stick
+			{
+				strip[currentPixel] = CHSV(0, 0	, 0);
+				continue;
+			}
 		}
 
 

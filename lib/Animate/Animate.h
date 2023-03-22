@@ -32,6 +32,7 @@ struct Meteor {
     int regionLength;
     CHSV pColor;
     int meteorSize;
+    bool hasTail;
     bool meteorTrailDecay;
     bool meteorRandomDecay;
     int tailHueStart;

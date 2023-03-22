@@ -499,7 +499,7 @@ void scrollLetters(const char * spacecraftName, int wordArraySize)
 
 
 // Create Meteor object
-void createMeteor(int strip, int region, bool directionDown = true,  int startPixel = 0) {
+void createMeteor(int strip, int region, bool directionDown = true,  int startPixel = 0, uint8_t meteorSize = 1, bool hasTail = true) {
 	CHSV meteorColor = currentColors.meteor;
 
 	for (int i = 0; i < 500; i++) {
@@ -514,7 +514,8 @@ void createMeteor(int strip, int region, bool directionDown = true,  int startPi
 			region,							// region
 			(int) outerPixelsChunkLength,	// regionLength
 			meteorColor,					// pColor
-			1,								// meteorSize
+			meteorSize,						// meteorSize
+			hasTail,
 			meteorTailDecay,				// meteorTrailDecay
 			meteorTailRandom,				// meteorRandomDecay
 			currentColors.tailHue,			// tailHueStart
@@ -538,7 +539,9 @@ void animationMeteorPulseRegion(
 	int16_t startPixel = 0,
 	uint8_t pulseCount = 2,
 	int8_t offset = 10,
-	bool randomizeOffset = false)
+	bool randomizeOffset = false,
+	uint8_t meteorSize = 1,
+	bool hasTail = true)
 {
 
 	// Stagger the starting pixel
@@ -547,7 +550,7 @@ void animationMeteorPulseRegion(
 	for (int i = 0; i < pulseCount; i++) {
 		int16_t pixel = i + startPixel + (i * offset * -1);
 		if (randomizeOffset == true) pixel = pixel - (random(0, 6) * 2);
-		createMeteor(strip, region, directionDown, pixel);
+		createMeteor(strip, region, directionDown, pixel, meteorSize, hasTail);
 	}
 }
 
@@ -560,27 +563,86 @@ void animationMeteorPulseRing(
 	bool randomizeOffset = false)
 {
 	for (int i = 0; i < outerChunks; i++) {
-		animationMeteorPulseRegion(strip, i, directionDown, 0, pulseCount, offset, randomizeOffset);
+		animationMeteorPulseRegion(strip, i, directionDown, 0, pulseCount, offset, randomizeOffset, 1, true);
 	}
 }
 
 void animationSpiralPulseRing(
 	uint8_t strip,
 	bool directionDown = true,
+	uint8_t height = 2,
 	uint8_t pulseCount = 2,
-	int8_t offset = 0,
-	bool randomizeOffset = false)
+	uint8_t spiralMultiplier = 6,
+	uint8_t repeats = 4)
 {
-	uint8_t spiralMultiplier = 3;
+	
 
 	for (int i = 0; i < outerChunks; i++) {
-		animationMeteorPulseRegion(strip, i, directionDown, (i * spiralMultiplier * -1), 5, ((outerChunks + 1) * spiralMultiplier), false);
+		animationMeteorPulseRegion(strip, i, directionDown, (i * spiralMultiplier * -1), 5, ((outerChunks + 1) * spiralMultiplier), false, height, false);
+		animationMeteorPulseRegion(strip, i, directionDown, (i * spiralMultiplier * -1) - height - 6, 5, ((outerChunks + 1) * spiralMultiplier), false, height, false);
 	}
 }
 
+void waveAnimation(uint8_t strip, uint8_t numberOfWaves, uint8_t waveSize) {
+  for (uint8_t wave = 0; wave < numberOfWaves; wave++) {
+    for (uint8_t region = 0; region < outerChunks; region++) {
+      int startPixel = wave * waveSize;
+	  if (region < outerChunks/2) {
+		startPixel = startPixel - (8 * region);
+	  } else {
+		startPixel = startPixel - (8 * (outerChunks - region));
+	  }
+      createMeteor(strip, region, true, startPixel, waveSize, true);
+    }
+  }
+}
+
+void zigzagAnimation(uint8_t strip, uint8_t zigzagSize) {
+  for (uint8_t region = 0; region < outerChunks; region++) {
+    bool directionDown = region % 2 == 0;
+    for (uint8_t i = 0; i < outerPixelsChunkLength; i += zigzagSize) {
+      createMeteor(strip, region, directionDown, i, 1, false);
+      directionDown = !directionDown;
+    }
+  }
+}
+
+void laserGunAnimation(uint8_t strip, uint16_t chargeTime, uint8_t firingSize) {
+  // Charging up animation
+  for (uint8_t i = 0; i < outerPixelsChunkLength; ++i) {
+    for (uint8_t region = 0; region < outerChunks; ++region) {
+      createMeteor(strip, region, true, i, 1, false);
+    }
+    delay(chargeTime / outerPixelsChunkLength);
+  }
+
+  // Firing animation
+  for (uint8_t i = 0; i < outerPixelsChunkLength - firingSize + 1; ++i) {
+    for (uint8_t region = 0; region < outerChunks; ++region) {
+      createMeteor(strip, region, true, i, firingSize, true);
+    }
+    delay(chargeTime / (outerPixelsChunkLength * 2));
+  }
+}
+
+// void animationRadialSpiral(uint8_t strip, uint8_t stepSize) {
+//   static uint8_t spiralStep = 0;
+
+//   for (uint8_t region = 0; region < outerChunks; ++region) {
+//     int startPixel = (spiralStep + (region * stepSize)) % outerPixelsChunkLength;
+//     createMeteor(strip, region, true, startPixel, 1, false);
+//   }
+
+//   spiralStep += stepSize;
+//   if (spiralStep >= outerPixelsChunkLength) {
+//     spiralStep = 0;
+//   }
+// }
+
+
 void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_t type) {
-	Serial.print("type: "); Serial.println(type);
-	Serial.print("rateClass: "); Serial.println(rateClass);
+	// Serial.print("type: "); Serial.println(type);
+	// Serial.print("rateClass: "); Serial.println(rateClass);
 	int stripId = isDown == true ? 2 : 1;
 	int pulseCount = 1;
 
@@ -698,7 +760,15 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 			}
 		}
 		case 2: {
-			animationSpiralPulseRing(stripId, isDown, pulseCount, 24, false);
+			pulseCount = 8;
+			uint8_t height = 2;
+			uint8_t spiralOffset = 6;
+			uint8_t repeats = 10;
+			animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
+			// waveAnimation(stripId, 4, 4);
+			// zigzagAnimation(stripId, 4);
+			// laserGunAnimation(stripId, 4, 4);
+			// animationRadialSpiral(stripId, 4);
 		}
 	}
 }
@@ -778,7 +848,7 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 
 	drawMeteors(); // Assign new pixels for meteors
 	FastLED.delay(1000/fpsRate);
-	// if (counterHalfSpeed == 1)
+	// if (counterQuarterSpeed == 1)
 		updateMeteors(); // Update first pixel location for all active Meteors in array
 
 	FastLED.countFPS();
