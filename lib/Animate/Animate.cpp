@@ -13,6 +13,7 @@ void Animate::animateMeteor(Meteor* meteor)
 	int meteorSize = meteor->meteorSize;
 	bool hasTail = meteor->hasTail;
 	bool meteorTrailDecay = meteor->meteorTrailDecay;
+	float meteorTrailDecayValue = meteor->meteorTrailDecayValue;
 	bool meteorRandomDecay = meteor->meteorRandomDecay;
 	int tailHueStart = meteor->tailHueStart;
 	bool tailHueAdd = meteor->tailHueAdd;
@@ -79,7 +80,7 @@ void Animate::animateMeteor(Meteor* meteor)
 			int satExpo = ceil(tailHueSaturation * log(d + 1)); // Calculate logarithmic growth
 			satExpo += random(32) - 16;							// Add random variance to saturation
 			uint8_t satValue = satExpo > tailHueSaturation ? tailHueSaturation : (satExpo < 0 ? 0 : satExpo);
-			int brightExpo = ceil(255 * mPower(0.85, d)); // Calculate exponential decay
+			int brightExpo = ceil(255 * mPower(meteorTrailDecayValue, d)); // Calculate exponential decay
 			brightExpo += random(32) - 16;				  // Add randomvariance to brightness
 			uint8_t brightValue = brightExpo > 255 ? 255 : (brightExpo < 0 ? 0 : brightExpo);
 			int brightValueMap = map(brightValue, 0, 255, 0, AnimationUtils::brightness);

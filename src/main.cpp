@@ -41,7 +41,7 @@ uint8_t fpsRate = 90;
 #define TEST_CORES 0			// Test cores
 #define SHOW_SERIAL 0			// Show serial output
 #define ID_LEDS 0				// ID LEDs
-#define DISABLE_WIFI 0			// Disable WiFi
+#define DISABLE_WIFI 1			// Disable WiFi
 #define DIAG_MEASURE 0			// Output memory & performance info for plotter
 
 
@@ -81,7 +81,10 @@ char fetchUrl[50];	// DSN XML fetch URL - random number is appended when used to
 
 // Placeholder for XML data
 const char* dummyXmlData = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?><dsn><station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" /><dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS24" windSpeed="5.556"><downSignal dataRate="28000000" frequency="25900000000" power="-91.3965" signalType="data" spacecraft="JWST" spacecraftID="-170" /><downSignal dataRate="40000" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="JWST" spacecraftID="-170" /><upSignal dataRate="16000" frequency="2090" power="4.804" signalType="data" spacecraft="JWST" spacecraftID="-170" /><target downlegRange="1.653e+06" id="170" name="JWST" rtlt="11.03" uplegRange="1.653e+06" /></dish><dish azimuthAngle="287.7" elevationAngle="18.74" isArray="false" isDDOR="false" isMSPA="false" name="DSS26" windSpeed="5.556"><downSignal dataRate="4000000" frequency="8439000000" power="-138.1801" signalType="none" spacecraft="MRO" spacecraftID="-74" /><upSignal dataRate="2000" frequency="7183" power="0.0000" signalType="none" spacecraft="MRO" spacecraftID="-74" /><target downlegRange="8.207e+07" id="74" name="MRO" rtlt="547.5" uplegRange="8.207e+07" /></dish><station friendlyName="Madrid" name="mdscc" timeUTC="1670419133000" timeZoneOffset="3600000" /><dish azimuthAngle="103.0" elevationAngle="80.19" isArray="false" isDDOR="false" isMSPA="false" name="DSS56" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="2250000000" power="-478.1842" signalType="none" spacecraft="CHDR" spacecraftID="-151" /><target downlegRange="1.417e+05" id="151" name="CHDR" rtlt="0.9455" uplegRange="1.417e+05" /></dish><dish azimuthAngle="196.5" elevationAngle="30.71" isArray="false" isDDOR="false" isMSPA="false" name="DSS65" windSpeed="5.556"><downSignal dataRate="87650" frequency="2278000000" power="-112.7797" signalType="data" spacecraft="ACE" spacecraftID="-92" /><upSignal dataRate="1000" frequency="2098" power="0.2630" signalType="data" spacecraft="ACE" spacecraftID="-92" /><target downlegRange="1.389e+06" id="92" name="ACE" rtlt="9.266" uplegRange="1.389e+06" /></dish><dish azimuthAngle="124.5" elevationAngle="53.41" isArray="false" isDDOR="false" isMSPA="false" name="DSS53" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8436000000" power="-170.1741" signalType="none" spacecraft="LICI" spacecraftID="-210" /><target downlegRange="4.099e+06" id="210" name="LICI" rtlt="27.34" uplegRange="4.099e+06" /></dish><dish azimuthAngle="219.7" elevationAngle="22.84" isArray="false" isDDOR="false" isMSPA="false" name="DSS54" windSpeed="5.556"><upSignal dataRate="2000" frequency="2066" power="1.758" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><downSignal dataRate="245800" frequency="2245000000" power="-110.7082" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><target downlegRange="1.331e+06" id="21" name="SOHO" rtlt="8.882" uplegRange="1.331e+06" /></dish><dish azimuthAngle="120.0" elevationAngle="46.53" isArray="false" isDDOR="false" isMSPA="false" name="DSS63" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8415000000" power="-478.2658" signalType="none" spacecraft="TEST" spacecraftID="-99" /><target downlegRange="-1.000e+00" id="99" name="TEST" rtlt="-1.0000" uplegRange="-1.000e+00" /></dish><station friendlyName="Canberra" name="cdscc" timeUTC="1670419133000" timeZoneOffset="39600000" /><dish azimuthAngle="330.6" elevationAngle="37.39" isArray="false" isDDOR="false" isMSPA="false" name="DSS34" windSpeed="3.087"><upSignal dataRate="250000" frequency="2041" power="0.2421" signalType="data" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="974200" frequency="2217000000" power="-116.4022" signalType="none" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="2000000" frequency="2216000000" power="-107.4503" signalType="carrier" spacecraft="EM1" spacecraftID="-23" /><target downlegRange="3.870e+05" id="23" name="EM1" rtlt="2.581" uplegRange="3.869e+05" /></dish><dish azimuthAngle="10.27" elevationAngle="28.97" isArray="false" isDDOR="false" isMSPA="false" name="DSS35" windSpeed="3.087"><downSignal dataRate="11.63" frequency="8446000000" power="-141.8096" signalType="data" spacecraft="MVN" spacecraftID="-202" /><upSignal dataRate="7.813" frequency="7189" power="8.303" signalType="data" spacecraft="MVN" spacecraftID="-202" /><target downlegRange="8.207e+07" id="202" name="MVN" rtlt="547.5" uplegRange="8.207e+07" /></dish><dish azimuthAngle="207.0" elevationAngle="15.51" isArray="false" isDDOR="false" isMSPA="false" name="DSS43" windSpeed="3.087"><upSignal dataRate="16.00" frequency="2114" power="20.20" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><downSignal dataRate="160.0" frequency="8420000000" power="-156.2618" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><target downlegRange="1.984e+10" id="32" name="VGR2" rtlt="132300" uplegRange="1.984e+10" /></dish><dish azimuthAngle="7.205" elevationAngle="26.82" isArray="false" isDDOR="false" isMSPA="false" name="DSS36" windSpeed="3.087"><downSignal dataRate="8500000" frequency="8475000000" power="-120.3643" signalType="none" spacecraft="KPLO" spacecraftID="-155" /><downSignal dataRate="8192" frequency="2261000000" power="-104.9668" signalType="data" spacecraft="KPLO" spacecraftID="-155" /><target downlegRange="4.405e+05" id="155" name="KPLO" rtlt="2.939" uplegRange="4.405e+05" /></dish><timestamp>1670419133000</timestamp></dsn>)==--==";
+const char* dummyXmlData2 = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?><dsn><station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" /><dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS24" windSpeed="5.556"><downSignal dataRate="28000000" frequency="25900000000" power="-91.3965" signalType="data" spacecraft="JWST" spacecraftID="-170" /><downSignal dataRate="40000" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="JWST" spacecraftID="-170" /><upSignal dataRate="16000" frequency="2090" power="4.804" signalType="data" spacecraft="JWST" spacecraftID="-170" /><target downlegRange="1.653e+06" id="170" name="JWST" rtlt="11.03" uplegRange="1.653e+06" /></dish><dish azimuthAngle="287.7" elevationAngle="18.74" isArray="false" isDDOR="false" isMSPA="false" name="DSS26" windSpeed="5.556"><downSignal dataRate="4000000" frequency="8439000000" power="-138.1801" signalType="none" spacecraft="MRO" spacecraftID="-74" /><upSignal dataRate="2000" frequency="7183" power="0.0000" signalType="none" spacecraft="MRO" spacecraftID="-74" /><target downlegRange="8.207e+07" id="74" name="MRO" rtlt="547.5" uplegRange="8.207e+07" /></dish><station friendlyName="Madrid" name="mdscc" timeUTC="1670419133000" timeZoneOffset="3600000" /><dish azimuthAngle="103.0" elevationAngle="80.19" isArray="false" isDDOR="false" isMSPA="false" name="DSS56" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="2250000000" power="-478.1842" signalType="none" spacecraft="CHDR" spacecraftID="-151" /><target downlegRange="1.417e+05" id="151" name="CHDR" rtlt="0.9455" uplegRange="1.417e+05" /></dish><dish azimuthAngle="196.5" elevationAngle="30.71" isArray="false" isDDOR="false" isMSPA="false" name="DSS65" windSpeed="5.556"><downSignal dataRate="87650" frequency="2278000000" power="-112.7797" signalType="data" spacecraft="ACE" spacecraftID="-92" /><upSignal dataRate="1000" frequency="2098" power="0.2630" signalType="data" spacecraft="ACE" spacecraftID="-92" /><target downlegRange="1.389e+06" id="92" name="ACE" rtlt="9.266" uplegRange="1.389e+06" /></dish><dish azimuthAngle="124.5" elevationAngle="53.41" isArray="false" isDDOR="false" isMSPA="false" name="DSS53" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8436000000" power="-170.1741" signalType="none" spacecraft="LICI" spacecraftID="-210" /><target downlegRange="4.099e+06" id="210" name="LICI" rtlt="27.34" uplegRange="4.099e+06" /></dish><dish azimuthAngle="219.7" elevationAngle="22.84" isArray="false" isDDOR="false" isMSPA="false" name="DSS54" windSpeed="5.556"><upSignal dataRate="2000" frequency="2066" power="1.758" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><downSignal dataRate="245800" frequency="2245000000" power="-110.7082" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><target downlegRange="1.331e+06" id="21" name="SOHO" rtlt="8.882" uplegRange="1.331e+06" /></dish><dish azimuthAngle="120.0" elevationAngle="46.53" isArray="false" isDDOR="false" isMSPA="false" name="DSS63" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8415000000" power="-478.2658" signalType="none" spacecraft="TEST" spacecraftID="-99" /><target downlegRange="-1.000e+00" id="99" name="TEST" rtlt="-1.0000" uplegRange="-1.000e+00" /></dish><station friendlyName="Canberra" name="cdscc" timeUTC="1670419133000" timeZoneOffset="39600000" /><dish azimuthAngle="330.6" elevationAngle="37.39" isArray="false" isDDOR="false" isMSPA="false" name="DSS34" windSpeed="3.087"><upSignal dataRate="250000" frequency="2041" power="0.2421" signalType="data" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="974200" frequency="2217000000" power="-116.4022" signalType="none" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="2000000" frequency="2216000000" power="-107.4503" signalType="carrier" spacecraft="EM1" spacecraftID="-23" /><target downlegRange="3.870e+05" id="23" name="EM1" rtlt="2.581" uplegRange="3.869e+05" /></dish><dish azimuthAngle="10.27" elevationAngle="28.97" isArray="false" isDDOR="false" isMSPA="false" name="DSS35" windSpeed="3.087"><downSignal dataRate="11.63" frequency="8446000000" power="-141.8096" signalType="data" spacecraft="MVN" spacecraftID="-202" /><upSignal dataRate="7.813" frequency="7189" power="8.303" signalType="data" spacecraft="MVN" spacecraftID="-202" /><target downlegRange="8.207e+07" id="202" name="MVN" rtlt="547.5" uplegRange="8.207e+07" /></dish><dish azimuthAngle="207.0" elevationAngle="15.51" isArray="false" isDDOR="false" isMSPA="false" name="DSS43" windSpeed="3.087"><upSignal dataRate="16.00" frequency="2114" power="20.20" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><downSignal dataRate="160.0" frequency="8420000000" power="-156.2618" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><target downlegRange="1.984e+10" id="32" name="VGR2" rtlt="132300" uplegRange="1.984e+10" /></dish><dish azimuthAngle="7.205" elevationAngle="26.82" isArray="false" isDDOR="false" isMSPA="false" name="DSS36" windSpeed="3.087"><downSignal dataRate="8500000" frequency="8475000000" power="-120.3643" signalType="none" spacecraft="KPLO" spacecraftID="-155" /><downSignal dataRate="8192" frequency="2261000000" power="-104.9668" signalType="data" spacecraft="KPLO" spacecraftID="-155" /><target downlegRange="4.405e+05" id="155" name="KPLO" rtlt="2.939" uplegRange="4.405e+05" /></dish><timestamp>1670419133000</timestamp></dsn>)==--==";
+const char* dummyXmlData3 = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?><dsn><station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" /><dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS24" windSpeed="5.556"><downSignal dataRate="28000000" frequency="25900000000" power="-91.3965" signalType="data" spacecraft="JWST" spacecraftID="-170" /><downSignal dataRate="40000" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="JWST" spacecraftID="-170" /><upSignal dataRate="16000" frequency="2090" power="4.804" signalType="data" spacecraft="JWST" spacecraftID="-170" /><target downlegRange="1.653e+06" id="170" name="JWST" rtlt="11.03" uplegRange="1.653e+06" /></dish><dish azimuthAngle="287.7" elevationAngle="18.74" isArray="false" isDDOR="false" isMSPA="false" name="DSS26" windSpeed="5.556"><downSignal dataRate="4000000" frequency="8439000000" power="-138.1801" signalType="none" spacecraft="MRO" spacecraftID="-74" /><upSignal dataRate="2000" frequency="7183" power="0.0000" signalType="none" spacecraft="MRO" spacecraftID="-74" /><target downlegRange="8.207e+07" id="74" name="MRO" rtlt="547.5" uplegRange="8.207e+07" /></dish><station friendlyName="Madrid" name="mdscc" timeUTC="1670419133000" timeZoneOffset="3600000" /><dish azimuthAngle="103.0" elevationAngle="80.19" isArray="false" isDDOR="false" isMSPA="false" name="DSS56" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="2250000000" power="-478.1842" signalType="none" spacecraft="CHDR" spacecraftID="-151" /><target downlegRange="1.417e+05" id="151" name="CHDR" rtlt="0.9455" uplegRange="1.417e+05" /></dish><dish azimuthAngle="196.5" elevationAngle="30.71" isArray="false" isDDOR="false" isMSPA="false" name="DSS65" windSpeed="5.556"><downSignal dataRate="87650" frequency="2278000000" power="-112.7797" signalType="data" spacecraft="ACE" spacecraftID="-92" /><upSignal dataRate="1000" frequency="2098" power="0.2630" signalType="data" spacecraft="ACE" spacecraftID="-92" /><target downlegRange="1.389e+06" id="92" name="ACE" rtlt="9.266" uplegRange="1.389e+06" /></dish><dish azimuthAngle="124.5" elevationAngle="53.41" isArray="false" isDDOR="false" isMSPA="false" name="DSS53" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8436000000" power="-170.1741" signalType="none" spacecraft="LICI" spacecraftID="-210" /><target downlegRange="4.099e+06" id="210" name="LICI" rtlt="27.34" uplegRange="4.099e+06" /></dish><dish azimuthAngle="219.7" elevationAngle="22.84" isArray="false" isDDOR="false" isMSPA="false" name="DSS54" windSpeed="5.556"><upSignal dataRate="2000" frequency="2066" power="1.758" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><downSignal dataRate="245800" frequency="2245000000" power="-110.7082" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><target downlegRange="1.331e+06" id="21" name="SOHO" rtlt="8.882" uplegRange="1.331e+06" /></dish><dish azimuthAngle="120.0" elevationAngle="46.53" isArray="false" isDDOR="false" isMSPA="false" name="DSS63" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8415000000" power="-478.2658" signalType="none" spacecraft="TEST" spacecraftID="-99" /><target downlegRange="-1.000e+00" id="99" name="TEST" rtlt="-1.0000" uplegRange="-1.000e+00" /></dish><station friendlyName="Canberra" name="cdscc" timeUTC="1670419133000" timeZoneOffset="39600000" /><dish azimuthAngle="330.6" elevationAngle="37.39" isArray="false" isDDOR="false" isMSPA="false" name="DSS34" windSpeed="3.087"><upSignal dataRate="250000" frequency="2041" power="0.2421" signalType="data" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="974200" frequency="2217000000" power="-116.4022" signalType="none" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="2000000" frequency="2216000000" power="-107.4503" signalType="carrier" spacecraft="EM1" spacecraftID="-23" /><target downlegRange="3.870e+05" id="23" name="EM1" rtlt="2.581" uplegRange="3.869e+05" /></dish><dish azimuthAngle="10.27" elevationAngle="28.97" isArray="false" isDDOR="false" isMSPA="false" name="DSS35" windSpeed="3.087"><downSignal dataRate="11.63" frequency="8446000000" power="-141.8096" signalType="data" spacecraft="MVN" spacecraftID="-202" /><upSignal dataRate="7.813" frequency="7189" power="8.303" signalType="data" spacecraft="MVN" spacecraftID="-202" /><target downlegRange="8.207e+07" id="202" name="MVN" rtlt="547.5" uplegRange="8.207e+07" /></dish><dish azimuthAngle="207.0" elevationAngle="15.51" isArray="false" isDDOR="false" isMSPA="false" name="DSS43" windSpeed="3.087"><upSignal dataRate="16.00" frequency="2114" power="20.20" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><downSignal dataRate="160.0" frequency="8420000000" power="-156.2618" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><target downlegRange="1.984e+10" id="32" name="VGR2" rtlt="132300" uplegRange="1.984e+10" /></dish><dish azimuthAngle="7.205" elevationAngle="26.82" isArray="false" isDDOR="false" isMSPA="false" name="DSS36" windSpeed="3.087"><downSignal dataRate="8500000" frequency="8475000000" power="-120.3643" signalType="none" spacecraft="KPLO" spacecraftID="-155" /><downSignal dataRate="8192" frequency="2261000000" power="-104.9668" signalType="data" spacecraft="KPLO" spacecraftID="-155" /><target downlegRange="4.405e+05" id="155" name="KPLO" rtlt="2.939" uplegRange="4.405e+05" /></dish><timestamp>1670419133000</timestamp></dsn>)==--==";
 bool usingDummyData = false;			// If true, use dummy data instead of actual data
+bool forceDummyData = true;
 uint8_t noTargetFoundCounter = 0;		// Keeps track of how many times target is not found
 uint8_t noTargetLimit = 3;				// After target is not found this many times, switch to dummy XML data
 uint8_t retryDataFetchCounter = 0;		// Keeps track of how many times data fetch failed
@@ -499,7 +502,7 @@ void scrollLetters(const char * spacecraftName, int wordArraySize)
 
 
 // Create Meteor object
-void createMeteor(int strip, int region, bool directionDown = true,  int startPixel = 0, uint8_t meteorSize = 1, bool hasTail = true) {
+void createMeteor(int strip, int region, bool directionDown = true,  int startPixel = 0, uint8_t meteorSize = 1, bool hasTail = true, float meteorTailDecayValue = 0.85) {
 	CHSV meteorColor = currentColors.meteor;
 
 	for (int i = 0; i < 500; i++) {
@@ -515,8 +518,9 @@ void createMeteor(int strip, int region, bool directionDown = true,  int startPi
 			(int) outerPixelsChunkLength,	// regionLength
 			meteorColor,					// pColor
 			meteorSize,						// meteorSize
-			hasTail,
+			hasTail,						// hasTail
 			meteorTailDecay,				// meteorTrailDecay
+			meteorTailDecayValue,			// meteorTrailDecayValue
 			meteorTailRandom,				// meteorRandomDecay
 			currentColors.tailHue,			// tailHueStart
 			true,							// tailHueAdd
@@ -541,7 +545,8 @@ void animationMeteorPulseRegion(
 	int8_t offset = 10,
 	bool randomizeOffset = false,
 	uint8_t meteorSize = 1,
-	bool hasTail = true)
+	bool hasTail = true,
+	float meteorTailDecayValue = 0.85)
 {
 
 	// Stagger the starting pixel
@@ -550,7 +555,7 @@ void animationMeteorPulseRegion(
 	for (int i = 0; i < pulseCount; i++) {
 		int16_t pixel = i + startPixel + (i * offset * -1);
 		if (randomizeOffset == true) pixel = pixel - (random(0, 6) * 2);
-		createMeteor(strip, region, directionDown, pixel, meteorSize, hasTail);
+		createMeteor(strip, region, directionDown, pixel, meteorSize, hasTail, meteorTailDecayValue);
 	}
 }
 
@@ -579,7 +584,7 @@ void animationSpiralPulseRing(
 
 	for (int i = 0; i < outerChunks; i++) {
 		animationMeteorPulseRegion(strip, i, directionDown, (i * spiralMultiplier * -1), 5, ((outerChunks + 1) * spiralMultiplier), false, height, false);
-		animationMeteorPulseRegion(strip, i, directionDown, (i * spiralMultiplier * -1) - height - 6, 5, ((outerChunks + 1) * spiralMultiplier), false, height, false);
+		// animationMeteorPulseRegion(strip, i, directionDown, (i * spiralMultiplier * -1) - height - 6, 5, ((outerChunks + 1) * spiralMultiplier), false, height, true, 0.9);
 	}
 }
 
@@ -645,6 +650,8 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 	// Serial.print("rateClass: "); Serial.println(rateClass);
 	int stripId = isDown == true ? 2 : 1;
 	int pulseCount = 1;
+	Serial.print("type: "); Serial.println(type);
+	Serial.print("rateClass: "); Serial.println(rateClass);
 
 	if (rateClass == 0) {
 		// allStrips[stripId]->clear();
@@ -653,6 +660,7 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 	}
 
 	switch (type) {
+		// Meteor
 		case 0: {
 			switch(rateClass) {
 				case 6: {	// 1gbps
@@ -707,6 +715,8 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 				}
 			}
 		}
+		
+		// Ring
 		case 1: {
 			switch(rateClass) {
 				case 6: {	// 1gbps
@@ -759,12 +769,84 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 				}
 			}
 		}
+
+		// Spiral
 		case 2: {
-			pulseCount = 8;
-			uint8_t height = 2;
-			uint8_t spiralOffset = 6;
-			uint8_t repeats = 10;
-			animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
+			switch(rateClass) {
+				case 6: {	// 1gbps
+					// Serial.print("[Downsignal Gb]");
+					pulseCount = 8;
+					uint8_t height = 6;
+					uint8_t spiralOffset = 4;
+					uint8_t repeats = 10;
+					animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
+					break;
+				}
+				case 5: {	// 1mbps
+					// Serial.print("[Downsignal kb]");
+					pulseCount = 8;
+					uint8_t height = 6;
+					uint8_t spiralOffset = 6;
+					uint8_t repeats = 10;
+					animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
+					break;
+				}
+				case 4: { // 10kbps
+					// Serial.print("[Downsignal kb]");
+					pulseCount = 8;
+					uint8_t height = 4;
+					uint8_t spiralOffset = 6;
+					uint8_t repeats = 10;
+					animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
+					break;
+				}
+				case 3: {
+					// Serial.print("[Downsignal kb]");
+					pulseCount = 8;
+					uint8_t height = 2;
+					uint8_t spiralOffset = 6;
+					uint8_t repeats = 10;
+					animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
+					break;
+				}
+				case 2: {
+					// Serial.print("[Downsignal kb]");
+					pulseCount = 8;
+					uint8_t height = 2;
+					uint8_t spiralOffset = 8;
+					uint8_t repeats = 10;
+					if (counterHalfSpeed == 1)
+						animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
+					break;
+				}
+				case 1: {
+					// Serial.print("[Downsignal slow]");
+					pulseCount = 8;
+					uint8_t height = 1;
+					uint8_t spiralOffset = 10;
+					uint8_t repeats = 10;
+					if (counterQuarterSpeed == 1)
+						animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
+					break;
+				}
+				case 0: {
+					// allStrips[stripId]->clear();
+					FastLED.clear(allStrips[stripId]);
+					// Serial.print("[Downsignal -- ]");
+					break;
+				}
+				default: {
+					// allStrips[stripId]->clear();
+					FastLED.clear(allStrips[stripId]);
+					// Serial.print("[Downsignal n/a ]");
+				}
+			}
+					
+			// pulseCount = 8;
+			// uint8_t height = 2;
+			// uint8_t spiralOffset = 4;
+			// uint8_t repeats = 10;
+			// animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
 			// waveAnimation(stripId, 4, 4);
 			// zigzagAnimation(stripId, 4);
 			// laserGunAnimation(stripId, 4, 4);
@@ -816,7 +898,8 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 
 
 	if (animationTypeSetDown == false) {
-		const uint8_t animationId = random8(2,2);
+		// const uint8_t animationId = random8(0,2);
+		const uint8_t animationId = 1;
 		Serial.print("roll animation: "); Serial.println(animationId);
 
 		/**
@@ -1215,65 +1298,69 @@ void fetchData() {
 
 	uint16_t httpResponseCode;
 
-	// Check WiFi connection status
-	if (WiFi.status() != WL_CONNECTED) {
-		if (SHOW_SERIAL == 1) Serial.println("WiFi Disconnected");
+	if (forceDummyData == true) usingDummyData = true;
 
-		// WiFi.begin(ssid, password);
-		// Serial.println("Connecting");
-		// // while(WiFi.status() != WL_CONNECTED) {
-		// //   Serial.print(".");
-		// // }
-		// Serial.println("");
-		// Serial.print("Connected to WiFi network with IP Address: ");
-		// Serial.println(WiFi.localIP());
+	if (forceDummyData == false) {
+		// Check WiFi connection status
+		if (WiFi.status() != WL_CONNECTED) {
+			if (SHOW_SERIAL == 1) Serial.println("WiFi Disconnected");
 
-		usingDummyData = true;
-	}
+			// WiFi.begin(ssid, password);
+			// Serial.println("Connecting");
+			// // while(WiFi.status() != WL_CONNECTED) {
+			// //   Serial.print(".");
+			// // }
+			// Serial.println("");
+			// Serial.print("Connected to WiFi network with IP Address: ");
+			// Serial.println(WiFi.localIP());
 
-	if (usingDummyData == false) {
-	
-		try {
-			memset(fetchUrl, 0, sizeof(fetchUrl));		// set fetchUrl to empty
-			strcpy(fetchUrl, serverName);				// copy serverName to fetchUrl
-			char randBuffer[9];							// buffer for random number cache buster
-			ltoa(random(999999999), randBuffer, 10);	// convert random number to string
-			strcat(fetchUrl, randBuffer);				// append random number to fetchUrl
-		} catch (...) {
-			handleException();
+			usingDummyData = true;
+		}
+
+		if (usingDummyData == false) {
+		
+			try {
+				memset(fetchUrl, 0, sizeof(fetchUrl));		// set fetchUrl to empty
+				strcpy(fetchUrl, serverName);				// copy serverName to fetchUrl
+				char randBuffer[9];							// buffer for random number cache buster
+				ltoa(random(999999999), randBuffer, 10);	// convert random number to string
+				strcat(fetchUrl, randBuffer);				// append random number to fetchUrl
+			} catch (...) {
+				handleException();
+			}
+
+			if (SHOW_SERIAL == 1) {
+				// print fetchUrl
+				Serial.print(termColor("purple"));
+				Serial.print("fetchUrl: ");
+				Serial.println(fetchUrl);
+
+
+				Serial.println(termColor("reset"));
+			}
+
+			// Use WiFiClient class to create TCP connections
+			if (!http.begin(fetchUrl)) {
+				if (SHOW_SERIAL == 1) {
+					Serial.println("Failed to connect to server");
+				}
+				return;
+			}
+
+			// Send HTTP GET request
+			http.setTimeout(10000);
+			http.addHeader("Content-Type", "text/xml");
+			httpResponseCode = http.GET();
 		}
 
 		if (SHOW_SERIAL == 1) {
-			// print fetchUrl
-			Serial.print(termColor("purple"));
-			Serial.print("fetchUrl: ");
-			Serial.println(fetchUrl);
+			Serial.print("Using dummy data? ");
 
-
-			Serial.println(termColor("reset"));
-		}
-
-		// Use WiFiClient class to create TCP connections
-		if (!http.begin(fetchUrl)) {
-			if (SHOW_SERIAL == 1) {
-				Serial.println("Failed to connect to server");
+			if (usingDummyData == true) {
+				Serial.println("TRUE");
+			} else {
+				Serial.println("FALSE");
 			}
-			return;
-		}
-
-		// Send HTTP GET request
-		http.setTimeout(10000);
-		http.addHeader("Content-Type", "text/xml");
-		httpResponseCode = http.GET();
-	}
-
-	if (SHOW_SERIAL == 1) {
-		Serial.print("Using dummy data? ");
-
-		if (usingDummyData == true) {
-			Serial.println("TRUE");
-		} else {
-			Serial.println("FALSE");
 		}
 	}
 
