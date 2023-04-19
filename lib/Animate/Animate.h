@@ -46,7 +46,8 @@ struct Meteor {
 class Animate {
     static AnimationUtils aUtilAnimate;
     public:
-        Meteor* ActiveMeteors[500] = {nullptr};
+        static const uint16_t ActiveMeteorArraySize = 500;
+        Meteor* ActiveMeteors[ActiveMeteorArraySize] = {nullptr};
         size_t ActiveMeteorsSize = 0;
         void animateMeteor(Meteor* meteor);
 

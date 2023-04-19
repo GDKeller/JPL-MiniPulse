@@ -29,7 +29,7 @@ using namespace std;			// C++ I/O
 #define BOTTOM_PIN 16			// Bottom ring pin
 #define WIFI_RST 21				// WiFi reset pin
 #define OUTPUT_ENABLE 22		// Output enable pin
-#define BRIGHTNESS 16			// Global brightness value. 8bit, 0-255
+#define BRIGHTNESS 127			// Global brightness value. 8bit, 0-255
 #define POTENTIOMETER 32		// Brightness potentiometer pin
 #define FPS 90					// Frames per second
 uint8_t fpsRate = 90;
@@ -308,7 +308,7 @@ void printMeteorArray() {
 		
 	String printString = "\n---------------[ METEOR ARRAY ]---------------\n";
 	
-	for (int i = 0; i < 500; i++) {
+	for (int i = 0; i < animate.ActiveMeteorArraySize; i++) {
 		if (animate.ActiveMeteors[i] == nullptr){
 			printString += "[";
 			printString += termColor("red");
@@ -505,7 +505,7 @@ void scrollLetters(const char * spacecraftName, int wordArraySize)
 void createMeteor(int strip, int region, bool directionDown = true,  int startPixel = 0, uint8_t meteorSize = 1, bool hasTail = true, float meteorTailDecayValue = 0.85) {
 	CHSV meteorColor = currentColors.meteor;
 
-	for (int i = 0; i < 500; i++) {
+	for (int i = 0; i < animate.ActiveMeteorArraySize; i++) {
 		if (animate.ActiveMeteors[i] != nullptr) {
 			// Serial.print("Could not create meteor #"); Serial.print(i); Serial.print(" startPixel: "); Serial.println(animate.ActiveMeteors[i]->firstPixel);
 			continue;
@@ -528,6 +528,7 @@ void createMeteor(int strip, int region, bool directionDown = true,  int startPi
 			currentColors.tailSaturation,	// tailHueSaturation
 			allStrips[strip]				// rStrip
 		};
+		// Serial.print("Created new meteor #"); Serial.print(i); Serial.print(" startPixel: "); Serial.println(animate.ActiveMeteors[i]->firstPixel);
 
 		break;
 		
@@ -857,14 +858,34 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 
 void drawMeteors() {
 	// Update meteor animations
-	for (int i = 0; i < 100; i++) {	
-		if (animate.ActiveMeteors[i] != nullptr) animate.animateMeteor(animate.ActiveMeteors[i]);
+	for (int i = 0; i < animate.ActiveMeteorArraySize; i++) {	
+		if (animate.ActiveMeteors[i] != nullptr) 
+			animate.animateMeteor(animate.ActiveMeteors[i]);
+	}
+}
+
+CHSV bottomPixelMap[5] = {CHSV(0, 0, 0)};
+
+void drawBottomPixels() {
+	// Update bottom pixels
+	for (int i = 0; i < 5; i++) {
+		bottomPixelMap[i] = CHSV(0, 255 - ((255 / bottomPixelsTotal) * i), 255 - ((255 / bottomPixelsTotal) * i));
+
+		bottom_leds[i] = bottomPixelMap[i];
+	}
+}
+
+void updateBottomPixels() {
+	for (int i = 0; i < 5; i++) {
+		uint8_t newHue = bottomPixelMap[i].hue + 1;
+		bottom_leds[i].setHue(newHue);
+		bottomPixelMap[i].hue = newHue;
 	}
 }
 
 void updateMeteors() {
 	// Update first pixel location for all active Meteors in array
-	for (int i = 0; i < 500; i++) {
+	for (int i = 0; i < animate.ActiveMeteorArraySize; i++) {
 		if (animate.ActiveMeteors[i] != nullptr){
 			animate.ActiveMeteors[i]->firstPixel = animate.ActiveMeteors[i]->firstPixel + 2;
 
@@ -933,6 +954,8 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 	FastLED.delay(1000/fpsRate);
 	// if (counterQuarterSpeed == 1)
 		updateMeteors(); // Update first pixel location for all active Meteors in array
+		updateBottomPixels();
+
 
 	FastLED.countFPS();
 	updateSpeedCounters();
@@ -1613,15 +1636,30 @@ void setup()
 	allStripsOff();
 
 	
+	
 
-	// CHSV* stuff = allStrips[2];
+	fill_solid(outer_leds, outerPixelsTotal, CRGB::Red);
+	fill_solid(middle_leds, middlePixelsTotal, CRGB::Green);
+	fill_solid(inner_leds, innerPixelsTotal, CRGB::Blue);
+	FastLED.show();
+	delay(1000);
+	allStripsOff();
 
-	// for(int dot = 0; dot < outerPixelsTotal; dot++) { 
-	// 	stuff[dot] = CHSV::Purple;
-	// 	FastLED.show();
-	// 	// clear this led for the next time around the loop
-	// 	if (dot > 0) stuff[dot - 1] = CHSV::Black;
-	// 	// delay(30);
+
+
+
+	// for ( int i = 0; i < 4; i++)
+	// {
+	
+	// 	CRGB* stuff = allStrips[i];
+
+	// 	for(int dot = 0; dot < outerPixelsTotal; dot++) { 
+	// 		stuff[dot] = CRGB::Purple;
+	// 		FastLED.show();
+	// 		// clear this led for the next time around the loop
+	// 		if (dot > 0) stuff[dot - 1] = CRGB::Black;
+	// 		// delay(30);
+	// 	}
 	// }
 
 
@@ -1726,6 +1764,9 @@ void setup()
 
 
 	setColorTheme(colorTheme);
+
+	drawBottomPixels();
+	delay(10000);
 }
 
 // loop() function -- runs repeatedly as long as board is on ---------------
