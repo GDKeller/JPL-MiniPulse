@@ -20,7 +20,7 @@ AnimationUtils::AnimationUtils(int pin) {
 int AnimationUtils::readBrightness() {
 	//   int potValue = analogRead(potPin);
 	//   int potBrightness = map(potValue, 0, 4095, 127, 255);
-	int potBrightness = 16;
+	int potBrightness = 32;
 	return potBrightness;
 }
 
