@@ -41,7 +41,7 @@ uint8_t fpsRate = 60;
 #define SHOW_SERIAL 0  // Show serial output
 #define ID_LEDS 0	   // ID LEDs
 #define DISABLE_WIFI 1 // Disable WiFi
-#define DIAG_MEASURE 1 // Output memory & performance info for plotter
+#define DIAG_MEASURE 0 // Output memory & performance info for plotter
 
 #pragma region CLASS INSTANTIATIONS
 // Animations
@@ -1342,6 +1342,7 @@ void updateMeteors()
 
 		if (DIAG_MEASURE == 1)
 		{
+			// Count the active meteors for diagnostic output
 			if (animate.ActiveMeteors[i] != nullptr)
 				activeMeteors++;
 		}
