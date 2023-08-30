@@ -1,7 +1,7 @@
 /* DIAGNOSTICS */
 // all 0 is normal operation
 #define TEST_CORES 0   // Test cores
-#define SHOW_SERIAL 0  // Show serial output
+#define SHOW_SERIAL 1  // Show serial output
 #define ID_LEDS 0	   // ID LEDs
 #define DISABLE_WIFI 1 // Disable WiFi
 #define DIAG_MEASURE 0 // Output memory & performance info for plotter
@@ -258,7 +258,7 @@ void setAnimationParams(uint8_t newGlobalFps, bool newMeteorTailDecay, bool newM
 	meteorTailRandom = newMeteorTailRandom == 1 ? 1 : 0;
 }
 
-const char *termColor(const char *color)
+const String termColor(const char *color)
 {
 	if (color == "black")
 		return "\e[0;30m";
@@ -1361,10 +1361,12 @@ void updateMeteors()
  */
 void updateAnimation(const char *spacecraftName, int spacecraftNameSize, int downSignalRate, int upSignalRate)
 {
-	// Serial.println("updateAnimation()");
+// Serial.println("updateAnimation()");
+#if DIAG_MEASURE == 1
 	Serial.print("FPS:");
 	Serial.print(FastLED.getFPS() * 1);
 	Serial.print("\t");
+#endif
 
 	// Update brightness from potentiometer
 	au.updateBrightness();
@@ -1517,9 +1519,7 @@ void parseData(const char *payload)
 		{
 			if (SHOW_SERIAL == 1)
 			{
-				Serial.print(termColor("green"));
-				Serial.print("XML Parsed Succcessfully");
-				Serial.println(termColor("reset"));
+				Serial.print("\n" + String(termColor("green")) + "XML Parsed Succcessfully" + String(termColor("reset")) + "\n");
 			}
 		}
 		else
@@ -1667,16 +1667,7 @@ void parseData(const char *payload)
 							if (SHOW_SERIAL == 1)
 							{
 								// print callsign
-								Serial.print(termColor("yellow"));
-								Serial.print("PARSED callsign: ");
-								Serial.println(newCraft->callsign);
-								Serial.println(termColor("reset"));
-
-								// print name
-								Serial.print(termColor("yellow"));
-								Serial.print("PARSED name: ");
-								Serial.println(name);
-								Serial.println(termColor("reset"));
+								Serial.print("\n" + String(termColor("yellow")) + "PARSED: (" + String(newCraft->callsign) + ") " + String(name) + String(termColor("reset")) + "\n");
 							}
 
 							try
@@ -1710,7 +1701,7 @@ void parseData(const char *payload)
 							if (SHOW_SERIAL == 1)
 							{
 								// Serial.print("signalType: "); Serial.println(signalType);
-								Serial.print("looking for ");
+								Serial.print("Looking for ");
 								Serial.println(newCraft->callsign);
 							}
 
@@ -1750,7 +1741,7 @@ void parseData(const char *payload)
 								// print rate
 								Serial.print(termColor("yellow"));
 								Serial.print("PARSED down rate: ");
-								Serial.println(downRate);
+								Serial.print(downRate);
 								Serial.println(termColor("reset"));
 							}
 
@@ -1843,17 +1834,21 @@ void parseData(const char *payload)
 				{
 					if (SHOW_SERIAL == 1)
 					{
-						Serial.println("---------- found craft ----------");
-						Serial.println(newCraft->name);
-						Serial.println(newCraft->callsign);
-						Serial.println(newCraft->downSignal);
-						Serial.println(newCraft->upSignal);
+						Serial.print("\nvv--------- " + String(termColor("green")) + "Found craft" + String(termColor("reset")) + "---------vv\n");
+						Serial.print("Name: " + String(newCraft->name));
+						Serial.print("\nCallsign: " + String(newCraft->callsign));
+						Serial.print("\nSignal [DOWN]: " + String(newCraft->downSignal));
+						Serial.print("\nSignal [UP]: " + String(newCraft->upSignal));
+						Serial.println("\n^^------------------------------^^\n");
 					}
 					break;
 				}
 				else
 				{
-					// Serial.println("---------- no craft found ----------");
+					if (SHOW_SERIAL == 1) {
+						Serial.print(String(termColor("red")) + "Xx-------- No craft found --------xX\n\n");
+					}
+
 					targetCount++;
 					if (targetCount > 9)
 					{
@@ -1892,8 +1887,7 @@ void parseData(const char *payload)
 
 			if (SHOW_SERIAL == 1)
 			{
-				Serial.println();
-				Serial.println("---------- sending to queue ----------");
+				Serial.print("\n" + String(termColor("yellow")) + ">>--------=> Sending to queue >>--------=>" + String(termColor("reset") + "\n"));
 				Serial.print("NEW FETCH callsign: ");
 				Serial.println(newCraft->callsign);
 				Serial.print("NEW FETCH name: ");
@@ -1904,7 +1898,7 @@ void parseData(const char *payload)
 				Serial.println(newCraft->downSignal);
 				Serial.print("NEW FETCH upSignal: ");
 				Serial.println(newCraft->upSignal);
-				Serial.println();
+				Serial.print(String(termColor("yellow")) + "----------------------------------------\n");
 			}
 
 			if (newCraft != nullptr)
@@ -1914,9 +1908,7 @@ void parseData(const char *payload)
 				{
 					if (SHOW_SERIAL == 1)
 					{
-						Serial.print(termColor("green"));
-						Serial.print("Added to queue");
-						Serial.println(termColor("reset"));
+						Serial.print(String(termColor("green")) + "[+] " + String(newCraft->callsign) + " added to queue" + String(termColor("reset") + "\n\n"));
 					}
 				}
 				else
@@ -2059,9 +2051,7 @@ void fetchData()
 	{
 		if (SHOW_SERIAL == 1)
 		{
-			Serial.print(termColor("purple"));
-			Serial.print("Using dummy xml data!!");
-			Serial.println(termColor("reset"));
+			Serial.print("\n" + String(termColor("red")) + "Using dummy xml data" + String(termColor("reset")) + "\n\n");
 		}
 
 		parseData(dummyXmlData);
@@ -2069,9 +2059,7 @@ void fetchData()
 
 	if (usingDummyData == false && noTargetFoundCounter > noTargetLimit)
 	{
-		Serial.print(termColor("purple"));
-		Serial.print("Target not found limit reach - using dummy xml data");
-		Serial.println(termColor("reset"));
+		Serial.print(String(termColor("red")) + "Target not found limit reach - using dummy xml data" + String(termColor("reset")) + "\n\n");
 		usingDummyData = true;
 		noTargetFoundCounter = 0;
 		parseData(dummyXmlData);
@@ -2212,7 +2200,24 @@ void setup()
 	Serial.begin(115200); // Begin serial communications, ESP32 uses 115200 rate
 
 	WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
-	Serial.println("Starting...");
+
+	Serial.print("\n\n::::::::::: ::::::::::: ::::::::::: ::::::::::: ::::::::::: ::::::::::: :::::::::::\n");
+	Serial.println("  .  ..__. __..__.     ..__ .      ");
+	Serial.println("  |\\ |[__](__ [__]     |[__)|      ");
+	Serial.println("  | \\||  |.__)|  |  \\__||   |___   ");
+	Serial.print("\n\n");
+	Serial.println("   /$$      /$$ /$$           /$$ /$$$$$$$            /$$                       ");
+	Serial.println("  | $$$    /$$$|__/          |__/| $$__  $$          | $$                       ");
+	Serial.println("  | $$$$  /$$$$ /$$ /$$$$$$$  /$$| $$  \\ $$ /$$   /$$| $$  /$$$$$$$  /$$$$$$    ");
+	Serial.println("  | $$ $$/$$ $$| $$| $$__  $$| $$| $$$$$$$/| $$  | $$| $$ /$$_____/ /$$__  $$   ");
+	Serial.println("  | $$  $$$| $$| $$| $$  \\ $$| $$| $$____/ | $$  | $$| $$|  $$$$$$ | $$$$$$$$   ");
+	Serial.println("  | $$\\  $ | $$| $$| $$  | $$| $$| $$      | $$  | $$| $$ \\____  $$| $$_____/   ");
+	Serial.println("  | $$ \\/  | $$| $$| $$  | $$| $$| $$      |  $$$$$$/| $$ /$$$$$$$/|  $$$$$$$   ");
+	Serial.println("  |__/     |__/|__/|__/  |__/|__/|__/       \\______/ |__/|_______/  \\_______/   ");
+	Serial.print("\n");
+
+	Serial.print("::::::::::: ::::::::::: ::::::::::: ::::::::::: ::::::::::: ::::::::::: :::::::::::\n\n");
+	Serial.print("Starting...\n\n");
 
 	// reset settings - wipe stored credentials for testing
 	// these are stored by the esp library
@@ -2442,7 +2447,7 @@ void setup()
 	xTaskCreatePinnedToCore(
 		getData,	  /* Function to implement the task */
 		"getData",	  /* Name of the task */
-		4096,		  /* Stack size in words */
+		4096,		  /* Stack size in byts */
 		NULL,		  /* Task input parameter */
 		0,			  /* Priority of the task */
 		&xHandleData, /* Task handle. */
@@ -2467,7 +2472,7 @@ void setup()
 	setColorTheme(colorTheme);
 
 	drawBottomPixels();
-	delay(10000);
+	delay(100);
 }
 
 // loop() function -- runs repeatedly as long as board is on ---------------
@@ -2506,26 +2511,26 @@ void loop()
 				CraftQueueItem theInfoBuffer; // Create buffer to hold data from queue
 				CraftQueueItem *infoBuffer = &theInfoBuffer;
 
-				// if (uxQueueMessagesWaiting(queue) > 0)
-				// {
-				// 	Serial.print("Queue: " + String(uxQueueMessagesWaiting(queue)) + "\t");
-				// 	// delay(1000);
-				// 	// print all items in queueu without removing them
-				// 	// Serial.print(termColor("purple"));
-				// 	// Serial.print("------- QUEUE ----------");
-				// 	// Serial.println(termColor("reset"));
-				// 	// for (int i = 0; i < uxQueueMessagesWaiting(queue); i++){
-				// 	// 	xQueuePeek(queue, &infoBuffer, i);
-				// 	// 	Serial.print("Queue item "); Serial.print(i); Serial.println("");
-				// 	// 	Serial.print("callsign: "); Serial.println(infoBuffer->callsign);
-				// 	// 	Serial.print("name: "); Serial.println(infoBuffer->name);
-				// 	// 	Serial.print("nameLength: "); Serial.println(infoBuffer->nameLength);
-				// 	// 	Serial.print("downSignal: "); Serial.println(infoBuffer->downSignal);
-				// 	// 	Serial.print("upSignal: "); Serial.println(infoBuffer->upSignal);
-				// 	// 	Serial.println("=+=+=+=+=+=");
-				// 	// 	// printFreeHeap();
-				// 	// }
-				// }
+				if (uxQueueMessagesWaiting(queue) > 0)
+				{
+					#if DIAG_MEASURE == 1
+						Serial.print("Queue: " + String(uxQueueMessagesWaiting(queue)) + "\t");
+					#endif
+
+					// print all items in queueu without removing them
+					Serial.print("\n" + String(termColor("purple")) + "========= QUEUE " + String(uxQueueMessagesWaiting(queue)) + "/5 ==========\n" + String(termColor("reset")));
+
+					for (int i = 0; i < uxQueueMessagesWaiting(queue); i++)
+					{
+						xQueuePeek(queue, &infoBuffer, i);
+						// if ( i != 0) Serial.print(". . . . . . . . .\n");
+						Serial.print("ITEM #" + String(i) + ": (" + String(infoBuffer->callsign) + ") " +  String(infoBuffer->name));
+						// Serial.print("nameLength: "); Serial.println(infoBuffer->nameLength);
+						Serial.print(" [↓ Signal Class: " + String(infoBuffer->downSignal) + "] [↑ Signal Class: " + String(infoBuffer->upSignal) + "]\n");
+					}
+
+					Serial.print(String(termColor("purple")) + "===============================\n\n" + String(termColor("reset")));
+				}
 
 				if (queue != nullptr && infoBuffer != nullptr)
 				{
@@ -2535,48 +2540,44 @@ void loop()
 						// Serial.println("Received from queue"); // Print to serial monitor
 						// Serial.print("callsign: "); Serial.println(infoBuffer->callsign);
 
-						try
-						{
-							if (SHOW_SERIAL == 1)
-							{
-								// print all values of currentCraftBuffer
-								Serial.println("------- DATA BUFFER ----------");
-								Serial.print("callsign: ");
-								Serial.println(currentCraftBuffer.callsign);
-								Serial.print("name: ");
-								Serial.println(currentCraftBuffer.name);
-								Serial.print("nameLength: ");
-								Serial.println(currentCraftBuffer.nameLength);
-								Serial.print("downSignal: ");
-								Serial.println(currentCraftBuffer.downSignal);
-								Serial.print("upSignal: ");
-								Serial.println(currentCraftBuffer.upSignal);
-								printFreeHeap();
-							}
-						}
-						catch (...)
-						{
-							if (SHOW_SERIAL == 1)
-								Serial.println("Error printing currentCraftBuffer");
-							handleException();
-						}
+						// try
+						// {
+						// 	if (SHOW_SERIAL == 1)
+						// 	{
+						// 		// print all values of currentCraftBuffer
+						// 		Serial.print(String(termColor("blue")) + "========== CURRENT DATA BUFFER (pre) ==========" + String(termColor("reset")) + String("\n"));
+						// 		Serial.print("Callsign: " + String(currentCraftBuffer.callsign) + "\n");
+						// 		// Serial.print("name: ");
+						// 		// Serial.println(currentCraftBuffer.name);
+						// 		// Serial.print("nameLength: ");
+						// 		// Serial.println(currentCraftBuffer.nameLength);
+						// 		// Serial.print("downSignal: ");
+						// 		// Serial.println(currentCraftBuffer.downSignal);
+						// 		// Serial.print("upSignal: ");
+						// 		// Serial.println(currentCraftBuffer.upSignal);
+						// 		Serial.print(termColor("blue") + String("------------------------------\n\n") + (termColor("reset")));
+						// 	}
+						// }
+						// catch (...)
+						// {
+						// 	if (SHOW_SERIAL == 1)
+						// 		Serial.println("Error printing currentCraftBuffer");
+						// 	handleException();
+						// }
 
 						try
 						{
 							if (SHOW_SERIAL == 1)
 							{
 								// print received queue item
-								Serial.println("------- DATA RECEIVED ----------");
-								Serial.print("callsign: ");
-								Serial.println(infoBuffer->callsign);
-								Serial.print("name: ");
-								Serial.println(infoBuffer->name);
+								Serial.print("\n------- DATA RECEIVED from Queue ----------\n");
+								Serial.print("(" + String(infoBuffer->callsign) + ") " + String(infoBuffer->name) + "\n");
 								Serial.print("nameLength: ");
 								Serial.println(infoBuffer->nameLength);
 								Serial.print("downSignal: ");
 								Serial.println(infoBuffer->downSignal);
-								Serial.print("upSignal: ");
-								Serial.println(infoBuffer->upSignal);
+								Serial.print("upSignal: " + String((infoBuffer->upSignal)));
+								Serial.print("\n---------------------------\n\n");
 							}
 						}
 						catch (...)
@@ -2618,18 +2619,15 @@ void loop()
 										if (SHOW_SERIAL == 1)
 										{
 											// print all values of currentCraftBuffer
-											Serial.println("------- DATA BUFFER 2 ----------");
-											Serial.print("callsign: ");
-											Serial.println(currentCraftBuffer.callsign);
-											Serial.print("name: ");
-											Serial.println(currentCraftBuffer.name);
-											Serial.print("nameLength: ");
-											Serial.println(currentCraftBuffer.nameLength);
-											Serial.print("downSignal: ");
-											Serial.println(currentCraftBuffer.downSignal);
-											Serial.print("upSignal: ");
-											Serial.println(currentCraftBuffer.upSignal);
-											printFreeHeap();
+											Serial.print(String(termColor("blue")) + "========== CURRENT DATA BUFFER (post) ==========" + String(termColor("reset")) + "\n");
+											Serial.print("(" + String(currentCraftBuffer.callsign) + ") " + String(currentCraftBuffer.name));
+											// Serial.print("nameLength: ");
+											// Serial.println(currentCraftBuffer.nameLength);
+											// Serial.print("downSignal: ");
+											// Serial.println(currentCraftBuffer.downSignal);
+											// Serial.print("upSignal: ");
+											// Serial.println(currentCraftBuffer.upSignal);
+											Serial.print("\n" + String(termColor("blue")) + "------------------------------\n" + String(termColor("reset")));
 										}
 									}
 									catch (...)
@@ -2642,7 +2640,7 @@ void loop()
 								catch (...)
 								{
 									if (SHOW_SERIAL == 1)
-										Serial.println("Error copying data from queue to buffer");
+										Serial.print("\n" + String(termColor("red")) + "Error copying data from queue to buffer" + String(termColor("reset")) + "\n");
 									handleException();
 								}
 							}
@@ -2665,11 +2663,7 @@ void loop()
 						// Serial.print("freeListTop: "); Serial.print(freeListTop); Serial.print("\t");
 						if (freeListTop == MAX_ITEMS)
 						{
-							// Handle overflow condition, e.g., by reporting an error
-							Serial.println();
-							Serial.print(termColor("red"));
-							Serial.println("Free list overflow");
-							Serial.print(termColor("reset"));
+							Serial.print("\n\n" + String(termColor("red")) + "Free list overflow" + String(termColor("reset")) + "\n\n");
 						}
 						else
 						{
@@ -2691,9 +2685,7 @@ void loop()
 					{
 						if (SHOW_SERIAL == 1)
 						{
-							Serial.print(termColor("red"));
-							Serial.println("No data received");
-							Serial.print(termColor("reset"));
+							Serial.print("\n" + String(termColor("red")) + "No data received" + String(termColor("reset")) + "\n");
 						}
 					}
 
