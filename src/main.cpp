@@ -1,3 +1,11 @@
+/* DIAGNOSTICS */
+// all 0 is normal operation
+#define TEST_CORES 0   // Test cores
+#define SHOW_SERIAL 0  // Show serial output
+#define ID_LEDS 0	   // ID LEDs
+#define DISABLE_WIFI 1 // Disable WiFi
+#define DIAG_MEASURE 0 // Output memory & performance info for plotter
+
 /* LIBRARIES */
 #include <Arduino.h>		   // Arduino core
 #include <HTTPClient.h>		   // HTTP client
@@ -34,14 +42,6 @@ using namespace std;	  // C++ I/O
 #define FPS 60				// Frames per second
 uint8_t fpsRate = 60;
 #pragma endregion
-
-/* DIAGNOSTICS */
-// all 0 is normal operation
-#define TEST_CORES 0   // Test cores
-#define SHOW_SERIAL 0  // Show serial output
-#define ID_LEDS 0	   // ID LEDs
-#define DISABLE_WIFI 1 // Disable WiFi
-#define DIAG_MEASURE 0 // Output memory & performance info for plotter
 
 #pragma region CLASS INSTANTIATIONS
 // Animations
@@ -291,7 +291,7 @@ void printFreeHeap()
 	printString += "MEM_Free_Heap:";
 	printString += ESP.getFreeHeap() * 0.001; // Value being divided for visualization on plotter
 	// printString += ESP.getFreeHeap();	// This is the actual value
-	printString += ",";
+	printString += "\t";
 	// printString += termColor("reset");
 	// printString += "\n";
 
@@ -555,9 +555,9 @@ void scrollLetters(const char *spacecraftName, int wordArraySize)
 	}
 
 	int wrapPixel = innerPixelsChunkLength + (wordArraySize * (characterHeight + characterKerning));
-	// Serial.print("wrapPixel: "); Serial.print(wrapPixel); Serial.print(",");
+	// Serial.print("wrapPixel: "); Serial.print(wrapPixel); Serial.print("\t");
 	startPixel++;
-	// Serial.print("startPixel: "); Serial.print(startPixel); Serial.print(",");
+	// Serial.print("startPixel: "); Serial.print(startPixel); Serial.print("\t");
 
 	if (startPixel > wrapPixel)
 	{
@@ -1351,8 +1351,8 @@ void updateMeteors()
 	if (DIAG_MEASURE == 1)
 	{
 		Serial.print("Active_Meteors:");
-		Serial.print(activeMeteors * 10);
-		Serial.print(",");
+		Serial.print(activeMeteors);
+		Serial.print("\t");
 	}
 }
 
@@ -1364,7 +1364,7 @@ void updateAnimation(const char *spacecraftName, int spacecraftNameSize, int dow
 	// Serial.println("updateAnimation()");
 	Serial.print("FPS:");
 	Serial.print(FastLED.getFPS() * 1);
-	Serial.print(",");
+	Serial.print("\t");
 
 	// Update brightness from potentiometer
 	au.updateBrightness();
@@ -1445,9 +1445,6 @@ void updateAnimation(const char *spacecraftName, int spacecraftNameSize, int dow
 	updateMeteors(); // Update first pixel location for all active Meteors in array
 	updateBottomPixels();
 
-
-	
-
 	FastLED.countFPS();
 	updateSpeedCounters();
 }
@@ -1503,7 +1500,7 @@ void parseData(const char *payload)
 	// 	String printString;
 	// 	printString += "parseData_MEM";
 	// 	printString += ESP.getFreeHeap(); // This is the actual value
-	// 	printString += ",";
+	// 	printString += "\t";
 	// }
 
 	// Serial.println("parseData()");
@@ -2130,7 +2127,7 @@ void getData(void *parameter)
 {
 	// UBaseType_t uxHighWaterMark;
 	// uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
-	// Serial.print("high_water_mark:"); Serial.print(uxHighWaterMark); Serial.print(",");
+	// Serial.print("high_water_mark:"); Serial.print(uxHighWaterMark); Serial.print("\t");
 
 	for (;;)
 	{
@@ -2511,7 +2508,7 @@ void loop()
 
 				// if (uxQueueMessagesWaiting(queue) > 0)
 				// {
-				// 	Serial.print("Queue: " + String(uxQueueMessagesWaiting(queue)) + ",");
+				// 	Serial.print("Queue: " + String(uxQueueMessagesWaiting(queue)) + "\t");
 				// 	// delay(1000);
 				// 	// print all items in queueu without removing them
 				// 	// Serial.print(termColor("purple"));
@@ -2665,7 +2662,7 @@ void loop()
 
 						xSemaphoreTake(freeListMutex, portMAX_DELAY);
 						// Serial.println();
-						// Serial.print("freeListTop: "); Serial.print(freeListTop); Serial.print(",");
+						// Serial.print("freeListTop: "); Serial.print(freeListTop); Serial.print("\t");
 						if (freeListTop == MAX_ITEMS)
 						{
 							// Handle overflow condition, e.g., by reporting an error
@@ -2683,7 +2680,7 @@ void loop()
 
 						// Serial.print("Free list top: ");
 						// Serial.print(freeListTop);
-						// Serial.print(",");
+						// Serial.print("\t");
 
 						// Serial.println("Freeing item done");
 						xSemaphoreGive(freeListMutex);
@@ -2726,33 +2723,33 @@ void loop()
 #if DIAG_MEASURE == 1
 		Serial.print("Duration:");
 		Serial.print((millis() - displayDurationTimer) / 1000);
-		Serial.print(",");
+		Serial.print("\t");
 		Serial.print("Delay:");
 		Serial.print((millis() - craftDelayTimer) / 1000);
-		Serial.print(",");
-		Serial.print("Queue:" + String(uxQueueMessagesWaiting(queue)) + ",");
-		Serial.print("FreeListTop:" + String(freeListTop) + ",");
-		Serial.print("stationCount:" + String(stationCount) + ",");
-		Serial.print("dishCount:" + String(dishCount) + ",");
-		Serial.print("targetCount:" + String(targetCount) + ",");
-		Serial.print("signalCount:" + String(signalCount) + ",");
-		Serial.print("parseCounter:" + String(parseCounter) + ",");
-		Serial.print("noTargetFoundCounter:" + String(noTargetFoundCounter) + ",");
-		Serial.print("animationTypeDown:" + String(animationTypeDown) + ",");
-		Serial.print("animationTypeUp:" + String(animationTypeUp) + ",");
+		Serial.print("\t");
+		Serial.print("Queue:" + String(uxQueueMessagesWaiting(queue)) + "\t");
+		Serial.print("FreeListTop:" + String(freeListTop) + "\t");
+		Serial.print("stationCount:" + String(stationCount) + "\t");
+		Serial.print("dishCount:" + String(dishCount) + "\t");
+		Serial.print("targetCount:" + String(targetCount) + "\t");
+		Serial.print("signalCount:" + String(signalCount) + "\t");
+		Serial.print("parseCounter:" + String(parseCounter) + "\t");
+		Serial.print("noTargetFoundCounter:" + String(noTargetFoundCounter) + "\t");
+		Serial.print("animationTypeDown:" + String(animationTypeDown) + "\t");
+		Serial.print("animationTypeUp:" + String(animationTypeUp) + "\t");
 
 		// perfDiff = (millis() - perfTimer) * 10; // Multiplied by 10 for ease of visualization on plotter
 		perfDiff = (millis() - perfTimer); // This is the actual value
 		// UBaseType_t uxHighWaterMark;
 		// uxHighWaterMark = uxTaskGetStackHighWaterMark(xHandleData);
 		printFreeHeap(); // Value might be being multiplied in printFreeHeap() function for ease of visualization on plotter
-		// Serial.print("high_water_mark:"); Serial.print(uxHighWaterMark); Serial.print(",");
+		// Serial.print("high_water_mark:"); Serial.print(uxHighWaterMark); Serial.print("\t");
 		Serial.print("PerfTimer:");
 		Serial.print(perfDiff);
-		Serial.print(",");
-		// Serial.print("QueueSize:"); Serial.print(uxQueueMessagesWaiting(queue) * 1000); Serial.print(",");
-		// Serial.print("ParseCounter:"); Serial.print(parseCounter * 1000); Serial.print(",");	// Multiplied by 10 for ease of visualization on plotter
-		// Serial.print("ParseCounter:"); Serial.print(parseCounter); Serial.print(",");	// This is the actual value
+		Serial.print("\t");
+		// Serial.print("QueueSize:"); Serial.print(uxQueueMessagesWaiting(queue) * 1000); Serial.print("\t");
+		// Serial.print("ParseCounter:"); Serial.print(parseCounter * 1000); Serial.print("\t");	// Multiplied by 10 for ease of visualization on plotter
+		// Serial.print("ParseCounter:"); Serial.print(parseCounter); Serial.print("\t");	// This is the actual value
 		Serial.println();
 		parseCounter = 0;
 		perfTimer = millis();
