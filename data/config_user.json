@@ -1,0 +1,54 @@
+{
+    "debugPerformance": {
+        "testCores": false,
+        "showSerial": true,
+        "diagMeasure": false
+    },
+    "wifiNetwork": {
+        "disableWiFi": true,
+        "apSSID": "MiniPulse",
+        "apPass": "",
+        "serverName": "https://eyes.nasa.gov/dsn/data/dsn.xml?r=",
+        "startAP": false,
+        "wmTimeout": 120,
+        "forceDummyData": true,
+        "noTargetLimit": 3,
+        "retryDataFetchLimit": 10
+    },
+    "pinsHardware": {
+        "outerPin": 17,
+        "middlePin": 18,
+        "innerPin": 19,
+        "bottomPin": 16,
+        "wifiRst": 21,
+        "outputEnable": 22,
+        "potentiometer": 32
+    },
+    "displayLED": {
+        "brightness": 127,
+        "fps": 60,
+        "idLEDs": false,
+        "testLEDs": false,
+        "outerPixelsTotal": 800,
+        "middlePixelsTotal": 800,
+        "innerPixelsTotal": 960,
+        "bottomPixelsTotal": 5,
+        "outerChunks": 10,
+        "middleChunks": 10,
+        "innerChunks": 12,
+        "bottomChunks": 1,
+        "craftDelay": 8000,
+        "displayMinDuration": 1000
+    },
+    "textTypography": {
+        "characterWidth": 4,
+        "textMeteorGap": 4000,
+        "meteorOffset": 32
+    },
+    "timersDelays": {
+        "timerDelay": 10000
+    },
+    "miscellaneous": {
+        "colorTheme": 0
+    }
+}

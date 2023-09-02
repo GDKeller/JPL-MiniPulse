@@ -3,10 +3,6 @@
     Created by Grant Keller, November 2022
 */
 
-#ifndef ADAFRUIT_NEOPIXEL_H
-    #include <Adafruit_NeoPixel.h>
-#endif
-
 #ifndef FASTLED_H
     #include <FastLED.h>
 #endif
@@ -24,11 +20,11 @@ class AnimationUtils {
         int potPin;
         int readBrightness();
         void updateBrightness();
-        void setPixelColor(
-            Adafruit_NeoPixel &strip,
-            uint16_t n,
-            const uint32_t *color
-        );
+        // void setPixelColor(
+        //     Adafruit_NeoPixel &strip,
+        //     uint16_t n,
+        //     const uint32_t *color
+        // );
         AnimationUtils();
         AnimationUtils(int pin);
 

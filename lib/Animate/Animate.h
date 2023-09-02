@@ -3,10 +3,6 @@
     Created by Grant Keller, November 2022
 */
 
-#ifndef ADAFRUIT_NEOPIXEL_H
-#include <Adafruit_NeoPixel.h>
-#endif
-
 #ifndef FASTLED_H
 #include <FastLED.h>
 #endif

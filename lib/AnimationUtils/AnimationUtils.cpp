@@ -47,17 +47,17 @@ void AnimationUtils::updateBrightness()
  * @param n The pixel on the strip to be set
  * @param color The memory reference of the color to set pixel to
  */
-void AnimationUtils::setPixelColor(Adafruit_NeoPixel &strip, uint16_t n, const uint32_t *color)
-{
-	// uint8_t rgb[4];				// Create array that will hold color channel values
-	// *(uint32_t *)&rgb = *color; // Assigns color value to the color channel array
-	// uint8_t channelR = rgb[0];	// blue color channel value
-	// uint8_t channelG = rgb[1];	// Green color channel value
-	// uint8_t channelB = rgb[2];	// Blue color channel value
-	// uint32_t newColor = Adafruit_NeoPixel::Color(((AnimationUtils::brightness * channelR) / 255), ((AnimationUtils::brightness * channelG) / 255), ((AnimationUtils::brightness * channelB) / 255));
-	// if (newColor > 4294967295) newColor = 4294967295;
-	// if (newColor < 0) newColor = 0;
-	// uint32_t gammaCorrected = Adafruit_NeoPixel::gamma32(newColor);
-	// strip.setPixelColor(n, Adafruit_NeoPixel::gamma32(*color));
-	strip.setPixelColor(n, *color);
-}
+// void AnimationUtils::setPixelColor(Adafruit_NeoPixel &strip, uint16_t n, const uint32_t *color)
+// {
+// 	// uint8_t rgb[4];				// Create array that will hold color channel values
+// 	// *(uint32_t *)&rgb = *color; // Assigns color value to the color channel array
+// 	// uint8_t channelR = rgb[0];	// blue color channel value
+// 	// uint8_t channelG = rgb[1];	// Green color channel value
+// 	// uint8_t channelB = rgb[2];	// Blue color channel value
+// 	// uint32_t newColor = Adafruit_NeoPixel::Color(((AnimationUtils::brightness * channelR) / 255), ((AnimationUtils::brightness * channelG) / 255), ((AnimationUtils::brightness * channelB) / 255));
+// 	// if (newColor > 4294967295) newColor = 4294967295;
+// 	// if (newColor < 0) newColor = 0;
+// 	// uint32_t gammaCorrected = Adafruit_NeoPixel::gamma32(newColor);
+// 	// strip.setPixelColor(n, Adafruit_NeoPixel::gamma32(*color));
+// 	strip.setPixelColor(n, *color);
+// }

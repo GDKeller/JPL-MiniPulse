@@ -1,3 +1,100 @@
+/* LIBRARIES */
+#include <Arduino.h>		// Arduino core
+#include <FS.h>				// File system
+#include <SPIFFS.h>			// SPIFFS file system
+#include <HTTPClient.h>		// HTTP client
+#include <FastLED.h>		// FastLED lib
+#include <tinyxml2.h>		// XML parser
+#include <iostream>			// C++ I/O
+#include <cstring>			// C++ string
+#include <ArduinoJson.h>	// JSON parser
+#include <algorithm>		// C++ algorithms
+#include <MathHelpers.h>	// Custom math helpers lib
+#include <TextCharacters.h> // Custom LED text lib
+#include <AnimationUtils.h> // Custom animation utilities lib
+#include <Animate.h>		// Custom animate lib
+#include <SpacecraftData.h> // Custom spacecraft data lib
+#include <WiFiManager.h>	// WiFi manager lib
+
+struct DebugPerformance
+{
+	bool testCores;
+	bool showSerial;
+	bool diagMeasure;
+};
+
+struct WifiNetwork
+{
+	bool disableWiFi;
+	String apSSID;
+	String apPass;
+	String serverName;
+	bool startAP;
+	int wmTimeout;
+	bool forceDummyData;
+	int noTargetLimit;
+	int retryDataFetchLimit;
+};
+
+struct PinsHardware
+{
+	int outerPin;
+	int middlePin;
+	int innerPin;
+	int bottomPin;
+	int wifiRst;
+	int outputEnable;
+	int potentiometer;
+};
+
+struct DisplayLED
+{
+	int brightness;
+	int fps;
+	bool idLEDs;
+	bool testLEDs;
+	int outerPixelsTotal;
+	int middlePixelsTotal;
+	int innerPixelsTotal;
+	int bottomPixelsTotal;
+	int outerChunks;
+	int middleChunks;
+	int innerChunks;
+	int bottomChunks;
+	int craftDelay;
+	int displayMinDuration;
+};
+
+struct TextTypography
+{
+	int characterWidth;
+	int textMeteorGap;
+	int meteorOffset;
+};
+
+struct TimersDelays
+{
+	int timerDelay;
+};
+
+struct Miscellaneous
+{
+	int colorTheme;
+};
+
+struct Config
+{
+	DebugPerformance debugPerformance;
+	WifiNetwork wifiNetwork;
+	PinsHardware pinsHardware;
+	DisplayLED displayLED;
+	TextTypography textTypography;
+	TimersDelays timersDelays;
+	Miscellaneous miscellaneous;
+};
+
+Config config;
+
 /* DIAGNOSTICS */
 // all 0 is normal operation
 #define TEST_CORES 0   // Test cores
@@ -5,23 +102,6 @@
 #define ID_LEDS 0	   // ID LEDs
 #define DISABLE_WIFI 1 // Disable WiFi
 #define DIAG_MEASURE 0 // Output memory & performance info for plotter
-
-/* LIBRARIES */
-#include <Arduino.h>		   // Arduino core
-#include <HTTPClient.h>		   // HTTP client
-#include <Adafruit_NeoPixel.h> // NeoPixel lib
-#include <FastLED.h>		   // FastLED lib
-#include <tinyxml2.h>		   // XML parser
-#include <iostream>			   // C++ I/O
-#include <cstring>			   // C++ string
-#include <ArduinoJson.h>	   // JSON parser
-#include <algorithm>		   // C++ algorithms
-#include <MathHelpers.h>	   // Custom math helpers lib
-#include <TextCharacters.h>	   // Custom LED text lib
-#include <AnimationUtils.h>	   // Custom animation utilities lib
-#include <Animate.h>		   // Custom animate lib
-#include <SpacecraftData.h>	   // Custom spacecraft data lib
-#include <WiFiManager.h>	   // WiFi manager lib
 
 /* NAMESPACES */
 using namespace tinyxml2; // XML parser
@@ -48,6 +128,7 @@ uint8_t fpsRate = 60;
 AnimationUtils au(POTENTIOMETER); // Instantiate animation utils
 AnimationUtils::Colors mpColors;  // Instantiate colors
 Animate animate;				  // Instantiate animate
+ColorTheme currentColors;		  // Instantiate LED color theme
 
 // Data
 SpacecraftData data; // Instantiate spacecraft data
@@ -62,8 +143,7 @@ WiFiManager wm;	 // Used for connecting to WiFi
 HTTPClient http; // Used for fetching data
 #pragma endregion
 
-/**
- * Color Theme
+/** LED Color Themes
  * ID - Name		(Letter/Meteor/Meteor tail)
  * 0  - White		(White/white/white tint)
  * 1  - Cyber		(Teal/teal/blue tint)
@@ -119,6 +199,7 @@ const char *dummyXmlData = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'
     <timestamp>1670419133000</timestamp>
 </dsn>)==--==";
 
+/* DATA FETCHING VARS */
 bool usingDummyData = false; // If true, use dummy data instead of actual data
 bool forceDummyData = true;
 uint8_t noTargetFoundCounter = 0;  // Keeps track of how many times target is not found
@@ -126,15 +207,16 @@ uint8_t noTargetLimit = 3;		   // After target is not found this many times, swi
 uint8_t retryDataFetchCounter = 0; // Keeps track of how many times data fetch failed
 uint8_t retryDataFetchLimit = 10;  // After dummy data is used this many times, try to get actual data again
 bool dataStarted = false;
+
+/* WIFI PORTAL */
+uint16_t wmTimeout = 120;
 WiFiManagerParameter field_color_theme;		   // global param ( for non blocking w params )
 WiFiManagerParameter field_meteor_tail_decay;  // global param ( for non blocking w params )
 WiFiManagerParameter field_meteor_tail_random; // global param ( for non blocking w params )
 WiFiManagerParameter field_global_fps;
-
-uint16_t wmTimout = 120;
 unsigned long wmStartTime = millis();
 bool portalRunning = false;
-bool startAP = false; // start AP and webserver if true, else start only webserver
+bool startAP = false; // If true, start AP and webserver. If false, start only webserver
 
 // Time is measured in milliseconds and will become a bigger number
 // than can be stored in an int, so long is used
@@ -152,7 +234,7 @@ const uint16_t textMeteorGap = 4000;
 const uint8_t meteorOffset = 32;
 const uint8_t offsetHalf = meteorOffset * 0.5;
 
-/* DATA */
+/* DATA COUNTERS */
 // Counters to track during XML parsing
 unsigned int stationCount = 0;
 unsigned int dishCount = 0;
@@ -220,27 +302,10 @@ bool animateFirstCycleDown = true;
 bool animateFirstCycleUp = true;
 
 /* HARDWARDE */
-// Adafruit_NeoPixel neopixel;
-
-// Define NeoPixel objects - NAME(PIXEL_COUNT, PIN, PIXEL_TYPE)
-// Adafruit_NeoPixel
-// 	outer_pixels(outerPixelsTotal, OUTER_PIN, NEO_GRB + NEO_KHZ800),
-// 	middle_pixels(middlePixelsTotal, MIDDLE_PIN, NEO_GRB + NEO_KHZ800),
-// 	inner_pixels(innerPixelsTotal, INNER_PIN, NEO_GRB + NEO_KHZ800),
-// 	bottom_pixels(bottomPixelsTotal, BOTTOM_PIN, NEO_GRB + NEO_KHZ800);
-
-// Adafruit_NeoPixel* allStrips[4] = {
-// 	&inner_pixels,	// ID: Green
-// 	&middle_pixels, // ID: Red
-// 	&outer_pixels,	// ID: Blue
-// 	&bottom_pixels, // ID: Purple
-// };
-
 CRGB inner_leds[innerPixelsTotal];
 CRGB middle_leds[middlePixelsTotal];
 CRGB outer_leds[outerPixelsTotal];
 CRGB bottom_leds[bottomPixelsTotal];
-
 CRGB *allStrips[4] = {
 	inner_leds,	 // ID: Green
 	middle_leds, // ID: Red
@@ -248,8 +313,187 @@ CRGB *allStrips[4] = {
 	bottom_leds, // ID: Purple
 };
 
-/* GENERAL UTILITIES */
-ColorTheme currentColors;
+/* CONFIG LOADING */
+void loadDefaultConfig(JsonDocument &doc)
+{
+	File configFile = SPIFFS.open("/default_config.json", "r");
+	if (!configFile)
+	{
+		Serial.println("Failed to open default config file");
+		return;
+	}
+
+	size_t size = configFile.size();
+	std::unique_ptr<char[]> buf(new char[size]);
+	configFile.readBytes(buf.get(), size);
+	deserializeJson(doc, buf.get());
+	configFile.close();
+}
+
+void loadUserConfig(JsonDocument &doc)
+{
+	File configFile = SPIFFS.open("/config.json", "r");
+	if (!configFile)
+	{
+		Serial.println("Failed to open user config file, falling back to defaults");
+		return;
+	}
+
+	size_t size = configFile.size();
+	std::unique_ptr<char[]> buf(new char[size]);
+	configFile.readBytes(buf.get(), size);
+	deserializeJson(doc, buf.get());
+	configFile.close();
+}
+
+void merge(JsonObject &dest, const JsonObject &src)
+{
+	for (JsonPair kvp : src)
+	{
+		if (kvp.value().is<JsonObject>() && dest.containsKey(kvp.key()))
+		{
+			JsonObject destChild = dest[kvp.key()].as<JsonObject>();
+			merge(destChild, kvp.value().as<JsonObject>());
+		}
+		else
+		{
+			dest[kvp.key()] = kvp.value();
+		}
+	}
+}
+
+void loadConfig()
+{
+	DynamicJsonDocument defaultDoc(2048);
+	DynamicJsonDocument userDoc(2048);
+
+	loadDefaultConfig(defaultDoc);
+	loadUserConfig(userDoc);
+
+	JsonObject defaultObj = defaultDoc.as<JsonObject>();
+	JsonObject userObj = userDoc.as<JsonObject>();
+
+	merge(defaultObj, userObj);
+
+	// Use defaultObj to extract values to struct
+	// Debug Performance
+	if (defaultObj.containsKey("debugPerformance"))
+	{
+		JsonObject debugPerformance = defaultObj["debugPerformance"];
+		if (debugPerformance.containsKey("testCores"))
+			config.debugPerformance.testCores = debugPerformance["testCores"];
+		if (debugPerformance.containsKey("showSerial"))
+			config.debugPerformance.showSerial = debugPerformance["showSerial"];
+		if (debugPerformance.containsKey("diagMeasure"))
+			config.debugPerformance.diagMeasure = debugPerformance["diagMeasure"];
+	}
+
+	// WiFi Network
+	if (defaultObj.containsKey("wifiNetwork"))
+	{
+		JsonObject wifiNetwork = defaultObj["wifiNetwork"];
+		if (wifiNetwork.containsKey("disableWiFi"))
+			config.wifiNetwork.disableWiFi = wifiNetwork["disableWiFi"];
+		if (wifiNetwork.containsKey("apSSID"))
+			config.wifiNetwork.apSSID = wifiNetwork["apSSID"].as<String>();
+		if (wifiNetwork.containsKey("apPass"))
+			config.wifiNetwork.apPass = wifiNetwork["apPass"].as<String>();
+		if (wifiNetwork.containsKey("serverName"))
+			config.wifiNetwork.serverName = wifiNetwork["serverName"].as<String>();
+		if (wifiNetwork.containsKey("startAP"))
+			config.wifiNetwork.startAP = wifiNetwork["startAP"];
+		if (wifiNetwork.containsKey("wmTimeout"))
+			config.wifiNetwork.wmTimeout = wifiNetwork["wmTimeout"];
+		if (wifiNetwork.containsKey("forceDummyData"))
+			config.wifiNetwork.forceDummyData = wifiNetwork["forceDummyData"];
+		if (wifiNetwork.containsKey("noTargetLimit"))
+			config.wifiNetwork.noTargetLimit = wifiNetwork["noTargetLimit"];
+		if (wifiNetwork.containsKey("retryDataFetchLimit"))
+			config.wifiNetwork.retryDataFetchLimit = wifiNetwork["retryDataFetchLimit"];
+	}
+
+	// Pins Hardware
+	if (defaultObj.containsKey("pinsHardware"))
+	{
+		JsonObject pinsHardware = defaultObj["pinsHardware"];
+		if (pinsHardware.containsKey("outerPin"))
+			config.pinsHardware.outerPin = pinsHardware["outerPin"];
+		if (pinsHardware.containsKey("middlePin"))
+			config.pinsHardware.middlePin = pinsHardware["middlePin"];
+		if (pinsHardware.containsKey("innerPin"))
+			config.pinsHardware.innerPin = pinsHardware["innerPin"];
+		if (pinsHardware.containsKey("bottomPin"))
+			config.pinsHardware.bottomPin = pinsHardware["bottomPin"];
+		if (pinsHardware.containsKey("wifiRst"))
+			config.pinsHardware.wifiRst = pinsHardware["wifiRst"];
+		if (pinsHardware.containsKey("outputEnable"))
+			config.pinsHardware.outputEnable = pinsHardware["outputEnable"];
+		if (pinsHardware.containsKey("potentiometer"))
+			config.pinsHardware.potentiometer = pinsHardware["potentiometer"];
+	}
+
+	// Display LED
+	if (defaultObj.containsKey("displayLED"))
+	{
+		JsonObject displayLED = defaultObj["displayLED"];
+		if (displayLED.containsKey("brightness"))
+			config.displayLED.brightness = displayLED["brightness"];
+		if (displayLED.containsKey("fps"))
+			config.displayLED.fps = displayLED["fps"];
+		if (displayLED.containsKey("idLEDs"))
+			config.displayLED.idLEDs = displayLED["idLEDs"];
+		if (displayLED.containsKey("testLEDs"))
+			config.displayLED.testLEDs = displayLED["testLEDs"];
+		if (displayLED.containsKey("outerPixelsTotal"))
+			config.displayLED.outerPixelsTotal = displayLED["outerPixelsTotal"];
+		if (displayLED.containsKey("middlePixelsTotal"))
+			config.displayLED.middlePixelsTotal = displayLED["middlePixelsTotal"];
+		if (displayLED.containsKey("innerPixelsTotal"))
+			config.displayLED.innerPixelsTotal = displayLED["innerPixelsTotal"];
+		if (displayLED.containsKey("bottomPixelsTotal"))
+			config.displayLED.bottomPixelsTotal = displayLED["bottomPixelsTotal"];
+		if (displayLED.containsKey("outerChunks"))
+			config.displayLED.outerChunks = displayLED["outerChunks"];
+		if (displayLED.containsKey("middleChunks"))
+			config.displayLED.middleChunks = displayLED["middleChunks"];
+		if (displayLED.containsKey("innerChunks"))
+			config.displayLED.innerChunks = displayLED["innerChunks"];
+		if (displayLED.containsKey("bottomChunks"))
+			config.displayLED.bottomChunks = displayLED["bottomChunks"];
+		if (displayLED.containsKey("craftDelay"))
+			config.displayLED.craftDelay = displayLED["craftDelay"];
+		if (displayLED.containsKey("displayMinDuration"))
+			config.displayLED.displayMinDuration = displayLED["displayMinDuration"];
+	}
+
+	// Text Typography
+	if (defaultObj.containsKey("textTypography"))
+	{
+		JsonObject textTypography = defaultObj["textTypography"];
+		if (textTypography.containsKey("characterWidth"))
+			config.textTypography.characterWidth = textTypography["characterWidth"];
+		if (textTypography.containsKey("textMeteorGap"))
+			config.textTypography.textMeteorGap = textTypography["textMeteorGap"];
+		if (textTypography.containsKey("meteorOffset"))
+			config.textTypography.meteorOffset = textTypography["meteorOffset"];
+	}
+
+	// Timers Delays
+	if (defaultObj.containsKey("timersDelays"))
+	{
+		JsonObject timersDelays = defaultObj["timersDelays"];
+		if (timersDelays.containsKey("timerDelay"))
+			config.timersDelays.timerDelay = timersDelays["timerDelay"];
+	}
+
+	// Miscellaneous
+	if (defaultObj.containsKey("miscellaneous"))
+	{
+		JsonObject miscellaneous = defaultObj["miscellaneous"];
+		if (miscellaneous.containsKey("colorTheme"))
+			config.miscellaneous.colorTheme = miscellaneous["colorTheme"];
+	}
+}
 
 void setColorTheme(uint8_t colorTheme)
 {
@@ -381,9 +625,10 @@ void handleException()
 	Serial.println(termColor("reset"));
 }
 
-String prettyPrintCraftInfo(uint listPosition, const char * callsign, const char * name, uint nameLength, uint downSignal, uint upSignal) {
+String prettyPrintCraftInfo(uint listPosition, const char *callsign, const char *name, uint nameLength, uint downSignal, uint upSignal)
+{
 	String formattedString;
-	formattedString = "ITEM #" + String(listPosition) + ": (" + String(callsign) + ") " +  String(name) + " [" + String(nameLength) + "]";
+	formattedString = "ITEM #" + String(listPosition) + ": (" + String(callsign) + ") " + String(name) + " [" + String(nameLength) + "]";
 	formattedString += " [↓ Sig Dn: " + String(downSignal) + "] [↑ Sig Up: " + String(upSignal) + "]\n";
 	return formattedString;
 }
@@ -434,7 +679,7 @@ void doWiFiManager()
 		wm.process(); // do processing
 
 		// check for timeout
-		if ((millis() - wmStartTime) > (wmTimout * 1000))
+		if ((millis() - wmStartTime) > (wmTimeout * 1000))
 		{
 			Serial.println("portaltimeout");
 			portalRunning = false;
@@ -496,21 +741,6 @@ void allStripsOff(void)
 void reverseStripsArray(void)
 {
 	reverse(allStrips, allStrips + 4);
-}
-
-uint32_t brightnessAdjust(uint32_t color)
-{
-	au.updateBrightness();
-	uint8_t rgb[4];			   // Create array that will hold color channel values
-	*(uint32_t *)&rgb = color; // Assigns color value to the color channel array
-	uint8_t channelR = rgb[0]; // blue color channel value
-	uint8_t channelG = rgb[1]; // Green color channel value
-	uint8_t channelB = rgb[2]; // Blue color channel value
-	// Serial.println(r);
-	// Serial.println(g);
-	// Serial.println(b);
-	// Serial.println();
-	return Adafruit_NeoPixel::Color(((AnimationUtils::brightness * channelR) / 255), ((AnimationUtils::brightness * channelG) / 255), ((AnimationUtils::brightness * channelB) / 255));
 }
 
 // Display letter from array
@@ -1598,7 +1828,7 @@ void parseData(const char *payload)
 	// Serial.println("XML elements found");
 
 	CraftQueueItem *newCraft = nullptr;
-	
+
 	if (xSemaphoreTake(freeListMutex, 100) == pdTRUE)
 	{
 
@@ -1610,7 +1840,8 @@ void parseData(const char *payload)
 		}
 
 		Serial.print("---> freeListTop: " + String(freeListTop) + "\n");
-		if (freeListTop > 0) newCraft = freeList[--freeListTop];
+		if (freeListTop > 0)
+			newCraft = freeList[--freeListTop];
 		Serial.print("-------- freeListTop: " + String(freeListTop) + "\n");
 		xSemaphoreGive(freeListMutex);
 	}
@@ -1625,20 +1856,22 @@ void parseData(const char *payload)
 
 		for (int i = 0; i < 100; i++)
 		{ // Arbitray loop number to prevent infinite loop, but ensure we try to parse all elements
-			// if (SHOW_SERIAL == 1) {
-			// Serial.print("->>> Parse loop: ");
-			// Serial.println(i);
-			// // print stationcount, dishcount, targetcount
-			// Serial.println("");
-			// Serial.print("stationCount: ");
-			// Serial.println(stationCount);
-			// Serial.print("dishCount: ");
-			// Serial.println(dishCount);
-			// Serial.print("targetCount: ");
-			// Serial.println(targetCount);
-			// Serial.println("");
-			// // }
-			// Serial.println("-------------------->>> Parse loop");
+		  // if (SHOW_SERIAL == 1) {
+		  // Serial.print("->>> Parse loop: ");
+		  // Serial.println(i);
+		  // // print stationcount, dishcount, targetcount
+		  // Serial.println("");
+		  // Serial.print("stationCount: ");
+		  // Serial.println(stationCount);
+		  // Serial.print("dishCount: ");
+		  // Serial.println(dishCount);
+		  // Serial.print("targetCount: ");
+		  // Serial.println(targetCount);
+		  // Serial.println("");
+		  // // }
+		  // Serial.println("-------------------->>> Parse loop");
+
+			Serial.print("stationCount: " + String(stationCount) + " | dishCount: " + String(dishCount) + " | targetCount: " + String(targetCount) + " | signalCount: " + String(signalCount) + "\n");
 
 			try
 			{
@@ -1894,7 +2127,8 @@ void parseData(const char *payload)
 				}
 				else
 				{
-					if (SHOW_SERIAL == 1) {
+					if (SHOW_SERIAL == 1)
+					{
 						Serial.print(String(termColor("red")) + "Xx-------- No craft found --------xX" + String(termColor("reset")) + "\n\n");
 					}
 
@@ -2254,22 +2488,21 @@ void saveColorThemeCallback()
 void setup()
 {
 	Serial.begin(115200); // Begin serial communications, ESP32 uses 115200 rate
-
-	WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
+	WiFi.mode(WIFI_STA);  // explicitly set mode, esp defaults to STA+AP
 
 	Serial.print("\n\n::::::::::: ::::::::::: ::::::::::: ::::::::::: ::::::::::: ::::::::::: :::::::::::\n\n");
-	Serial.println("  .  ..__. __..__.     ..__ .      ");
-	Serial.println("  |\\ |[__](__ [__]     |[__)|      ");
-	Serial.println("  | \\||  |.__)|  |  \\__||   |___   ");
+	Serial.println("  .  ..__. __..__.     ..__ .");
+	Serial.println("  |\\ |[__](__ [__]     |[__)|");
+	Serial.println("  | \\||  |.__)|  |  \\__||   |___");
 	Serial.print("\n");
-	Serial.println("   /$$      /$$ /$$           /$$ /$$$$$$$            /$$                       ");
-	Serial.println("  | $$$    /$$$|__/          |__/| $$__  $$          | $$                       ");
-	Serial.println("  | $$$$  /$$$$ /$$ /$$$$$$$  /$$| $$  \\ $$ /$$   /$$| $$  /$$$$$$$  /$$$$$$    ");
-	Serial.println("  | $$ $$/$$ $$| $$| $$__  $$| $$| $$$$$$$/| $$  | $$| $$ /$$_____/ /$$__  $$   ");
-	Serial.println("  | $$  $$$| $$| $$| $$  \\ $$| $$| $$____/ | $$  | $$| $$|  $$$$$$ | $$$$$$$$   ");
-	Serial.println("  | $$\\  $ | $$| $$| $$  | $$| $$| $$      | $$  | $$| $$ \\____  $$| $$_____/   ");
-	Serial.println("  | $$ \\/  | $$| $$| $$  | $$| $$| $$      |  $$$$$$/| $$ /$$$$$$$/|  $$$$$$$   ");
-	Serial.println("  |__/     |__/|__/|__/  |__/|__/|__/       \\______/ |__/|_______/  \\_______/   ");
+	Serial.println("   /$$      /$$ /$$           /$$ /$$$$$$$            /$$");
+	Serial.println("  | $$$    /$$$|__/          |__/| $$__  $$          | $$");
+	Serial.println("  | $$$$  /$$$$ /$$ /$$$$$$$  /$$| $$  \\ $$ /$$   /$$| $$  /$$$$$$$  /$$$$$$");
+	Serial.println("  | $$ $$/$$ $$| $$| $$__  $$| $$| $$$$$$$/| $$  | $$| $$ /$$_____/ /$$__  $$");
+	Serial.println("  | $$  $$$| $$| $$| $$  \\ $$| $$| $$____/ | $$  | $$| $$|  $$$$$$ | $$$$$$$$");
+	Serial.println("  | $$\\  $ | $$| $$| $$  | $$| $$| $$      | $$  | $$| $$ \\____  $$| $$_____/");
+	Serial.println("  | $$ \\/  | $$| $$| $$  | $$| $$| $$      |  $$$$$$/| $$ /$$$$$$$/|  $$$$$$$");
+	Serial.println("  |__/     |__/|__/|__/  |__/|__/|__/       \\______/ |__/|_______/  \\_______/");
 	Serial.print("\n");
 
 	Serial.print("::::::::::: ::::::::::: ::::::::::: ::::::::::: ::::::::::: ::::::::::: :::::::::::\n\n");
@@ -2283,6 +2516,27 @@ void setup()
 	Serial.setDebugOutput(false);
 	wm.setDebugOutput(false);
 #endif
+
+	if (TEST_CORES == 1)
+	{
+		Serial.print("setup() running on core " + String(xPortGetCoreID()) + "\n\n");
+	}
+
+	// Make sure we can read the EEPROM
+	if (SPIFFS.begin(true))
+	{
+		Serial.println("SPIFFS mounted successfully");
+		loadConfig();
+		Serial.print("Config loaded\n\n");
+	}
+	else
+	{
+		Serial.println("An Error has occurred while mounting SPIFFS");
+		Serial.println("Restarting...");
+		delay(1000);
+		ESP.restart();
+		return;
+	}
 
 	// Set up pins
 	pinMode(OUTER_PIN, OUTPUT);
@@ -2300,94 +2554,11 @@ void setup()
 	// 	allStrips[i]->begin();
 	// }
 
-	// // Set brightness
-	// for (int i = 0; i < allStripsLength; i++)
-	// {
-	// 	allStrips[i]->setBrightness(BRIGHTNESS);
-	// }
+	// Set initial LED brightness
 	FastLED.setBrightness(BRIGHTNESS);
-
-	// allStripsOff();	// Turn off all NeoPixels
-
-	// // Identify Neopixel strips by filling with unique colors
-	// if (ID_LEDS == 1)
-	// {
-	// 	#if SHOW_SERIAL == 1
-	// 		Serial.println("ID LED strips");
-	// 	#endif
-
 	// 	au.updateBrightness(); // Update brightness from potentiometer
 
-	// 	// const uint32_t *colors[] = {mpColors.red.pointer, mpColors.green.pointer, mpColors.blue.pointer, mpColors.purple.pointer, mpColors.white.pointer};
-
-	// 	// for (int c = 0; c < sizeof(colors) / sizeof(colors[0]); c++)
-	// 	// {
-	// 	// 	for (int i = 0; i < allStripsLength; i++)
-	// 	// 	{
-	// 	// 		allStrips[i]->fill(*colors[c]);
-	// 	// 	}
-	// 	// 	allStripsShow();
-	// 	// 	delay(5000);
-	// 	// }
-
-	// 	// outer_pixels.fill(*mpColors.blue.pointer);
-	// 	// // bottom_pixels.fill(*mpColors.purple.pointer);
-	// 	// outer_pixels.show();
-	// 	// bottom_pixels.show();
-
-	// 	allStrips[0]->fill(*mpColors.red.pointer);
-	// 	allStrips[1]->fill(*mpColors.red.pointer);
-	// 	allStrips[2]->fill(*mpColors.red.pointer);
-	// 	allStripsShow();
-	// 	delay(5000);
-
-	// 	allStrips[0]->fill(*mpColors.green.pointer);
-	// 	allStrips[1]->fill(*mpColors.green.pointer);
-	// 	allStrips[2]->fill(*mpColors.green.pointer);
-	// 	allStripsShow();
-	// 	delay(5000);
-
-	// 	allStrips[0]->fill(*mpColors.blue.pointer);
-	// 	allStrips[1]->fill(*mpColors.blue.pointer);
-	// 	allStrips[2]->fill(*mpColors.blue.pointer);
-	// 	allStripsShow();
-	// 	delay(5000);
-
-	// 	// allStrips[0]->fill(*mpColors.red.pointer);
-	// 	// allStrips[1]->fill(*mpColors.green.pointer);
-	// 	// allStrips[2]->fill(*mpColors.blue.pointer);
-	// 	// allStrips[3]->fill(*mpColors.purple.pointer);
-	// 	// allStripsShow();
-	// 	// delay(10000);
-	// 	// allStripsOff();
-	// 	// delay(3000);
-
-	// 	// hueCycle(*allStrips[0], 10);
-	// 	// allStripsOff();
-	// 	// hueCycle(*allStrips[1], 10);
-	// 	// allStripsOff();
-	// 	// hueCycle(*allStrips[2], 10);
-	// 	// allStripsOff();
-	// 	// hueCycle(*allStrips[3], 10);
-	// 	// allStripsOff();
-	// 	// delay(3000);
-
-	// 	// colorWipe(*allStrips[0], mpColors.red.pointer, 10);
-	// 	// colorWipe(*allStrips[1], mpColors.green.pointer, 10);
-	// 	// colorWipe(*allStrips[2], mpColors.blue.pointer, 10);
-	// 	// colorWipe(*allStrips[3], mpColors.yellow.pointer, 10);
-
-	// 	// allStripsShow();
-	// 	// delay(10000);
-	// 	// rainbow(*allStrips[0], 10);             // Flowing rainbow cycle along the whole strip
-	// 	// rainbow(*allStrips[1], 10);             // Flowing rainbow cycle along the whole strip
-	// 	// rainbow(*allStrips[2], 10);             // Flowing rainbow cycle along the whole strip
-	// 	// rainbow(*allStrips[3], 10);             // Flowing rainbow cycle along the whole strip
-
-	// 	allStripsOff();
-	// }
-
-	/* Fast LED */
+	/* Fast LED Hardware Setup */
 	FastLED.addLeds<NEOPIXEL, OUTER_PIN>(outer_leds, outerPixelsTotal);
 	FastLED.addLeds<NEOPIXEL, MIDDLE_PIN>(middle_leds, middlePixelsTotal);
 	FastLED.addLeds<NEOPIXEL, INNER_PIN>(inner_leds, innerPixelsTotal);
@@ -2443,7 +2614,7 @@ void setup()
 	wm.setConnectTimeout(10); // connect attempt fails after n seconds
 
 	// wm.setSaveConnectTimeout(5);
-	wm.setConfigPortalTimeout(120);
+	wm.setConfigPortalTimeout(wmTimeout);
 
 	// wm.startConfigPortal(AP_SSID, AP_PASS);
 
@@ -2452,54 +2623,45 @@ void setup()
 	// if AP_PASSWORD is empty it will be a non-protected AP
 	// then goes into a blocking loop awaiting configuration and will return success result
 
-	Serial.println("Saved WiFi credentials? ");
-	Serial.println(wm.getWiFiIsSaved());
+	Serial.print("Existing WiFi credentials: ");
 	if (wm.getWiFiIsSaved() == true)
 	{
+		Serial.print("True\nConnecting to WiFi...\n");
 		bool res;
 		res = wm.autoConnect(AP_SSID, AP_PASS); // non-password protected ap
 
-		if (!res)
+		if (!res) // Wifi connection failed
 		{
-			Serial.println("Failed to connect");
+			Serial.print(String(termColor("red")) + "Failed to connect to WiFi" + String(termColor("reset")));
 			// ESP.restart();
 			// wm.startConfigPortal(AP_SSID, AP_PASS);
 		}
-		else
+		else // Wifi connection successful
 		{
-			// if you get here you have connected to the WiFi
-			Serial.println("Connected to WiFi");
+			Serial.print(String(termColor("green")) + "Connected to WiFi successfuly" + String(termColor("reset")));
 		}
 	}
 	else
 	{
+		Serial.print("False\nSetting new credentials from config file\n");
 		wm.startConfigPortal(AP_SSID, AP_PASS);
 		wm.startWebPortal();
 		portalRunning = true;
 		wmStartTime = millis();
 	}
+	Serial.print("WiFi Status: " + String(WiFi.status()) + "\n\n");
 
-	if (TEST_CORES == 1)
-	{
-		Serial.print("setup() running on core ");
-		Serial.println(xPortGetCoreID());
-	}
-
-	// Create the mutex
-	freeListMutex = xSemaphoreCreateMutex();
-
-	xSemaphoreTake(freeListMutex, portMAX_DELAY); // Take the mutex before accessing shared data
-
+	/* DATA TASK SETUP */
 	// Initialize the queue item pool
+	freeListMutex = xSemaphoreCreateMutex();	  // Create the mutex
+	xSemaphoreTake(freeListMutex, portMAX_DELAY); // Take the mutex before accessing shared data
 	freeList[0] = &itemPool[0];
 	freeList[1] = &itemPool[1];
 	freeList[2] = &itemPool[2];
 	freeList[3] = &itemPool[3];
 	freeList[4] = &itemPool[4];
-
-	xSemaphoreGive(freeListMutex); // Give the mutex back when done
-
-	// Initialize task for core 1
+	xSemaphoreGive(freeListMutex); // Give the mutex back when done accessing shared data
+	// Initialize the data task on the second core
 	xTaskCreatePinnedToCore(
 		getData,	  /* Function to implement the task */
 		"getData",	  /* Name of the task */
@@ -2509,29 +2671,29 @@ void setup()
 		&xHandleData, /* Task handle. */
 		0);			  /* Core where the task should run */
 
-	// Create queue to pass data between tasks on separate cores
-	queue = xQueueCreate(5, sizeof(CraftQueueItem)); // Create queue
+	queue = xQueueCreate(5, sizeof(CraftQueueItem)); // Create queue to pass data between tasks on separate cores
 
+	// Check that queue was created successfully
 	if (queue == NULL)
-	{ // Check that queue was created successfully
-#if SHOW_SERIAL == 1
-		Serial.println("Error creating the queue");
-		delay(3000);
-#endif
+	{
+		if (SHOW_SERIAL == 1)
+		{
+			Serial.print(String(termColor("red")) + "Error creating the queue" + termColor("reset"));
+			delay(3000);
+		}
 		ESP.restart();
 	}
 
-	http.setReuse(true);
-
-	data.loadJson();
-
-	setColorTheme(colorTheme);
-
-	drawBottomPixels();
-	delay(100);
+	http.setReuse(true);	   // Use persistent connection
+	data.loadJson();		   // Load data from json file
+	setColorTheme(colorTheme); // Set color theme
+	drawBottomPixels();		   // Draw initial bottom pixels
+	delay(100);				   // Small delay to allow bottom pixels to draw
 }
 
-// loop() function -- runs repeatedly as long as board is on ---------------
+/* MAIN LOOP
+ * Runs repeatedly as long as board is on
+ */
 void loop()
 {
 	try
@@ -2569,7 +2731,8 @@ void loop()
 
 				if (uxQueueMessagesWaiting(queue) > 0)
 				{
-					if (DIAG_MEASURE == 1) Serial.print("Queue: " + String(uxQueueMessagesWaiting(queue)) + "\t");
+					if (DIAG_MEASURE == 1)
+						Serial.print("Queue: " + String(uxQueueMessagesWaiting(queue)) + "\t");
 
 					// print all items in queueu without removing them
 					Serial.print("\n" + String(termColor("purple")) + "========= QUEUE " + String(uxQueueMessagesWaiting(queue)) + "/5 ==========\n" + String(termColor("reset")));
@@ -2578,7 +2741,7 @@ void loop()
 					{
 						xQueuePeek(queue, &infoBuffer, i);
 						// if ( i != 0) Serial.print(". . . . . . . . .\n");
-						Serial.print("ITEM #" + String(i) + ": (" + String(infoBuffer->callsign) + ") " +  String(infoBuffer->name));
+						Serial.print("ITEM #" + String(i) + ": (" + String(infoBuffer->callsign) + ") " + String(infoBuffer->name));
 						// Serial.print("nameLength: "); Serial.println(infoBuffer->nameLength);
 						Serial.print(" [↓ Signal Class: " + String(infoBuffer->downSignal) + "] [↑ Signal Class: " + String(infoBuffer->upSignal) + "]\n");
 					}
@@ -2636,7 +2799,8 @@ void loop()
 						}
 						catch (...)
 						{
-							if (SHOW_SERIAL == 1) Serial.print("\n" + String(termColor("red")) + "Error printing infoBuffer" + "");
+							if (SHOW_SERIAL == 1)
+								Serial.print("\n" + String(termColor("red")) + "Error printing infoBuffer" + "");
 							handleException();
 						}
 
