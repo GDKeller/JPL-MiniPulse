@@ -22,6 +22,7 @@
         <upSignal dataRate="102401" frequency="2098" power="0.2630" signalType="data" spacecraft="Rate4" spacecraftID="-92" />
         <target downlegRange="1.389e+06" id="92" name="Rate4" rtlt="9.266" uplegRange="1.389e+06" />
     </dish>
+    <station friendlyName="Canberra" name="cdscc" timeUTC="1670419133000" timeZoneOffset="39600000" />
     <dish azimuthAngle="124.5" elevationAngle="53.41" isArray="false" isDDOR="false" isMSPA="false" name="DSS53" windSpeed="5.556">
         <downSignal dataRate="1048577" frequency="8436000000" power="-170.1741" signalType="data" spacecraft="Rate5" spacecraftID="-210" />
         <upSignal dataRate="1048577" frequency="8436000000" power="-170.1741" signalType="data" spacecraft="Rate5" spacecraftID="-210" />
