@@ -1,11 +1,12 @@
 {
-    "debugPerformance": {
+    "debugUtils": {
         "testCores": false,
         "showSerial": true,
-        "diagMeasure": false
+        "diagMeasure": false,
+        "disableWiFi": true,
+        "testLEDs": false
     },
     "wifiNetwork": {
-        "disableWiFi": true,
         "apSSID": "MiniPulse",
         "apPass": "",
         "serverName": "https://eyes.nasa.gov/dsn/data/dsn.xml?r=",
@@ -27,8 +28,6 @@
     "displayLED": {
         "brightness": 127,
         "fps": 60,
-        "idLEDs": false,
-        "testLEDs": false,
         "outerPixelsTotal": 800,
         "middlePixelsTotal": 800,
         "innerPixelsTotal": 960,
