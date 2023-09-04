@@ -105,7 +105,8 @@ using namespace tinyxml2; // XML parser
 using namespace std;	  // C++ I/O
 #pragma endregion thing
 
-#pragma region-- BOARD PIN ASSIGNMENTS
+#pragma region-- ESP32 PIN ASSIGNMENTS
+#define FASTLED_ALL_PINS_HARDWARE_SPI
 #define OUTER_PIN 17		// Outer ring pin
 #define MIDDLE_PIN 18		// Middle ring pin
 #define INNER_PIN 19		// Inner ring pin
@@ -335,6 +336,7 @@ bool animateFirstCycleUp = true;
 #pragma endregion -- END ANIMATION UTILITIES
 
 #pragma region -- DEV UTILITIES
+
 const String termColor(const char* color)
 {
 	if (color == "black")
@@ -442,12 +444,106 @@ void printMeteorArray()
 	Serial.println(printString);
 }
 
-String prettyPrintCraftInfo(uint listPosition, const char* callsign, const char* name, uint nameLength, uint downSignal, uint upSignal)
+void printCraftInfo(uint listPosition, const char* callsign, const char* name, uint nameLength, uint downSignal, uint upSignal)
 {
 	String formattedString;
 	formattedString = "ITEM #" + String(listPosition) + ": (" + String(callsign) + ") " + String(name) + " [" + String(nameLength) + "]";
-	formattedString += " [↓ Sig Dn: " + String(downSignal) + "] [↑ Sig Up: " + String(upSignal) + "]\n";
-	return formattedString;
+	formattedString += " [↓ Sig Dn: " + String(downSignal) + "] [↑ Sig Up: " + String(upSignal) + "]";
+	Serial.print(String(formattedString + "\n"));
+}
+
+String returnCraftInfo(uint listPosition, const char* callsign, const char* name, uint nameLength, uint downSignal, uint upSignal)
+{
+	char buffer[256];
+	snprintf(buffer, sizeof(buffer), "ITEM #%u: (%s) %s [%u] [↓ Sig Dn: %u] [↑ Sig Up: %u]\n",
+		listPosition, callsign, name, nameLength, downSignal, upSignal);
+	return String(buffer);
+}
+
+
+
+void printCurrentQueue(QueueHandle_t queue) {
+	if (uxQueueMessagesWaiting(queue) > 0) {
+		QueueHandle_t tempQueue = xQueueCreate(5, sizeof(CraftQueueItem)); // Create a temporary queue to hold the items
+		if (tempQueue == NULL) {
+			Serial.println("Error: Could not create temporary queue.");
+			return;
+		}
+		CraftQueueItem theTempBuffer;
+		CraftQueueItem* tempBuffer = &theTempBuffer;
+
+		char buffer[1024];
+		// String queueString;
+		snprintf(buffer, sizeof(buffer), "\n%s========= QUEUE %d/%d ==========%s\n", termColor("purple"), uxQueueMessagesWaiting(queue), MAX_ITEMS, termColor("reset"));
+
+		int queueCount = uxQueueMessagesWaiting(queue);
+		for (int i = 0; i < queueCount; i++) {
+			if (xQueueReceive(queue, &tempBuffer, (TickType_t)10)) {
+				// printCraftInfo(i, tempBuffer->callsign, tempBuffer->name, tempBuffer->nameLength, tempBuffer->downSignal, tempBuffer->upSignal);
+				String craftInfo = returnCraftInfo(i, tempBuffer->callsign, tempBuffer->name, tempBuffer->nameLength, tempBuffer->downSignal, tempBuffer->upSignal);
+				strncat(buffer, craftInfo.c_str(), sizeof(buffer) - strlen(buffer) - 1);
+
+				if (!xQueueSend(tempQueue, &tempBuffer, (TickType_t)10)) {
+					Serial.println("Error: Could not send data to the temporary queue.");
+					// Handle error as necessary, maybe break out of the loop
+				}
+			} else {
+				Serial.println("Error: Could not receive data from the main queue.");
+				// Handle error as necessary, maybe break out of the loop
+			}
+		}
+
+		for (int i = 0; i < queueCount; i++) {
+			if (xQueueReceive(tempQueue, &tempBuffer, (TickType_t)10)) {
+				if (!xQueueSend(queue, &tempBuffer, (TickType_t)10)) {
+					Serial.println("Error: Could not send data back to the main queue.");
+					// Handle error as necessary, maybe break out of the loop
+				}
+			} else {
+				Serial.println("Error: Could not receive data from the temporary queue.");
+				// Handle error as necessary, maybe break out of the loop
+			}
+		}
+
+		vQueueDelete(tempQueue); // Delete the temporary queue
+
+		snprintf(buffer, sizeof(buffer), "%s%s===============================%s\n\n", buffer, termColor("purple"), termColor("reset"));
+		Serial.print(buffer);
+	}
+}
+
+void printCurrentCraftBuffer() {
+	Serial.print(String(termColor("blue")) + "============= CURRENT DATA BUFFER =============" + String(termColor("reset")) + String("\n"));
+	printCraftInfo(0, currentCraftBuffer.callsign, currentCraftBuffer.name, currentCraftBuffer.nameLength, currentCraftBuffer.downSignal, currentCraftBuffer.upSignal);
+	Serial.print(String(termColor("blue")) + "===============================================" + String(termColor("reset")) + "\n\n");
+}
+
+void printSemaphoreList() {
+	// This function must be used inside a mutex lock
+	if (config.debugUtils.showSerial == true) {
+		Serial.print("\n=== freeListMutex ===\n");
+		for (int i = 0; i < MAX_ITEMS; i++) {
+			if (freeList[i] == nullptr) continue; // Skip null items
+
+			String marker = (freeListTop - 1 == i) ? ">" : " "; // Marker for top of freeList
+			Serial.print(marker + "[" + String(i) + "] " + String(freeList[i]->callsignArray) + "\n");
+		}
+	}
+}
+
+void freeSempaphoreItem(CraftQueueItem* infoBuffer) {
+	xSemaphoreTake(freeListMutex, portMAX_DELAY);
+	if (config.debugUtils.diagMeasure == true)
+		Serial.print("freeListTop: " + String(freeListTop) + "\t");
+	if (freeListTop == MAX_ITEMS) {
+		if (config.debugUtils.showSerial == true)
+			Serial.print("\n\n" + String(termColor("red")) + "Free list overflow" + String(termColor("reset")) + "\n\n");
+	} else {
+		if (config.debugUtils.showSerial == true)
+			Serial.print("\n>>>   Freeing semaphore item\n\n");
+		freeList[freeListTop++] = infoBuffer;
+	}
+	xSemaphoreGive(freeListMutex);
 }
 
 const char* wl_status_to_string(int status)
@@ -1757,6 +1853,7 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 #pragma endregion -- ANIMATION FUNCTIONS
 
 #pragma region -- DATA FUNCTIONS
+
 unsigned int rateLongToRateClass(unsigned long rate)
 {
 
@@ -1786,12 +1883,11 @@ unsigned int rateLongToRateClass(unsigned long rate)
 void parseData(const char* payload)
 {
 
-	// XML Parsing
+	/* XML Parsing */
 	XMLDocument xmlDocument; // Create variable for XML document
+	const char* charPayload = payload; // Convert payload to char array
 
-	const char* charPayload = payload;
-
-	// Handle XML parsing error
+	/* Handle XML parsing error */
 	try {
 		if (xmlDocument.Parse(charPayload) == XML_SUCCESS) {
 			if (config.debugUtils.showSerial == true)
@@ -1819,91 +1915,113 @@ void parseData(const char* payload)
 		return;
 	}
 
-	// Find XML elements
+	/* Find XML elements */
 	XMLNode* root = xmlDocument.RootElement();					  // Find document root node
 	XMLElement* timestamp = root->FirstChildElement("timestamp"); // Find XML timestamp element
 
-	// Serial.println("XML elements found");
-
 	CraftQueueItem* newCraft = nullptr;
 
+	/* Loop through freeListMutex and print out the callsigns */
 	if (xSemaphoreTake(freeListMutex, 100) == pdTRUE) {
-
-		// loop through freeListMutex and print out the callsigns
-		Serial.print("\n=== freeListMutex ===\n");
-		for (int i = 0; i < MAX_ITEMS; i++) {
-			Serial.print("[" + String(i) + ": " + String(freeList[i]->callsignArray) + "]\n");
-		}
-
-		Serial.print("---> freeListTop: " + String(freeListTop) + "\n");
-		if (freeListTop > 0)
-			newCraft = freeList[--freeListTop];
-		Serial.print("-------- freeListTop: " + String(freeListTop) + "\n");
+		printSemaphoreList();
+		if (freeListTop > 0) newCraft = freeList[--freeListTop]; // Get a free CraftQueueItem from the freeList
 		xSemaphoreGive(freeListMutex);
 	} else {
+		// Unable to take freeListMutex
 		return;
 	}
 
 	if (newCraft != nullptr) {
-		// Serial.println("newCraft != nullptr");
 
-		for (int i = 0; i < 100; i++) { // Arbitray loop number to prevent infinite loop, but ensure we try to parse all elements
-			// if (config.debugUtils.showSerial == true) {
-			// Serial.print("->>> Parse loop: ");
-			// Serial.println(i);
-			// // print stationcount, dishcount, targetcount
-			// Serial.println("");
-			// Serial.print("stationCount: ");
-			// Serial.println(stationCount);
-			// Serial.print("dishCount: ");
-			// Serial.println(dishCount);
-			// Serial.print("targetCount: ");
-			// Serial.println(targetCount);
-			// Serial.println("");
-			// // }
-			// Serial.println("-------------------->>> Parse loop");
+		bool targetFound = false;
 
-			Serial.print("stationCount: " + String(stationCount) + " | dishCount: " + String(dishCount) + " | targetCount: " + String(targetCount) + " | signalCount: " + String(signalCount) + "\n");
+		/* Loop through all XML elements */
+		// 100 is an arbitrary number to prevent an infinite loop
+		for (int i = 0; i < 100; i++) {
+			Serial.print("\n───────────────────────────────────────────────────────────────────\n");
+			Serial.print("  Parse Counters -- Station: " + String(stationCount) + " | Dish: " + String(dishCount) + " | Target: " + String(targetCount) + " | Signal: " + String(signalCount));
+			Serial.print("\n───────────────────────────────────────────────────────────────────\n\n");
 
 			try {
 				int s = 0; // Create station elements counter
-				for (XMLElement* xmlStation = root->FirstChildElement("station"); xmlStation != NULL; xmlStation = xmlStation->NextSiblingElement("station")) {
-					if (s > 2)
+				for (XMLElement* xmlStation = root->FirstChildElement("station"); true; xmlStation = xmlStation->NextSiblingElement("station")) {
+					Serial.print("== stationCount: " + String(stationCount) + " | s: " + String(s) + "\n");
+
+					if (xmlStation == NULL) {
+						Serial.print("xmlStation == NULL\n");
+						stationCount = 0;
+						dishCount = 0;
+						targetCount = 0;
+						break;
+					}
+
+					if (stationCount > 2) {
+						stationCount = 0;
+						dishCount = 0;
+						targetCount = 0;
+					}
+
+					if (s > 2) {
 						s = 0;
+						dishCount = 0;
+						targetCount = 0;
+					}
 					if (s != stationCount) {
 						s++;
 						continue;
 					}
 
+					bool goToNextStation = false;
 					int d = 0; // Create dish elements counter
 					for (XMLElement* xmlDish = xmlStation->NextSiblingElement(); xmlDish != NULL; xmlDish = xmlDish->NextSiblingElement()) {
+						delay(1000);
+						Serial.print("===== dishCount: " + String(dishCount) + " | d: " + String(d) + "\n");
+
 						if (d > 9) {
 							stationCount++;
-							if (stationCount > 2) {
+							if (stationCount > 2)
 								stationCount = 0;
-							}
+
 							d = 0;
+							break;
 						}
 						if (d != dishCount) {
 							d++;
 							continue;
 						}
 
-						int t = 0; // Create target elements counter
-						for (XMLElement* xmlTarget = xmlDish->FirstChildElement("target"); xmlTarget != NULL; xmlTarget = xmlTarget->NextSiblingElement("target")) {
-							Serial.print("\n------------------\n");
-							Serial.print("Station:" + String(stationCount) + " | Dish:" + String(dishCount) + " | Target:" + String(targetCount));
-							Serial.print("\n------------------\n");
+						const char* elValue = xmlDish->Value();
+						if (strcmp(elValue, "dish") != 0) {
+							goToNextStation = true;
+							break;
+						}
 
-							if (t > 9) {
-								t = 0;
+						bool goToNextDish = false;
+						int t = 0; // Create target elements counter
+						for (XMLElement* xmlTarget = xmlDish->FirstChildElement("target"); true; xmlTarget = xmlTarget->NextSiblingElement("target")) {
+							Serial.print("====== targetCount: " + String(targetCount) + " | t: " + String(t) + "\n");
+
+							if (xmlTarget == NULL) {
+								Serial.print("                xmlTarget == NULL\n");
+								goToNextDish = true;
+								break;
+							}
+
+							if (t > 9 || t > targetCount) {
+								Serial.print("                t > 9\n");
+								goToNextDish = true;
+								break;
 							}
 							if (t != targetCount) {
-
+								Serial.print("                t != targetCount\n");
 								t++;
+								Serial.print("                t++ = " + String(t) + "\n");
 								continue;
 							}
+
+							Serial.print(">>>   Finding craft....");
 							const char* target = xmlTarget->Attribute("name");
+
 							if (data.checkBlacklist(target) == true) {
 								t++;
 								continue;
@@ -1941,123 +2059,142 @@ void parseData(const char* payload)
 								handleException();
 								return;
 							}
+
+							// A target has been found and validated
 							newCraft->nameLength = strlen(name);
+							targetFound = true;
+							targetCount = t;
 							break;
+						} // End target loop
+
+
+						if (goToNextDish == true) {
+							targetCount = 0;
+							dishCount++;
+							d++;
+							Serial.println("go to next dish!");
+							continue;
 						}
 
-						if (newCraft->nameLength < 1)
-							break; // Bail if we didn't find a target
+						if (targetFound == true) {
 
-						// Loop through XML signal elements and find the one that matches the target
-						for (XMLElement* xmlSignal = xmlDish->FirstChildElement(); xmlSignal != NULL; xmlSignal = xmlSignal->NextSiblingElement("downSignal")) {
-							const char* spacecraft = xmlSignal->Attribute("spacecraft");
-							const char* signalType = xmlSignal->Attribute("signalType");
+							// Serial.print("NEW CRAFT NAME: " + String(newCraft->name) + "\n");
+							// Serial.print("NEW CRAFT NAME LENGTH: " + String(newCraft->nameLength) + "\n");
 
-							if (config.debugUtils.showSerial == true) {
-								// Serial.print("signalType: "); Serial.println(signalType);
-								Serial.print("Looking for ");
-								Serial.println(newCraft->callsign);
+							// if (newCraft->nameLength < 1) {
+							// 	targetCount = 0;
+							// 	dishCount++;
+							// 	break; // Bail if target name assignment fails
+							// }
+
+							// Loop through XML signal elements and find the one that matches the target
+							for (XMLElement* xmlSignal = xmlDish->FirstChildElement(); xmlSignal != NULL; xmlSignal = xmlSignal->NextSiblingElement("downSignal")) {
+								const char* spacecraft = xmlSignal->Attribute("spacecraft");
+								const char* signalType = xmlSignal->Attribute("signalType");
+
+								if (config.debugUtils.showSerial == true)
+									Serial.print(">> Finding signals for " + String(newCraft->callsign) + "\n");
+
+								try {
+									if (strcmp(signalType, "data") != 0) // Skip non-data signals
+									{
+										// Serial.println("Not a data signal, skipping...");
+										continue;
+									}
+									if (strcmp(spacecraft, newCraft->callsign) != 0) // Skip signals that don't match the target
+									{
+										// Serial.print(spacecraft); Serial.print(" != "); Serial.println(newCraft->callsign);
+										// Serial.println("Not the right spacecraft, skipping...");
+										continue;
+									}
+								}
+								catch (...) {
+									if (config.debugUtils.showSerial == true) {
+										Serial.print(termColor("red"));
+										Serial.println("Problem parsing payload:");
+										Serial.println(termColor("reset"));
+										handleException();
+									}
+									return;
+								}
+
+
+								const char* downRate = xmlSignal->Attribute("dataRate");
+
+								if (config.debugUtils.showSerial == true)
+									Serial.print(String(termColor("yellow")) + "Down rate: " + String(downRate) + String(termColor("reset")));
+
+								unsigned long downRateLong = stol(downRate, nullptr, 10);
+								if (downRateLong == 0)
+									continue;
+								unsigned int downRateClass = rateLongToRateClass(downRateLong);
+								if (downRateClass == 0)
+									continue;
+								newCraft->downSignal = downRateClass;
+								break;
 							}
 
-							try {
-								if (strcmp(signalType, "data") != 0) // Skip non-data signals
-								{
-									// Serial.println("Not a data signal, skipping...");
-									continue;
+							for (XMLElement* xmlSignal = xmlDish->FirstChildElement(); xmlSignal != NULL; xmlSignal = xmlSignal->NextSiblingElement("upSignal")) {
+								const char* spacecraft = xmlSignal->Attribute("spacecraft");
+								const char* signalType = xmlSignal->Attribute("signalType");
+
+
+								/* Skip non-data signals or signals that don't match the target */
+								try {
+									if ((strcmp(xmlSignal->Attribute("signalType"), "data") != 0) || (strcmp(spacecraft, newCraft->callsign) != 0))
+										continue;
 								}
-								if (strcmp(spacecraft, newCraft->callsign) != 0) // Skip signals that don't match the target
-								{
-									// Serial.print(spacecraft); Serial.print(" != "); Serial.println(newCraft->callsign);
-									// Serial.println("Not the right spacecraft, skipping...");
-									continue;
-								}
-							}
-							catch (...) {
-								if (config.debugUtils.showSerial == true) {
-									Serial.print(termColor("red"));
-									Serial.println("Problem parsing payload:");
-									Serial.println(termColor("reset"));
+								catch (...) {
+									if (config.debugUtils.showSerial == true) {
+										Serial.print(termColor("red"));
+										Serial.println("Problem parsing payload:");
+										Serial.println(termColor("reset"));
+									}
 									handleException();
+									return;
 								}
-								return;
+
+								/* Get uplink rate */
+								const char* upRate = xmlSignal->Attribute("dataRate");
+
+								if (config.debugUtils.showSerial == true)
+									Serial.print(String(termColor("yellow")) + "Up rate:   " + String(upRate) + String(termColor("reset")));
+
+								/* Convert uplink rate to rate class */
+								unsigned long upRateLong = stol(upRate, nullptr, 10);
+								if (upRateLong == 0) continue;
+								unsigned int upRateClass = rateLongToRateClass(upRateLong);
+								if (upRateClass == 0) continue;
+								newCraft->upSignal = upRateClass;
+								break;
 							}
 
-							if (config.debugUtils.showSerial == true)
-								Serial.println("---");
-
-							const char* downRate = xmlSignal->Attribute("dataRate");
-
-							if (config.debugUtils.showSerial == true) {
-								// print rate
-								Serial.print(termColor("yellow"));
-								Serial.print("PARSED down rate: ");
-								Serial.print(downRate);
-								Serial.println(termColor("reset"));
-							}
-
-							unsigned long downRateLong = stol(downRate, nullptr, 10);
-							if (downRateLong == 0)
-								continue;
-							unsigned int downRateClass = rateLongToRateClass(downRateLong);
-							if (downRateClass == 0)
-								continue;
-							newCraft->downSignal = downRateClass;
+							dishCount = d;
 							break;
 						}
 
-						for (XMLElement* xmlSignal = xmlDish->FirstChildElement(); xmlSignal != NULL; xmlSignal = xmlSignal->NextSiblingElement("upSignal")) {
-							const char* spacecraft = xmlSignal->Attribute("spacecraft");
-							const char* signalType = xmlSignal->Attribute("signalType");
-							// Serial.print("signalType: "); Serial.println(signalType);
+					} // End dish loop
 
-							try {
-								if (strcmp(xmlSignal->Attribute("signalType"), "data") != 0) {
-									// Serial.println("Not a data signal, skipping...");
-									continue;
-								}
-								if (strcmp(spacecraft, newCraft->callsign) != 0) {
-									// Serial.print(spacecraft); Serial.print(" != "); Serial.println(newCraft->callsign);
-									// Serial.println("Not the right spacecraft, skipping...");
-									continue;
-								}
-							}
-							catch (...) {
-								if (config.debugUtils.showSerial == true) {
-									Serial.print(termColor("red"));
-									Serial.println("Problem parsing payload:");
-									Serial.println(termColor("reset"));
-								}
-								handleException();
-								return;
-							}
+					if (goToNextStation == true) {
+						targetCount = 0;
+						dishCount = 0;
+						stationCount++;
+						s++;
 
-							if (config.debugUtils.showSerial == true)
-								Serial.println("---");
-
-							const char* upRate = xmlSignal->Attribute("dataRate");
-
-							if (config.debugUtils.showSerial == true) {
-								// print rate
-								Serial.print(termColor("yellow"));
-								Serial.print("PARSED up rate: ");
-								Serial.println(upRate);
-								Serial.println(termColor("reset"));
-							}
-
-							unsigned long upRateLong = stol(upRate, nullptr, 10);
-							if (upRateLong == 0)
-								continue;
-							unsigned int upRateClass = rateLongToRateClass(upRateLong);
-							if (upRateClass == 0)
-								continue;
-							newCraft->upSignal = upRateClass;
-							break;
+						if (stationCount > 2) {
+							stationCount = 0;
+							s = 0;
 						}
-
+						Serial.println("go to next station!");
+						continue;
+					}
+					if (targetFound == true) {
+						stationCount = s;
 						break;
 					}
-					break;
-				}
+
+					s++;
+				} // End station loop
 			}
 			catch (...) {
 				if (config.debugUtils.showSerial == true) {
@@ -2066,96 +2203,56 @@ void parseData(const char* payload)
 					Serial.println(termColor("reset"));
 				}
 				handleException();
+				parseCounter++;
 				return;
 			}
 
-			try {
-				if (strlen(newCraft->name) != 0 && (newCraft->downSignal != 0 || newCraft->upSignal != 0)) {
-					if (config.debugUtils.showSerial == true) {
-						Serial.print("\nvv--------- " + String(termColor("green")) + "Found craft" + String(termColor("reset")) + "---------vv\n");
-						Serial.print("Name: " + String(newCraft->name));
-						Serial.print("\nCallsign: " + String(newCraft->callsign));
-						Serial.print("\nSignal [DOWN]: " + String(newCraft->downSignal));
-						Serial.print("\nSignal [UP]: " + String(newCraft->upSignal));
-						Serial.println("\n^^------------------------------^^\n");
-					}
-					break;
-				} else {
-					if (config.debugUtils.showSerial == true) {
-						Serial.print(String(termColor("red")) + "Xx-------- No craft found --------xX" + String(termColor("reset")) + "\n\n");
-					}
+			if (targetFound == true) break;
+		} // End arbitary loop
 
-					targetCount++;
-					if (targetCount > 9) {
-						targetCount = 0;
-						dishCount++;
-					}
-					if (dishCount > 9) {
-						dishCount = 0;
-						stationCount++;
-					}
-					if (stationCount > 2) {
-						stationCount = 0;
-					}
-					parseCounter++;
-				}
-			}
-			catch (...) {
+
+		/* Target found */
+		if (targetFound) {
+			if (strlen(newCraft->name) != 0 && (newCraft->downSignal != 0 || newCraft->upSignal != 0)) {
+
 				if (config.debugUtils.showSerial == true) {
-					Serial.print(termColor("red"));
-					Serial.println("Craft does not have a name or signal:");
-					Serial.println(termColor("reset"));
+					Serial.print("\n" + String(termColor("yellow")) + ">>--------=> Sending to queue >>--------=>" + String(termColor("reset") + "\n"));
+					printCraftInfo(0, newCraft->callsign, newCraft->name, newCraft->nameLength, newCraft->downSignal, newCraft->upSignal);
+					Serial.print(String(termColor("yellow")) + "----------------------------------------" + String(termColor("reset")) + "\n");
 				}
-				handleException();
-				return;
+
+				if (newCraft != nullptr) {
+					// Add data to queue, to be passed to another task
+					if (xQueueSend(queue, &newCraft, 100) == pdPASS) {
+						if (config.debugUtils.showSerial == true) {
+							Serial.print(String(termColor("green")) + "[+] " + String(newCraft->callsign) + " added to queue" + String(termColor("reset") + "\n\n"));
+						}
+					} else {
+						// if (config.debugUtils.showSerial == true) {
+						Serial.println(termColor("red"));
+						Serial.print("Failed to add to queue");
+						Serial.println(termColor("reset"));
+						// }
+					}
+				}
 			}
 		}
 
-		// Serial.println("---------- done parsing ----------");
-
-		if (strlen(newCraft->name) != 0 && (newCraft->downSignal != 0 || newCraft->upSignal != 0)) {
-
-			if (config.debugUtils.showSerial == true) {
-				Serial.print("\n" + String(termColor("yellow")) + ">>--------=> Sending to queue >>--------=>" + String(termColor("reset") + "\n"));
-				Serial.print("(" + String(newCraft->callsign) + ") " + String(newCraft->name) + "\n");
-				Serial.print("NEW FETCH nameLength: ");
-				Serial.println(newCraft->nameLength);
-				Serial.print("NEW FETCH downSignal: ");
-				Serial.println(newCraft->downSignal);
-				Serial.print("NEW FETCH upSignal: ");
-				Serial.println(newCraft->upSignal);
-				Serial.print(String(termColor("yellow")) + "----------------------------------------\n");
-			}
-
-			if (newCraft != nullptr) {
-				// Add data to queue, to be passed to another task
-				if (xQueueSend(queue, &newCraft, 100) == pdPASS) {
-					if (config.debugUtils.showSerial == true) {
-						Serial.print(String(termColor("green")) + "[+] " + String(newCraft->callsign) + " added to queue" + String(termColor("reset") + "\n\n"));
-					}
-				} else {
-					// if (config.debugUtils.showSerial == true) {
-					Serial.println(termColor("red"));
-					Serial.print("Failed to add to queue");
-					Serial.println(termColor("reset"));
-					// }
-				}
-			}
-
-			// Increment target counters
-			targetCount++;
-			if (targetCount > 9) {
-				targetCount = 0;
-				dishCount++;
-			}
-			if (dishCount > 9) {
-				dishCount = 0;
-				stationCount++;
-			}
-			if (stationCount > 2) {
-				stationCount = 0;
-				stationCount++;
-			}
+		/* Increment target counters */
+		targetCount++;
+		if (targetCount > 9) {
+			targetCount = 0;
+			dishCount++;
+		}
+		if (dishCount > 9) {
+			targetCount = 0;
+			dishCount = 0;
+			stationCount++;
+		}
+		if (stationCount > 2) {
+			targetCount = 0;
+			dishCount = 0;
+			stationCount = 0;
 		}
 	} else {
 		// There are no free items in the queue item pool
@@ -2163,8 +2260,7 @@ void parseData(const char* payload)
 		return;
 	}
 
-	// Serial.println("---------- done fetching ----------");
-
+	parseCounter++;
 	return;
 }
 
@@ -2183,36 +2279,22 @@ void fetchData()
 		Serial.print("   └─────────────────────────────┘\n");
 	}
 
-	// if queue is full, return
+	/* Check for full queue */
 	if (uxQueueSpacesAvailable(queue) == 0) {
-		if (config.debugUtils.showSerial == true) {
-			Serial.println("Queue is full, returning");
-		}
+		if (config.debugUtils.showSerial == true)
+			Serial.print(">>>   Queue is full, returning\n");
 		return;
 	}
 
-	// Serial.print("WiFi Status: ");
-	// Serial.println(WiFi.status());
-
 	uint16_t httpResponseCode;
 
-	if (forceDummyData == true)
-		usingDummyData = true;
+	if (forceDummyData == true) usingDummyData = true;
 
 	if (forceDummyData == false) {
-		// Check WiFi connection status
+		/* Check WiFi connection status */
 		if (WiFi.status() != WL_CONNECTED) {
 			if (config.debugUtils.showSerial == true)
 				Serial.println("WiFi Disconnected");
-
-			// WiFi.begin(ssid, password);
-			// Serial.println("Connecting");
-			// // while(WiFi.status() != WL_CONNECTED) {
-			// //   Serial.print(".");
-			// // }
-			// Serial.println("");
-			// Serial.print("Connected to WiFi network with IP Address: ");
-			// Serial.println(WiFi.localIP());
 
 			usingDummyData = true;
 		}
@@ -2265,9 +2347,8 @@ void fetchData()
 	}
 
 	if (usingDummyData == true) {
-		if (config.debugUtils.showSerial == true) {
-			Serial.print("\n" + String(termColor("red")) + "Using dummy xml data" + String(termColor("reset")) + "\n\n");
-		}
+		if (config.debugUtils.showSerial == true)
+			Serial.print(String(termColor("red")) + "Using dummy xml data" + String(termColor("reset")) + "\n");
 
 		parseData(dummyXmlData);
 	}
@@ -2345,6 +2426,7 @@ void getData(void* parameter)
 }
 
 #pragma endregion -- DATA FUNCTIONS
+
 
 
 /* SETUP
@@ -2565,126 +2647,41 @@ void loop()
 			CraftQueueItem theInfoBuffer; // Create buffer to hold data from queue
 			CraftQueueItem* infoBuffer = &theInfoBuffer;
 
-			if (uxQueueMessagesWaiting(queue) > 0) {
-				if (config.debugUtils.diagMeasure == true)
-					Serial.print("Queue: " + String(uxQueueMessagesWaiting(queue)) + "\t");
+			/* Print for debug */
+			if (config.debugUtils.diagMeasure == true)
+				Serial.print("Queue: " + String(uxQueueMessagesWaiting(queue)) + "\t");
+			if (config.debugUtils.showSerial == true)
+				printCurrentQueue(queue);
 
-				// print all items in queueu without removing them
-				Serial.print("\n" + String(termColor("purple")) + "========= QUEUE " + String(uxQueueMessagesWaiting(queue)) + "/5 ==========\n" + String(termColor("reset")));
 
-				for (int i = 0; i < uxQueueMessagesWaiting(queue); i++) {
-					xQueuePeek(queue, &infoBuffer, i);
-					// if ( i != 0) Serial.print(". . . . . . . . .\n");
-					Serial.print("ITEM #" + String(i) + ": (" + String(infoBuffer->callsign) + ") " + String(infoBuffer->name));
-					// Serial.print("nameLength: "); Serial.println(infoBuffer->nameLength);
-					Serial.print(" [↓ Signal Class: " + String(infoBuffer->downSignal) + "] [↑ Signal Class: " + String(infoBuffer->upSignal) + "]\n");
-				}
-
-				Serial.print(String(termColor("purple")) + "===============================\n\n" + String(termColor("reset")));
-			}
-
+			/* Receive from queue (data task on core 1) */
 			if (queue != nullptr && infoBuffer != nullptr) {
-				// Receive from queue (data task on core 1)
 				if (xQueueReceive(queue, &infoBuffer, 1) == pdPASS) {
-					// Serial.println("Received from queue"); // Print to serial monitor
-					// Serial.print("callsign: "); Serial.println(infoBuffer->callsign);
-
-					// try
-					// {
-					// 	if (config.debugUtils.showSerial == true)
-					// 	{
-					// 		// print all values of currentCraftBuffer
-					// 		Serial.print(String(termColor("blue")) + "========== CURRENT DATA BUFFER (pre) ==========" + String(termColor("reset")) + String("\n"));
-					// 		Serial.print("Callsign: " + String(currentCraftBuffer.callsign) + "\n");
-					// 		// Serial.print("name: ");
-					// 		// Serial.println(currentCraftBuffer.name);
-					// 		// Serial.print("nameLength: ");
-					// 		// Serial.println(currentCraftBuffer.nameLength);
-					// 		// Serial.print("downSignal: ");
-					// 		// Serial.println(currentCraftBuffer.downSignal);
-					// 		// Serial.print("upSignal: ");
-					// 		// Serial.println(currentCraftBuffer.upSignal);
-					// 		Serial.print(termColor("blue") + String("------------------------------\n\n") + (termColor("reset")));
-					// 	}
-					// }
-					// catch (...)
-					// {
-					// 	if (config.debugUtils.showSerial == true)
-					// 		Serial.println("Error printing currentCraftBuffer");
-					// 	handleException();
-					// }
-
-					try {
-						if (config.debugUtils.showSerial == true) {
-							// print received queue item
-							Serial.print("\n------- DATA RECEIVED from Queue ----------\n");
-							Serial.print("(" + String(infoBuffer->callsign) + ") " + String(infoBuffer->name) + "\n");
-							Serial.print("nameLength: ");
-							Serial.println(infoBuffer->nameLength);
-							Serial.print("downSignal: ");
-							Serial.println(infoBuffer->downSignal);
-							Serial.print("upSignal: " + String((infoBuffer->upSignal)));
-							Serial.print("\n---------------------------\n\n");
-						}
-					}
-					catch (...) {
-						if (config.debugUtils.showSerial == true)
-							Serial.print("\n" + String(termColor("red")) + "Error printing infoBuffer" + "");
-						handleException();
+					if (config.debugUtils.showSerial == true) {
+						// print received queue item
+						Serial.print("-------- DATA RECEIVED from Queue ----------\n");
+						printCraftInfo(0, infoBuffer->callsign, infoBuffer->name, infoBuffer->nameLength, infoBuffer->downSignal, infoBuffer->upSignal);
+						Serial.print("--------------------------------------------\n\n");
 					}
 
+					/* Copy data from queue to buffer */
 					try {
 						if (infoBuffer->name != 0 && strlen(infoBuffer->name) > 0) {
-							try {
-								// Serial.println("copying infoBuffer to currentCraftBuffer");
-								// memset(&currentCraftBuffer, 0, sizeof(struct CraftQueueItem));
+							currentCraftBuffer.callsign = infoBuffer->callsign;
+							currentCraftBuffer.name = infoBuffer->name;
+							currentCraftBuffer.nameLength = infoBuffer->nameLength;
+							currentCraftBuffer.downSignal = infoBuffer->downSignal;
+							currentCraftBuffer.upSignal = infoBuffer->upSignal;
 
-								// memcpy(&currentCraftBuffer, infoBuffer, sizeof(struct CraftQueueItem));
-								// currentCraftBuffer = *infoBuffer;
-								currentCraftBuffer.callsign = infoBuffer->callsign;
-								currentCraftBuffer.name = infoBuffer->name;
-								currentCraftBuffer.nameLength = infoBuffer->nameLength;
-								currentCraftBuffer.downSignal = infoBuffer->downSignal;
-								currentCraftBuffer.upSignal = infoBuffer->upSignal;
+							nameScrollDone = false;
 
-								// currentCraftBuffer.callsign = "HI";
-								// currentCraftBuffer.name = "HIIII";
-								// currentCraftBuffer.nameLength = 5;
-								// currentCraftBuffer.downSignal = 10;
-								// currentCraftBuffer.upSignal = 10;
+							/* Current Craft Buffer after copying */
+							if (config.debugUtils.showSerial == true)
+								printCurrentCraftBuffer();
 
-								// Serial.println("copy done");
-
-								nameScrollDone = false;
-
-								try {
-									if (config.debugUtils.showSerial == true) {
-										// print all values of currentCraftBuffer
-										Serial.print(String(termColor("blue")) + "========== CURRENT DATA BUFFER (post) ==========" + String(termColor("reset")) + "\n");
-										Serial.print("(" + String(currentCraftBuffer.callsign) + ") " + String(currentCraftBuffer.name));
-										// Serial.print("nameLength: ");
-										// Serial.println(currentCraftBuffer.nameLength);
-										// Serial.print("downSignal: ");
-										// Serial.println(currentCraftBuffer.downSignal);
-										// Serial.print("upSignal: ");
-										// Serial.println(currentCraftBuffer.upSignal);
-										Serial.print("\n" + String(termColor("blue")) + "------------------------------\n" + String(termColor("reset")));
-									}
-								}
-								catch (...) {
-									if (config.debugUtils.showSerial == true)
-										Serial.println("Error printing currentCraftBuffer");
-									handleException();
-								}
-							}
-							catch (...) {
-								if (config.debugUtils.showSerial == true)
-									Serial.print("\n" + String(termColor("red")) + "Error copying data from queue to buffer" + String(termColor("reset")) + "\n");
-								handleException();
-							}
 						} else {
 							if (config.debugUtils.showSerial == true)
-								Serial.println("Callsign is empty");
+								Serial.println("Craft name is empty");
 							noTargetFoundCounter++;
 						}
 					}
@@ -2694,32 +2691,15 @@ void loop()
 						handleException();
 					}
 
-					xSemaphoreTake(freeListMutex, portMAX_DELAY);
-					// Serial.println();
-					// Serial.print("freeListTop: "); Serial.print(freeListTop); Serial.print("\t");
-					if (freeListTop == MAX_ITEMS) {
-						Serial.print("\n\n" + String(termColor("red")) + "Free list overflow" + String(termColor("reset")) + "\n\n");
-					} else {
-						// Serial.println();
-						// Serial.println("Freeing item");
-						freeList[freeListTop++] = infoBuffer;
-					}
+					/* Free the queue item */
+					freeSempaphoreItem(infoBuffer);
 
-					// Serial.print("Free list top: ");
-					// Serial.print(freeListTop);
-					// Serial.print("\t");
-
-					// Serial.println("Freeing item done");
-					xSemaphoreGive(freeListMutex);
-
-					displayDurationTimer = millis();
+					displayDurationTimer = millis(); // Sync reference variable for timer
 				} else {
 					if (config.debugUtils.showSerial == true) {
 						Serial.print("\n" + String(termColor("red")) + "No data received" + String(termColor("reset")) + "\n");
 					}
 				}
-
-				// displayDurationTimer = millis();
 			}
 		}
 	}
@@ -2732,19 +2712,14 @@ void loop()
 		updateAnimation(currentCraftBuffer.name, currentCraftBuffer.nameLength, currentCraftBuffer.downSignal, currentCraftBuffer.upSignal);
 	}
 	catch (...) {
-		if (config.debugUtils.showSerial == true) {
-			Serial.println("Error updating animation");
-		}
+		if (config.debugUtils.showSerial == true)
+			Serial.print(String(termColor("red")) + "Error updating animation" + String(termColor("reset")) + "\n");
 		handleException();
 	}
 
 	if (config.debugUtils.diagMeasure == true) {
-		Serial.print("Duration:");
-		Serial.print((millis() - displayDurationTimer) / 1000);
-		Serial.print("\t");
-		Serial.print("Delay:");
-		Serial.print((millis() - craftDelayTimer) / 1000);
-		Serial.print("\t");
+		Serial.print("Duration:" + String((millis() - displayDurationTimer) / 1000) + "\t");
+		Serial.print("Delay:" + String((millis() - craftDelayTimer) / 1000) + "\t");
 		Serial.print("Queue:" + String(uxQueueMessagesWaiting(queue)) + "\t");
 		Serial.print("FreeListTop:" + String(freeListTop) + "\t");
 		Serial.print("stationCount:" + String(stationCount) + "\t");
@@ -2760,14 +2735,9 @@ void loop()
 		perfDiff = (millis() - perfTimer); // This is the actual value
 		// UBaseType_t uxHighWaterMark;
 		// uxHighWaterMark = uxTaskGetStackHighWaterMark(xHandleData);
-		printFreeHeap(); // Value might be being multiplied in printFreeHeap() function for ease of visualization on plotter
 		// Serial.print("high_water_mark:"); Serial.print(uxHighWaterMark); Serial.print("\t");
-		Serial.print("PerfTimer:");
-		Serial.print(perfDiff);
-		Serial.print("\t");
-		// Serial.print("QueueSize:"); Serial.print(uxQueueMessagesWaiting(queue) * 1000); Serial.print("\t");
-		// Serial.print("ParseCounter:"); Serial.print(parseCounter * 1000); Serial.print("\t");	// Multiplied by 10 for ease of visualization on plotter
-		// Serial.print("ParseCounter:"); Serial.print(parseCounter); Serial.print("\t");	// This is the actual value
+		printFreeHeap(); // Value might be being multiplied in printFreeHeap() function for ease of visualization on plotter
+		Serial.print("PerfTimer:" + String(perfDiff) + "\t");
 		Serial.println();
 		parseCounter = 0;
 		perfTimer = millis();
