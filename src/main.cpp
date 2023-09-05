@@ -299,11 +299,11 @@ CHSV bottomPixelMap[5] = { CHSV(0, 0, 0) };
 #pragma region -- TEXT SETTINGS
 
 TextCharacter textCharacter;
-const int characterWidth = 4;
-const int characterHeight = 7;
-const int characterKerning = 3;
-int letterSpacing = 7;
-int letterTotalPixels = 28;
+static int characterWidth;
+static  int characterHeight = 7;
+static int characterKerning = 3;
+static int letterSpacing = 7;
+static int letterTotalPixels = 28;
 
 #pragma endregion -- END TEXT SETTINGS
 
@@ -931,7 +931,7 @@ void reverseStripsArray(void)
 // Display letter from array
 void doLetterRegions(char theLetter, int regionStart, int startingPixel)
 {
-	const int* ledCharacter = textCharacter.getCharacter(theLetter);
+	const int* ledCharacter = textCharacter.getCharacter(theLetter, characterWidth);
 	const uint16_t regionOffset = innerPixelsChunkLength * regionStart;
 
 	int16_t pixel = 0 + startingPixel + regionOffset;
@@ -2621,6 +2621,10 @@ void setup()
 
 	http.setReuse(true);	   // Use persistent connection
 	data.loadJson();		   // Load data from json file
+	
+	/* Assign config to global state variables */
+	characterWidth = config.textTypography.characterWidth;
+	
 	setColorTheme(colorTheme); // Set color theme
 	drawBottomPixels();		   // Draw initial bottom pixels
 	delay(100);				   // Small delay to allow bottom pixels to draw

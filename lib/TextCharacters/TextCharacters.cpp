@@ -1,991 +1,888 @@
-#include <Arduino.h>
 #include <TextCharacters.h>
 
-TextCharacter::TextCharacter()
-{
-	// Serial.println(thing);
-	// char theChar = character;
-	// int *pCharArray = _getCharacter(theChar);
-}
+TextCharacter::TextCharacter() {}
 
-// Letter Typography arrays
+/* Letter Typography arrays */
+// 3 x 5
+#pragma region -- 3 x 5
+
+int character_space_3[20] = {
+  0, 0, 0, 0,
+  0, 0, 0, 0,
+  0, 0, 0, 0,
+  0, 0, 0, 0,
+  0, 0, 0, 0
+};
+
+int character_a_3[20] = {
+  0, 0, 1, 0,
+  0, 1, 0, 1,
+  0, 1, 1, 1,
+  0, 1, 0, 1,
+  0, 1, 0, 1
+};
+
+int character_b_3[20] = {
+  0, 1, 1, 1,
+  0, 1, 0, 1,
+  0, 1, 1, 0,
+  0, 1, 0, 1,
+  0, 1, 1, 1
+};
+
+int character_c_3[20] = {
+  0, 1, 1, 1,
+  0, 1, 0, 0,
+  0, 1, 0, 0,
+  0, 1, 0, 0,
+  0, 1, 1, 1
+};
+
+int character_d_3[20] = {
+  0, 1, 1, 0,
+  0, 1, 0, 1,
+  0, 1, 0, 1,
+  0, 1, 0, 1,
+  0, 1, 1, 0
+};
+
+int character_e_3[20] = {
+  0, 1, 1, 1,
+  0, 1, 0, 0,
+  0, 1, 1, 0,
+  0, 1, 0, 0,
+  0, 1, 1, 1
+};
+
+int character_f_3[20] = {
+  0, 1, 1, 1,
+  0, 1, 0, 0,
+  0, 1, 1, 1,
+  0, 1, 0, 0,
+  0, 1, 0, 0
+};
+
+int character_g_3[20] = {
+  0, 1, 1, 1,
+  0, 1, 0, 0,
+  0, 1, 0, 1,
+  0, 1, 0, 1,
+  0, 1, 1, 1
+};
+
+int character_h_3[20] = {
+  0, 1, 0, 1,
+  0, 1, 0, 1,
+  0, 1, 1, 1,
+  0, 1, 0, 1,
+  0, 1, 0, 1
+};
+
+int character_i_3[20] = {
+  0, 1, 1, 1,
+  0, 0, 1, 0,
+  0, 0, 1, 0,
+  0, 0, 1, 0,
+  0, 1, 1, 1
+};
+
+int character_j_3[20] = {
+  0, 0, 0, 1,
+  0, 0, 0, 1,
+  0, 0, 0, 1,
+  0, 1, 0, 1,
+  0, 1, 1, 1
+};
+
+int character_k_3[20] = {
+  0, 1, 0, 1,
+  0, 1, 0, 1,
+  0, 1, 1, 0,
+  0, 1, 0, 1,
+  0, 1, 0, 1
+};
+
+int character_l_3[20] = {
+  0, 1, 0, 0,
+  0, 1, 0, 0,
+  0, 1, 0, 0,
+  0, 1, 0, 0,
+  0, 1, 1, 1
+};
+
+int character_m_3[20] = {
+  0, 1, 0, 1,
+  0, 1, 1, 1,
+  0, 1, 0, 1,
+  0, 1, 0, 1,
+  0, 1, 0, 1
+};
+
+int character_n_3[20] = {
+  0, 1, 1, 0,
+  0, 1, 0, 1,
+  0, 1, 0, 1,
+  0, 1, 0, 1,
+  0, 1, 0, 1
+};
+
+int character_o_3[20] = {
+  0, 1, 1, 1,
+  0, 1, 0, 1,
+  0, 1, 0, 1,
+  0, 1, 0, 1,
+  0, 1, 1, 1
+};
+
+int character_p_3[20] = {
+  0, 1, 1, 1,
+  0, 1, 0, 1,
+  0, 1, 1, 1,
+  0, 1, 0, 0,
+  0, 1, 0, 0
+};
+
+int character_q_3[20] = {
+  0, 1, 1, 1,
+  0, 1, 0, 1,
+  0, 1, 0, 1,
+  0, 1, 1, 1,
+  0, 0, 0, 1
+};
+
+int character_r_3[20] = {
+  0, 1, 1, 1,
+  0, 1, 0, 1,
+  0, 1, 1, 1,
+  0, 1, 1, 0,
+  0, 1, 0, 1
+};
+
+int character_s_3[20] = {
+  0, 1, 1, 1,
+  0, 1, 0, 0,
+  0, 1, 1, 1,
+  0, 0, 0, 1,
+  0, 1, 1, 1
+};
+
+int character_t_3[20] = {
+  0, 1, 1, 1,
+  0, 0, 1, 0,
+  0, 0, 1, 0,
+  0, 0, 1, 0,
+  0, 0, 1, 0
+};
+
+int character_u_3[20] = {
+  0, 1, 0, 1,
+  0, 1, 0, 1,
+  0, 1, 0, 1,
+  0, 1, 0, 1,
+  0, 1, 1, 1
+};
+
+int character_v_3[20] = {
+  0, 1, 0, 1,
+  0, 1, 0, 1,
+  0, 1, 0, 1,
+  0, 1, 0, 1,
+  0, 0, 1, 0
+};
+
+int character_w_3[20] = {
+  0, 1, 0, 1,
+  0, 1, 0, 1,
+  0, 1, 0, 1,
+  0, 1, 1, 1,
+  0, 1, 0, 1
+};
+
+int character_x_3[20] = {
+  0, 1, 0, 1,
+  0, 1, 0, 1,
+  0, 0, 1, 0,
+  0, 1, 0, 1,
+  0, 1, 0, 1
+};
+
+int character_y_3[20] = {
+  0, 1, 0, 1,
+  0, 1, 0, 1,
+  0, 0, 1, 0,
+  0, 0, 1, 0,
+  0, 0, 1, 0
+};
+
+int character_z_3[20] = {
+  0, 1, 1, 1,
+  0, 0, 0, 1,
+  0, 0, 1, 0,
+  0, 1, 0, 0,
+  0, 1, 1, 1
+};
+
+int character_0_3[20] = {
+  0, 0, 1, 0,
+  0, 1, 0, 1,
+  0, 1, 0, 1,
+  0, 1, 0, 1,
+  0, 0, 1, 0
+};
+
+int character_1_3[20] = {
+  0, 0, 1, 0,
+  0, 1, 1, 0,
+  0, 0, 1, 0,
+  0, 0, 1, 0,
+  0, 1, 1, 1
+};
+
+int character_2_3[20] = {
+  0, 0, 1, 0,
+  0, 1, 0, 1,
+  0, 0, 1, 0,
+  0, 1, 0, 0,
+  0, 1, 1, 1
+};
+
+int character_3_3[20] = {
+  0, 1, 1, 1,
+  0, 0, 0, 1,
+  0, 0, 1, 1,
+  0, 0, 0, 1,
+  0, 1, 1, 1
+};
+
+int character_4_3[20] = {
+  0, 0, 0, 1,
+  0, 0, 1, 1,
+  0, 1, 1, 1,
+  0, 0, 0, 1,
+  0, 0, 0, 1
+};
+
+int character_5_3[20] = {
+  0, 1, 1, 1,
+  0, 1, 0, 0,
+  0, 1, 1, 0,
+  0, 0, 0, 1,
+  0, 1, 1, 0
+};
+
+int character_6_3[20] = {
+  0, 1, 1, 1,
+  0, 1, 0, 0,
+  0, 1, 1, 1,
+  0, 1, 0, 1,
+  0, 1, 1, 1
+};
+
+int character_7_3[20] = {
+  0, 1, 1, 1,
+  0, 0, 0, 1,
+  0, 0, 1, 0,
+  0, 0, 1, 0,
+  0, 1, 0, 0
+};
+
+int character_8_3[20] = {
+  0, 1, 1, 1,
+  0, 1, 0, 1,
+  0, 1, 1, 1,
+  0, 1, 0, 1,
+  0, 1, 1, 1
+};
+
+int character_9_3[20] = {
+  0, 1, 1, 1,
+  0, 1, 0, 1,
+  0, 1, 1, 1,
+  0, 0, 0, 1,
+  0, 0, 0, 1
+};
+
+#pragma endregion -- 3 x 5
+
 
 // 4 wide
+#pragma region -- 4 wide
+int character_space_4[28] = {
+	0, 0, 0, 0,
+	0, 0, 0, 0,
+	0, 0, 0, 0,
+	0, 0, 0, 0,
+	0, 0, 0, 0,
+	0, 0, 0, 0,
+	0, 0, 0, 0 };
 
-int character_space[28] = {
-	0, 0, 0, 0,
-	0, 0, 0, 0,
-	0, 0, 0, 0,
-	0, 0, 0, 0,
-	0, 0, 0, 0,
-	0, 0, 0, 0,
-	0, 0, 0, 0};
-
-int character_a[28] = {
+int character_a_4[28] = {
 	0, 1, 1, 0,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 1, 1, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
-	1, 0, 0, 1};
+	1, 0, 0, 1 };
 
-int character_b[28] = {
+int character_b_4[28] = {
 	1, 1, 1, 0,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 1, 1, 0,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
-	1, 1, 1, 0};
+	1, 1, 1, 0 };
 
-int character_c[28] = {
+int character_c_4[28] = {
 	1, 1, 1, 1,
 	1, 0, 0, 0,
 	1, 0, 0, 0,
 	1, 0, 0, 0,
 	1, 0, 0, 0,
 	1, 0, 0, 0,
-	1, 1, 1, 1};
+	1, 1, 1, 1 };
 
-int character_d[28] = {
+int character_d_4[28] = {
 	1, 1, 1, 0,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
-	1, 1, 1, 0};
+	1, 1, 1, 0 };
 
-int character_e[28] = {
+int character_e_4[28] = {
 	1, 1, 1, 1,
 	1, 0, 0, 0,
 	1, 0, 0, 0,
 	1, 1, 1, 0,
 	1, 0, 0, 0,
 	1, 0, 0, 0,
-	1, 1, 1, 1};
+	1, 1, 1, 1 };
 
-int character_f[28] = {
+int character_f_4[28] = {
 	1, 1, 1, 1,
 	1, 0, 0, 0,
 	1, 0, 0, 0,
 	1, 1, 1, 0,
 	1, 0, 0, 0,
 	1, 0, 0, 0,
-	1, 0, 0, 0};
+	1, 0, 0, 0 };
 
-int character_g[28] = {
+int character_g_4[28] = {
 	1, 1, 1, 1,
 	1, 0, 0, 0,
 	1, 0, 0, 0,
 	1, 0, 1, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
-	1, 1, 1, 1};
+	1, 1, 1, 1 };
 
-int character_h[28] = {
+int character_h_4[28] = {
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 1, 1, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
-	1, 0, 0, 1};
+	1, 0, 0, 1 };
 
-int character_i[28] = {
+int character_i_4[28] = {
 	0, 1, 1, 1,
 	0, 0, 1, 0,
 	0, 0, 1, 0,
 	0, 0, 1, 0,
 	0, 0, 1, 0,
 	0, 0, 1, 0,
-	0, 1, 1, 1};
+	0, 1, 1, 1 };
 
-int character_j[28] = {
+int character_j_4[28] = {
 	0, 0, 0, 1,
 	0, 0, 0, 1,
 	0, 0, 0, 1,
 	0, 0, 0, 1,
 	0, 0, 0, 1,
 	1, 0, 0, 1,
-	1, 1, 1, 1};
+	1, 1, 1, 1 };
 
-int character_k[28] = {
+int character_k_4[28] = {
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 0, 1, 0,
 	1, 1, 0, 0,
 	1, 0, 1, 0,
 	1, 0, 0, 1,
-	1, 0, 0, 1};
+	1, 0, 0, 1 };
 
-int character_l[28] = {
+int character_l_4[28] = {
 	1, 0, 0, 0,
 	1, 0, 0, 0,
 	1, 0, 0, 0,
 	1, 0, 0, 0,
 	1, 0, 0, 0,
 	1, 0, 0, 0,
-	1, 1, 1, 1};
+	1, 1, 1, 1 };
 
-int character_m[28] = {
+int character_m_4[28] = {
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 1, 1, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
-	1, 0, 0, 1};
+	1, 0, 0, 1 };
 
-int character_n[28] = {
+int character_n_4[28] = {
 	1, 0, 0, 1,
 	1, 1, 0, 1,
 	1, 1, 0, 1,
 	1, 0, 1, 1,
 	1, 0, 1, 1,
 	1, 0, 0, 1,
-	1, 0, 0, 1};
+	1, 0, 0, 1 };
 
-int character_o[28] = {
+int character_o_4[28] = {
 	0, 1, 1, 0,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
-	0, 1, 1, 0};
+	0, 1, 1, 0 };
 
-int character_p[28] = {
+int character_p_4[28] = {
 	1, 1, 1, 0,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 1, 1, 0,
 	1, 0, 0, 0,
 	1, 0, 0, 0,
-	1, 0, 0, 0};
+	1, 0, 0, 0 };
 
-int character_q[28] = {
+int character_q_4[28] = {
 	1, 1, 1, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 0, 1, 1,
 	1, 0, 1, 0,
-	1, 1, 1, 1};
+	1, 1, 1, 1 };
 
-int character_r[28] = {
+int character_r_4[28] = {
 	1, 1, 1, 0,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 1, 1, 0,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
-	1, 0, 0, 1};
+	1, 0, 0, 1 };
 
-int character_s[28] = {
+int character_s_4[28] = {
 	0, 1, 1, 0,
 	1, 0, 0, 1,
 	1, 0, 0, 0,
 	0, 1, 1, 0,
 	0, 0, 0, 1,
 	1, 0, 0, 1,
-	0, 1, 1, 0};
+	0, 1, 1, 0 };
 
-int character_t[28] = {
+int character_t_4[28] = {
 	0, 1, 1, 1,
 	0, 0, 1, 0,
 	0, 0, 1, 0,
 	0, 0, 1, 0,
 	0, 0, 1, 0,
 	0, 0, 1, 0,
-	0, 0, 1, 0};
+	0, 0, 1, 0 };
 
-int character_u[28] = {
+int character_u_4[28] = {
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
-	0, 1, 1, 0};
+	0, 1, 1, 0 };
 
-int character_v[28] = {
+int character_v_4[28] = {
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	0, 1, 1, 0,
-	0, 1, 1, 0};
+	0, 1, 1, 0 };
 
-int character_w[28] = {
+int character_w_4[28] = {
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 1, 1, 1,
 	1, 0, 0, 1,
-	1, 0, 0, 1};
+	1, 0, 0, 1 };
 
-int character_x[28] = {
+int character_x_4[28] = {
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	0, 1, 1, 0,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
-	1, 0, 0, 1};
+	1, 0, 0, 1 };
 
-int character_y[28] = {
+int character_y_4[28] = {
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	0, 1, 1, 1,
 	0, 0, 0, 1,
 	0, 0, 0, 1,
-	0, 1, 1, 1};
+	0, 1, 1, 1 };
 
-int character_z[28] = {
+int character_z_4[28] = {
 	1, 1, 1, 1,
 	0, 0, 0, 1,
 	0, 0, 0, 1,
 	0, 1, 1, 0,
 	1, 0, 0, 0,
 	1, 0, 0, 0,
-	1, 1, 1, 1};
+	1, 1, 1, 1 };
 
-int character_0[28] = {
+int character_0_4[28] = {
 	0, 1, 1, 0,
 	1, 0, 0, 1,
 	1, 0, 1, 1,
 	1, 1, 0, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 0,
-	0, 1, 1, 0};
+	0, 1, 1, 0 };
 
-int character_1[28] = {
+int character_1_4[28] = {
 	0, 0, 1, 0,
 	0, 1, 1, 0,
 	0, 0, 1, 0,
 	0, 0, 1, 0,
 	0, 0, 0, 0,
 	0, 0, 0, 0,
-	0, 1, 1, 1};
+	0, 1, 1, 1 };
 
-int character_2[28] = {
+int character_2_4[28] = {
 	0, 1, 1, 0,
 	1, 0, 0, 1,
 	0, 0, 0, 1,
 	0, 0, 1, 0,
 	0, 1, 0, 0,
 	1, 0, 0, 0,
-	1, 1, 1, 1};
+	1, 1, 1, 1 };
 
-int character_3[28] = {
+int character_3_4[28] = {
 	1, 1, 1, 1,
 	0, 0, 0, 1,
 	0, 0, 1, 0,
 	0, 1, 1, 0,
 	0, 0, 0, 1,
 	0, 0, 0, 1,
-	1, 1, 1, 0};
+	1, 1, 1, 0 };
 
-int character_4[28] = {
+int character_4_4[28] = {
 	0, 0, 0, 1,
 	0, 0, 1, 1,
 	0, 1, 0, 1,
 	1, 1, 1, 1,
 	0, 0, 0, 1,
 	0, 0, 0, 1,
-	0, 0, 0, 1};
+	0, 0, 0, 1 };
 
-int character_5[28] = {
+int character_5_4[28] = {
 	1, 1, 1, 1,
 	1, 0, 0, 0,
 	1, 0, 0, 0,
 	1, 1, 1, 0,
 	0, 0, 0, 1,
 	0, 0, 0, 1,
-	1, 1, 1, 0};
+	1, 1, 1, 0 };
 
-int character_6[28] = {
+int character_6_4[28] = {
 	0, 1, 1, 1,
 	1, 0, 0, 0,
 	1, 0, 0, 0,
 	1, 1, 1, 0,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
-	0, 1, 1, 0};
+	0, 1, 1, 0 };
 
-int character_7[28] = {
+int character_7_4[28] = {
 	1, 1, 1, 1,
 	0, 0, 0, 1,
 	0, 0, 0, 1,
 	0, 0, 1, 0,
 	0, 1, 0, 0,
 	0, 1, 0, 0,
-	0, 1, 0, 0};
+	0, 1, 0, 0 };
 
-int character_8[28] = {
+int character_8_4[28] = {
 	0, 1, 1, 0,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	0, 1, 1, 0,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
-	0, 1, 1, 0};
+	0, 1, 1, 0 };
 
-int character_9[28] = {
+int character_9_4[28] = {
 	0, 1, 1, 0,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	0, 1, 1, 1,
 	0, 0, 0, 1,
 	0, 0, 1, 0,
-	0, 1, 0, 0};
+	0, 1, 0, 0 };
+
+#pragma endregion -- 4 wide
 
 
-
-// 3 x 5
-// int character_space[20] = {
-//   0, 0, 0, 0,
-//   0, 0, 0, 0,
-//   0, 0, 0, 0,
-//   0, 0, 0, 0,
-//   0, 0, 0, 0
-// };
-
-// int character_a[20] = {
-//   0, 0, 1, 0,
-//   0, 1, 0, 1,
-//   0, 1, 1, 1,
-//   0, 1, 0, 1,
-//   0, 1, 0, 1
-// };
-
-// int character_b[20] = {
-//   0, 1, 1, 1,
-//   0, 1, 0, 1,
-//   0, 1, 1, 0,
-//   0, 1, 0, 1,
-//   0, 1, 1, 1
-// };
-
-// int character_c[20] = {
-//   0, 1, 1, 1,
-//   0, 1, 0, 0,
-//   0, 1, 0, 0,
-//   0, 1, 0, 0,
-//   0, 1, 1, 1
-// };
-
-// int character_d[20] = {
-//   0, 1, 1, 0,
-//   0, 1, 0, 1,
-//   0, 1, 0, 1,
-//   0, 1, 0, 1,
-//   0, 1, 1, 0
-// };
-
-// int character_e[20] = {
-//   0, 1, 1, 1,
-//   0, 1, 0, 0,
-//   0, 1, 1, 0,
-//   0, 1, 0, 0,
-//   0, 1, 1, 1
-// };
-
-// int character_f[20] = {
-//   0, 1, 1, 1,
-//   0, 1, 0, 0,
-//   0, 1, 1, 1,
-//   0, 1, 0, 0,
-//   0, 1, 0, 0
-// };
-
-// int character_g[20] = {
-//   0, 1, 1, 1,
-//   0, 1, 0, 0,
-//   0, 1, 0, 1,
-//   0, 1, 0, 1,
-//   0, 1, 1, 1
-// };
-
-// int character_h[20] = {
-//   0, 1, 0, 1,
-//   0, 1, 0, 1,
-//   0, 1, 1, 1,
-//   0, 1, 0, 1,
-//   0, 1, 0, 1
-// };
-
-// int character_i[20] = {
-//   0, 1, 1, 1,
-//   0, 0, 1, 0,
-//   0, 0, 1, 0,
-//   0, 0, 1, 0,
-//   0, 1, 1, 1
-// };
-
-// int character_j[20] = {
-//   0, 0, 0, 1,
-//   0, 0, 0, 1,
-//   0, 0, 0, 1,
-//   0, 1, 0, 1,
-//   0, 1, 1, 1
-// };
-
-// int character_k[20] = {
-//   0, 1, 0, 1,
-//   0, 1, 0, 1,
-//   0, 1, 1, 0,
-//   0, 1, 0, 1,
-//   0, 1, 0, 1
-// };
-
-// int character_l[20] = {
-//   0, 1, 0, 0,
-//   0, 1, 0, 0,
-//   0, 1, 0, 0,
-//   0, 1, 0, 0,
-//   0, 1, 1, 1
-// };
-
-// int character_m[20] = {
-//   0, 1, 0, 1,
-//   0, 1, 1, 1,
-//   0, 1, 0, 1,
-//   0, 1, 0, 1,
-//   0, 1, 0, 1
-// };
-
-// int character_n[20] = {
-//   0, 1, 1, 0,
-//   0, 1, 0, 1,
-//   0, 1, 0, 1,
-//   0, 1, 0, 1,
-//   0, 1, 0, 1
-// };
-
-// int character_o[20] = {
-//   0, 1, 1, 1,
-//   0, 1, 0, 1,
-//   0, 1, 0, 1,
-//   0, 1, 0, 1,
-//   0, 1, 1, 1
-// };
-
-// int character_p[20] = {
-//   0, 1, 1, 1,
-//   0, 1, 0, 1,
-//   0, 1, 1, 1,
-//   0, 1, 0, 0,
-//   0, 1, 0, 0
-// };
-
-// int character_q[20] = {
-//   0, 1, 1, 1,
-//   0, 1, 0, 1,
-//   0, 1, 0, 1,
-//   0, 1, 1, 1,
-//   0, 0, 0, 1
-// };
-
-// int character_r[20] = {
-//   0, 1, 1, 1,
-//   0, 1, 0, 1,
-//   0, 1, 1, 1,
-//   0, 1, 1, 0,
-//   0, 1, 0, 1
-// };
-
-// int character_s[20] = {
-//   0, 1, 1, 1,
-//   0, 1, 0, 0,
-//   0, 1, 1, 1,
-//   0, 0, 0, 1,
-//   0, 1, 1, 1
-// };
-
-// int character_t[20] = {
-//   0, 1, 1, 1,
-//   0, 0, 1, 0,
-//   0, 0, 1, 0,
-//   0, 0, 1, 0,
-//   0, 0, 1, 0
-// };
-
-// int character_u[20] = {
-//   0, 1, 0, 1,
-//   0, 1, 0, 1,
-//   0, 1, 0, 1,
-//   0, 1, 0, 1,
-//   0, 1, 1, 1
-// };
-
-// int character_v[20] = {
-//   0, 1, 0, 1,
-//   0, 1, 0, 1,
-//   0, 1, 0, 1,
-//   0, 1, 0, 1,
-//   0, 0, 1, 0
-// };
-
-// int character_w[20] = {
-//   0, 1, 0, 1,
-//   0, 1, 0, 1,
-//   0, 1, 0, 1,
-//   0, 1, 1, 1,
-//   0, 1, 0, 1
-// };
-
-// int character_x[20] = {
-//   0, 1, 0, 1,
-//   0, 1, 0, 1,
-//   0, 0, 1, 0,
-//   0, 1, 0, 1,
-//   0, 1, 0, 1
-// };
-
-// int character_y[20] = {
-//   0, 1, 0, 1,
-//   0, 1, 0, 1,
-//   0, 0, 1, 0,
-//   0, 0, 1, 0,
-//   0, 0, 1, 0
-// };
-
-// int character_z[20] = {
-//   0, 1, 1, 1,
-//   0, 0, 0, 1,
-//   0, 0, 1, 0,
-//   0, 1, 0, 0,
-//   0, 1, 1, 1
-// };
-
-// 3 x 7
-// int character_space[21] = {
-//   0, 0, 0,
-//   0, 0, 0,
-//   0, 0, 0,
-//   0, 0, 0,
-//   0, 0, 0,
-//   0, 0, 0,
-//   0, 0, 0
-// };
-
-// int character_a[21] = {
-//   0, 1, 0,
-//   0, 1, 0,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 1, 1,
-//   1, 0, 1,
-//   1, 0, 1
-// };
-
-// int character_b[21] = {
-//   1, 1, 1,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 1, 0,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 1, 1
-// };
-
-// int character_c[21] = {
-//   1, 1, 1,
-//   1, 0, 0,
-//   1, 0, 0,
-//   1, 0, 0,
-//   1, 0, 0,
-//   1, 0, 0,
-//   1, 1, 1
-// };
-
-// int character_d[21] = {
-//   1, 0, 0,
-//   1, 1, 0,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 1, 0,
-//   1, 0, 0
-// };
-
-// int character_e[21] = {
-//   1, 1, 1,
-//   1, 0, 0,
-//   1, 0, 0,
-//   1, 1, 0,
-//   1, 0, 0,
-//   1, 0, 0,
-//   1, 1, 1
-// };
-
-// int character_f[21] = {
-//   1, 1, 1,
-//   1, 0, 0,
-//   1, 0, 0,
-//   1, 1, 1,
-//   1, 0, 0,
-//   1, 0, 0,
-//   1, 0, 0
-// };
-
-// int character_g[21] = {
-//   1, 1, 1,
-//   1, 0, 0,
-//   1, 0, 0,
-//   1, 1, 1,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 1, 1
-// };
-
-// int character_h[21] = {
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 1, 1,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 0, 1
-// };
-
-// int character_i[21] = {
-//   1, 1, 1,
-//   0, 1, 0,
-//   0, 1, 0,
-//   0, 1, 0,
-//   0, 1, 0,
-//   0, 1, 0,
-//   1, 1, 1
-// };
-
-// int character_j[21] = {
-//   0, 0, 1,
-//   0, 0, 1,
-//   0, 0, 1,
-//   0, 0, 1,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 1, 1
-// };
-
-// int character_k[21] = {
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 1, 0,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 0, 1
-// };
-
-// int character_l[21] = {
-//   1, 0, 0,
-//   1, 0, 0,
-//   1, 0, 0,
-//   1, 0, 0,
-//   1, 0, 0,
-//   1, 0, 0,
-//   1, 1, 1
-// };
-
-// int character_m[21] = {
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 1, 1,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 0, 1
-// };
-
-// int character_n[21] = {
-//   1, 1, 0,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 0, 1
-// };
-
-// int character_o[21] = {
-//   0, 1, 0,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 0, 1,
-//   0, 1, 0
-// };
-
-// int character_p[21] = {
-//   1, 1, 1,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 1, 1,
-//   1, 0, 0,
-//   1, 0, 0,
-//   1, 0, 0
-// };
-
-// int character_q[21] = {
-//   1, 1, 1,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 1, 1,
-//   0, 1, 0,
-//   0, 0, 1
-// };
-
-// int character_r[21] = {
-//   1, 1, 1,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 1, 0,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 0, 1
-// };
-
-// int character_s[21] = {
-//   1, 1, 1,
-//   1, 0, 0,
-//   1, 0, 0,
-//   1, 1, 1,
-//   0, 0, 1,
-//   0, 0, 1,
-//   1, 1, 1
-// };
-
-// int character_t[21] = {
-//   1, 1, 1,
-//   0, 1, 0,
-//   0, 1, 0,
-//   0, 1, 0,
-//   0, 1, 0,
-//   0, 1, 0,
-//   0, 1, 0
-// };
-
-// int character_u[21] = {
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 1, 1
-// };
-
-// int character_v[21] = {
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 0, 1,
-//   0, 1, 0,
-//   0, 1, 0
-// };
-
-// int character_w[21] = {
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 1, 1,
-//   1, 0, 1,
-//   1, 0, 1
-// };
-
-// int character_x[21] = {
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 0, 1,
-//   0, 1, 0,
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 0, 1
-// };
-
-// int character_y[21] = {
-//   1, 0, 1,
-//   1, 0, 1,
-//   1, 0, 1,
-//   0, 1, 0,
-//   0, 1, 0,
-//   0, 1, 0,
-//   0, 1, 0
-// };
-
-// int character_z[21] = {
-//   1, 1, 1,
-//   0, 0, 1,
-//   0, 0, 1,
-//   0, 1, 0,
-//   1, 0, 0,
-//   1, 0, 0,
-//   1, 1, 1
-// };
-
-int characterArray[28] = {};
-
-int *TextCharacter::getCharacter(char character)
-{
-
-	int *pCharacterArray = &characterArray[28];
-
-	switch (character)
-	{
-	case ' ':
-		pCharacterArray = character_space;
-		break;
-	case 'A':
-	case 'a':
-		pCharacterArray = character_a;
-		break;
-	case 'B':
-	case 'b':
-		pCharacterArray = character_b;
-		break;
-	case 'C':
-	case 'c':
-		pCharacterArray = character_c;
-		break;
-	case 'D':
-	case 'd':
-		pCharacterArray = character_d;
-		break;
-	case 'E':
-	case 'e':
-		pCharacterArray = character_e;
-		break;
-	case 'F':
-	case 'f':
-		pCharacterArray = character_f;
-		break;
-	case 'G':
-	case 'g':
-		pCharacterArray = character_g;
-		break;
-	case 'H':
-	case 'h':
-		pCharacterArray = character_h;
-		break;
-	case 'I':
-	case 'i':
-		pCharacterArray = character_i;
-		break;
-	case 'J':
-	case 'j':
-		pCharacterArray = character_j;
-		break;
-	case 'K':
-	case 'k':
-		pCharacterArray = character_k;
-		break;
-	case 'L':
-	case 'l':
-		pCharacterArray = character_l;
-		break;
-	case 'M':
-	case 'm':
-		pCharacterArray = character_m;
-		break;
-	case 'N':
-	case 'n':
-		pCharacterArray = character_n;
-		break;
-	case 'O':
-	case 'o':
-		pCharacterArray = character_o;
-		break;
-	case 'P':
-	case 'p':
-		pCharacterArray = character_p;
-		break;
-	case 'Q':
-	case 'q':
-		pCharacterArray = character_q;
-		break;
-	case 'R':
-	case 'r':
-		pCharacterArray = character_r;
-		break;
-	case 'S':
-	case 's':
-		pCharacterArray = character_s;
-		break;
-	case 'T':
-	case 't':
-		pCharacterArray = character_t;
-		break;
-	case 'U':
-	case 'u':
-		pCharacterArray = character_u;
-		break;
-	case 'V':
-	case 'v':
-		pCharacterArray = character_v;
-		break;
-	case 'W':
-	case 'w':
-		pCharacterArray = character_w;
-		break;
-	case 'X':
-	case 'x':
-		pCharacterArray = character_x;
-		break;
-	case 'Y':
-	case 'y':
-		pCharacterArray = character_y;
-		break;
-	case 'Z':
-	case 'z':
-		pCharacterArray = character_z;
-		break;
-	case '0':
-		pCharacterArray = character_0;
-		break;
-	case '1':
-		pCharacterArray = character_1;
-		break;
-	case '2':
-		pCharacterArray = character_2;
-		break;
-	case '3':
-		pCharacterArray = character_3;
-		break;
-	case '4':
-		pCharacterArray = character_4;
-		break;
-	case '5':
-		pCharacterArray = character_5;
-		break;
-	case '6':
-		pCharacterArray = character_6;
-		break;
-	case '7':
-		pCharacterArray = character_7;
-		break;
-	case '8':
-		pCharacterArray = character_8;
-		break;
-	case '9':
-		pCharacterArray = character_9;
-		break;
-	default:
-		pCharacterArray = character_space;
+/* Get character array
+ * @param character - character to get array for
+ * @param width - width of character
+ * @return pointer to character array
+ */
+int* TextCharacter::getCharacterArray(char character, int width) {
+	switch (width) {
+		case 3:
+			switch (character) {
+				case ' ':
+					return character_space_3;
+				case 'A':
+				case 'a':
+					return character_a_3;
+				case 'B':
+				case 'b':
+					return character_b_3;
+				case 'C':
+				case 'c':
+					return character_c_3;
+				case 'D':
+				case 'd':
+					return character_d_3;
+				case 'E':
+				case 'e':
+					return character_e_3;
+				case 'F':
+				case 'f':
+					return character_f_3;
+				case 'G':
+				case 'g':
+					return character_g_3;
+				case 'H':
+				case 'h':
+					return character_h_3;
+				case 'I':
+				case 'i':
+					return character_i_3;
+				case 'J':
+				case 'j':
+					return character_j_3;
+				case 'K':
+				case 'k':
+					return character_k_3;
+				case 'L':
+				case 'l':
+					return character_l_3;
+				case 'M':
+				case 'm':
+					return character_m_3;
+				case 'N':
+				case 'n':
+					return character_n_3;
+				case 'O':
+				case 'o':
+					return character_o_3;
+				case 'P':
+				case 'p':
+					return character_p_3;
+				case 'Q':
+				case 'q':
+					return character_q_3;
+				case 'R':
+				case 'r':
+					return character_r_3;
+				case 'S':
+				case 's':
+					return character_s_3;
+				case 'T':
+				case 't':
+					return character_t_3;
+				case 'U':
+				case 'u':
+					return character_u_3;
+				case 'V':
+				case 'v':
+					return character_v_3;
+				case 'W':
+				case 'w':
+					return character_w_3;
+				case 'X':
+				case 'x':
+					return character_x_3;
+				case 'Y':
+				case 'y':
+					return character_y_3;
+				case 'Z':
+				case 'z':
+					return character_z_3;
+				case '0':
+					return character_0_3;
+				case '1':
+					return character_1_3;
+				case '2':
+					return character_2_3;
+				case '3':
+					return character_3_3;
+				case '4':
+					return character_4_3;
+				case '5':
+					return character_5_3;
+				case '6':
+					return character_6_3;
+				case '7':
+					return character_7_3;
+				case '8':
+					return character_8_3;
+				case '9':
+					return character_9_3;
+				default:
+					return character_space_3;
+			}
+		case 4:
+			switch (character) {
+				case ' ':
+					return character_space_4;
+				case 'A':
+				case 'a':
+					return character_a_4;
+				case 'B':
+				case 'b':
+					return character_b_4;
+				case 'C':
+				case 'c':
+					return character_c_4;
+				case 'D':
+				case 'd':
+					return character_d_4;
+				case 'E':
+				case 'e':
+					return character_e_4;
+				case 'F':
+				case 'f':
+					return character_f_4;
+				case 'G':
+				case 'g':
+					return character_g_4;
+				case 'H':
+				case 'h':
+					return character_h_4;
+				case 'I':
+				case 'i':
+					return character_i_4;
+				case 'J':
+				case 'j':
+					return character_j_4;
+				case 'K':
+				case 'k':
+					return character_k_4;
+				case 'L':
+				case 'l':
+					return character_l_4;
+				case 'M':
+				case 'm':
+					return character_m_4;
+				case 'N':
+				case 'n':
+					return character_n_4;
+				case 'O':
+				case 'o':
+					return character_o_4;
+				case 'P':
+				case 'p':
+					return character_p_4;
+				case 'Q':
+				case 'q':
+					return character_q_4;
+				case 'R':
+				case 'r':
+					return character_r_4;
+				case 'S':
+				case 's':
+					return character_s_4;
+				case 'T':
+				case 't':
+					return character_t_4;
+				case 'U':
+				case 'u':
+					return character_u_4;
+				case 'V':
+				case 'v':
+					return character_v_4;
+				case 'W':
+				case 'w':
+					return character_w_4;
+				case 'X':
+				case 'x':
+					return character_x_4;
+				case 'Y':
+				case 'y':
+					return character_y_4;
+				case 'Z':
+				case 'z':
+					return character_z_4;
+				case '0':
+					return character_0_4;
+				case '1':
+					return character_1_4;
+				case '2':
+					return character_2_4;
+				case '3':
+					return character_3_4;
+				case '4':
+					return character_4_4;
+				case '5':
+					return character_5_4;
+				case '6':
+					return character_6_4;
+				case '7':
+					return character_7_4;
+				case '8':
+					return character_8_4;
+				case '9':
+					return character_9_4;
+				default:
+					return character_space_4;
+			}
 	}
+}
 
-	// int output[20] = pCharacterArray;
+
+// int characterArray[28] = {};
+
+struct textCharacter {
+	int* characterArray;
+	int characterTotalPixels;
+};
+
+
+/* Get character
+ * @param character - character to get array for
+ * @param width - width of character
+ * @return pointer to character array
+ */
+int* TextCharacter::getCharacter(char character, int width)
+{
+	// int* pCharacterArray = &characterArray[28];
+	int* pCharacterArray = getCharacterArray(character, width);
+	
+
 
 	return pCharacterArray;
 }

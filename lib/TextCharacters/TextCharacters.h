@@ -10,8 +10,10 @@
 
 class TextCharacter {
     public:
-        TextCharacter();
-        int* getCharacter(char theChar);        
+    TextCharacter();
+    int* getCharacter(char theChar, int width);
+    private:
+    int* getCharacterArray(char character, int width);
 };
 
 #endif

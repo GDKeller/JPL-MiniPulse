@@ -22,7 +22,6 @@
         "innerPin": 19,
         "bottomPin": 16,
         "wifiRst": 21,
-        
         "outputEnable": 22,
         "potentiometer": 32
     },
