@@ -587,13 +587,13 @@ int character_3_4[28] = {
 	1, 1, 1, 0 };
 
 int character_4_4[28] = {
-	0, 0, 0, 1,
-	0, 0, 1, 1,
-	0, 1, 0, 1,
+	0, 0, 1, 0,
+	0, 1, 1, 0,
+	1, 0, 1, 0,
 	1, 1, 1, 1,
-	0, 0, 0, 1,
-	0, 0, 0, 1,
-	0, 0, 0, 1 };
+	0, 0, 1, 0,
+	0, 0, 1, 0,
+	0, 0, 1, 0 };
 
 int character_5_4[28] = {
 	1, 1, 1, 1,
@@ -866,23 +866,28 @@ int* TextCharacter::getCharacterArray(char character, int width) {
 
 // int characterArray[28] = {};
 
-struct textCharacter {
-	int* characterArray;
-	int characterTotalPixels;
-};
-
 
 /* Get character
  * @param character - character to get array for
  * @param width - width of character
  * @return pointer to character array
  */
-int* TextCharacter::getCharacter(char character, int width)
+const TextCharacter::TextCharacterInfo TextCharacter::getCharacter(char character, int width)
 {
-	// int* pCharacterArray = &characterArray[28];
+	TextCharacterInfo returnCharacter;
 	int* pCharacterArray = getCharacterArray(character, width);
-	
+	returnCharacter.characterArray = pCharacterArray;
+	int characterTotalPixels;
 
+	switch (width) {
+		case 3:
+			characterTotalPixels = 20;
+			break;
+		case 4:
+			characterTotalPixels = 28;
+	}
 
-	return pCharacterArray;
+	returnCharacter.characterTotalPixels = characterTotalPixels;
+
+	return returnCharacter;
 }
