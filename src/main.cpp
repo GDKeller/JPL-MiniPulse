@@ -604,7 +604,10 @@ void loadUserConfig(JsonDocument& doc)
 	}
 
 	File configFile = SPIFFS.open("/config_user.json", "r");
-	if (!configFile) {
+	
+	if (configFile) {
+		Serial.println("Successfully opened config_user.json");
+	} else {
 		Serial.println("Failed to open user config file, falling back to defaults");
 		return;
 	}
@@ -2502,27 +2505,29 @@ void setup()
 	allStripsOff();
 
 	/* Test strips by filling with different colors */
-	// fill_solid(outer_leds, outerPixelsTotal, CRGB::Red);
-	// fill_solid(middle_leds, middlePixelsTotal, CRGB::Green);
-	// fill_solid(inner_leds, innerPixelsTotal, CRGB::Blue);
-	// FastLED.show();
-	// delay(1000);
-	// allStripsOff();
+	if (config.debugUtils.testLEDs == true) {
+		fill_solid(outer_leds, outerPixelsTotal, CRGB::Red);
+		fill_solid(middle_leds, middlePixelsTotal, CRGB::Green);
+		fill_solid(inner_leds, innerPixelsTotal, CRGB::Blue);
+		FastLED.show();
+		delay(1000);
+		allStripsOff();
 
-	// for ( int i = 0; i < 4; i++)
-	// {
+		for (int i = 0; i < 4; i++) {
+			CRGB* strip = allStrips[i];
 
-	// 	CRGB* stuff = allStrips[i];
+			for (int dot = 0; dot < outerPixelsTotal; dot++) {
+				strip[dot] = CRGB::Purple;
+				FastLED.show();
+				// clear this led for the next time around the loop
+				if (dot > 0) strip[dot - 1] = CRGB::Black;
+				// delay(30);
+			}
+		}
+	}
 
-	// 	for(int dot = 0; dot < outerPixelsTotal; dot++) {
-	// 		stuff[dot] = CRGB::Purple;
-	// 		FastLED.show();
-	// 		// clear this led for the next time around the loop
-	// 		if (dot > 0) stuff[dot - 1] = CRGB::Black;
-	// 		// delay(30);
-	// 	}
-	// }
 
+	/* WIFI MANAGER SETUP */
 	wm.setConfigPortalBlocking(false);
 
 	const char* custom_radio_str = "<br/><label for='customfieldid'>Color Theme</label><br/><input type='radio' name='customfieldid' value='0' checked> White<br><input type='radio' name='customfieldid' value='1'> Cyber<br><input type='radio' name='customfieldid' value='2'> Valentine<br><input type='radio' name='customfieldid' value='3'> Moonlight";
