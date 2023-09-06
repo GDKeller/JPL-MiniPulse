@@ -1023,7 +1023,7 @@ void scrollLetters(const char* spacecraftName, int wordArraySize)
 }
 
 // Create Meteor object
-void createMeteor(int strip, int region, bool directionDown = true, int startPixel = 0, uint8_t meteorSize = 1, bool hasTail = true, float meteorTailDecayValue = 0.85)
+void createMeteor(int strip, int region, bool directionDown = true, int startPixel = 0, uint8_t meteorSize = 1, bool hasTail = true, float meteorTailDecayValue = 0.95)
 {
 	CHSV meteorColor = currentColors.meteor;
 
@@ -1069,7 +1069,7 @@ void animationMeteorPulseRegion(
 	bool randomizeOffset = false,
 	uint8_t meteorSize = 1,
 	bool hasTail = true,
-	float meteorTailDecayValue = 0.92)
+	float meteorTailDecayValue = 0.95)
 {
 
 	// Stagger the starting pixel
@@ -1123,22 +1123,23 @@ void animationSpiralPulseRing(
 	}
 }
 
-void waveAnimation(uint8_t strip, uint8_t numberOfWaves, uint8_t waveSize)
+void waveAnimation(uint8_t strip, bool isDown, uint8_t numberOfWaves, uint8_t waveSize, uint8_t interval, bool hasTail)
 {
+	uint8_t intervalAdjusted = interval * 2; // Interval is doubled because the LEDs are in front/back pairs
 	for (uint8_t wave = 0; wave < numberOfWaves; wave++) {
 		for (uint8_t region = 0; region < outerChunks; region++) {
-			int startPixel = wave * waveSize;
+			int startPixel = (wave * intervalAdjusted) * numberOfWaves * -1;
 			if (region < outerChunks / 2) {
-				startPixel = startPixel - (8 * region);
+				startPixel -= (intervalAdjusted * region);
 			} else {
-				startPixel = startPixel - (8 * (outerChunks - region));
+				startPixel -= (intervalAdjusted * (outerChunks - region));
 			}
-			createMeteor(strip, region, true, startPixel, waveSize, true);
+			createMeteor(strip, region, isDown, startPixel, waveSize, hasTail, 0.95);
 		}
 	}
 }
 
-void zigzagAnimation(uint8_t strip, bool directionDown, uint8_t pulseCount, uint8_t zigzagSize, uint8_t pulseOffset, uint8_t height, uint8_t interval, bool hasTail)
+void zigzagAnimation(uint8_t strip, bool isDown, uint8_t pulseCount, uint8_t zigzagSize, uint8_t pulseOffset, uint8_t height, uint8_t interval, bool hasTail)
 {
 	zigzagSize--;
 
@@ -1163,7 +1164,7 @@ void zigzagAnimation(uint8_t strip, bool directionDown, uint8_t pulseCount, uint
 
 			// Serial.print("startPixel: " + String(startPixel) + "\n");
 
-			createMeteor(strip, region, directionDown, startPixel, height, hasTail, 0.92);
+			createMeteor(strip, region, isDown, startPixel, height, hasTail, 0.95);
 		}
 	}
 }
@@ -1188,87 +1189,11 @@ void laserGunAnimation(uint8_t strip, uint16_t chargeTime, uint8_t firingSize)
 	}
 }
 
-// void animationRadialSpiral(uint8_t strip, uint8_t stepSize) {
-//   static uint8_t spiralStep = 0;
-
-//   for (uint8_t region = 0; region < outerChunks; ++region) {
-//     int startPixel = (spiralStep + (region * stepSize)) % outerPixelsChunkLength;
-//     createMeteor(strip, region, true, startPixel, 1, false);
-//   }
-
-//   spiralStep += stepSize;
-//   if (spiralStep >= outerPixelsChunkLength) {
-//     spiralStep = 0;
-//   }
-// }
-
-// void doRandomFancyAnimation(uint8_t rateClass) {
-// 	int animationType = random8(1, 4);
-
-// 	switch (rateClass) {
-// 		case 6: {
-// 			if (animationType == 1) { // Ring
-// 				animationMeteorPulseRing(stripId, isDown, 8, 26, false, 6, false);
-// 			}
-// 			if (animationType == 2) { // Spiral	
-// 				uint8_t pulseCount = 8;
-// 				uint8_t height = 4;
-// 				uint8_t spiralOffset = 4;
-// 				uint8_t repeats = 10;
-// 				animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
-// 				break;
-// 			}
-// 		}
-// 		case 5: {
-
-// 		}
-// 		case 4: {
-
-// 		}
-// 		case 3: {
-
-// 		}
-// 		case 2: {
-
-// 		}
-// 		case 1: {
-
-// 		}
-// 	}
 
 
 
-// 	// switch (animationType) {
-// 	// 	case 4: {
-// 	// 		// Wave
-// 	// 		waveAnimation(1, 4, 4);
-// 	// 		break;
-// 	// 	}
-// 	// 	case 3: {
-// 	// 		// Zigzag
-// 	// 		zigzagAnimation(1, 4);
-// 	// 		break;
-// 	// 	}
-// 	// 	case 2: {
-// 	// 		// Laser Gun
-// 	// 		laserGunAnimation(1, 1000, 4);
-// 	// 		break;
-// 	// 	}
-// 	// 	case 1: {
-// 	// 		// Spiral
-// 	// 		animationSpiralPulseRing(1, true, 4, 4, 6, 4);
-// 	// 		break;
-// 	// 	}
-// 	// 	case 0: {
-// 	// 		// Meteors
-// 	// 		animationMeteorPulseRing(1, true, 4, 32, true, 1, true);
-// 	// 		break;
-// 	// 	}
-// 	// }	
 
-// }
-
-void doInnerCoreMeteors(bool isDown = true, int pulseCount = 1, int offset = 8, int meteorCount = 6, float meteorTailDecayValue = 0.9) {
+void doInnerCoreMeteors(bool isDown = true, int pulseCount = 1, int offset = 8, int meteorCount = 6, float meteorTailDecayValue = 0.95) {
 	for (int i = 0; i < meteorCount; i++) {
 		animationMeteorPulseRegion(0, random8(4, 10), isDown, 0, pulseCount, offset, true, 1, true, meteorTailDecayValue);
 	}
@@ -1304,8 +1229,9 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 	}
 
 	/* testing override */
-	rateClass = 6;
-	randomTypeAny = 4;
+	// rateClass = 6;
+	// randomTypeAny = 4;
+	// isDown = false;
 
 	/* Do animation based on rate class
 	 * Where Animation type 0 isn't explicityly checked, it will fall back to meteors as the default
@@ -1334,7 +1260,7 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 					break;
 				}
 				case 3: { // Wave
-					waveAnimation(stripId, 6, 4);
+					waveAnimation(stripId, isDown, 3, 3, 8, true);
 					break;
 				}
 				case 4: { // Zigzag
@@ -1366,7 +1292,7 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 					break;
 				}
 				case 3: { // Wave
-					waveAnimation(stripId, 4, 6);
+					waveAnimation(stripId, isDown, 2, 1, 6, true);
 					break;
 				}
 				case 4: { // Zigzag
@@ -1399,7 +1325,7 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 					break;
 				}
 				case 3: { // Wave
-					waveAnimation(stripId, 2, 10);
+					waveAnimation(stripId, isDown, 1, 1, 6, false);
 					break;
 				}
 				default: { // Meteor
@@ -1476,22 +1402,22 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 	if (isDown == true) {
 		switch (rateClass) {
 			case 6: {
-				doInnerCoreMeteors(true, 5, 32, 6, 0.93);
+				doInnerCoreMeteors(true, 5, 32, 6, 0.97);
 			}
 			case 5: {
-				doInnerCoreMeteors(true, 3, 24, 6, 0.9);
+				doInnerCoreMeteors(true, 3, 24, 6, 0.95);
 			}
 			case 4: {
-				doInnerCoreMeteors(true, 1, 24, 6, 0.9);
+				doInnerCoreMeteors(true, 1, 24, 6, 0.93);
 			}
 			case 3: {
-				doInnerCoreMeteors(true, 1, 32, 6, 0.87);
+				doInnerCoreMeteors(true, 1, 32, 6, 0.92);
 			}
 			case 2: {
-				doInnerCoreMeteors(true, 1, 32, 4, 0.85);
+				doInnerCoreMeteors(true, 1, 32, 4, 0.9);
 			}
 			case 1: {
-				doInnerCoreMeteors(true, 1, 32, 2, 0.8);
+				doInnerCoreMeteors(true, 1, 32, 2, 0.88);
 			}
 		}
 	}

@@ -106,16 +106,17 @@ void Animate::animateMeteor(Meteor* meteor)
 			// brightValue = 255;
 			// Serial.println(brightValue);
 			// delay(1000);
-			trailColor = CHSV(hue, 0, brightValue);
+			uint8_t brightCalc = dim8_raw(brightValue);
+			trailColor = CHSV(hue, tailHueSaturation, brightCalc);
 		} else {
 			// int satCalc = tailHueSaturation - (d * 16);
 			// satCalc += random(32) - 16;
 			// uint8_t satValue = satCalc < 0 ? 0 : satCalc;
 			// int satValue = tailHueSaturation;
-			int brightCalc = 255 - (d * 16);
+			// int brightCalc = 255 - (d * 16);
 			// brightCalc += random(32) - 16;
-			brightValue = brightCalc < 0 ? 0 : brightCalc;
-			trailColor = CHSV(hue, 0, brightValue);
+			// brightValue = brightCalc < 0 ? 0 : brightCalc;
+			trailColor = CHSV(hue, tailHueSaturation, 255);
 		}
 
 		// Cycle hue through time
