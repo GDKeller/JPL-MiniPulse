@@ -1,5 +1,4 @@
 #pragma region -- LIBRARIES
-
 #include <Arduino.h>		// Arduino core
 #include <FS.h>				// File system
 #include <SPIFFS.h>			// SPIFFS file system
@@ -106,7 +105,6 @@ using namespace std;	  // C++ I/O
 #pragma endregion thing
 
 #pragma region-- ESP32 PIN ASSIGNMENTS
-#define FASTLED_ALL_PINS_HARDWARE_SPI
 #define OUTER_PIN 17		// Outer ring pin
 #define MIDDLE_PIN 18		// Middle ring pin
 #define INNER_PIN 19		// Inner ring pin
@@ -315,7 +313,7 @@ static int letterTotalPixels = 28;
 #pragma region -- ANIMATION UTILITIES
 
 uint8_t fpsInMs = 1000 / fpsRate;
-bool meteorTailDecay = false;
+bool meteorTailDecay = true;
 bool meteorTailRandom = false;
 
 // State counters to enable fractional animation speeds
@@ -323,6 +321,7 @@ bool meteorTailRandom = false;
 uint8_t counterHalfSpeed = 1;
 uint8_t counterThirdSpeed = 1;
 uint8_t counterQuarterSpeed = 1;
+uint8_t counterEighthSpeed = 1;
 
 // Keeps track of current animation state
 static bool nameScrollDone = true;
@@ -804,7 +803,7 @@ void setColorTheme(uint8_t colorTheme)
 		case 0:
 			currentColors.letter = mpColors.white.value;
 			currentColors.meteor = mpColors.white.value;
-			currentColors.tailHue = 160;
+			currentColors.tailHue = 0;
 			currentColors.tailSaturation = 0;
 			break;
 		case 1:
@@ -920,6 +919,7 @@ void updateSpeedCounters()
 	counterHalfSpeed == 2 ? counterHalfSpeed = 1 : counterHalfSpeed++;
 	counterThirdSpeed == 3 ? counterThirdSpeed = 1 : counterThirdSpeed++;
 	counterQuarterSpeed == 4 ? counterQuarterSpeed = 1 : counterQuarterSpeed++;
+	counterEighthSpeed == 8 ? counterEighthSpeed = 1 : counterEighthSpeed++;
 }
 
 // Utility function to reverse elements of an array
@@ -1045,7 +1045,7 @@ void createMeteor(int strip, int region, bool directionDown = true, int startPix
 			meteorTailDecayValue,		  // meteorTrailDecayValue
 			meteorTailRandom,			  // meteorRandomDecay
 			currentColors.tailHue,		  // tailHueStart
-			true,						  // tailHueAdd
+			false,						  // tailHueAdd
 			0.75,						  // tailHueExponent
 			currentColors.tailSaturation, // tailHueSaturation
 			allStrips[strip]			  // rStrip
@@ -1069,12 +1069,12 @@ void animationMeteorPulseRegion(
 	bool randomizeOffset = false,
 	uint8_t meteorSize = 1,
 	bool hasTail = true,
-	float meteorTailDecayValue = 0.85)
+	float meteorTailDecayValue = 0.92)
 {
 
 	// Stagger the starting pixel
 	if (randomizeOffset == true)
-		startPixel = startPixel - ((rand() % offsetHalf + 1) * 2);
+		startPixel = startPixel - ((rand() % (offset / 2) + 1) * 2);
 
 	for (int i = 0; i < pulseCount; i++) {
 		int16_t pixel = i + startPixel + (i * offset * -1);
@@ -1138,16 +1138,36 @@ void waveAnimation(uint8_t strip, uint8_t numberOfWaves, uint8_t waveSize)
 	}
 }
 
-void zigzagAnimation(uint8_t strip, uint8_t zigzagSize)
+void zigzagAnimation(uint8_t strip, bool directionDown, uint8_t pulseCount, uint8_t zigzagSize, uint8_t pulseOffset, uint8_t height, uint8_t interval, bool hasTail)
 {
-	for (uint8_t region = 0; region < outerChunks; region++) {
-		bool directionDown = region % 2 == 0;
-		for (uint8_t i = 0; i < outerPixelsChunkLength; i += zigzagSize) {
-			createMeteor(strip, region, directionDown, i, 1, false);
-			directionDown = !directionDown;
+	zigzagSize--;
+
+	for (int pulse = 0; pulse < pulseCount; pulse++) {
+		// Serial.print("pulse: " + String(pulse) + "\n");
+
+		for (uint8_t region = 0; region < outerChunks; region++) {
+			// Serial.print("region: " + String(region) + "\n");
+
+			int startPixel;
+			int position = region % (zigzagSize * 2);
+
+			if (position <= zigzagSize) {
+				startPixel = (position * (interval * 2)) * -1;
+			} else {
+				startPixel = ((zigzagSize - (position - zigzagSize)) * (interval * 2)) * -1;
+			}
+
+			/* Offset pulses */
+			// pulseOffset is multiplied by 2 because the LEDs are in front/back pairs
+			startPixel = startPixel - (pulse * (pulseOffset * 2 ));
+
+			// Serial.print("startPixel: " + String(startPixel) + "\n");
+
+			createMeteor(strip, region, directionDown, startPixel, height, hasTail, 0.92);
 		}
 	}
 }
+
 
 void laserGunAnimation(uint8_t strip, uint16_t chargeTime, uint8_t firingSize)
 {
@@ -1182,526 +1202,301 @@ void laserGunAnimation(uint8_t strip, uint16_t chargeTime, uint8_t firingSize)
 //   }
 // }
 
+// void doRandomFancyAnimation(uint8_t rateClass) {
+// 	int animationType = random8(1, 4);
+
+// 	switch (rateClass) {
+// 		case 6: {
+// 			if (animationType == 1) { // Ring
+// 				animationMeteorPulseRing(stripId, isDown, 8, 26, false, 6, false);
+// 			}
+// 			if (animationType == 2) { // Spiral	
+// 				uint8_t pulseCount = 8;
+// 				uint8_t height = 4;
+// 				uint8_t spiralOffset = 4;
+// 				uint8_t repeats = 10;
+// 				animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
+// 				break;
+// 			}
+// 		}
+// 		case 5: {
+
+// 		}
+// 		case 4: {
+
+// 		}
+// 		case 3: {
+
+// 		}
+// 		case 2: {
+
+// 		}
+// 		case 1: {
+
+// 		}
+// 	}
+
+
+
+// 	// switch (animationType) {
+// 	// 	case 4: {
+// 	// 		// Wave
+// 	// 		waveAnimation(1, 4, 4);
+// 	// 		break;
+// 	// 	}
+// 	// 	case 3: {
+// 	// 		// Zigzag
+// 	// 		zigzagAnimation(1, 4);
+// 	// 		break;
+// 	// 	}
+// 	// 	case 2: {
+// 	// 		// Laser Gun
+// 	// 		laserGunAnimation(1, 1000, 4);
+// 	// 		break;
+// 	// 	}
+// 	// 	case 1: {
+// 	// 		// Spiral
+// 	// 		animationSpiralPulseRing(1, true, 4, 4, 6, 4);
+// 	// 		break;
+// 	// 	}
+// 	// 	case 0: {
+// 	// 		// Meteors
+// 	// 		animationMeteorPulseRing(1, true, 4, 32, true, 1, true);
+// 	// 		break;
+// 	// 	}
+// 	// }	
+
+// }
+
+void doInnerCoreMeteors(bool isDown = true, int pulseCount = 1, int offset = 8, int meteorCount = 6, float meteorTailDecayValue = 0.9) {
+	for (int i = 0; i < meteorCount; i++) {
+		animationMeteorPulseRegion(0, random8(4, 10), isDown, 0, pulseCount, offset, true, 1, true, meteorTailDecayValue);
+	}
+}
+
 void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_t type)
 {
-	// Serial.print("type: "); Serial.println(type);
-	// Serial.print("rateClass: "); Serial.println(rateClass);
+	if (config.debugUtils.showSerial == true)
+		Serial.print("\n" + String(isDown) + " | " + String(rateClass) + " | " + String(offset) + " | " + String(type) + "\n");
+
 	int stripId = isDown == true ? 2 : 1;
 	int pulseCount = 1;
-	// Serial.print("rateClass: "); Serial.println(rateClass);
-	// Serial.print("type: "); Serial.println(type);
-	// Serial.println("------------");
-	// Serial.println();
+	uint8_t randomTypeAny;
+	randomTypeAny = random8(0, 4);
 
-	uint8_t adjustedType = type;
 
-	// Serial.println("doing rate based animation");
+	/* Rates 1 & 2 are always meteors */
+	if (rateClass == 1 || rateClass == 2) randomTypeAny = 0;
 
-	switch (rateClass) {
-		case 6:
-		{ // 1gbps
-			// If this is the first animation cycle, do a random fancy animation. Otherwise, do meteors.
-			if (isDown == true && animateFirstCycleDown == false)
-				adjustedType = 0;
-			if (isDown == false && animateFirstCycleUp == false)
-				adjustedType = 0;
+	/* Set rates for first animation */
+	if (isDown && animateFirstCycleDown || !isDown && animateFirstCycleUp) {
+		// Rates 5 & 6 always get a fancy animation at first
+		if (rateClass == 5 || rateClass == 6) randomTypeAny = random8(1, 4);
 
-			switch (adjustedType) {
-				case (1):
-				{
-					// Ring
-					pulseCount = 8;
-					animationMeteorPulseRing(stripId, isDown, pulseCount, 26, false, 6, false);
-					break;
-				}
-
-				case (2):
-				{
-					// Spiral
-					pulseCount = 8;
-					uint8_t height = 4;
-					uint8_t spiralOffset = 4;
-					uint8_t repeats = 10;
-					animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
-					break;
-				}
-
-				case (3):
-				{
-					// Wave
-					// pulseCount = 8;
-					// uint8_t height = 8;
-					// uint8_t spiralOffset = 4;
-					// uint8_t repeats = 10;
-					// animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
-					waveAnimation(stripId, 4, 8);
-					break;
-				}
-
-				default:
-				{
-					// Meteors
-					pulseCount = 14;
-					animationMeteorPulseRing(stripId, isDown, pulseCount, 32, true, 1, true);
-					break;
-				}
-			}
-
-			break;
-		}
-		case 5:
-		{ // 1mbps
-			// If this is the first animation cycle, do a random fancy animation. Otherwise, do meteors.
-			if (isDown == true && animateFirstCycleDown == false)
-				adjustedType = 0;
-			if (isDown == false && animateFirstCycleUp == false)
-				adjustedType = 0;
-
-			switch (adjustedType) {
-				case (1):
-				{
-					// Ring
-					pulseCount = 6;
-					animationMeteorPulseRing(stripId, isDown, pulseCount, 32, false, 4, false);
-					break;
-				}
-
-				case (2):
-				{
-					// Spiral
-					pulseCount = 8;
-					uint8_t height = 4;
-					uint8_t spiralOffset = 6;
-					uint8_t repeats = 14;
-					animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
-					break;
-				}
-
-				case (3):
-				{
-					// Wave
-					// pulseCount = 8;
-					// uint8_t height = 6;
-					// uint8_t spiralOffset = 6;
-					// uint8_t repeats = 10;
-					// animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
-					waveAnimation(stripId, 4, 4);
-					break;
-				}
-
-				default:
-				{
-					// Meteors
-					pulseCount = 8;
-					animationMeteorPulseRing(stripId, isDown, pulseCount, 16, true, 1, true);
-					break;
-				}
-			}
-
-			break;
-		}
-		case 4:
-		{ // 10kbps
-			// If this is the first animation cycle, do a random fancy animation. Otherwise, do meteors.
-			if (isDown == true && animateFirstCycleDown == false)
-				adjustedType = 0;
-			if (isDown == false && animateFirstCycleUp == false)
-				adjustedType = 0;
-
-			switch (adjustedType) {
-				case (1):
-				{
-					// Ring
-					pulseCount = 4;
-					animationMeteorPulseRing(stripId, isDown, pulseCount, 32, false, 3, false);
-					break;
-				}
-
-				case (2):
-				{
-					// Spiral
-					pulseCount = 8;
-					uint8_t height = 4;
-					uint8_t spiralOffset = 6;
-					uint8_t repeats = 10;
-					animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
-					break;
-				}
-
-				case (3):
-				{
-					// Spiral
-					pulseCount = 8;
-					uint8_t height = 3;
-					uint8_t spiralOffset = 8;
-					uint8_t repeats = 10;
-					animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
-					break;
-				}
-
-				default:
-				{
-					// Meteors
-					pulseCount = 4;
-					animationMeteorPulseRing(stripId, isDown, pulseCount, offset, true, 1, true);
-					break;
-				}
-			}
-
-			break;
-		}
-		case 3:
-		{
-			// If this is the first animation cycle, do a random fancy animation. Otherwise, do meteors.
-			if (isDown == true && animateFirstCycleDown == false)
-				adjustedType = 0;
-			if (isDown == false && animateFirstCycleUp == false)
-				adjustedType = 0;
-
-			switch (adjustedType) {
-				case (1):
-				{
-					// Ring
-					pulseCount = 3;
-					animationMeteorPulseRing(stripId, isDown, pulseCount, 64, false, 3, false);
-					break;
-				}
-
-				case (2):
-				{
-					// Spiral
-					pulseCount = 8;
-					uint8_t height = 2;
-					uint8_t spiralOffset = 6;
-					uint8_t repeats = 10;
-					animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
-					break;
-				}
-
-				case (3):
-				{
-					// Spiral
-					pulseCount = 8;
-					uint8_t height = 4;
-					uint8_t spiralOffset = 12;
-					uint8_t repeats = 10;
-					animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
-					break;
-				}
-
-				default:
-				{
-					// Meteors
-					pulseCount = 2;
-					animationMeteorPulseRing(stripId, isDown, pulseCount, offset, true, 1, true);
-					break;
-				}
-			}
-
-			break;
-		}
-		case 2:
-		{
-
-			switch (adjustedType) {
-				case (1):
-				{
-					// Ring
-					pulseCount = 2;
-					animationMeteorPulseRing(stripId, isDown, pulseCount, 96, false, 2, false);
-					break;
-				}
-
-				case (2):
-				{
-					// Spiral
-					pulseCount = 8;
-					uint8_t height = 2;
-					uint8_t spiralOffset = 8;
-					uint8_t repeats = 10;
-					if (counterHalfSpeed == 1)
-						animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
-					break;
-				}
-
-				case (3):
-				{
-					// Spiral
-					pulseCount = 8;
-					uint8_t height = 1;
-					uint8_t spiralOffset = 8;
-					uint8_t repeats = 10;
-					if (counterHalfSpeed == 1)
-						animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
-					break;
-				}
-
-				default:
-				{
-					// Meteors
-					pulseCount = 2;
-					animationMeteorPulseRing(stripId, isDown, pulseCount, 64, true, 1, true);
-					break;
-				}
-			}
-
-			break;
-		}
-		case 1:
-		{
-			// Meteors
-			pulseCount = 1;
-			if (counterQuarterSpeed == 1)
-				animationMeteorPulseRing(stripId, isDown, pulseCount, 32, true, 1, true);
-			break;
-		}
-		case 0:
-		{
-			FastLED.clear(allStrips[stripId]);
-			break;
-		}
-		default:
-		{
-			FastLED.clear(allStrips[stripId]);
-		}
+		// Rates 3 & 4 are always meteors at first
+		if (rateClass == 3 || rateClass == 4) randomTypeAny = 0;
 	}
 
-	// The first animation has fired for this craft
-	// The down & up animations happen on separate cycles so we only set the current direction
-	isDown == true ? animateFirstCycleDown = false : animateFirstCycleUp = false;
+	// randomTypeAny = 3;
+	if (config.debugUtils.showSerial == true) {
+		Serial.print("Animation Type:");
+		Serial.println(randomTypeAny);
+	}
 
-	// if (rateClass == 0) {
-	// 	// allStrips[stripId]->clear();
-	// 	FastLED.clear(allStrips[stripId]);
-	// 	return;
-	// }
+	/* testing override */
+	rateClass = 6;
+	randomTypeAny = 4;
 
-	switch (type) {
-		// Meteor
-		case 0:
-		{
-			switch (rateClass) {
-				case 6:
-				{ // 1gbps
-					pulseCount = 14;
-					// Serial.print("[Downsignal Gb]");
-					animationMeteorPulseRing(stripId, isDown, pulseCount, 12, true);
-					break;
-				}
-				case 5:
-				{ // 1mbps
+	/* Do animation based on rate class
+	 * Where Animation type 0 isn't explicityly checked, it will fall back to meteors as the default
+	 *
+	 * By rolling a random number that can be greater than the amount of animation types specified for a given rate class,
+	 * those lower rate classes have a lower chance of getting a fancy animation
+	 * This effectively adds "weighting" to the meteors
+	*/
+
+	switch (rateClass) {
+		case 6: { // 1gbps
+			// Serial.print("[Downsignal Gb]");
+			switch (randomTypeAny) {
+				case 1: { // Ring
 					pulseCount = 8;
-					// Serial.print("[Downsignal kb]");
-					animationMeteorPulseRing(stripId, isDown, pulseCount, 16, true);
+					// Serial.print("[Downsignal Gb]");
+					animationMeteorPulseRing(stripId, isDown, pulseCount, 24, false, 3, true);
 					break;
 				}
-				case 4:
-				{ // 10kbps
-					pulseCount = 4;
-					// Serial.print("[Downsignal kb]");
-					uint8_t pickRandom = random8(2);
-					Serial.print("rate class 4, anim type: ");
-					Serial.println(pickRandom);
-					animationMeteorPulseRing(stripId, isDown, pulseCount, offset, true);
+				case 2: { // Spiral
+					pulseCount = 8;
+					uint8_t height = 6;
+					uint8_t spiralOffset = 10;
+					uint8_t repeats = 8;
+					animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
 					break;
 				}
-				case 3:
-				{
-					pulseCount = 2;
-					// Serial.print("[Downsignal kb]");
-					animationMeteorPulseRing(stripId, isDown, pulseCount, offset, true);
+				case 3: { // Wave
+					waveAnimation(stripId, 6, 4);
 					break;
 				}
-				case 2:
-				{
-					pulseCount = 1;
-					// Serial.print("[Downsignal kb]");
-					if (counterHalfSpeed == 1)
-						animationMeteorPulseRing(stripId, isDown, pulseCount, 16, true);
+				case 4: { // Zigzag
+					zigzagAnimation(stripId, isDown, 2, 3, 6, 2, 6, true);
 					break;
 				}
-				case 1:
-				{
-					// Serial.print("[Downsignal slow]");
-					// animationMeteorPulseRegion(stripId, random(10), isDown, 0, pulseCount, 12, true);
-					// animationMeteorPulseRegion(stripId, random(10), isDown, 0, pulseCount, 12, true);
-					if (counterQuarterSpeed == 1)
-						animationMeteorPulseRing(stripId, isDown, 1, 12, true);
-					break;
+				default: { // Meteor
+					pulseCount = 8;
+					animationMeteorPulseRing(stripId, isDown, pulseCount, 24, true, 3, true);
 				}
-				case 0:
-				{
-					// allStrips[stripId]->clear();
-					FastLED.clear(allStrips[stripId]);
-					// Serial.print("[Downsignal -- ]");
-					break;
-				}
-				default:
-				{
-					// allStrips[stripId]->clear();
-					FastLED.clear(allStrips[stripId]);
-					// Serial.print("[Downsignal n/a ]");
-				}
-			}
+			} // end switch
+
+			break;
 		}
-
-		// Ring
-		case 1:
-		{
-			switch (rateClass) {
-				case 6:
-				{ // 1gbps
-					pulseCount = 14;
-					// Serial.print("[Downsignal Gb]");
-					animationMeteorPulseRing(stripId, isDown, pulseCount, 10, false);
-					break;
-				}
-				case 5:
-				{ // 1mbps
-					pulseCount = 8;
-					// Serial.print("[Downsignal kb]");
-					animationMeteorPulseRing(stripId, isDown, pulseCount, 16, false);
-					break;
-				}
-				case 4:
-				{ // 10kbps
+		case 5: { // 1mbps
+			// Serial.print("[Downsignal kb]");
+			switch (randomTypeAny) {
+				case 1: { // Ring
 					pulseCount = 4;
-					// Serial.print("[Downsignal kb]");
-					animationMeteorPulseRing(stripId, isDown, pulseCount, 24, false);
+					animationMeteorPulseRing(stripId, isDown, pulseCount, 32, false, 2);
 					break;
 				}
-				case 3:
-				{
+				case 2: { // Spiral
+					pulseCount = 6;
+					uint8_t height = 4;
+					uint8_t spiralOffset = 6;
+					uint8_t repeats = 5;
+					animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
+					break;
+				}
+				case 3: { // Wave
+					waveAnimation(stripId, 4, 6);
+					break;
+				}
+				case 4: { // Zigzag
+					zigzagAnimation(stripId, isDown, 1, 2, 4, 2, 4, true);
+					break;
+				}
+				default: { // Meteor
+					pulseCount = 4;
+					animationMeteorPulseRing(stripId, isDown, pulseCount, 32, true, 2, true);
+				}
+
+			} // end switch
+
+			break;
+		}
+		case 4: { // 10kbps
+			// Serial.print("[Downsignal kb]");
+			switch (randomTypeAny) {
+				case 1: { // Ring
 					pulseCount = 2;
-					// Serial.print("[Downsignal kb]");
 					animationMeteorPulseRing(stripId, isDown, pulseCount, 32, false);
 					break;
 				}
-				case 2:
-				{
-					pulseCount = 1;
-					// Serial.print("[Downsignal kb]");
-					if (counterHalfSpeed == 1)
-						animationMeteorPulseRing(stripId, isDown, pulseCount, 38, false);
-					break;
-				}
-				case 1:
-				{
-					// Serial.print("[Downsignal slow]");
-					// animationMeteorPulseRegion(stripId, random(10), isDown, 0, pulseCount, 12, false);
-					// animationMeteorPulseRegion(stripId, random(10), isDown, 0, pulseCount, 12, false);
-					if (counterQuarterSpeed == 1)
-						animationMeteorPulseRing(stripId, isDown, 1, 42, false);
-					break;
-				}
-				case 0:
-				{
-					// allStrips[stripId]->clear();
-					FastLED.clear(allStrips[stripId]);
-					// Serial.print("[Downsignal -- ]");
-					break;
-				}
-				default:
-				{
-					// allStrips[stripId]->clear();
-					FastLED.clear(allStrips[stripId]);
-					// Serial.print("[Downsignal n/a ]");
-				}
-			}
-		}
-
-		// Spiral
-		case 2:
-		{
-			switch (rateClass) {
-				case 6:
-				{ // 1gbps
-					// Serial.print("[Downsignal Gb]");
-					pulseCount = 8;
-					uint8_t height = 6;
+				case 2: { // Spiral
+					pulseCount = 3;
+					uint8_t height = 2;
 					uint8_t spiralOffset = 4;
-					uint8_t repeats = 10;
+					uint8_t repeats = 3;
 					animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
 					break;
 				}
-				case 5:
-				{ // 1mbps
-					// Serial.print("[Downsignal kb]");
-					pulseCount = 8;
-					uint8_t height = 6;
-					uint8_t spiralOffset = 6;
-					uint8_t repeats = 10;
-					animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
+				case 3: { // Wave
+					waveAnimation(stripId, 2, 10);
 					break;
 				}
-				case 4:
-				{ // 10kbps
-					// Serial.print("[Downsignal kb]");
-					pulseCount = 8;
-					uint8_t height = 4;
-					uint8_t spiralOffset = 6;
-					uint8_t repeats = 10;
-					animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
-					break;
-				}
-				case 3:
-				{
-					// Serial.print("[Downsignal kb]");
-					pulseCount = 8;
-					uint8_t height = 2;
-					uint8_t spiralOffset = 6;
-					uint8_t repeats = 10;
-					animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
-					break;
-				}
-				case 2:
-				{
-					// Serial.print("[Downsignal kb]");
-					pulseCount = 8;
-					uint8_t height = 2;
-					uint8_t spiralOffset = 8;
-					uint8_t repeats = 10;
-					if (counterHalfSpeed == 1)
-						animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
-					break;
-				}
-				case 1:
-				{
-					// Serial.print("[Downsignal slow]");
-					pulseCount = 8;
-					uint8_t height = 1;
-					uint8_t spiralOffset = 10;
-					uint8_t repeats = 10;
-					if (counterQuarterSpeed == 1)
-						animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
-					break;
-				}
-				case 0:
-				{
-					// allStrips[stripId]->clear();
-					FastLED.clear(allStrips[stripId]);
-					// Serial.print("[Downsignal -- ]");
-					break;
-				}
-				default:
-				{
-					// allStrips[stripId]->clear();
-					FastLED.clear(allStrips[stripId]);
-					// Serial.print("[Downsignal n/a ]");
+				default: { // Meteor
+					pulseCount = 2;
+					animationMeteorPulseRing(stripId, isDown, pulseCount, 16, true, 1, false);
 				}
 			}
 
-			// pulseCount = 8;
-			// uint8_t height = 2;
-			// uint8_t spiralOffset = 4;
-			// uint8_t repeats = 10;
-			// animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
-			// waveAnimation(stripId, 4, 4);
-			// zigzagAnimation(stripId, 4);
-			// laserGunAnimation(stripId, 4, 4);
-			// animationRadialSpiral(stripId, 4);
+			break;
+		}
+		case 3: {
+			// Rate Class 3 gets a few fancy animations, but falls back to meteors
+			// Serial.print("[Downsignal kb]");
+			switch (randomTypeAny) {
+				case 1: { // Ring
+					pulseCount = 1;
+					animationMeteorPulseRing(stripId, isDown, pulseCount, 8, false, 1, true);
+					break;
+				}
+				case 2: { // Spiral
+					pulseCount = 2;
+					uint8_t height = 1;
+					uint8_t spiralOffset = 2;
+					uint8_t repeats = 2;
+					animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
+					break;
+				}
+					  // case 3: { // Wave
+					  // 	waveAnimation(stripId, 1, 12);
+					  // }
+				default: { // Meteor
+					pulseCount = 1;
+					animationMeteorPulseRing(stripId, isDown, pulseCount, 64, true, 1, false);
+				}
+			}
+
+			break;
+		}
+		case 2: {
+			// Rate Class 2 always only gets meteors
+			// Serial.print("[Downsignal kb]");
+			pulseCount = 1;
+			for (int i = 0; i < 7; i++) {
+				animationMeteorPulseRegion(stripId, random8(0, 11), isDown, 0, pulseCount, 16, true, 1, true);
+			}
+			break;
+		}
+		case 1: {
+			// Rate Class 1 always only gets meteors
+			// Serial.print("[Downsignal slow]");
+			for (int i = 0; i < 4; i++) {
+				animationMeteorPulseRegion(stripId, random8(0, 11), isDown, 0, pulseCount, 24, true, 1, true);
+			}
+			break;
+		}
+		case 0: {
+			FastLED.clear(allStrips[stripId]);
+			// Serial.print("[Downsignal -- ]");
+			break;
+		}
+		default: {
+			FastLED.clear(allStrips[stripId]);
+			// Serial.print("[Downsignal n/a ]");
 		}
 	}
+
+	// The first animation has fired for this craft, change global state variable
+	isDown == true ? animateFirstCycleDown = false : animateFirstCycleUp = false;
+
+	/* Inner Core meteors
+	 * These are on the back of the core to not interfere with craft name
+	 * These are always meteors
+	*/
+	if (isDown == true) {
+		switch (rateClass) {
+			case 6: {
+				doInnerCoreMeteors(true, 5, 32, 6, 0.93);
+			}
+			case 5: {
+				doInnerCoreMeteors(true, 3, 24, 6, 0.9);
+			}
+			case 4: {
+				doInnerCoreMeteors(true, 1, 24, 6, 0.9);
+			}
+			case 3: {
+				doInnerCoreMeteors(true, 1, 32, 6, 0.87);
+			}
+			case 2: {
+				doInnerCoreMeteors(true, 1, 32, 4, 0.85);
+			}
+			case 1: {
+				doInnerCoreMeteors(true, 1, 32, 2, 0.8);
+			}
+		}
+	}
+
+	return;
 }
 
 void drawMeteors()
@@ -1766,6 +1561,7 @@ void updateMeteors()
  */
 void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int downSignalRate, int upSignalRate)
 {
+	// Serial.println(random8(0, 4));
 	// Serial.println("updateAnimation()");
 	if (config.debugUtils.diagMeasure == true) {
 		Serial.print("FPS:");
@@ -1825,14 +1621,8 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 		// Serial.println("Firing meteors");
 
 		if (nameScrollDone == false) {
-			// Serial.println("doing meteor type thigns");
-			try {
-				doRateBasedAnimation(true, downSignalRate, meteorOffset, animationTypeDown);
-				// doRateBasedAnimation(false, upSignalRate, meteorOffset, animationTypeUp);
-			}
-			catch (...) {
-				Serial.println("Error in signal animation");
-			}
+			doRateBasedAnimation(true, downSignalRate, meteorOffset, animationTypeDown);
+			// doRateBasedAnimation(false, upSignalRate, meteorOffset, animationTypeUp);			
 		}
 
 		animationTimer = millis(); // Reset meteor animation timer
@@ -1840,8 +1630,10 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 
 	drawMeteors(); // Assign new pixels for meteors
 	FastLED.delay(1000 / fpsRate);
-	// if (counterQuarterSpeed == 1)
+
+	// if (counterEighthSpeed == 1) {
 	updateMeteors(); // Update first pixel location for all active Meteors in array
+
 	updateBottomPixels();
 
 	FastLED.countFPS();
@@ -1936,17 +1728,20 @@ void parseData(const char* payload)
 		/* Loop through all XML elements */
 		// 100 is an arbitrary number to prevent an infinite loop
 		for (int i = 0; i < 100; i++) {
-			Serial.print("\n───────────────────────────────────────────────────────────────────\n");
-			Serial.print("  Parse Counters -- Station: " + String(stationCount) + " | Dish: " + String(dishCount) + " | Target: " + String(targetCount) + " | Signal: " + String(signalCount));
-			Serial.print("\n───────────────────────────────────────────────────────────────────\n\n");
-
+			if (config.debugUtils.showSerial == true) {
+				Serial.print("\n───────────────────────────────────────────────────────────────────\n");
+				Serial.print("  Parse Counters -- Station: " + String(stationCount) + " | Dish: " + String(dishCount) + " | Target: " + String(targetCount) + " | Signal: " + String(signalCount));
+				Serial.print("\n───────────────────────────────────────────────────────────────────\n\n");
+			}
 			try {
 				int s = 0; // Create station elements counter
 				for (XMLElement* xmlStation = root->FirstChildElement("station"); true; xmlStation = xmlStation->NextSiblingElement("station")) {
-					Serial.print("== stationCount: " + String(stationCount) + " | s: " + String(s) + "\n");
+					if (config.debugUtils.showSerial == true)
+						Serial.print("== stationCount: " + String(stationCount) + " | s: " + String(s) + "\n");
 
 					if (xmlStation == NULL) {
-						Serial.print("xmlStation == NULL\n");
+						if (config.debugUtils.showSerial == true)
+							Serial.print("xmlStation == NULL\n");
 						stationCount = 0;
 						dishCount = 0;
 						targetCount = 0;
@@ -1972,8 +1767,8 @@ void parseData(const char* payload)
 					bool goToNextStation = false;
 					int d = 0; // Create dish elements counter
 					for (XMLElement* xmlDish = xmlStation->NextSiblingElement(); xmlDish != NULL; xmlDish = xmlDish->NextSiblingElement()) {
-						delay(1000);
-						Serial.print("===== dishCount: " + String(dishCount) + " | d: " + String(d) + "\n");
+						if (config.debugUtils.showSerial == true)
+							Serial.print("===== dishCount: " + String(dishCount) + " | d: " + String(d) + "\n");
 
 						if (d > 9) {
 							stationCount++;
@@ -1997,27 +1792,31 @@ void parseData(const char* payload)
 						bool goToNextDish = false;
 						int t = 0; // Create target elements counter
 						for (XMLElement* xmlTarget = xmlDish->FirstChildElement("target"); true; xmlTarget = xmlTarget->NextSiblingElement("target")) {
-							Serial.print("====== targetCount: " + String(targetCount) + " | t: " + String(t) + "\n");
+							if (config.debugUtils.showSerial == true)
+								Serial.print("====== targetCount: " + String(targetCount) + " | t: " + String(t) + "\n");
 
 							if (xmlTarget == NULL) {
-								Serial.print("                xmlTarget == NULL\n");
+								if (config.debugUtils.showSerial == true)
+									Serial.print("                xmlTarget == NULL\n");
 								goToNextDish = true;
 								break;
 							}
 
 							if (t > 9 || t > targetCount) {
-								Serial.print("                t > 9\n");
+								if (config.debugUtils.showSerial == true)
+									Serial.print("                t > 9\n");
 								goToNextDish = true;
 								break;
 							}
 							if (t != targetCount) {
-								Serial.print("                t != targetCount\n");
+								if (config.debugUtils.showSerial == true)
+									Serial.print("                t != targetCount\n");
 								t++;
-								Serial.print("                t++ = " + String(t) + "\n");
 								continue;
 							}
 
-							Serial.print(">>>   Finding craft....");
+							if (config.debugUtils.showSerial == true)
+								Serial.print(">>>   Finding craft....");
 							const char* target = xmlTarget->Attribute("name");
 
 							if (data.checkBlacklist(target) == true) {
@@ -2070,7 +1869,8 @@ void parseData(const char* payload)
 							targetCount = 0;
 							dishCount++;
 							d++;
-							Serial.println("go to next dish!");
+							if (config.debugUtils.showSerial == true)
+								Serial.println("go to next dish!");
 							continue;
 						}
 
@@ -2183,7 +1983,8 @@ void parseData(const char* payload)
 							stationCount = 0;
 							s = 0;
 						}
-						Serial.println("go to next station!");
+						if (config.debugUtils.showSerial == true)
+							Serial.println("go to next station!");
 						continue;
 					}
 					if (targetFound == true) {
@@ -2434,7 +2235,7 @@ void setup()
 	Serial.begin(115200); // Begin serial communications, ESP32 uses 115200 rate
 	WiFi.mode(WIFI_STA);  // explicitly set mode, esp defaults to STA+AP
 
-	Serial.print("\n\n::::::::::: ::::::::::: ::::::::::: ::::::::::: ::::::::::: ::::::::::: :::::::::::\n\n");
+	Serial.print("\n\n::::::::: ::::::::::: ::::::::::: ::::::::::: ::::::::::: ::::::::::: :::::::::\n\n");
 	Serial.println("  .  ..__. __..__.     ..__ .");
 	Serial.println("  |\\ |[__](__ [__]     |[__)|");
 	Serial.println("  | \\||  |.__)|  |  \\__||   |___");
@@ -2449,8 +2250,9 @@ void setup()
 	Serial.println("  |__/     |__/|__/|__/  |__/|__/|__/       \\______/ |__/|_______/  \\_______/");
 	Serial.print("\n");
 
-	Serial.print("::::::::::: ::::::::::: ::::::::::: ::::::::::: ::::::::::: ::::::::::: :::::::::::\n\n");
+	Serial.print("::::::::: ::::::::::: ::::::::::: ::::::::::: ::::::::::: ::::::::::: :::::::::\n\n");
 	Serial.print("Starting...\n\n");
+
 
 	// reset settings - wipe stored credentials for testing
 	// these are stored by the esp library

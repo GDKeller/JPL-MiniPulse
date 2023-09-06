@@ -14,8 +14,8 @@ int degreeToSixteenbit(int degree) {
  * Custom exponent function
  * The C++ pow() function is very slow, this should be quicker
  * 
- * @param a The base
- * @param b The Exponent
+ * @param float a The base, float between 0 and 1
+ * @param int b The Exponent
  * @return Float result
 */
 float mPower(float a, int b) {
