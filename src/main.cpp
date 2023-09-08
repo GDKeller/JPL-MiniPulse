@@ -1677,10 +1677,6 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 		Serial.print("\t");
 	}
 
-	// Update brightness from potentiometer
-	EVERY_N_MILLISECONDS(100) {
-		au.updateBrightness();
-	}
 
 	/* Update Scrolling letters animation */
 	EVERY_N_MILLISECONDS_I(scrollLetterTimer, scrollLettersDelay) {
@@ -2405,7 +2401,6 @@ void setup()
 
 	// Set initial LED brightness to half
 	FastLED.setBrightness(127);
-	// 	au.updateBrightness(); // Update brightness from potentiometer
 
 	/* Fast LED Hardware Setup */
 	FastLED.addLeds<NEOPIXEL, OUTER_PIN>(outer_leds, outerPixelsTotal);

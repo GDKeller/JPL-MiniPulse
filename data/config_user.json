@@ -1,7 +1,7 @@
 {
     "debugUtils": {
         "testCores": false,
-        "showSerial": false,
+        "showSerial": true,
         "diagMeasure": false,
         "disableWiFi": false,
         "testLEDs": false
