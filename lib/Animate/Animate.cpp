@@ -24,6 +24,11 @@ void Animate::animateMeteor(Meteor* meteor)
 	CHSV pRepeatColor = pColor;
 	int hue = tailHueStart;
 
+	int tailLength = 12;
+	int tailSection = 256/tailLength;
+	int halfTailSection = tailSection * 0.5;
+	int adjustedLength = (meteorSize + tailLength) * 2;
+
 	// First pixel of each region
 	int startPixel = meteor->directionDown == true ?
 		((region + 1) * regionLength) - 1 : startPixel = region * regionLength;
@@ -38,7 +43,7 @@ void Animate::animateMeteor(Meteor* meteor)
 	bool endTail = false;
 
 	// Draw every LED in entire region 
-	for (int d = 1; d < (regionLength / 2) + 1; d++) {
+	for (int d = 1; d < (adjustedLength + 2) + 1; d++) {
 		int currentPixel;
 		if (meteor->directionDown == true) {
 			currentPixel = drawPixel + d + 1;
@@ -96,11 +101,13 @@ void Animate::animateMeteor(Meteor* meteor)
 			// int satExpo = ceil(tailHueSaturation * log(d + 1)); // Calculate logarithmic growth
 			// satExpo += random(32) - 16;							// Add random variance to saturation
 			// uint8_t satValue = satExpo > tailHueSaturation ? tailHueSaturation : (satExpo < 0 ? 0 : satExpo);
-			int brightExpo = ceil(255 * mPower(meteorTrailDecayValue, d)); // Calculate exponential decay
+			// int brightExpo = ceil(255 * mPower(meteorTrailDecayValue, d)); // Calculate exponential decay
 			// int brightExpo = 255 - (d * random8(8, 32));
 			// int brightExpo = 255 / ((d + 2) );
-			brightExpo += random8(32) - 16;				  // Add randomvariance to brightness
-			uint8_t brightValue = brightExpo > 255 ? 255 : (brightExpo < 0 ? 0 : brightExpo);
+			int tailBrightness = 255 - round((tailSection * d) * 0.5);
+			tailBrightness += (random8(tailSection) - (halfTailSection));	// Add randomvariance to brightness
+			
+			uint8_t brightValue = tailBrightness > 255 ? 255 : (tailBrightness < 0 ? 0 : tailBrightness);
 			// int randVal = (4 * d) * (4 * d); // Calculate random variance
 			// int hueRandom = hue + (random(randVal) - (randVal / 2));
 			// brightValue = 255;

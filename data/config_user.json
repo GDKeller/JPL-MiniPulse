@@ -3,7 +3,7 @@
         "testCores": false,
         "showSerial": false,
         "diagMeasure": false,
-        "disableWiFi": true,
+        "disableWiFi": false,
         "testLEDs": false
     },
     "wifiNetwork": {
@@ -26,7 +26,7 @@
         "potentiometer": 32
     },
     "displayLED": {
-        "brightness": 127,
+        "brightness": 255,
         "fps": 60,
         "outerPixelsTotal": 800,
         "middlePixelsTotal": 800,

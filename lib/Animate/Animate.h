@@ -37,6 +37,7 @@ struct Meteor {
     double tailHueExponent;
     int tailHueSaturation;
     CRGB *&rStrip;
+    int rateClass;
 };
 
 class Animate {

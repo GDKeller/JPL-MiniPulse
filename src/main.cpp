@@ -141,8 +141,62 @@ HTTPClient http; // Used for fetching data
 // const char* dummyXmlData2 = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?><dsn><station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" /><dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS24" windSpeed="5.556"><downSignal dataRate="28000000" frequency="25900000000" power="-91.3965" signalType="data" spacecraft="JWST" spacecraftID="-170" /><downSignal dataRate="40000" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="JWST" spacecraftID="-170" /><upSignal dataRate="16000" frequency="2090" power="4.804" signalType="data" spacecraft="JWST" spacecraftID="-170" /><target downlegRange="1.653e+06" id="170" name="JWST" rtlt="11.03" uplegRange="1.653e+06" /></dish><dish azimuthAngle="287.7" elevationAngle="18.74" isArray="false" isDDOR="false" isMSPA="false" name="DSS26" windSpeed="5.556"><downSignal dataRate="4000000" frequency="8439000000" power="-138.1801" signalType="none" spacecraft="MRO" spacecraftID="-74" /><upSignal dataRate="2000" frequency="7183" power="0.0000" signalType="none" spacecraft="MRO" spacecraftID="-74" /><target downlegRange="8.207e+07" id="74" name="MRO" rtlt="547.5" uplegRange="8.207e+07" /></dish><station friendlyName="Madrid" name="mdscc" timeUTC="1670419133000" timeZoneOffset="3600000" /><dish azimuthAngle="103.0" elevationAngle="80.19" isArray="false" isDDOR="false" isMSPA="false" name="DSS56" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="2250000000" power="-478.1842" signalType="none" spacecraft="CHDR" spacecraftID="-151" /><target downlegRange="1.417e+05" id="151" name="CHDR" rtlt="0.9455" uplegRange="1.417e+05" /></dish><dish azimuthAngle="196.5" elevationAngle="30.71" isArray="false" isDDOR="false" isMSPA="false" name="DSS65" windSpeed="5.556"><downSignal dataRate="87650" frequency="2278000000" power="-112.7797" signalType="data" spacecraft="ACE" spacecraftID="-92" /><upSignal dataRate="1000" frequency="2098" power="0.2630" signalType="data" spacecraft="ACE" spacecraftID="-92" /><target downlegRange="1.389e+06" id="92" name="ACE" rtlt="9.266" uplegRange="1.389e+06" /></dish><dish azimuthAngle="124.5" elevationAngle="53.41" isArray="false" isDDOR="false" isMSPA="false" name="DSS53" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8436000000" power="-170.1741" signalType="none" spacecraft="LICI" spacecraftID="-210" /><target downlegRange="4.099e+06" id="210" name="LICI" rtlt="27.34" uplegRange="4.099e+06" /></dish><dish azimuthAngle="219.7" elevationAngle="22.84" isArray="false" isDDOR="false" isMSPA="false" name="DSS54" windSpeed="5.556"><upSignal dataRate="2000" frequency="2066" power="1.758" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><downSignal dataRate="245800" frequency="2245000000" power="-110.7082" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><target downlegRange="1.331e+06" id="21" name="SOHO" rtlt="8.882" uplegRange="1.331e+06" /></dish><dish azimuthAngle="120.0" elevationAngle="46.53" isArray="false" isDDOR="false" isMSPA="false" name="DSS63" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8415000000" power="-478.2658" signalType="none" spacecraft="TEST" spacecraftID="-99" /><target downlegRange="-1.000e+00" id="99" name="TEST" rtlt="-1.0000" uplegRange="-1.000e+00" /></dish><station friendlyName="Canberra" name="cdscc" timeUTC="1670419133000" timeZoneOffset="39600000" /><dish azimuthAngle="330.6" elevationAngle="37.39" isArray="false" isDDOR="false" isMSPA="false" name="DSS34" windSpeed="3.087"><upSignal dataRate="250000" frequency="2041" power="0.2421" signalType="data" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="974200" frequency="2217000000" power="-116.4022" signalType="none" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="2000000" frequency="2216000000" power="-107.4503" signalType="carrier" spacecraft="EM1" spacecraftID="-23" /><target downlegRange="3.870e+05" id="23" name="EM1" rtlt="2.581" uplegRange="3.869e+05" /></dish><dish azimuthAngle="10.27" elevationAngle="28.97" isArray="false" isDDOR="false" isMSPA="false" name="DSS35" windSpeed="3.087"><downSignal dataRate="11.63" frequency="8446000000" power="-141.8096" signalType="data" spacecraft="MVN" spacecraftID="-202" /><upSignal dataRate="7.813" frequency="7189" power="8.303" signalType="data" spacecraft="MVN" spacecraftID="-202" /><target downlegRange="8.207e+07" id="202" name="MVN" rtlt="547.5" uplegRange="8.207e+07" /></dish><dish azimuthAngle="207.0" elevationAngle="15.51" isArray="false" isDDOR="false" isMSPA="false" name="DSS43" windSpeed="3.087"><upSignal dataRate="16.00" frequency="2114" power="20.20" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><downSignal dataRate="160.0" frequency="8420000000" power="-156.2618" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><target downlegRange="1.984e+10" id="32" name="VGR2" rtlt="132300" uplegRange="1.984e+10" /></dish><dish azimuthAngle="7.205" elevationAngle="26.82" isArray="false" isDDOR="false" isMSPA="false" name="DSS36" windSpeed="3.087"><downSignal dataRate="8500000" frequency="8475000000" power="-120.3643" signalType="none" spacecraft="KPLO" spacecraftID="-155" /><downSignal dataRate="8192" frequency="2261000000" power="-104.9668" signalType="data" spacecraft="KPLO" spacecraftID="-155" /><target downlegRange="4.405e+05" id="155" name="KPLO" rtlt="2.939" uplegRange="4.405e+05" /></dish><timestamp>1670419133000</timestamp></dsn>)==--==";
 // const char* dummyXmlData3 = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?><dsn><station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" /><dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS24" windSpeed="5.556"><downSignal dataRate="28000000" frequency="25900000000" power="-91.3965" signalType="data" spacecraft="JWST" spacecraftID="-170" /><downSignal dataRate="40000" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="JWST" spacecraftID="-170" /><upSignal dataRate="16000" frequency="2090" power="4.804" signalType="data" spacecraft="JWST" spacecraftID="-170" /><target downlegRange="1.653e+06" id="170" name="JWST" rtlt="11.03" uplegRange="1.653e+06" /></dish><dish azimuthAngle="287.7" elevationAngle="18.74" isArray="false" isDDOR="false" isMSPA="false" name="DSS26" windSpeed="5.556"><downSignal dataRate="4000000" frequency="8439000000" power="-138.1801" signalType="none" spacecraft="MRO" spacecraftID="-74" /><upSignal dataRate="2000" frequency="7183" power="0.0000" signalType="none" spacecraft="MRO" spacecraftID="-74" /><target downlegRange="8.207e+07" id="74" name="MRO" rtlt="547.5" uplegRange="8.207e+07" /></dish><station friendlyName="Madrid" name="mdscc" timeUTC="1670419133000" timeZoneOffset="3600000" /><dish azimuthAngle="103.0" elevationAngle="80.19" isArray="false" isDDOR="false" isMSPA="false" name="DSS56" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="2250000000" power="-478.1842" signalType="none" spacecraft="CHDR" spacecraftID="-151" /><target downlegRange="1.417e+05" id="151" name="CHDR" rtlt="0.9455" uplegRange="1.417e+05" /></dish><dish azimuthAngle="196.5" elevationAngle="30.71" isArray="false" isDDOR="false" isMSPA="false" name="DSS65" windSpeed="5.556"><downSignal dataRate="87650" frequency="2278000000" power="-112.7797" signalType="data" spacecraft="ACE" spacecraftID="-92" /><upSignal dataRate="1000" frequency="2098" power="0.2630" signalType="data" spacecraft="ACE" spacecraftID="-92" /><target downlegRange="1.389e+06" id="92" name="ACE" rtlt="9.266" uplegRange="1.389e+06" /></dish><dish azimuthAngle="124.5" elevationAngle="53.41" isArray="false" isDDOR="false" isMSPA="false" name="DSS53" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8436000000" power="-170.1741" signalType="none" spacecraft="LICI" spacecraftID="-210" /><target downlegRange="4.099e+06" id="210" name="LICI" rtlt="27.34" uplegRange="4.099e+06" /></dish><dish azimuthAngle="219.7" elevationAngle="22.84" isArray="false" isDDOR="false" isMSPA="false" name="DSS54" windSpeed="5.556"><upSignal dataRate="2000" frequency="2066" power="1.758" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><downSignal dataRate="245800" frequency="2245000000" power="-110.7082" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><target downlegRange="1.331e+06" id="21" name="SOHO" rtlt="8.882" uplegRange="1.331e+06" /></dish><dish azimuthAngle="120.0" elevationAngle="46.53" isArray="false" isDDOR="false" isMSPA="false" name="DSS63" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8415000000" power="-478.2658" signalType="none" spacecraft="TEST" spacecraftID="-99" /><target downlegRange="-1.000e+00" id="99" name="TEST" rtlt="-1.0000" uplegRange="-1.000e+00" /></dish><station friendlyName="Canberra" name="cdscc" timeUTC="1670419133000" timeZoneOffset="39600000" /><dish azimuthAngle="330.6" elevationAngle="37.39" isArray="false" isDDOR="false" isMSPA="false" name="DSS34" windSpeed="3.087"><upSignal dataRate="250000" frequency="2041" power="0.2421" signalType="data" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="974200" frequency="2217000000" power="-116.4022" signalType="none" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="2000000" frequency="2216000000" power="-107.4503" signalType="carrier" spacecraft="EM1" spacecraftID="-23" /><target downlegRange="3.870e+05" id="23" name="EM1" rtlt="2.581" uplegRange="3.869e+05" /></dish><dish azimuthAngle="10.27" elevationAngle="28.97" isArray="false" isDDOR="false" isMSPA="false" name="DSS35" windSpeed="3.087"><downSignal dataRate="11.63" frequency="8446000000" power="-141.8096" signalType="data" spacecraft="MVN" spacecraftID="-202" /><upSignal dataRate="7.813" frequency="7189" power="8.303" signalType="data" spacecraft="MVN" spacecraftID="-202" /><target downlegRange="8.207e+07" id="202" name="MVN" rtlt="547.5" uplegRange="8.207e+07" /></dish><dish azimuthAngle="207.0" elevationAngle="15.51" isArray="false" isDDOR="false" isMSPA="false" name="DSS43" windSpeed="3.087"><upSignal dataRate="16.00" frequency="2114" power="20.20" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><downSignal dataRate="160.0" frequency="8420000000" power="-156.2618" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><target downlegRange="1.984e+10" id="32" name="VGR2" rtlt="132300" uplegRange="1.984e+10" /></dish><dish azimuthAngle="7.205" elevationAngle="26.82" isArray="false" isDDOR="false" isMSPA="false" name="DSS36" windSpeed="3.087"><downSignal dataRate="8500000" frequency="8475000000" power="-120.3643" signalType="none" spacecraft="KPLO" spacecraftID="-155" /><downSignal dataRate="8192" frequency="2261000000" power="-104.9668" signalType="data" spacecraft="KPLO" spacecraftID="-155" /><target downlegRange="4.405e+05" id="155" name="KPLO" rtlt="2.939" uplegRange="4.405e+05" /></dish><timestamp>1670419133000</timestamp></dsn>)==--==";
 
+const char* data_Sept6 = PROGMEM R"==--==(<dsn>
+<station name="gdscc" friendlyName="Goldstone" timeUTC="1694004780000" timeZoneOffset="-25200000"/>
+<dish name="DSS24" azimuthAngle="157" elevationAngle="79" windSpeed="1" isMSPA="false" isArray="false" isDDOR="false">
+<downSignal active="true" signalType="data" dataRate="8.500e+06" frequency="0" band="X" power="-4.7e+02" spacecraft="KPLO" spacecraftID="-155"/>
+<downSignal active="false" signalType="none" dataRate="0.000e+00" frequency="0" band="S" power="-1.5e+02" spacecraft="KPLO" spacecraftID="-155"/>
+<target name="KPLO" id="155" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
+</dish>
+<dish name="DSS25" azimuthAngle="84" elevationAngle="22" windSpeed="1" isMSPA="false" isArray="false" isDDOR="false">
+<downSignal active="true" signalType="data" dataRate="3.205e+04" frequency="0" band="X" power="-1.3e+02" spacecraft="LFL" spacecraftID="-164"/>
+<upSignal active="true" signalType="data" dataRate="0" frequency="0" band="X" power="1.8e+01" spacecraft="LFL" spacecraftID="-164"/>
+<target name="LFL" id="164" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
+</dish>
+<dish name="DSS26" azimuthAngle="156" elevationAngle="79" windSpeed="1" isMSPA="false" isArray="false" isDDOR="false">
+<upSignal active="true" signalType="data" dataRate="0" frequency="0" band="X" power="2.0e-01" spacecraft="KPLO" spacecraftID="-155"/>
+<downSignal active="true" signalType="data" dataRate="8.192e+03" frequency="0" band="S" power="-1.1e+02" spacecraft="KPLO" spacecraftID="-155"/>
+<downSignal active="false" signalType="none" dataRate="8.500e+06" frequency="0" band="X" power="-9.0e+01" spacecraft="KPLO" spacecraftID="-155"/>
+<target name="KPLO" id="155" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
+</dish>
+<dish name="DSS14" azimuthAngle="224" elevationAngle="64" windSpeed="0" isMSPA="false" isArray="false" isDDOR="false">
+<downSignal active="true" signalType="data" dataRate="2.000e+05" frequency="0" band="X" power="-1.3e+02" spacecraft="JNO" spacecraftID="-61"/>
+<upSignal active="true" signalType="data" dataRate="0" frequency="0" band="X" power="1.8e+01" spacecraft="JNO" spacecraftID="-61"/>
+<target name="JNO" id="61" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
+</dish>
+<station name="mdscc" friendlyName="Madrid" timeUTC="1694004780000" timeZoneOffset="7200000"/>
+<dish name="DSS65" azimuthAngle="239" elevationAngle="51" windSpeed="9" isMSPA="false" isArray="false" isDDOR="false">
+<upSignal active="true" signalType="data" dataRate="0" frequency="0" band="S" power="2.5e-01" spacecraft="WIND" spacecraftID="-8"/>
+<downSignal active="true" signalType="data" dataRate="6.400e+03" frequency="0" band="S" power="-1.3e+02" spacecraft="WIND" spacecraftID="-8"/>
+<downSignal active="true" signalType="data" dataRate="7.351e+04" frequency="0" band="S" power="-1.2e+02" spacecraft="WIND" spacecraftID="-8"/>
+<target name="WIND" id="8" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
+</dish>
+<dish name="DSS53" azimuthAngle="163" elevationAngle="46" windSpeed="9" isMSPA="true" isArray="false" isDDOR="false">
+<downSignal active="true" signalType="data" dataRate="1.163e+01" frequency="0" band="X" power="-1.6e+02" spacecraft="MVN" spacecraftID="-202"/>
+<downSignal active="false" signalType="none" dataRate="1.422e+04" frequency="0" band="X" power="-4.8e+02" spacecraft="M01O" spacecraftID="-53"/>
+<downSignal active="true" signalType="data" dataRate="1.000e+06" frequency="0" band="X" power="-1.2e+02" spacecraft="MRO" spacecraftID="-74"/>
+<downSignal active="false" signalType="none" dataRate="0.000e+00" frequency="0" band="X" power="-4.8e+02" spacecraft="M20" spacecraftID="-168"/>
+<target name="M01O" id="53" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
+<target name="MVN" id="202" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
+<target name="M20" id="168" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
+<target name="MRO" id="74" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
+</dish>
+<dish name="DSS54" azimuthAngle="199" elevationAngle="50" windSpeed="9" isMSPA="false" isArray="false" isDDOR="false">
+<downSignal active="true" signalType="data" dataRate="1.042e+03" frequency="0" band="X" power="-1.5e+02" spacecraft="SPP" spacecraftID="-96"/>
+<upSignal active="true" signalType="data" dataRate="0" frequency="0" band="X" power="1.8e+01" spacecraft="SPP" spacecraftID="-96"/>
+<target name="SPP" id="96" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
+</dish>
+<dish name="DSS55" azimuthAngle="170" elevationAngle="49" windSpeed="9" isMSPA="false" isArray="false" isDDOR="false">
+<upSignal active="true" signalType="data" dataRate="0" frequency="0" band="X" power="5.0e+00" spacecraft="LUCY" spacecraftID="-49"/>
+<downSignal active="true" signalType="data" dataRate="6.250e+04" frequency="0" band="X" power="-1.3e+02" spacecraft="LUCY" spacecraftID="-49"/>
+<target name="LUCY" id="49" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
+</dish>
+<station name="cdscc" friendlyName="Canberra" timeUTC="1694004780000" timeZoneOffset="36000000"/>
+<timestamp>1694004780000</timestamp>
+</dsn>)==--==";
+
 // Test dummy data that cycles through the rate classes
-const char* dummyXmlData = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?>
+const char* data_animation_test = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?>
 <dsn>
     <station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" />
     <dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS24" windSpeed="5.556">
@@ -180,6 +234,12 @@ const char* dummyXmlData = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'
     <timestamp>1670419133000</timestamp>
 </dsn>)==--==";
 
+const char* dummyXmlData = data_Sept6;
+
+static int scrollLettersDelay = 33;
+static CEveryNMilliseconds scrollLettersTimer = CEveryNMilliseconds(scrollLettersDelay);
+
+
 /* STATE TRACKING
 * Sets up variables to track state of the program
 */
@@ -187,7 +247,7 @@ const char* dummyXmlData = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'
 #pragma region -- DATA FETCHING STATE VARS
 
 bool usingDummyData = false; // If true, use dummy data instead of actual data
-bool forceDummyData = true;
+bool forceDummyData = false;
 uint8_t noTargetFoundCounter = 0;  // Keeps track of how many times target is not found
 uint8_t noTargetLimit = 3;		   // After target is not found this many times, switch to dummy XML data
 uint8_t retryDataFetchCounter = 0; // Keeps track of how many times data fetch failed
@@ -229,15 +289,24 @@ SemaphoreHandle_t freeListMutex;	// Mutex to protect the free list
 const uint8_t colorTheme = 0;
 
 WiFiManagerParameter field_color_theme;		   // global param ( for non blocking w params )
+WiFiManagerParameter field_xml_data;
+WiFiManagerParameter field_global_brightness;		   // global param ( for non blocking w params )
+WiFiManagerParameter field_force_dummy_data;		   // global param ( for non blocking w params )
 WiFiManagerParameter field_meteor_tail_decay;  // global param ( for non blocking w params )
 WiFiManagerParameter field_meteor_tail_random; // global param ( for non blocking w params )
 WiFiManagerParameter field_global_fps;
+WiFiManagerParameter field_show_serial;
+WiFiManagerParameter field_scroll_letters_delay;
 unsigned long wmStartTime = millis();
 bool portalRunning = false;
 bool startAP = false; // If true, start AP and webserver. If false, start only webserver
 struct wmParams
 {
 	String customfieldid;
+	String xml_data_radio;
+	String global_brightness;
+	String show_serial;
+	String scroll_letters_delay;
 };
 
 #pragma endregion -- END WIFIMANAGER PORTAL
@@ -767,15 +836,15 @@ void doWiFiManager()
 			wm.process(); // do processing
 
 			// check for timeout
-			if ((millis() - wmStartTime) > (config.wifiNetwork.wmTimeout * 1000)) {
-				Serial.println("portaltimeout");
-				portalRunning = false;
-				if (startAP) {
-					wm.stopConfigPortal();
-				} else {
-					wm.stopWebPortal();
-				}
-			}
+			// if ((millis() - wmStartTime) > (config.wifiNetwork.wmTimeout * 1000)) {
+			// 	Serial.println("portaltimeout");
+			// 	portalRunning = false;
+			// 	if (startAP) {
+			// 		wm.stopConfigPortal();
+			// 	} else {
+			// 		wm.stopWebPortal();
+			// 	}
+			// }
 		}
 
 		// Force Wifi portal when WiFi reset button is pressed
@@ -832,6 +901,28 @@ void setColorTheme(uint8_t colorTheme)
 	}
 }
 
+void setXmlData(uint8_t selection) {
+	switch (selection) {
+		case 0:
+			forceDummyData = false;
+			break;
+		case 1:
+			forceDummyData = true;
+			dummyXmlData = data_Sept6;
+			break;
+		case 2:
+			forceDummyData = true;
+			dummyXmlData = data_animation_test;
+			break;
+
+	}
+}
+
+void setGlobalBrightness(uint8_t newBrightness)
+{
+	FastLED.setBrightness(newBrightness);
+}
+
 void setAnimationParams(uint8_t newGlobalFps, bool newMeteorTailDecay, bool newMeteorTailRandom)
 {
 	fpsRate = newGlobalFps;
@@ -854,35 +945,58 @@ void saveColorThemeCallback()
 {
 	try {
 		String colorTheme = getParam("customfieldid");
-		String inputMeteorTailDecay = getParam("meteorDecay");
-		String inputMeteorTailRandom = getParam("meteorRandom");
-		String inputGlobalFps = getParam("globalFps");
+		String inputXmlData = getParam("xml_data_radio");
+		String inputGlobalBrightness = getParam("global_brightness");
+		String inputShowSerial = getParam("show_serial");
+		String inputScrollLettersDelay = getParam("scroll_letters_delay");
+		// String inputMeteorTailDecay = getParam("meteorDecay");
+		// String inputMeteorTailRandom = getParam("meteorRandom");
+		// String inputGlobalFps = getParam("globalFps");
 		const int colorThemeId = atoi(colorTheme.c_str());
-		const int inputMeteorTailDecayValue = strcmp(inputMeteorTailDecay.c_str(), "on") == 0 ? 1 : 0;
-		const int inputMeteorTailRandomValue = strcmp(inputMeteorTailRandom.c_str(), "on") == 0 ? 1 : 0;
-		const int inputGlobalFpsValue = atoi(inputGlobalFps.c_str());
+		const int inputXmlDataValue = atoi(inputXmlData.c_str());
+		const int inputGlobalBrightnessValue = atoi(inputGlobalBrightness.c_str());
+		const int inputShowSerialValue = strcmp(inputShowSerial.c_str(), "on") == 0 ? 1 : 0;
+		const int inputScrollLettersDelayValue = atoi(inputScrollLettersDelay.c_str());
+
+		// const int inputMeteorTailDecayValue = strcmp(inputMeteorTailDecay.c_str(), "on") == 0 ? 1 : 0;
+		// const int inputMeteorTailRandomValue = strcmp(inputMeteorTailRandom.c_str(), "on") == 0 ? 1 : 0;
+		// const int inputGlobalFpsValue = atoi(inputGlobalFps.c_str());
 
 		Serial.println("[CALLBACK] saveColorThemeCallback fired");
 		Serial.print("PARAM customfieldid = ");
 		Serial.println(colorTheme);
-		Serial.print("PARAM meteorDecay = ");
-		Serial.println(inputMeteorTailDecay);
-		Serial.print("PARAM meteorDecay = ");
-		Serial.println(inputMeteorTailDecayValue);
-		Serial.print("PARAM meteorDecay = ");
-		Serial.println(inputMeteorTailRandom);
-		Serial.print("PARAM meteorRandom = ");
-		Serial.println(inputMeteorTailRandomValue);
-		Serial.print("PARAM globalFps = ");
-		Serial.println(inputGlobalFpsValue);
+		Serial.print("PARAM xml_data_radio = ");
+		Serial.println(inputXmlData);
+		Serial.print("PARAM global_brightness = ");
+		Serial.println(inputGlobalBrightness);
+		Serial.print("PARAM show_serial = ");
+		Serial.println(inputShowSerial);
+		Serial.print("PARAM scroll_letters_delay = ");
+		Serial.println(inputScrollLettersDelay);
+		// Serial.print("PARAM meteorDecay = ");
+		// Serial.println(inputMeteorTailDecay);
+		// Serial.print("PARAM meteorDecay = ");
+		// Serial.println(inputMeteorTailDecayValue);
+		// Serial.print("PARAM meteorDecay = ");
+		// Serial.println(inputMeteorTailRandom);
+		// Serial.print("PARAM meteorRandom = ");
+		// Serial.println(inputMeteorTailRandomValue);
+		// Serial.print("PARAM globalFps = ");
+		// Serial.println(inputGlobalFpsValue);
 
 		setColorTheme(colorThemeId);
-		setAnimationParams(inputGlobalFpsValue, inputMeteorTailDecayValue, inputMeteorTailRandomValue);
+		setXmlData(inputXmlDataValue);
+		setGlobalBrightness(inputGlobalBrightnessValue);
+		config.debugUtils.showSerial = inputShowSerialValue;
+		scrollLettersDelay = inputScrollLettersDelayValue;
+		scrollLettersTimer.setPeriod(inputScrollLettersDelayValue);
+		// setAnimationParams(inputGlobalFpsValue, inputMeteorTailDecayValue, inputMeteorTailRandomValue);
 	}
 	catch (...) {
 		handleException();
 	}
 }
+
 
 #pragma endregion -- END WIFIMANAGER HANDLING
 
@@ -1023,7 +1137,7 @@ void scrollLetters(const char* spacecraftName, int wordArraySize)
 }
 
 // Create Meteor object
-void createMeteor(int strip, int region, bool directionDown = true, int startPixel = 0, uint8_t meteorSize = 1, bool hasTail = true, float meteorTailDecayValue = 0.95)
+void createMeteor(int strip, int region, bool directionDown = true, int startPixel = 0, uint8_t meteorSize = 1, bool hasTail = true, float meteorTailDecayValue = 0.92, int rateClass = 5)
 {
 	CHSV meteorColor = currentColors.meteor;
 
@@ -1048,7 +1162,8 @@ void createMeteor(int strip, int region, bool directionDown = true, int startPix
 			false,						  // tailHueAdd
 			0.75,						  // tailHueExponent
 			currentColors.tailSaturation, // tailHueSaturation
-			allStrips[strip]			  // rStrip
+			allStrips[strip],			  // rStrip
+			rateClass
 		};
 		// Serial.print("Created new meteor #"); Serial.print(i); Serial.print(" startPixel: "); Serial.println(animate.ActiveMeteors[i]->firstPixel);
 
@@ -1069,7 +1184,8 @@ void animationMeteorPulseRegion(
 	bool randomizeOffset = false,
 	uint8_t meteorSize = 1,
 	bool hasTail = true,
-	float meteorTailDecayValue = 0.95)
+	float meteorTailDecayValue = 0.93,
+	int rateClass = 5)
 {
 
 	// Stagger the starting pixel
@@ -1080,7 +1196,7 @@ void animationMeteorPulseRegion(
 		int16_t pixel = i + startPixel + (i * offset * -1);
 		if (randomizeOffset == true)
 			pixel = pixel - (random(0, 6) * 2);
-		createMeteor(strip, region, directionDown, pixel, meteorSize, hasTail, meteorTailDecayValue);
+		createMeteor(strip, region, directionDown, pixel, meteorSize, hasTail, meteorTailDecayValue, rateClass);
 	}
 }
 
@@ -1091,7 +1207,9 @@ void animationMeteorPulseRing(
 	int8_t offset = 32,
 	bool randomizeOffset = false,
 	uint8_t meteorSize = 1,
-	bool hasTail = true)
+	bool hasTail = true,
+	float meteorTailDecayValue = 0.93,
+	int rateClass = 5)
 {
 	for (int i = 0; i < outerChunks; i++) {
 		animationMeteorPulseRegion(
@@ -1103,7 +1221,9 @@ void animationMeteorPulseRing(
 			offset,			 // offset
 			randomizeOffset, // randomizeOffset
 			meteorSize,		 // meteorSize
-			hasTail			 // hasTail
+			hasTail,		 // hasTail
+			meteorTailDecay, // meteorTailDecay
+			rateClass		 // rateClass
 		);
 	}
 }
@@ -1114,16 +1234,19 @@ void animationSpiralPulseRing(
 	uint8_t height = 2,
 	uint8_t pulseCount = 2,
 	uint8_t spiralMultiplier = 6,
-	uint8_t repeats = 4)
+	uint8_t repeats = 4,
+	bool hasTail = true,
+	float meteorTailDecayValue = 0.93,
+	int rateClass = 5)
 {
 
 	for (int i = 0; i < outerChunks; i++) {
-		animationMeteorPulseRegion(strip, i, directionDown, (i * spiralMultiplier * -1), 5, ((outerChunks + 1) * spiralMultiplier), false, height, false);
+		animationMeteorPulseRegion(strip, i, directionDown, (i * spiralMultiplier * -1), 5, ((outerChunks + 1) * spiralMultiplier), false, height, hasTail, meteorTailDecay, rateClass);
 		// animationMeteorPulseRegion(strip, i, directionDown, (i * spiralMultiplier * -1) - height - 6, 5, ((outerChunks + 1) * spiralMultiplier), false, height, true, 0.9);
 	}
 }
 
-void waveAnimation(uint8_t strip, bool isDown, uint8_t numberOfWaves, uint8_t waveSize, uint8_t interval, bool hasTail)
+void waveAnimation(uint8_t strip, bool isDown, uint8_t numberOfWaves, uint8_t waveSize, uint8_t interval, bool hasTail, int rateClass)
 {
 	uint8_t intervalAdjusted = interval * 2; // Interval is doubled because the LEDs are in front/back pairs
 	for (uint8_t wave = 0; wave < numberOfWaves; wave++) {
@@ -1134,12 +1257,12 @@ void waveAnimation(uint8_t strip, bool isDown, uint8_t numberOfWaves, uint8_t wa
 			} else {
 				startPixel -= (intervalAdjusted * (outerChunks - region));
 			}
-			createMeteor(strip, region, isDown, startPixel, waveSize, hasTail, 0.95);
+			createMeteor(strip, region, isDown, startPixel, waveSize, hasTail, 0.95, rateClass);
 		}
 	}
 }
 
-void zigzagAnimation(uint8_t strip, bool isDown, uint8_t pulseCount, uint8_t zigzagSize, uint8_t pulseOffset, uint8_t height, uint8_t interval, bool hasTail)
+void zigzagAnimation(uint8_t strip, bool isDown, uint8_t pulseCount, uint8_t zigzagSize, uint8_t pulseOffset, uint8_t height, uint8_t interval, bool hasTail, int rateClass)
 {
 	zigzagSize--;
 
@@ -1160,22 +1283,22 @@ void zigzagAnimation(uint8_t strip, bool isDown, uint8_t pulseCount, uint8_t zig
 
 			/* Offset pulses */
 			// pulseOffset is multiplied by 2 because the LEDs are in front/back pairs
-			startPixel = startPixel - (pulse * (pulseOffset * 2 ));
+			startPixel = startPixel - (pulse * (pulseOffset * 2));
 
 			// Serial.print("startPixel: " + String(startPixel) + "\n");
 
-			createMeteor(strip, region, isDown, startPixel, height, hasTail, 0.95);
+			createMeteor(strip, region, isDown, startPixel, height, hasTail, 0.95, rateClass);
 		}
 	}
 }
 
 
-void laserGunAnimation(uint8_t strip, uint16_t chargeTime, uint8_t firingSize)
+void laserGunAnimation(uint8_t strip, uint16_t chargeTime, uint8_t firingSize, int rateClass)
 {
 	// Charging up animation
 	for (uint8_t i = 0; i < outerPixelsChunkLength; ++i) {
 		for (uint8_t region = 0; region < outerChunks; ++region) {
-			createMeteor(strip, region, true, i, 1, false);
+			createMeteor(strip, region, true, i, 1, false, rateClass);
 		}
 		delay(chargeTime / outerPixelsChunkLength);
 	}
@@ -1183,7 +1306,7 @@ void laserGunAnimation(uint8_t strip, uint16_t chargeTime, uint8_t firingSize)
 	// Firing animation
 	for (uint8_t i = 0; i < outerPixelsChunkLength - firingSize + 1; ++i) {
 		for (uint8_t region = 0; region < outerChunks; ++region) {
-			createMeteor(strip, region, true, i, firingSize, true);
+			createMeteor(strip, region, true, i, firingSize, true, rateClass);
 		}
 		delay(chargeTime / (outerPixelsChunkLength * 2));
 	}
@@ -1193,15 +1316,16 @@ void laserGunAnimation(uint8_t strip, uint16_t chargeTime, uint8_t firingSize)
 
 
 
-void doInnerCoreMeteors(bool isDown = true, int pulseCount = 1, int offset = 8, int meteorCount = 6, float meteorTailDecayValue = 0.95) {
+void doInnerCoreMeteors(bool isDown = true, int pulseCount = 1, int offset = 8, int meteorCount = 6, float meteorTailDecayValue = 0.93, int rateClass = 5) {
 	for (int i = 0; i < meteorCount; i++) {
-		animationMeteorPulseRegion(0, random8(4, 10), isDown, 0, pulseCount, offset, true, 1, true, meteorTailDecayValue);
+		animationMeteorPulseRegion(0, random8(4, 10), isDown, 0, pulseCount, offset, true, 1, true, meteorTailDecayValue, rateClass);
 	}
 }
 
 void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_t type)
 {
-	if (config.debugUtils.showSerial == true)
+	bool showSerial = config.debugUtils.showSerial;
+	if (showSerial)
 		Serial.print("\n" + String(isDown) + " | " + String(rateClass) + " | " + String(offset) + " | " + String(type) + "\n");
 
 	int stripId = isDown == true ? 2 : 1;
@@ -1223,7 +1347,7 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 	}
 
 	// randomTypeAny = 3;
-	if (config.debugUtils.showSerial == true) {
+	if (showSerial) {
 		Serial.print("Animation Type:");
 		Serial.println(randomTypeAny);
 	}
@@ -1246,30 +1370,30 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 			// Serial.print("[Downsignal Gb]");
 			switch (randomTypeAny) {
 				case 1: { // Ring
-					pulseCount = 8;
+					pulseCount = 6;
 					// Serial.print("[Downsignal Gb]");
-					animationMeteorPulseRing(stripId, isDown, pulseCount, 24, false, 3, true);
+					animationMeteorPulseRing(stripId, isDown, pulseCount, 24, false, 3, true, 0.93, rateClass);
 					break;
 				}
 				case 2: { // Spiral
 					pulseCount = 8;
-					uint8_t height = 6;
-					uint8_t spiralOffset = 10;
-					uint8_t repeats = 8;
-					animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
+					uint8_t height = 4;
+					uint8_t spiralOffset = 6;
+					uint8_t repeats = 6;
+					animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats, true, 0.93, rateClass);
 					break;
 				}
 				case 3: { // Wave
-					waveAnimation(stripId, isDown, 3, 3, 8, true);
+					waveAnimation(stripId, isDown, 3, 4, 6, true, rateClass);
 					break;
 				}
 				case 4: { // Zigzag
-					zigzagAnimation(stripId, isDown, 2, 3, 6, 2, 6, true);
+					zigzagAnimation(stripId, isDown, 2, 3, 6, 4, 6, true, rateClass);
 					break;
 				}
 				default: { // Meteor
 					pulseCount = 8;
-					animationMeteorPulseRing(stripId, isDown, pulseCount, 24, true, 3, true);
+					animationMeteorPulseRing(stripId, isDown, pulseCount, 24, true, 3, true, 0.93, rateClass);
 				}
 			} // end switch
 
@@ -1280,28 +1404,28 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 			switch (randomTypeAny) {
 				case 1: { // Ring
 					pulseCount = 4;
-					animationMeteorPulseRing(stripId, isDown, pulseCount, 32, false, 2);
+					animationMeteorPulseRing(stripId, isDown, pulseCount, 32, false, 2, true, 0.95, rateClass);
 					break;
 				}
 				case 2: { // Spiral
 					pulseCount = 6;
-					uint8_t height = 4;
-					uint8_t spiralOffset = 6;
-					uint8_t repeats = 5;
-					animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
+					uint8_t height = 3;
+					uint8_t spiralOffset = 3;
+					uint8_t repeats = 4;
+					animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats, false, 0.95, rateClass);
 					break;
 				}
 				case 3: { // Wave
-					waveAnimation(stripId, isDown, 2, 1, 6, true);
+					waveAnimation(stripId, isDown, 2, 3, 6, true, rateClass);
 					break;
 				}
 				case 4: { // Zigzag
-					zigzagAnimation(stripId, isDown, 1, 2, 4, 2, 4, true);
+					zigzagAnimation(stripId, isDown, 1, 4, 4, 2, 1, true, rateClass);
 					break;
 				}
 				default: { // Meteor
 					pulseCount = 4;
-					animationMeteorPulseRing(stripId, isDown, pulseCount, 32, true, 2, true);
+					animationMeteorPulseRing(stripId, isDown, pulseCount, 32, true, 2, true, 0.93, rateClass);
 				}
 
 			} // end switch
@@ -1313,7 +1437,7 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 			switch (randomTypeAny) {
 				case 1: { // Ring
 					pulseCount = 2;
-					animationMeteorPulseRing(stripId, isDown, pulseCount, 32, false);
+					animationMeteorPulseRing(stripId, isDown, pulseCount, 32, false, 0.93, rateClass);
 					break;
 				}
 				case 2: { // Spiral
@@ -1321,16 +1445,16 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 					uint8_t height = 2;
 					uint8_t spiralOffset = 4;
 					uint8_t repeats = 3;
-					animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
+					animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats, rateClass);
 					break;
 				}
 				case 3: { // Wave
-					waveAnimation(stripId, isDown, 1, 1, 6, false);
+					waveAnimation(stripId, isDown, 1, 2, 4, false, rateClass);
 					break;
 				}
 				default: { // Meteor
 					pulseCount = 2;
-					animationMeteorPulseRing(stripId, isDown, pulseCount, 16, true, 1, false);
+					animationMeteorPulseRing(stripId, isDown, pulseCount, 16, true, 1, false, rateClass);
 				}
 			}
 
@@ -1342,15 +1466,15 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 			switch (randomTypeAny) {
 				case 1: { // Ring
 					pulseCount = 1;
-					animationMeteorPulseRing(stripId, isDown, pulseCount, 8, false, 1, true);
+					animationMeteorPulseRing(stripId, isDown, pulseCount, 8, false, 1, true, rateClass);
 					break;
 				}
 				case 2: { // Spiral
-					pulseCount = 2;
-					uint8_t height = 1;
+					pulseCount = 1;
+					uint8_t height = 2;
 					uint8_t spiralOffset = 2;
 					uint8_t repeats = 2;
-					animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats);
+					animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats, 0.93, rateClass);
 					break;
 				}
 					  // case 3: { // Wave
@@ -1358,7 +1482,7 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 					  // }
 				default: { // Meteor
 					pulseCount = 1;
-					animationMeteorPulseRing(stripId, isDown, pulseCount, 64, true, 1, false);
+					animationMeteorPulseRing(stripId, isDown, pulseCount, 16, true, 1, true, 0.93, rateClass);
 				}
 			}
 
@@ -1369,7 +1493,7 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 			// Serial.print("[Downsignal kb]");
 			pulseCount = 1;
 			for (int i = 0; i < 7; i++) {
-				animationMeteorPulseRegion(stripId, random8(0, 11), isDown, 0, pulseCount, 16, true, 1, true);
+				animationMeteorPulseRegion(stripId, random8(0, 11), isDown, 0, pulseCount, 16, true, 1, true, 0.93, rateClass);
 			}
 			break;
 		}
@@ -1377,7 +1501,7 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 			// Rate Class 1 always only gets meteors
 			// Serial.print("[Downsignal slow]");
 			for (int i = 0; i < 4; i++) {
-				animationMeteorPulseRegion(stripId, random8(0, 11), isDown, 0, pulseCount, 24, true, 1, true);
+				animationMeteorPulseRegion(stripId, random8(0, 11), isDown, 0, pulseCount, 24, true, 1, true, 0.93, rateClass);
 			}
 			break;
 		}
@@ -1402,22 +1526,22 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 	if (isDown == true) {
 		switch (rateClass) {
 			case 6: {
-				doInnerCoreMeteors(true, 5, 32, 6, 0.97);
+				doInnerCoreMeteors(true, 5, 32, 6, 0.97, rateClass);
 			}
 			case 5: {
-				doInnerCoreMeteors(true, 3, 24, 6, 0.95);
+				doInnerCoreMeteors(true, 3, 24, 6, 0.93, rateClass);
 			}
 			case 4: {
-				doInnerCoreMeteors(true, 1, 24, 6, 0.93);
+				doInnerCoreMeteors(true, 1, 24, 6, 0.93, rateClass);
 			}
 			case 3: {
-				doInnerCoreMeteors(true, 1, 32, 6, 0.92);
+				doInnerCoreMeteors(true, 1, 32, 6, 0.92, rateClass);
 			}
 			case 2: {
-				doInnerCoreMeteors(true, 1, 32, 4, 0.9);
+				doInnerCoreMeteors(true, 1, 32, 4, 0.9, rateClass);
 			}
 			case 1: {
-				doInnerCoreMeteors(true, 1, 32, 2, 0.88);
+				doInnerCoreMeteors(true, 1, 32, 2, 0.88, rateClass);
 			}
 		}
 	}
@@ -1434,52 +1558,110 @@ void drawMeteors()
 	}
 }
 
-void drawBottomPixels()
-{
-	// Update bottom pixels
-	for (int i = 0; i < 5; i++) {
-		bottomPixelMap[i] = CHSV(0, 255 - ((255 / bottomPixelsTotal) * i), 255 - ((255 / bottomPixelsTotal) * i));
-
-		bottom_leds[i] = bottomPixelMap[i];
-	}
+void setBottomPixelToMax(int pixel) {
+	CHSV color = CHSV(currentColors.meteor.hue, currentColors.meteor.sat, 255);
+	bottomPixelMap[pixel] = color;
+	bottom_leds[pixel] = color;
 }
 
 void updateBottomPixels()
 {
+	// Update bottom pixels
 	for (int i = 0; i < 5; i++) {
-		uint8_t newHue = bottomPixelMap[i].hue + 1;
-		bottom_leds[i].setHue(newHue);
-		bottomPixelMap[i].hue = newHue;
+		int pixelBrightness = bottomPixelMap[i].value;
+		if (pixelBrightness > 0) {
+			CHSV color = CHSV(currentColors.meteor.hue, currentColors.meteor.sat, dim8_raw(pixelBrightness - 1));
+			bottomPixelMap[i] = color;
+			bottom_leds[i] = color;
+		}
 	}
 }
 
 void updateMeteors()
 {
+	bool debugMeasure = config.debugUtils.diagMeasure;
+
+	bool updateRateClass1 = false;
+	bool updateRateClass2 = false;
+	bool updateRateClass3 = false;
+	bool updateRateClass4 = false;
+	bool updateRateClass5 = true;
+	bool updateRateClass6 = true;
+
+	EVERY_N_MILLISECONDS(50) {
+		updateRateClass1 = true;
+	}
+	EVERY_N_MILLISECONDS(40) {
+		updateRateClass2 = true;
+	}
+	EVERY_N_MILLISECONDS(30) {
+		updateRateClass3 = true;
+	}
+	EVERY_N_MILLISECONDS(20) {
+		updateRateClass4 = true;
+	}
+	EVERY_N_MILLISECONDS(10) {
+		updateRateClass5 = true;
+	}
+
 	// Update first pixel location for all active Meteors in array
 	uint16_t activeMeteors = 0;
+
 	for (int i = 0; i < animate.ActiveMeteorArraySize; i++) {
 		if (animate.ActiveMeteors[i] != nullptr) {
-			animate.ActiveMeteors[i]->firstPixel = animate.ActiveMeteors[i]->firstPixel + 2;
+			Meteor* thisMeteor = animate.ActiveMeteors[i];
+			int rateClass = thisMeteor->rateClass;
+
+			switch (rateClass) {
+				case 1: {
+					if (updateRateClass1 == false)
+						continue;
+					break;
+				}
+				case 2: {
+					if (updateRateClass2 == false)
+						continue;
+					break;
+				}
+				case 3: {
+					if (updateRateClass3 == false)
+						continue;
+					break;
+				}
+				case 4: {
+					if (updateRateClass4 == false)
+						continue;
+					break;
+				}
+				case 5: {
+					if (updateRateClass5 == false)
+						continue;
+					break;
+				}
+			}
+
+			thisMeteor->firstPixel += 2;
+
+			if (thisMeteor->firstPixel == thisMeteor->regionLength + 2 && thisMeteor->region % 2 == 1) {
+				int bottomPixel = ((thisMeteor->region - 1) / 2) % 5;
+				setBottomPixelToMax(bottomPixel);
+			}
 
 			// If meteor is beyond the display region, unallocate memory and remove array item
-			if (animate.ActiveMeteors[i]->firstPixel > animate.ActiveMeteors[i]->regionLength * 2) {
-				delete animate.ActiveMeteors[i];
+			if (thisMeteor->firstPixel > thisMeteor->regionLength * 2) {
+				delete thisMeteor;
 				animate.ActiveMeteors[i] = nullptr;
 			}
 		}
 
-		if (config.debugUtils.diagMeasure == true) {
+		if (debugMeasure) {
 			// Count the active meteors for diagnostic output
-			if (animate.ActiveMeteors[i] != nullptr)
-				activeMeteors++;
+			activeMeteors++;
 		}
 	}
 
-	if (config.debugUtils.diagMeasure == true) {
-		Serial.print("Active_Meteors:");
-		Serial.print(activeMeteors);
-		Serial.print("\t");
-	}
+	if (debugMeasure)
+		Serial.print("Active_Meteors:" + String(activeMeteors) + "\t");
 }
 
 /** Main Animation update function
@@ -1496,19 +1678,14 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 	}
 
 	// Update brightness from potentiometer
-	au.updateBrightness();
+	EVERY_N_MILLISECONDS(100) {
+		au.updateBrightness();
+	}
 
 	/* Update Scrolling letters animation */
-	if (nameScrollDone == false && counterHalfSpeed == 1) {
-		// Serial.println("---");
-		// Serial.println("nameScrollDone == false && counterHalfSpeed == 1");
-		// Serial.println("---");
-		try {
-			// Serial.println("Scrolling letters");
+	EVERY_N_MILLISECONDS_I(scrollLetterTimer, scrollLettersDelay) {
+		if (nameScrollDone == false) {
 			scrollLetters(spacecraftName, spacecraftNameSize);
-		}
-		catch (...) {
-			Serial.println("Error in scrollLetters()");
 		}
 	}
 
@@ -1548,22 +1725,27 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 
 		if (nameScrollDone == false) {
 			doRateBasedAnimation(true, downSignalRate, meteorOffset, animationTypeDown);
-			// doRateBasedAnimation(false, upSignalRate, meteorOffset, animationTypeUp);			
+			doRateBasedAnimation(false, upSignalRate, meteorOffset, animationTypeUp);
 		}
 
 		animationTimer = millis(); // Reset meteor animation timer
 	}
 
 	drawMeteors(); // Assign new pixels for meteors
-	FastLED.delay(1000 / fpsRate);
+	EVERY_N_MILLISECONDS(120) {
+		updateBottomPixels();
+	}
 
-	// if (counterEighthSpeed == 1) {
+	// FastLED.delay(1000 / fpsRate);
+	EVERY_N_MILLISECONDS(16) {
+		FastLED.show();
+	}
+
 	updateMeteors(); // Update first pixel location for all active Meteors in array
 
-	updateBottomPixels();
-
-	FastLED.countFPS();
-	updateSpeedCounters();
+	if (config.debugUtils.diagMeasure)
+		FastLED.countFPS();
+	// updateSpeedCounters();
 }
 
 #pragma endregion -- ANIMATION FUNCTIONS
@@ -2023,6 +2205,11 @@ void fetchData()
 
 			usingDummyData = true;
 		}
+		if (WiFi.status() == WL_CONNECTED) {
+			if (config.debugUtils.showSerial == true)
+				Serial.println("WiFi Connected");
+			usingDummyData = false;
+		}
 
 		if (usingDummyData == false) {
 
@@ -2255,18 +2442,35 @@ void setup()
 	wm.setConfigPortalBlocking(false);
 
 	const char* custom_radio_str = "<br/><label for='customfieldid'>Color Theme</label><br/><input type='radio' name='customfieldid' value='0' checked> White<br><input type='radio' name='customfieldid' value='1'> Cyber<br><input type='radio' name='customfieldid' value='2'> Valentine<br><input type='radio' name='customfieldid' value='3'> Moonlight";
-	const char* meteor_decay_checkbox_str = "<br/><label for='meteorDecay'>Meteor Decay</label><br/><input type='checkbox' name='meteorDecay'>";
-	const char* meteor_random_checkbox_str = "<br/><label for='meteorRandom'>Meteor Tail</label><br/><input type='checkbox' name='meteorRandom'>";
+	const char* xml_data_radio_str = "<br/><label for='xml_data_radio'>XML Data</label><br/><input type='radio' name='xml_data_radio' value='0' checked> Live<br><input type='radio' name='xml_data_radio' value='1'> Dummy<input type='radio' name='xml_data_radio' value='2'> Animation Test";
+	const char* global_brightness_str = "<br/><label for='global_brightness'>Global Brightness</label><br/><input type='number' name='global_brightness' min='1' max='255' value='255'>";
+	const char* scroll_letters_delay_str = "<br/><label for='scroll_letters_delay'>Scroll Letter Delay (ms)</label><br/><input type='number' name='scroll_letters_delay' min='0' max='300' value='33'>";
+
+	// const char* meteor_decay_checkbox_str = "<br/><label for='meteorDecay'>Meteor Decay</label><br/><input type='checkbox' name='meteorDecay'>";
+	// const char* meteor_random_checkbox_str = "<br/><label for='meteorRandom'>Meteor Tail</label><br/><input type='checkbox' name='meteorRandom'>";
 	const char* global_fps_str = "<br/><label for='globalFps'>Global FPS</label><br/><input type='number' name='globalFps' min='10' max='120' value='30'>";
+	// const char* force_dummy_data_str = "<br/><p>Force Dummy Data: " + String(forceDummyData) + "</p><br/>";
+	const char* show_serial_str = "<br/><label for 'show_serial'>Show Serial</label><br/><input type='checkbox' name='show_serial'>";
+
 	new (&field_color_theme) WiFiManagerParameter(custom_radio_str);				  // custom html input
-	new (&field_meteor_tail_decay) WiFiManagerParameter(meteor_decay_checkbox_str);	  // custom html input
-	new (&field_meteor_tail_random) WiFiManagerParameter(meteor_random_checkbox_str); // custom html input
+	new (&field_xml_data) WiFiManagerParameter(xml_data_radio_str);				  	 // custom html input
+	new (&field_global_brightness) WiFiManagerParameter(global_brightness_str);		 // custom html input
+	new (&field_scroll_letters_delay) WiFiManagerParameter(scroll_letters_delay_str); // custom html input
+	// new (&field_force_dummy_data) WiFiManagerParameter(force_dummy_data_str);		 // custom html input
+	// new (&field_meteor_tail_decay) WiFiManagerParameter(meteor_decay_checkbox_str);	  // custom html input
+	// new (&field_meteor_tail_random) WiFiManagerParameter(meteor_random_checkbox_str); // custom html input
 	new (&field_global_fps) WiFiManagerParameter(global_fps_str);					  // custom html input
+	new (&field_show_serial) WiFiManagerParameter(show_serial_str);					 // custom html input
 
 	wm.addParameter(&field_color_theme);
-	wm.addParameter(&field_meteor_tail_decay);
-	wm.addParameter(&field_meteor_tail_random);
+	wm.addParameter(&field_xml_data);
+	wm.addParameter(&field_global_brightness);
+	wm.addParameter(&field_scroll_letters_delay);
+	// wm.addParameter(&field_force_dummy_data);
+	// wm.addParameter(&field_meteor_tail_decay);
+	// wm.addParameter(&field_meteor_tail_random);
 	wm.addParameter(&field_global_fps);
+	wm.addParameter(&field_show_serial);
 	wm.setSaveParamsCallback(saveColorThemeCallback);
 	std::vector<const char*> menu = { "wifi", "info", "param", "sep", "restart", "exit" };
 	wm.setMenu(menu);
@@ -2303,6 +2507,12 @@ void setup()
 		{
 			Serial.print(String(termColor("green")) + "Connected to WiFi successfuly" + String(termColor("reset")));
 		}
+
+		// Start the web portal anyways for settings
+		wm.startConfigPortal(config.wifiNetwork.apSSID, config.wifiNetwork.apPass);
+		wm.startWebPortal();
+		portalRunning = true;
+		wmStartTime = millis();
 	} else {
 		Serial.print("False\nStarting access portal for configuration at\n");
 		wm.startConfigPortal(config.wifiNetwork.apSSID, config.wifiNetwork.apPass);
@@ -2350,7 +2560,7 @@ void setup()
 	characterWidth = config.textTypography.characterWidth;
 
 	setColorTheme(colorTheme); // Set color theme
-	drawBottomPixels();		   // Draw initial bottom pixels
+	// drawBottomPixels();		   // Draw initial bottom pixels
 	delay(100);				   // Small delay to allow bottom pixels to draw
 }
 
