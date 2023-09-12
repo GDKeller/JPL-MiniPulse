@@ -10,8 +10,6 @@
         "apSSID": "MiniPulse",
         "apPass": "",
         "serverName": "https://eyes.nasa.gov/dsn/data/dsn.xml?r=",
-        "startAP": false,
-        "wmTimeout": 300,
         "forceDummyData": true,
         "noTargetLimit": 3,
         "retryDataFetchLimit": 10
@@ -26,7 +24,7 @@
         "potentiometer": 32
     },
     "displayLED": {
-        "brightness": 255,
+        "brightness": 16,
         "fps": 60,
         "outerPixelsTotal": 800,
         "middlePixelsTotal": 800,

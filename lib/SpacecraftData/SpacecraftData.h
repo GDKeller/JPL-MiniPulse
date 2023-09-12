@@ -10,21 +10,21 @@
 
 class SpacecraftData
 {
-public:
-    StaticJsonDocument<1536> spacecraftNamesJson;
+    public:
+    StaticJsonDocument<2048> spacecraftNamesJson;
     void loadJson();
-    const char *callsignToName(const char *key);
-    StaticJsonDocument<100> spacecraftBlacklistJson;
-    void blacklist();
-    bool checkBlacklist(const char *callsign);
+    const char* callsignToName(const char* key);
+    StaticJsonDocument<1024> spacecraftBlacklistJson;
+    void loadSpacecraftBlacklist();
+    bool checkBlacklist(const char* callsign);
 };
 
 struct CraftQueueItem
 {
-    char callsignArray[10] = {0};
-    const char *callsign = &callsignArray[0];
-    char nameArray[100] = {0};
-    const char *name = &nameArray[0];
+    char callsignArray[10] = { 0 };
+    const char* callsign = &callsignArray[0];
+    char nameArray[100] = { 0 };
+    const char* name = &nameArray[0];
     uint nameLength = 0;
     uint upSignal = 0;
     uint downSignal = 0;

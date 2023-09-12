@@ -110,8 +110,7 @@ void SpacecraftData::loadJson()
   Serial.println("Spacecraft callsigns loaded");
 }
 
-const char *SpacecraftData::callsignToName(const char *key)
-{
+const char *SpacecraftData::callsignToName(const char *key) {
   const char *result = spacecraftNamesJson[key] != nullptr ? spacecraftNamesJson[key] : key;
   return result;
 }
@@ -121,11 +120,11 @@ const char *SpacecraftData::callsignToName(const char *key)
  *
  * Returns true if spacecraft is on blacklist
  */
-void SpacecraftData::blacklist()
-{
+void SpacecraftData::loadSpacecraftBlacklist() {
   char file[] = PROGMEM R"=---=(
       {
-        "TEST"
+        "TEST": true,
+        "DSN": true
       }
     )=---=";
 
@@ -140,7 +139,9 @@ void SpacecraftData::blacklist()
   Serial.println("Spacecraft blacklist loaded");
 }
 
-bool SpacecraftData::checkBlacklist(const char *key)
-{
+
+
+/* Check Blacklist */
+bool SpacecraftData::checkBlacklist(const char *key) {
   return spacecraftBlacklistJson[key] != nullptr ? true : false;
 }

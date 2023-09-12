@@ -10,8 +10,6 @@
         "apSSID": "MiniPulse",
         "apPass": "",
         "serverName": "https://eyes.nasa.gov/dsn/data/dsn.xml?r=",
-        "startAP": false,
-        "wmTimeout": 120,
         "forceDummyData": true,
         "noTargetLimit": 3,
         "retryDataFetchLimit": 10

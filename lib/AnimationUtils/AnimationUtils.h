@@ -11,6 +11,19 @@
     #include <MathHelpers.h>
 #endif
 
+
+#ifndef SPIFFS_H
+    #include <SPIFFS.h>
+#endif
+
+#ifndef ARDUINOJSON_H
+    #include <ArduinoJson.h>
+#endif
+
+#ifndef FILEUTILS_H
+    #include <FileUtils.h>
+#endif
+
 #ifndef ANIMATIONUTILS_H
 #define ANIMATIONUTILS_H
 
@@ -19,7 +32,7 @@ class AnimationUtils {
         static int brightness;
         int potPin;
         int readBrightness();
-        void updateBrightness();
+        void updateBrightness(int brightness);
         AnimationUtils();
         AnimationUtils(int pin);
 
