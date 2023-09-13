@@ -1014,9 +1014,10 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 	// isDown = false;
 
 	// randomTypeAny = 3;
-	if (showSerial)
-		Serial.print("\nDown? " + String(isDown) + " | Rate Class: " + String(rateClass) + " | Offset: " + String(offset) + " | Type: " + String(type) + " | Adjust Type: " + String(randomTypeAny) + "\n");
-
+	if (showSerial) {
+		String direction = isDown == true ? "Down" : "Up";
+		Serial.print(direction + " | Rate Class: " + String(rateClass) + " | Offset: " + String(offset) + " | Type: " + String(type) + " | Adjust Type: " + String(randomTypeAny) + "\n");
+	}
 
 
 	/* Do animation based on rate class
@@ -1380,7 +1381,11 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 		// Serial.println("Firing meteors");
 
 		if (nameScrollDone == false) {
-			Serial.print(dev.termColor("bg_blue") + ">>> Fire Meteors: " + String(spacecraftName) + " | " + String(downSignalRate) + " | " + String(upSignalRate) + dev.termColor("reset") + " \n");
+			if (FileUtils::config.debugUtils.showSerial == true) {
+				char* buffer;
+				sprintf(buffer, "%s>>> Fire Meteors: %s | %d | %d%s\n", dev.termColor("bg_blue"), spacecraftName, downSignalRate, upSignalRate, dev.termColor("reset"));
+				Serial.print(buffer);
+			}
 			doRateBasedAnimation(true, downSignalRate, meteorOffset, animationTypeDown);
 			doRateBasedAnimation(false, upSignalRate, meteorOffset, animationTypeUp);
 		}
@@ -1533,7 +1538,7 @@ void parseData(const char* payload)
 					int d = 0; // Create dish elements counter
 					for (XMLElement* xmlDish = xmlStation->NextSiblingElement(); xmlDish != NULL; xmlDish = xmlDish->NextSiblingElement()) {
 						if (FileUtils::config.debugUtils.showSerial == true)
-							Serial.print("===== dishCount: " + String(dishCount) + " | d: " + String(d) + "\n");
+							Serial.print("==== dishCount: " + String(dishCount) + " | d: " + String(d) + "\n");
 
 						if (d > 9) {
 							stationCount++;
@@ -1561,8 +1566,8 @@ void parseData(const char* payload)
 								Serial.print("====== targetCount: " + String(targetCount) + " | t: " + String(t) + "\n");
 
 							if (xmlTarget == NULL) {
-								if (FileUtils::config.debugUtils.showSerial == true)
-									Serial.print("                xmlTarget == NULL\n");
+								// if (FileUtils::config.debugUtils.showSerial == true)
+								// 	Serial.print("                xmlTarget == NULL\n");
 								goToNextDish = true;
 								break;
 							}
@@ -1636,8 +1641,8 @@ void parseData(const char* payload)
 							targetCount = 0;
 							dishCount++;
 							d++;
-							if (FileUtils::config.debugUtils.showSerial == true)
-								Serial.println("go to next dish!");
+							// if (FileUtils::config.debugUtils.showSerial == true)
+							// 	Serial.println("go to next dish!");
 							continue;
 						}
 
@@ -1750,8 +1755,8 @@ void parseData(const char* payload)
 							stationCount = 0;
 							s = 0;
 						}
-						if (FileUtils::config.debugUtils.showSerial == true)
-							Serial.println("go to next station!");
+						// if (FileUtils::config.debugUtils.showSerial == true)
+						// 	Serial.println("go to next station!");
 						continue;
 					}
 					if (targetFound == true) {
@@ -1833,8 +1838,11 @@ void parseData(const char* payload)
 
 
 void logOutput(const char* color, const String& message) {
+
 	if (FileUtils::config.debugUtils.showSerial == true) {
-		Serial.print(dev.termColor(color) + message + dev.termColor("reset") + "\n");
+		char* buffer;
+		sprintf(buffer, "%s%s%s\n", dev.termColor(color), message.c_str(), dev.termColor("reset"));
+		Serial.print(buffer);
 	}
 }
 
