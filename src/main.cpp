@@ -2197,7 +2197,7 @@ void setup()
 	xTaskCreatePinnedToCore(
 		getData,	  /* Function to implement the task */
 		"getData",	  /* Name of the task */
-		4096,		  /* Stack size in byts */
+		6144,		  /* Stack size in byts */
 		NULL,		  /* Task input parameter */
 		0,			  /* Priority of the task */
 		&xHandleData, /* Task handle. */
