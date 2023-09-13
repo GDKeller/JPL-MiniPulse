@@ -709,30 +709,28 @@ void reverseStripsArray(void)
 	reverse(allStrips, allStrips + 4);
 }
 
-// Display letter from array
+/* Display letter from array */
 void doLetterRegions(char theLetter, int regionStart, int startingPixel)
 {
 	const TextCharacter::TextCharacterInfo ledCharacter = textCharacter.getCharacter(theLetter, characterWidth);
 	const uint16_t regionOffset = innerPixelsChunkLength * regionStart;
 
-	int16_t pixel = 0 + startingPixel + regionOffset;
+	int16_t pixel = startingPixel + regionOffset;
+	const int16_t previousPixel = pixel - letterSpacing;
 
-	const int16_t previousPixel = startingPixel + regionOffset - letterSpacing;
+	const size_t inner_leds_size = sizeof(inner_leds) / sizeof(inner_leds[0]);
 
 	for (int i = 0; i < ledCharacter.characterTotalPixels; i++) {
 		int j = i + 1;
-		int regionInt = j % characterWidth;
-		if (regionInt == 0)
-			regionInt = characterWidth;
-		--regionInt;
+		int regionInt = (j % characterWidth) - 1;
+		if (regionInt < 0)
+			regionInt = characterWidth - 1;
 
-		int drawPixel = (pixel + (innerPixelsChunkLength * regionInt)) % innerPixelsTotal; // Wrapping here
-		int drawPreviousPixel = (previousPixel + (innerPixelsChunkLength * regionInt)) % innerPixelsTotal; // Wrapping here
+		int drawPixel = (pixel + (innerPixelsChunkLength * regionInt)) % innerPixelsTotal;
+		int drawPreviousPixel = (previousPixel + (innerPixelsChunkLength * regionInt)) % innerPixelsTotal;
 
 		int regionStart = (innerPixelsChunkLength * regionInt + regionOffset) % innerPixelsTotal;
 		int regionEnd = (innerPixelsChunkLength * (regionInt + 1) + regionOffset) % innerPixelsTotal;
-
-		const size_t inner_leds_size = sizeof(inner_leds) / sizeof(inner_leds[0]);
 
 		bool drawPixelInRegion = (regionStart <= drawPixel && drawPixel < regionEnd) ||
 			(regionStart > regionEnd && (drawPixel < regionEnd || drawPixel >= regionStart));
@@ -740,27 +738,20 @@ void doLetterRegions(char theLetter, int regionStart, int startingPixel)
 		bool drawPrevPixelInRegion = (regionStart <= drawPreviousPixel && drawPreviousPixel < regionEnd) ||
 			(regionStart > regionEnd && (drawPreviousPixel < regionEnd || drawPreviousPixel >= regionStart));
 
-		EVERY_N_SECONDS(1) {
-			if (drawPrevPixelInRegion) {
-				if (drawPreviousPixel >= 0 && drawPreviousPixel < inner_leds_size) {
-					inner_leds[drawPreviousPixel] = mpColors.off.value;
-				} else {
-					Serial.println("drawPreviousPixel: " + String(drawPreviousPixel) + " inner_leds_size: " + String(inner_leds_size));
-					if (FileUtils::config.debugUtils.showSerial == true)
-						Serial.print(String(dev.termColor("red")) + "drawPreviousPixel out of bounds" + String(dev.termColor("reset")) + "\n");
-				}
+
+		if (drawPrevPixelInRegion) {
+			if (drawPreviousPixel >= 0 && drawPreviousPixel < inner_leds_size) {
+				inner_leds[drawPreviousPixel] = mpColors.off.value;
+			} else {
+				// Serial.print(String(dev.termColor("red")) + "drawPreviousPixel out of bounds" + String(dev.termColor("reset")) + "\n");
 			}
-			if (drawPixelInRegion) {
-				if (drawPixel >= 0 && drawPixel < inner_leds_size) {
-					if (ledCharacter.characterArray[i] == 1)
-						inner_leds[drawPixel] = currentColors.letter;
-					else
-						inner_leds[drawPixel] = mpColors.off.value;
-				} else {
-					Serial.println("drawPixel: " + String(drawPixel) + " inner_leds_size: " + String(inner_leds_size));
-					if (FileUtils::config.debugUtils.showSerial == true)
-						Serial.print(String(dev.termColor("red")) + "drawPixel out of bounds" + String(dev.termColor("reset")) + "\n");
-				}
+		}
+
+		if (drawPixelInRegion) {
+			if (drawPixel >= 0 && drawPixel < inner_leds_size) {
+				inner_leds[drawPixel] = ledCharacter.characterArray[i] == 1 ? currentColors.letter : mpColors.off.value;
+			} else {
+				// Serial.print(String(dev.termColor("red")) + "drawPixel out of bounds" + String(dev.termColor("reset")) + "\n");
 			}
 		}
 
@@ -768,6 +759,7 @@ void doLetterRegions(char theLetter, int regionStart, int startingPixel)
 			pixel--;
 	}
 }
+
 
 // Updates scrolling letters on inner strips
 void scrollLetters(const char* spacecraftName, int wordArraySize)
@@ -781,7 +773,7 @@ void scrollLetters(const char* spacecraftName, int wordArraySize)
 		char theLetter = spacecraftName[i];
 
 		if (characterWidth == 4) {
-			doLetterRegions(theLetter, (innerChunks - 1), letterPixel);	// Start 1 strip to the left of first strip
+			doLetterRegions(theLetter, (FileUtils::config.displayLED.innerChunks - 1), letterPixel);	// Start 1 strip to the left of first strip
 		} else {
 			doLetterRegions(theLetter, 0, letterPixel);
 			// doLetterRegions(theLetter, 7, letterPixel);
@@ -989,7 +981,7 @@ void laserGunAnimation(uint8_t strip, uint16_t chargeTime, uint8_t firingSize, i
 
 void doInnerCoreMeteors(bool isDown = true, int pulseCount = 1, int offset = 8, int meteorCount = 6, float meteorTailDecayValue = 0.93, int rateClass = 5) {
 	for (int i = 0; i < meteorCount; i++) {
-		animationMeteorPulseRegion(0, random8(4, 10), isDown, 0, pulseCount, offset, true, 1, true, meteorTailDecayValue, rateClass);
+		animationMeteorPulseRegion(0, random8(4, 8), isDown, 0, pulseCount, offset, true, 1, true, meteorTailDecayValue, rateClass);
 	}
 }
 
@@ -1347,11 +1339,11 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 
 
 	/* Update Scrolling letters animation */
-	EVERY_N_MILLISECONDS_I(scrollLetterTimer, scrollLettersDelay) {
-		if (nameScrollDone == false) {
-			scrollLetters(spacecraftName, spacecraftNameSize);
-		}
+	if (nameScrollDone == false) {
+		// Serial.println("-------- scroll letters: " + String(spacecraftName));
+		scrollLetters(spacecraftName, spacecraftNameSize);
 	}
+
 
 	if (animationTypeSetDown == false) {
 		// Serial.println("---");
@@ -1838,6 +1830,63 @@ void parseData(const char* payload)
 	return;
 }
 
+
+
+void logOutput(const char* color, const String& message) {
+	if (FileUtils::config.debugUtils.showSerial == true) {
+		Serial.print(dev.termColor(color) + message + dev.termColor("reset") + "\n");
+	}
+}
+
+
+void checkWiFiConnection() {
+	if (WiFi.status() != WL_CONNECTED) {
+		logOutput("", "WiFi Disconnected");
+		usingDummyData = true;
+	} else {
+		logOutput("", "WiFi Connected");
+		usingDummyData = false;
+	}
+}
+
+void prepareFetchUrl() {
+	try {
+		memset(fetchUrl, 0, sizeof(fetchUrl));  // set fetchUrl to empty
+		if (FileUtils::config.wifiNetwork.serverName != NULL) {
+			strcpy(fetchUrl, FileUtils::config.wifiNetwork.serverName); // copy serverName to fetchUrl
+			char randBuffer[9];  // buffer for random number cache buster
+			ltoa(random(999999999), randBuffer, 10); // convert random number to string
+			strcat(fetchUrl, randBuffer);  // append random number to fetchUrl
+		}
+	}
+	catch (...) {
+		dev.handleException();
+	}
+
+	if (FileUtils::config.debugUtils.showSerial == true) {
+		logOutput("purple", "fetchUrl: " + String(fetchUrl));
+	}
+}
+
+void handleHttpResponse(uint16_t httpResponseCode) {
+	if (httpResponseCode != 200) {
+		Serial.print("HTTP Response: " + String(httpResponseCode) + " - " + http.errorToString(httpResponseCode) + "\n");
+		noTargetFoundCounter++;
+	} else {
+		try {
+			String res = http.getString();
+			const char* charRes = res.c_str();
+			logOutput("green", "HTTP response received");
+			usingDummyData = false;
+			parseData(charRes);
+		}
+		catch (...) {
+			dev.handleException();
+		}
+	}
+}
+
+
 void fetchData() {
 
 	if (FileUtils::config.debugUtils.testCores == true) {
@@ -1851,145 +1900,62 @@ void fetchData() {
 		Serial.print("   └─────────────────────────────┘\n");
 	}
 
-	/* Check for full queue */
 	if (uxQueueSpacesAvailable(queue) == 0) {
-		if (FileUtils::config.debugUtils.showSerial == true)
-			Serial.print(dev.termColor("red") + ">>>   Queue is full, returning" + dev.termColor("reset") + "\n");
+		logOutput("red", ">>>   Queue is full, returning");
 		return;
 	}
 
 	uint16_t httpResponseCode;
 
-	if (forceDummyData == true) usingDummyData = true;
-
-	if (forceDummyData == false) {
-		/* Check WiFi connection status */
-		if (WiFi.status() != WL_CONNECTED) {
-			if (FileUtils::config.debugUtils.showSerial == true)
-				Serial.println("WiFi Disconnected");
-			usingDummyData = true;
-		} else {
-			if (FileUtils::config.debugUtils.showSerial == true)
-				Serial.println("WiFi Connected");
-			usingDummyData = false;
-		}
-
-		if (usingDummyData == false) {
-
-			try {
-				memset(fetchUrl, 0, sizeof(fetchUrl));	 // set fetchUrl to empty
-
-				if (FileUtils::config.wifiNetwork.serverName != NULL) {
-					strcpy(fetchUrl, FileUtils::config.wifiNetwork.serverName); // copy serverName to fetchUrl
-					char randBuffer[9];						 // buffer for random number cache buster
-					ltoa(random(999999999), randBuffer, 10); // convert random number to string
-					strcat(fetchUrl, randBuffer);			 // append random number to fetchUrl
-				}
-			}
-			catch (...) {
-				dev.handleException();
-			}
-
-			if (FileUtils::config.debugUtils.showSerial == true) {
-				// print fetchUrl
-				Serial.print(dev.termColor("purple") + "fetchUrl: " + String(fetchUrl) + dev.termColor("reset") + "\n\n");
-			}
-
-			// Use WiFiClient class to create TCP connections
-			if (!http.begin(fetchUrl)) {
-				if (FileUtils::config.debugUtils.showSerial == true) {
-					Serial.print(dev.termColor("red") + "Failed to connect to server" + dev.termColor("reset") + "\n\n");
-				}
-				return;
-			}
-
-			int retryCount = 0;
-			const int maxRetries = 5; // Increase the number of retries to give more chances for a successful connection
-			const int retryDelay = 2000; // Increase the delay between retries to allow more time for recovery
-
-			while (retryCount < maxRetries) {
-				if (usingDummyData == false) {
-					if (WiFi.status() == WL_CONNECTED) {
-						// Attempt to make the HTTP request
-						http.setTimeout(15000); // Increase the timeout duration
-						http.addHeader("Content-Type", "text/xml");
-						httpResponseCode = http.GET();
-
-						if (httpResponseCode == 200) {
-							// Successful HTTP response, proceed to handle the response
-							// ... (your existing code to handle a successful response)
-							break; // Exit the loop as the request was successful
-						} else if (httpResponseCode == 65535) {
-							Serial.println("Connection error: server closed the connection unexpectedly. Retrying...");
-						} else {
-							Serial.print("HTTP Response: ");
-							Serial.print(httpResponseCode);
-							Serial.print(" - ");
-							Serial.println(http.errorToString(httpResponseCode));
-							noTargetFoundCounter++;
-						}
-					}
-
-					// If reached here, the request failed. Increment the retry counter and delay before retrying
-					retryCount++;
-					if (retryCount < maxRetries) {
-						Serial.println("Retrying...");
-						delay(retryDelay);
-					} else {
-						// Maximum retries reached, fallback to dummy data
-						Serial.println("Max retries reached. Falling back to dummy data.");
-						usingDummyData = true;
-						parseData(dummyXmlData);
-					}
-				}
-			}
-		}
-
-		if (FileUtils::config.debugUtils.showSerial == true) {
-			const String usingDummyDataString = usingDummyData ? "TRUE" : "FALSE";
-			Serial.print("Using dummy data: " + usingDummyDataString + "\n");
-		}
-	}
-
-	if (usingDummyData == true) {
-		if (FileUtils::config.debugUtils.showSerial == true)
-			Serial.print(dev.termColor("red") + "Using dummy xml data" + dev.termColor("reset") + "\n");
-
-		parseData(dummyXmlData);
-	}
-
-	if (usingDummyData == false && noTargetFoundCounter > noTargetLimit) {
-		Serial.print(dev.termColor("red") + "Target not found limit reach - using dummy xml data" + dev.termColor("reset") + "\n\n");
+	if (forceDummyData) {
 		usingDummyData = true;
-		noTargetFoundCounter = 0;
-		parseData(dummyXmlData);
+	} else {
+		checkWiFiConnection();
 	}
 
-	if (usingDummyData == false && noTargetFoundCounter < noTargetLimit + 1) {
-		if (httpResponseCode != 200) {
-			Serial.print("HTTP Response: " + String(httpResponseCode) + " - " + http.errorToString(httpResponseCode) + "\n");
-			noTargetFoundCounter++;
-		} else {
-			try {
-				String res = http.getString();
-				const char* charRes = res.c_str();
+	if (!usingDummyData) {
+		prepareFetchUrl();
+	}
 
-				if (FileUtils::config.debugUtils.showSerial == true)
-					Serial.print(dev.termColor("green") + "HTTP response received" + dev.termColor("reset") + "\n");
-				usingDummyData = false;
-				parseData(charRes);
-			}
-			catch (...) {
-				dev.handleException();
-			}
+	if (FileUtils::config.debugUtils.showSerial == true) {
+		const String usingDummyDataString = usingDummyData ? "TRUE" : "FALSE";
+		Serial.print("Using dummy data: " + usingDummyDataString + "\n");
+	}
+
+	if (usingDummyData) {
+		logOutput("red", "Using dummy xml data");
+		parseData(dummyXmlData);
+		return;
+	}
+
+	if (!http.begin(fetchUrl)) {
+		logOutput("red", "Failed to connect to server");
+		return;
+	}
+
+	try {
+		http.setTimeout(10000);
+		http.addHeader("Content-Type", "text/xml");
+		httpResponseCode = http.GET();
+		if (httpResponseCode == 65535) {
+			Serial.println(http.errorToString(httpResponseCode));
+			// Additional error handling can be added here
+			return;
 		}
 	}
+	catch (...) {
+		dev.handleException();
+		return;
+	}
+
+	handleHttpResponse(httpResponseCode);
 
 	http.end(); // Free up resources
-	if (dataStarted == false) dataStarted = true; // Set dataStarted to true after first data fetch
-
+	if (!dataStarted) dataStarted = true; // Set dataStarted to true after first data fetch
 	return;
 }
+
+
 
 // Fetch XML data from HTTP & parse for use in animations
 void getData(void* parameter) {

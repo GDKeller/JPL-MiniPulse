@@ -11,7 +11,7 @@
 class SpacecraftData
 {
     public:
-    StaticJsonDocument<2048> spacecraftNamesJson;
+    StaticJsonDocument<4096> spacecraftNamesJson;
     void loadJson();
     const char* callsignToName(const char* key);
     StaticJsonDocument<1024> spacecraftBlacklistJson;

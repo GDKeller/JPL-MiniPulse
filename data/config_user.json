@@ -24,7 +24,7 @@
         "potentiometer": 32
     },
     "displayLED": {
-        "brightness": 16,
+        "brightness": 128,
         "fps": 60,
         "outerPixelsTotal": 800,
         "middlePixelsTotal": 800,
