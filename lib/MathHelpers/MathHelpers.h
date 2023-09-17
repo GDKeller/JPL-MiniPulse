@@ -6,7 +6,11 @@
 #ifndef MathHelpers_h
 #define MathHelpers_h
 
-int degreeToSixteenbit(int degree);
-float mPower(float a, int b);
+class MathHelpers {
+    public:
+    static int degreeToSixteenbit(int degree);
+    static float mPower(float a, int b);
+    static long map(long x, long in_min, long in_max, long out_min, long out_max);
+};
 
 #endif

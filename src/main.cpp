@@ -1,7 +1,7 @@
 #pragma region -- LIBRARIES
 #include <Arduino.h>		// Arduino core
 #include <FS.h>				// File system
-#include <SPIFFS.h>			// SPIFFS file system
+#include <LittleFS.h>		// LittleFS file system
 #include <HTTPClient.h>		// HTTP client
 #include <FastLED.h>		// FastLED lib
 #include <tinyxml2.h>		// XML parser
@@ -49,6 +49,7 @@ using namespace std;	  // C++ I/O
 // Utils
 // FileUtils fileUtils;			  // Instantiate file utils
 DevUtils dev;					  // Instantiate term color
+
 
 // Animations
 AnimationUtils au(POTENTIOMETER); // Instantiate animation utils
@@ -222,24 +223,70 @@ SemaphoreHandle_t freeListMutex;	// Mutex to protect the free list
  */
 const uint8_t colorTheme = 0;
 
-WiFiManagerParameter field_color_theme;		   // global param ( for non blocking w params )
-WiFiManagerParameter field_xml_data;
-WiFiManagerParameter field_global_brightness;		   // global param ( for non blocking w params )
-WiFiManagerParameter field_force_dummy_data;		   // global param ( for non blocking w params )
-WiFiManagerParameter field_meteor_tail_decay;  // global param ( for non blocking w params )
-WiFiManagerParameter field_meteor_tail_random; // global param ( for non blocking w params )
-WiFiManagerParameter field_global_fps;
-WiFiManagerParameter field_show_serial;
-WiFiManagerParameter field_scroll_letters_delay;
+// WiFiManagerParameter field_color_theme;		   // global param ( for non blocking w params )
+// WiFiManagerParameter field_xml_data;
+WiFiManagerParameter param_brightness;		   // global param ( for non blocking w params )
+// WiFiManagerParameter field_force_dummy_data;		   // global param ( for non blocking w params )
+// WiFiManagerParameter field_meteor_tail_decay;  // global param ( for non blocking w params )
+// WiFiManagerParameter field_meteor_tail_random; // global param ( for non blocking w params )
+// WiFiManagerParameter field_global_fps;
+WiFiManagerParameter param_show_serial;
+// WiFiManagerParameter field_scroll_letters_delay;
+// WiFiManagerParameter field_show_serial("show_serial", "Show Serial", FileUtils::config.debugUtils.showSerial, 1);
 bool portalRunning = false;
 struct wmParams
 {
 	String customfieldid;
 	String xml_data_radio;
-	String global_brightness;
+	String brightness;
 	String show_serial;
 	String scroll_letters_delay;
 };
+
+
+
+
+/* WIFI MANAGER CUSTOM FIELD PARAMETERS */
+// const char* color_theme_str = "<br/><label for='customfieldid'>Color Theme</label><br/><input type='radio' name='customfieldid' value='0' checked> White<br><input type='radio' name='customfieldid' value='1'> Cyber<br><input type='radio' name='customfieldid' value='2'> Valentine<br><input type='radio' name='customfieldid' value='3'> Moonlight";
+const char* xml_data_radio_str = "<br/><label for='xml_data_radio'>XML Data</label><br/><input type='radio' name='xml_data_radio' value='0' checked> Live<br><input type='radio' name='xml_data_radio' value='1'> Dummy<input type='radio' name='xml_data_radio' value='2'> Animation Test";
+const char* global_brightness_str = "<br/><label for='global_brightness'>Global Brightness</label><br/><input type='number' name='global_brightness' min='1' max='255' value='255'>";
+const char* scroll_letters_delay_str = "<br/><label for='scroll_letters_delay'>Scroll Letter Delay (ms)</label><br/><input type='number' name='scroll_letters_delay' min='0' max='300' value='33'>";
+
+// const char* meteor_decay_checkbox_str = "<br/><label for='meteorDecay'>Meteor Decay</label><br/><input type='checkbox' name='meteorDecay'>";
+// const char* meteor_random_checkbox_str = "<br/><label for='meteorRandom'>Meteor Tail</label><br/><input type='checkbox' name='meteorRandom'>";
+const char* global_fps_str = "<br/><label for='globalFps'>Global FPS</label><br/><input type='number' name='globalFps' min='10' max='120' value='30'>";
+// const char* force_dummy_data_str = "<br/><p>Force Dummy Data: " + String(forceDummyData) + "</p><br/>";
+
+
+// char show_serial_str_buffer[128];
+// snprintf(show_serial_str_buffer, sizeof(show_serial_str_buffer), "<br/><label for 'show_serial'>Show Serial</label><br/><input type='checkbox' name='show_serial'%s>",
+// FileUtils::config.debugUtils.showSerial ? " checked" : "");
+
+
+// // new (&field_color_theme) WiFiManagerParameter(color_theme_str);				  // custom html input
+// new (&field_xml_data) WiFiManagerParameter(xml_data_radio_str);				  	 // custom html input
+// new (&field_global_brightness) WiFiManagerParameter(global_brightness_str);		 // custom html input
+// new (&field_scroll_letters_delay) WiFiManagerParameter(scroll_letters_delay_str); // custom html input
+// // new (&field_force_dummy_data) WiFiManagerParameter(force_dummy_data_str);		 // custom html input
+// // new (&field_meteor_tail_decay) WiFiManagerParameter(meteor_decay_checkbox_str);	  // custom html input
+// // new (&field_meteor_tail_random) WiFiManagerParameter(meteor_random_checkbox_str); // custom html input
+// new (&field_global_fps) WiFiManagerParameter(global_fps_str);					  // custom html input
+// // new (&field_show_serial) WiFiManagerParameter(show_serial_str);					 // custom html input
+// new (&field_show_serial) WiFiManagerParameter(show_serial_str_buffer);
+// // wm.addParameter(&show_serial_param);
+
+
+// // wm.addParameter(&field_color_theme);
+// wm.addParameter(&field_xml_data);
+// wm.addParameter(&field_global_brightness);
+// wm.addParameter(&field_scroll_letters_delay);
+// // wm.addParameter(&field_force_dummy_data);
+// // wm.addParameter(&field_meteor_tail_decay);
+// // wm.addParameter(&field_meteor_tail_random);
+// wm.addParameter(&field_global_fps);
+// wm.addParameter(&field_show_serial);
+
+
 
 #pragma endregion -- END WIFIMANAGER PORTAL
 
@@ -457,7 +504,7 @@ void printSemaphoreList() {
 	}
 }
 
-void freeSempaphoreItem(CraftQueueItem* infoBuffer) {
+void freeSemaphoreItem(CraftQueueItem* infoBuffer) {
 	xSemaphoreTake(freeListMutex, portMAX_DELAY);
 	if (FileUtils::config.debugUtils.diagMeasure == true)
 		Serial.print("freeListTop: " + String(freeListTop) + "\t");
@@ -491,8 +538,8 @@ void doWiFiManager()
 				wm.startConfigPortal(FileUtils::config.wifiNetwork.apSSID, FileUtils::config.wifiNetwork.apPass);
 				portalRunning = true;
 			} else {
-				char* buffer;
-				sprintf(buffer, "Button Pressed: Config Portal already running\n"
+				char buffer[256];
+				snprintf(buffer, sizeof(buffer), "Button Pressed: Config Portal already running\n"
 					"Connect to the %s WiFi network\n"
 					"Then go to http://%s in your web browser",
 					wm.getConfigPortalSSID(),
@@ -509,6 +556,19 @@ void configPortalCallback() {
 	Serial.print("\n" + String(dev.termColor("green")) + "[CALLBACK] configPortalCallback fired" + dev.termColor("reset") + "\n\n");
 	portalRunning = true;
 }
+
+// const char* generateShowSerialHTML() {
+// 	static char buffer[128];
+// 	const char* paramValue = field_show_serial.getValue();
+// 	const char* checkedAttribute = (paramValue && strcmp(paramValue, "1") == 0) ? " checked" : "";
+// 	snprintf(buffer, sizeof(buffer),
+// 		"<br/><label for='show_serial'>Show Serial</label><br/><input type='checkbox' name='show_serial'%s/>",
+// 		checkedAttribute);
+// 	return buffer;
+// }
+
+
+
 
 void webServerCallback() {
 	Serial.print("\n" + String(dev.termColor("green")) + "[CALLBACK] webServerCallback fired" + dev.termColor("reset") + "\n\n");
@@ -590,80 +650,113 @@ String getParam(String name)
 	return value;
 }
 
-void saveParamsCallback()
-{
-	try {
-		String colorTheme = getParam("customfieldid");
-		String inputXmlData = getParam("xml_data_radio");
-		String inputGlobalBrightness = getParam("global_brightness");
-		String inputShowSerial = getParam("show_serial");
-		String inputScrollLettersDelay = getParam("scroll_letters_delay");
-		// String inputMeteorTailDecay = getParam("meteorDecay");
-		// String inputMeteorTailRandom = getParam("meteorRandom");
-		// String inputGlobalFps = getParam("globalFps");
-		const int colorThemeId = atoi(colorTheme.c_str());
-		const int inputXmlDataValue = atoi(inputXmlData.c_str());
-		const int inputGlobalBrightnessValue = atoi(inputGlobalBrightness.c_str());
-		const int inputShowSerialValue = strcmp(inputShowSerial.c_str(), "on") == 0 ? 1 : 0;
-		const int inputScrollLettersDelayValue = atoi(inputScrollLettersDelay.c_str());
+// void saveParamsCallback()
+// {
+// 	try {
+// 		String colorTheme = getParam("customfieldid");
+// 		String inputXmlData = getParam("xml_data_radio");
+// 		String inputGlobalBrightness = getParam("global_brightness");
+// 		String inputShowSerial = getParam("show_serial");
+// 		String inputScrollLettersDelay = getParam("scroll_letters_delay");
+// 		// String inputMeteorTailDecay = getParam("meteorDecay");
+// 		// String inputMeteorTailRandom = getParam("meteorRandom");
+// 		// String inputGlobalFps = getParam("globalFps");
+// 		const int colorThemeId = atoi(colorTheme.c_str());
+// 		const int inputXmlDataValue = atoi(inputXmlData.c_str());
+// 		const int inputGlobalBrightnessValue = atoi(inputGlobalBrightness.c_str());
+// 		const int inputShowSerialValue = strcmp(inputShowSerial.c_str(), "on") == 0 ? 1 : 0;
+// 		const int inputScrollLettersDelayValue = atoi(inputScrollLettersDelay.c_str());
 
-		// const int inputMeteorTailDecayValue = strcmp(inputMeteorTailDecay.c_str(), "on") == 0 ? 1 : 0;
-		// const int inputMeteorTailRandomValue = strcmp(inputMeteorTailRandom.c_str(), "on") == 0 ? 1 : 0;
-		// const int inputGlobalFpsValue = atoi(inputGlobalFps.c_str());
+// 		// const int inputMeteorTailDecayValue = strcmp(inputMeteorTailDecay.c_str(), "on") == 0 ? 1 : 0;
+// 		// const int inputMeteorTailRandomValue = strcmp(inputMeteorTailRandom.c_str(), "on") == 0 ? 1 : 0;
+// 		// const int inputGlobalFpsValue = atoi(inputGlobalFps.c_str());
 
-		Serial.println("[CALLBACK] saveParamsCallback fired");
-		Serial.print("PARAM customfieldid = ");
-		Serial.println(colorTheme);
-		Serial.print("PARAM xml_data_radio = ");
-		Serial.println(inputXmlData);
-		Serial.print("PARAM global_brightness = ");
-		Serial.println(inputGlobalBrightness);
-		Serial.print("PARAM show_serial = ");
-		Serial.println(inputShowSerial);
-		Serial.print("PARAM scroll_letters_delay = ");
-		Serial.println(inputScrollLettersDelay);
-		// Serial.print("PARAM meteorDecay = ");
-		// Serial.println(inputMeteorTailDecay);
-		// Serial.print("PARAM meteorDecay = ");
-		// Serial.println(inputMeteorTailDecayValue);
-		// Serial.print("PARAM meteorDecay = ");
-		// Serial.println(inputMeteorTailRandom);
-		// Serial.print("PARAM meteorRandom = ");
-		// Serial.println(inputMeteorTailRandomValue);
-		// Serial.print("PARAM globalFps = ");
-		// Serial.println(inputGlobalFpsValue);
+// 		Serial.println("[CALLBACK] saveParamsCallback fired");
+// 		Serial.print("PARAM customfieldid = ");
+// 		Serial.println(colorTheme);
+// 		Serial.print("PARAM xml_data_radio = ");
+// 		Serial.println(inputXmlData);
+// 		Serial.print("PARAM global_brightness = ");
+// 		Serial.println(inputGlobalBrightness);
+// 		Serial.print("PARAM show_serial = ");
+// 		Serial.println(inputShowSerial);
+// 		Serial.print("PARAM scroll_letters_delay = ");
+// 		Serial.println(inputScrollLettersDelay);
+// 		// Serial.print("PARAM meteorDecay = ");
+// 		// Serial.println(inputMeteorTailDecay);
+// 		// Serial.print("PARAM meteorDecay = ");
+// 		// Serial.println(inputMeteorTailDecayValue);
+// 		// Serial.print("PARAM meteorDecay = ");
+// 		// Serial.println(inputMeteorTailRandom);
+// 		// Serial.print("PARAM meteorRandom = ");
+// 		// Serial.println(inputMeteorTailRandomValue);
+// 		// Serial.print("PARAM globalFps = ");
+// 		// Serial.println(inputGlobalFpsValue);
 
-		setColorTheme(colorThemeId);
-		setXmlData(inputXmlDataValue);
-		setGlobalBrightness(inputGlobalBrightnessValue);
-		FileUtils::config.debugUtils.showSerial = inputShowSerialValue;
+// 		setColorTheme(colorThemeId);
+// 		setXmlData(inputXmlDataValue);
+// 		setGlobalBrightness(inputGlobalBrightnessValue);
+// 		FileUtils::config.debugUtils.showSerial = inputShowSerialValue;
 
-		scrollLettersDelay = inputScrollLettersDelayValue;
-		scrollLettersTimer.setPeriod(inputScrollLettersDelayValue);
-		// setAnimationParams(inputGlobalFpsValue, inputMeteorTailDecayValue, inputMeteorTailRandomValue);
+// 		scrollLettersDelay = inputScrollLettersDelayValue;
+// 		scrollLettersTimer.setPeriod(inputScrollLettersDelayValue);
+// 		// setAnimationParams(inputGlobalFpsValue, inputMeteorTailDecayValue, inputMeteorTailRandomValue);
 
-		DynamicJsonDocument doc(1024);
-		doc["value"] = colorThemeId;
-		JsonVariant colorThemeVariant = doc["value"];
+// 		DynamicJsonDocument doc(1024);
+// 		doc["value"] = colorThemeId;
+// 		JsonVariant colorThemeVariant = doc["value"];
 
-		doc["value"] = inputGlobalBrightnessValue;
-		JsonVariant brightnessVariant = doc["value"];
+// 		doc["value"] = inputGlobalBrightnessValue;
+// 		JsonVariant brightnessVariant = doc["value"];
 
-		doc["value"] = inputShowSerialValue;
-		JsonVariant showSerialVariant = doc["value"];
+// 		doc["value"] = inputShowSerialValue;
+// 		JsonVariant showSerialVariant = doc["value"];
 
-		std::vector<std::pair<String, JsonVariant>> updates = {
-			{"colorTheme", colorThemeVariant},
-			{"brightness", brightnessVariant},
-			{"showSerial", showSerialVariant},
-		};
-		FileUtils::saveUserConfig(updates);
+// 		std::vector<std::pair<String, JsonVariant>> updates = {
+// 			{"colorTheme", colorThemeVariant},
+// 			{"brightness", brightnessVariant},
+// 			{"showSerial", showSerialVariant},
+// 		};
+// 		// FileUtils::saveUserConfig(updates);
+// 	}
+// 	catch (...) {
+// 		dev.handleException();
+// 	}
+// }
+
+void saveParamsCallback() {
+	String showSerialValue = getParam("show_serial");
+	Serial.print("show_serial: " + showSerialValue + "\n");
+	bool showSerialValueBool = strcmp(showSerialValue.c_str(), "1") == 0 ? true : false;
+	FileUtils::config.debugUtils.showSerial = showSerialValueBool;
+	Serial.print("config showSerial: " + String(FileUtils::config.debugUtils.showSerial) + "\n");
+
+	FileUtils::writeConfigFileBool("showSerial", FileUtils::config.debugUtils.showSerial);
+
+	if (wm.server->hasArg("show_serial")) {
+		Serial.print(wm.server->arg("show_serial") + "\n");
 	}
-	catch (...) {
-		dev.handleException();
+
+	String brightnessValue = getParam("brightness");
+	Serial.print("brightness: " + brightnessValue + "\n");
+	int brightnessInt = atoi(brightnessValue.c_str());
+	int brightnessMapped = MathHelpers::map(brightnessInt, 0, 100, 8, 255);
+	FileUtils::config.displayLED.brightness = brightnessMapped;
+	setGlobalBrightness(FileUtils::config.displayLED.brightness);
+
+
+	FileUtils::writeConfigFileInt("brightness", FileUtils::config.displayLED.brightness);
+
+	Serial.print("config brightness: " + String(FileUtils::config.displayLED.brightness) + "\n");
+
+
+	if (wm.server->hasArg("brightness")) {
+		Serial.print(wm.server->arg("brightness") + "\n");
 	}
+
+
+
 }
-
 
 #pragma endregion -- END WIFIMANAGER HANDLING
 
@@ -1015,8 +1108,10 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 
 	// randomTypeAny = 3;
 	if (showSerial) {
-		String direction = isDown == true ? "Down" : "Up";
-		Serial.print(direction + " | Rate Class: " + String(rateClass) + " | Offset: " + String(offset) + " | Type: " + String(type) + " | Adjust Type: " + String(randomTypeAny) + "\n");
+		char buffer[256];
+		const char* direction = isDown == true ? "Down" : "Up";
+		snprintf(buffer, sizeof(buffer), "%s | Rate Class: %d | Offset: %d | Type: %d | Adjust Type: %d\n", direction, rateClass, offset, type, randomTypeAny);
+		Serial.print(buffer);
 	}
 
 
@@ -1382,8 +1477,8 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 
 		if (nameScrollDone == false) {
 			if (FileUtils::config.debugUtils.showSerial == true) {
-				char* buffer;
-				sprintf(buffer, "%s>>> Fire Meteors: %s | %d | %d%s\n", dev.termColor("bg_blue"), spacecraftName, downSignalRate, upSignalRate, dev.termColor("reset"));
+				char buffer[256];
+				snprintf(buffer, sizeof(buffer), "%s>>> Fire Meteors: %s | %d | %d%s\n", dev.termColor("bg_blue"), spacecraftName, downSignalRate, upSignalRate, dev.termColor("reset"));
 				Serial.print(buffer);
 			}
 			doRateBasedAnimation(true, downSignalRate, meteorOffset, animationTypeDown);
@@ -1414,8 +1509,10 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 
 #pragma region -- DATA FUNCTIONS
 
-unsigned int rateLongToRateClass(unsigned long rate)
-{
+/* Convert long rate to rate class
+ * Returns rate class as an unsigned int
+ */
+unsigned int rateLongToRateClass(unsigned long rate) {
 
 	// Add a check for rate ceiling of 100Gbps to catch erroneous values, set to max rate
 	unsigned long cappedRate;
@@ -1424,14 +1521,14 @@ unsigned int rateLongToRateClass(unsigned long rate)
 	else
 		cappedRate = rate;
 
-	if (cappedRate > (1024 * 1000000))
-		return 6; // > 1gbps
+	if (cappedRate > ((1024 * 1024) * 2))
+		return 6; // > 2mbps
 	else if (cappedRate > (1024 * 1024))
 		return 5; // > 1mbps
-	else if (cappedRate > (1024 * 100))
-		return 4; // > 100kbps
-	else if (cappedRate > (1024 * 5))
-		return 3; // > 5kbps
+	else if (cappedRate > (1024 * 250))
+		return 4; // > 250kbps
+	else if (cappedRate > (1024 * 50))
+		return 3; // > 50kbps
 	else if (cappedRate > 1024)
 		return 2; // > 1kbps
 	else if (cappedRate > 0)
@@ -1579,14 +1676,14 @@ void parseData(const char* payload)
 								break;
 							}
 							if (t != targetCount) {
-								if (FileUtils::config.debugUtils.showSerial == true)
-									Serial.print("                t != targetCount\n");
+								// if (FileUtils::config.debugUtils.showSerial == true)
+								// 	Serial.print("                t != targetCount\n");
 								t++;
 								continue;
 							}
 
 							if (FileUtils::config.debugUtils.showSerial == true)
-								Serial.print(">>>   Finding craft....");
+								Serial.print(">>>   Finding craft....\n");
 							const char* target = xmlTarget->Attribute("name");
 
 							if (data.checkBlacklist(target) == true) {
@@ -1657,13 +1754,16 @@ void parseData(const char* payload)
 							// 	break; // Bail if target name assignment fails
 							// }
 
+							if (FileUtils::config.debugUtils.showSerial == true)
+								Serial.print(">> Finding signals for " + String(newCraft->callsign) + "\n");
+
+							newCraft->downSignal = 0;
+							newCraft->upSignal = 0;
+
 							// Loop through XML signal elements and find the one that matches the target
 							for (XMLElement* xmlSignal = xmlDish->FirstChildElement(); xmlSignal != NULL; xmlSignal = xmlSignal->NextSiblingElement("downSignal")) {
 								const char* spacecraft = xmlSignal->Attribute("spacecraft");
 								const char* signalType = xmlSignal->Attribute("signalType");
-
-								if (FileUtils::config.debugUtils.showSerial == true)
-									Serial.print(">> Finding signals for " + String(newCraft->callsign) + "\n");
 
 								try {
 									if (strcmp(signalType, "data") != 0) // Skip non-data signals
@@ -1692,12 +1792,15 @@ void parseData(const char* payload)
 								const char* downRate = xmlSignal->Attribute("dataRate");
 
 								if (FileUtils::config.debugUtils.showSerial == true)
-									Serial.print(String(dev.termColor("yellow")) + "Down rate: " + String(downRate) + String(dev.termColor("reset")));
+									Serial.print(String(dev.termColor("yellow")) + "Down rate: " + String(downRate) + String(dev.termColor("reset")) + "\n");
 
-								unsigned long downRateLong = stol(downRate, nullptr, 10);
+								double downRateDouble = stod(downRate);
+								unsigned long downRateLong = static_cast<unsigned long>(downRateDouble);
+								Serial.print(dev.termColor("red") + String(downRateLong) + " | ");
 								if (downRateLong == 0)
 									continue;
 								unsigned int downRateClass = rateLongToRateClass(downRateLong);
+								Serial.print(downRateClass + dev.termColor("reset") + "\n");
 								if (downRateClass == 0)
 									continue;
 								newCraft->downSignal = downRateClass;
@@ -1728,16 +1831,29 @@ void parseData(const char* payload)
 								const char* upRate = xmlSignal->Attribute("dataRate");
 
 								if (FileUtils::config.debugUtils.showSerial == true)
-									Serial.print(String(dev.termColor("yellow")) + "Up rate:   " + String(upRate) + String(dev.termColor("reset")));
+									Serial.print(String(dev.termColor("yellow")) + "Up rate:   " + String(upRate) + String(dev.termColor("reset")) + "\n");
 
 								/* Convert uplink rate to rate class */
-								unsigned long upRateLong = stol(upRate, nullptr, 10);
+								double upRateDouble = stod(upRate);
+								unsigned long upRateLong = static_cast<unsigned long>(upRateDouble);
+								Serial.print(dev.termColor("red") + String(upRateLong) + " | ");
 								if (upRateLong == 0) continue;
 								unsigned int upRateClass = rateLongToRateClass(upRateLong);
+								Serial.print(upRateClass + dev.termColor("reset") + "\n");
 								if (upRateClass == 0) continue;
 								newCraft->upSignal = upRateClass;
 								break;
 							}
+
+							Serial.print("Down signal: " + String(newCraft->downSignal) + "\n");
+							Serial.print("Up signal:   " + String(newCraft->upSignal) + "\n");
+
+							if (newCraft->downSignal == 0 && newCraft->upSignal == 0) {
+								if (FileUtils::config.debugUtils.showSerial == true)
+									Serial.print(String(dev.termColor("red")) + "No signals found for " + String(newCraft->callsign) + String(dev.termColor("reset")) + "\n");
+								continue;
+							}
+
 
 							dishCount = d;
 							break;
@@ -1806,6 +1922,8 @@ void parseData(const char* payload)
 						// }
 					}
 				}
+			} else {
+				freeSemaphoreItem(newCraft);
 			}
 		}
 
@@ -1838,13 +1956,30 @@ void parseData(const char* payload)
 
 
 void logOutput(const char* color, const String& message) {
-
 	if (FileUtils::config.debugUtils.showSerial == true) {
-		char* buffer;
-		sprintf(buffer, "%s%s%s\n", dev.termColor(color), message.c_str(), dev.termColor("reset"));
-		Serial.print(buffer);
+		String resetColorString = dev.termColor("reset");
+		String coloredMessageString = dev.termColor(color);
+
+		const char* resetColor = resetColorString.c_str();
+		const char* coloredMessage = coloredMessageString.c_str();
+
+		int bufferSize = strlen(coloredMessage) + message.length() + strlen(resetColor) + 2; // +1 for newline, +1 for null terminator
+
+		char* buffer = (char*)malloc(bufferSize);
+		if (buffer) {
+			snprintf(buffer, bufferSize, "%s%s%s\n", coloredMessage, message.c_str(), resetColor);
+			Serial.print(buffer);
+			free(buffer);
+		} else {
+			// handle memory allocation failure
+			if (FileUtils::config.debugUtils.showSerial == true)
+				Serial.print("Memory allocation failed\n");
+		}
 	}
 }
+
+
+
 
 
 void checkWiFiConnection() {
@@ -1994,6 +2129,249 @@ void getData(void* parameter) {
 
 
 
+
+
+#define FORMAT_LITTLEFS_IF_FAILED true
+
+void listDir(fs::FS& fs, const char* dirname, uint8_t levels) {
+	Serial.printf("Listing directory: %s\r\n", dirname);
+
+	File root = fs.open(dirname);
+	if (!root) {
+		Serial.println("- failed to open directory");
+		return;
+	}
+	if (!root.isDirectory()) {
+		Serial.println(" - not a directory");
+		return;
+	}
+
+	File file = root.openNextFile();
+	while (file) {
+		if (file.isDirectory()) {
+			Serial.print("  DIR : ");
+
+			Serial.print(file.name());
+			time_t t = file.getLastWrite();
+			struct tm* tmstruct = localtime(&t);
+			Serial.printf("  LAST WRITE: %d-%02d-%02d %02d:%02d:%02d\n", (tmstruct->tm_year) + 1900, (tmstruct->tm_mon) + 1, tmstruct->tm_mday, tmstruct->tm_hour, tmstruct->tm_min, tmstruct->tm_sec);
+
+			if (levels) {
+				listDir(fs, file.name(), levels - 1);
+			}
+		} else {
+			Serial.print("  FILE: ");
+			Serial.print(file.name());
+			Serial.print("  SIZE: ");
+
+			Serial.print(file.size());
+			time_t t = file.getLastWrite();
+			struct tm* tmstruct = localtime(&t);
+			Serial.printf("  LAST WRITE: %d-%02d-%02d %02d:%02d:%02d\n", (tmstruct->tm_year) + 1900, (tmstruct->tm_mon) + 1, tmstruct->tm_mday, tmstruct->tm_hour, tmstruct->tm_min, tmstruct->tm_sec);
+		}
+		file = root.openNextFile();
+	}
+}
+
+void createDir(fs::FS& fs, const char* path) {
+	Serial.printf("Creating Dir: %s\n", path);
+	if (fs.mkdir(path)) {
+		Serial.println("Dir created");
+	} else {
+		Serial.println("mkdir failed");
+	}
+}
+
+void removeDir(fs::FS& fs, const char* path) {
+	Serial.printf("Removing Dir: %s\n", path);
+	if (fs.rmdir(path)) {
+		Serial.println("Dir removed");
+	} else {
+		Serial.println("rmdir failed");
+	}
+}
+
+void readFile(fs::FS& fs, const char* path) {
+	Serial.printf("Reading file: %s\r\n", path);
+
+	File file = fs.open(path);
+	if (!file || file.isDirectory()) {
+		Serial.println("- failed to open file for reading");
+		return;
+	}
+
+	Serial.println("- read from file:");
+	while (file.available()) {
+		Serial.write(file.read());
+	}
+	file.close();
+}
+
+void writeFile(fs::FS& fs, const char* path, const char* message) {
+	Serial.printf("Writing file: %s\r\n", path);
+
+	File file = fs.open(path, FILE_WRITE);
+	if (!file) {
+		Serial.println("- failed to open file for writing");
+		return;
+	}
+	if (file.print(message)) {
+		Serial.println("- file written");
+	} else {
+		Serial.println("- write failed");
+	}
+	file.close();
+}
+
+void appendFile(fs::FS& fs, const char* path, const char* message) {
+	Serial.printf("Appending to file: %s\r\n", path);
+
+	File file = fs.open(path, FILE_APPEND);
+	if (!file) {
+		Serial.println("- failed to open file for appending");
+		return;
+	}
+	if (file.print(message)) {
+		Serial.println("- message appended");
+	} else {
+		Serial.println("- append failed");
+	}
+	file.close();
+}
+
+void renameFile(fs::FS& fs, const char* path1, const char* path2) {
+	Serial.printf("Renaming file %s to %s\r\n", path1, path2);
+	if (fs.rename(path1, path2)) {
+		Serial.println("- file renamed");
+	} else {
+		Serial.println("- rename failed");
+	}
+}
+
+void deleteFile(fs::FS& fs, const char* path) {
+	Serial.printf("Deleting file: %s\r\n", path);
+	if (fs.remove(path)) {
+		Serial.println("- file deleted");
+	} else {
+		Serial.println("- delete failed");
+	}
+}
+
+// SPIFFS-like write and delete file
+
+// See: https://github.com/esp8266/Arduino/blob/master/libraries/LittleFS/src/LittleFS.cpp#L60
+void writeFile2(fs::FS& fs, const char* path, const char* message) {
+	if (!fs.exists(path)) {
+		if (strchr(path, '/')) {
+			Serial.printf("Create missing folders of: %s\r\n", path);
+			char* pathStr = strdup(path);
+			if (pathStr) {
+				char* ptr = strchr(pathStr, '/');
+				while (ptr) {
+					*ptr = 0;
+					fs.mkdir(pathStr);
+					*ptr = '/';
+					ptr = strchr(ptr + 1, '/');
+				}
+			}
+			free(pathStr);
+		}
+	}
+
+	Serial.printf("Writing file to: %s\r\n", path);
+	File file = fs.open(path, FILE_WRITE);
+	if (!file) {
+		Serial.println("- failed to open file for writing");
+		return;
+	}
+	if (file.print(message)) {
+		Serial.println("- file written");
+	} else {
+		Serial.println("- write failed");
+	}
+	file.close();
+}
+
+// See:  https://github.com/esp8266/Arduino/blob/master/libraries/LittleFS/src/LittleFS.h#L149
+void deleteFile2(fs::FS& fs, const char* path) {
+	Serial.printf("Deleting file and empty folders on path: %s\r\n", path);
+
+	if (fs.remove(path)) {
+		Serial.println("- file deleted");
+	} else {
+		Serial.println("- delete failed");
+	}
+
+	char* pathStr = strdup(path);
+	if (pathStr) {
+		char* ptr = strrchr(pathStr, '/');
+		if (ptr) {
+			Serial.printf("Removing all empty folders on path: %s\r\n", path);
+		}
+		while (ptr) {
+			*ptr = 0;
+			fs.rmdir(pathStr);
+			ptr = strrchr(pathStr, '/');
+		}
+		free(pathStr);
+	}
+}
+
+void testFileIO(fs::FS& fs, const char* path) {
+	Serial.printf("Testing file I/O with %s\r\n", path);
+
+	static uint8_t buf[512];
+	size_t len = 0;
+	File file = fs.open(path, FILE_WRITE);
+	if (!file) {
+		Serial.println("- failed to open file for writing");
+		return;
+	}
+
+	size_t i;
+	Serial.print("- writing");
+	uint32_t start = millis();
+	for (i = 0; i < 2048; i++) {
+		if ((i & 0x001F) == 0x001F) {
+			Serial.print(".");
+		}
+		file.write(buf, 512);
+	}
+	Serial.println("");
+	uint32_t end = millis() - start;
+	Serial.printf(" - %u bytes written in %u ms\r\n", 2048 * 512, end);
+	file.close();
+
+	file = fs.open(path);
+	start = millis();
+	end = start;
+	i = 0;
+	if (file && !file.isDirectory()) {
+		len = file.size();
+		size_t flen = len;
+		start = millis();
+		Serial.print("- reading");
+		while (len) {
+			size_t toRead = len;
+			if (toRead > 512) {
+				toRead = 512;
+			}
+			file.read(buf, toRead);
+			if ((i++ & 0x001F) == 0x001F) {
+				Serial.print(".");
+			}
+			len -= toRead;
+		}
+		Serial.println("");
+		end = millis() - start;
+		Serial.printf("- %u bytes read in %u ms\r\n", flen, end);
+		file.close();
+	} else {
+		Serial.println("- failed to open file for reading");
+	}
+}
+
+
 /* SETUP
 * Runs once at startup */
 void setup()
@@ -2004,25 +2382,65 @@ void setup()
 	Serial.print("Starting...\n\n");
 
 
-	// Make sure we can read the EEPROM
-	if (SPIFFS.begin(true)) {
-		Serial.println("SPIFFS filesystem mounted successfully");
-		FileUtils::loadConfig();
-		Serial.print("Config loaded\n\n");
-		Serial.print("ssid: " + String(FileUtils::config.wifiNetwork.apSSID) + "\n");
-		if (FileUtils::config.wifiNetwork.apPass != nullptr) {
-			Serial.print("password: " + String(FileUtils::config.wifiNetwork.apPass) + "\n");
-		} else {
-			Serial.print("password: NULL\n");
-		}
-		Serial.print("serverName: " + String(FileUtils::config.wifiNetwork.serverName) + "\n");
-	} else {
-		Serial.println("An Error has occurred while mounting SPIFFS");
-		Serial.println("Restarting...");
-		delay(1000);
-		ESP.restart();
+
+
+	if (!LittleFS.begin(FORMAT_LITTLEFS_IF_FAILED)) {
+		Serial.println("LittleFS Mount Failed");
 		return;
 	}
+
+	listDir(LittleFS, "/", 0);
+	createDir(LittleFS, "/mydir");
+	writeFile(LittleFS, "/mydir/hello2.txt", "Hello2");
+	//writeFile(LittleFS, "/mydir/newdir2/newdir3/hello3.txt", "Hello3");
+	writeFile2(LittleFS, "/mydir/newdir2/newdir3/hello3.txt", "Hello3");
+	listDir(LittleFS, "/", 3);
+	deleteFile(LittleFS, "/mydir/hello2.txt");
+	//deleteFile(LittleFS, "/mydir/newdir2/newdir3/hello3.txt");
+	deleteFile2(LittleFS, "/mydir/newdir2/newdir3/hello3.txt");
+	removeDir(LittleFS, "/mydir");
+	listDir(LittleFS, "/", 3);
+	writeFile(LittleFS, "/hello.txt", "Hello ");
+	appendFile(LittleFS, "/hello.txt", "World!\r\n");
+	readFile(LittleFS, "/hello.txt");
+	renameFile(LittleFS, "/hello.txt", "/foo.txt");
+	readFile(LittleFS, "/foo.txt");
+	deleteFile(LittleFS, "/foo.txt");
+	testFileIO(LittleFS, "/test.txt");
+	deleteFile(LittleFS, "/test.txt");
+
+	Serial.println("Test complete");
+
+
+
+
+
+
+	// Make sure we can read the EEPROM
+	if (LittleFS.begin(true)) {
+		Serial.println("LittleFs filesystem mounted successfully");
+		FileUtils::initConfigFile();
+		Serial.print("Config loaded\n\n");
+		FileUtils::printAllConfigFileKeys();
+		// Serial.print("ssid: " + String(FileUtils::config.wifiNetwork.apSSID) + "\n");
+		// if (FileUtils::config.wifiNetwork.apPass != nullptr) {
+		// 	Serial.print("password: " + String(FileUtils::config.wifiNetwork.apPass) + "\n");
+		// } else {
+		// 	Serial.print("password: NULL\n");
+		// }
+		// Serial.print("serverName: " + String(FileUtils::config.wifiNetwork.serverName) + "\n");
+	} else {
+		Serial.println("An Error has occurred while mounting LittleFS filesystem");
+		Serial.println("Using default config, settings will not be saved");
+	}
+
+
+	listDir(LittleFS, "/", 3);
+
+	// Displaying all config values
+	// Serial.print(String(FileUtils::config.debugUtils.testCores) + "\n");
+	// Serial.print(String(FileUtils::config.debugUtils.showSerial) + "\n");
+	// Serial.print(String(FileUtils::config.debugUtils.testLEDs) + "\n");
 
 
 	// reset settings - wipe stored credentials for testing
@@ -2085,62 +2503,43 @@ void setup()
 
 	/* WIFI MANAGER SETUP */
 	WiFi.mode(WIFI_AP_STA);  // explicitly set mode, esp defaults to STA+AP
+	wm.setCountry("US");	  // setting wifi country seems to improve OSX soft ap connectivity
 	wm.setConfigPortalBlocking(false);
 	wm.setCleanConnect(true);
 	wm.setConnectRetries(5);
-	wm.setConnectTimeout(10); // connect attempt fails after n seconds
-	wm.setCountry("US");	  // setting wifi country seems to improve OSX soft ap connectivity
-	// wm.setAPStaticIPConfig(IPAddress(127, 0, 0, 1), IPAddress(127, 0, 0, 1), IPAddress(255, 255, 255, 0)); // set static ip
-	// wm.setHostname(String(FileUtils::config.wifiNetwork.apSSID));
+	wm.setConnectTimeout(10); // connect attempt fails after n seconds	
+	// wm.setAPStaticIPConfig(IPAddress(192, 168, 0, 1), IPAddress(192, 168, 0, 1), IPAddress(255, 255, 255, 0)); // set static ip
+	wm.setHostname("JPL_MiniPulse");
 	// wm.setEnableConfigPortal(false); // Disable auto AP, it will be started manually
 	// wm.setDisableConfigPortal(false); // Diable auto-closing config portal
-	// wm.setCaptivePortalEnable(true);
-	// wm.setAPCallback(configPortalCallback);
+	wm.setCaptivePortalEnable(true);
 	wm.setWebServerCallback(webServerCallback);
 	wm.setTitle("JPL MiniPulse");
 
-
-
-
-	/* WIFI MANAGER CUSTOM FIELD PARAMETERS */
-	const char* custom_radio_str = "<br/><label for='customfieldid'>Color Theme</label><br/><input type='radio' name='customfieldid' value='0' checked> White<br><input type='radio' name='customfieldid' value='1'> Cyber<br><input type='radio' name='customfieldid' value='2'> Valentine<br><input type='radio' name='customfieldid' value='3'> Moonlight";
-	const char* xml_data_radio_str = "<br/><label for='xml_data_radio'>XML Data</label><br/><input type='radio' name='xml_data_radio' value='0' checked> Live<br><input type='radio' name='xml_data_radio' value='1'> Dummy<input type='radio' name='xml_data_radio' value='2'> Animation Test";
-	const char* global_brightness_str = "<br/><label for='global_brightness'>Global Brightness</label><br/><input type='number' name='global_brightness' min='1' max='255' value='255'>";
-	const char* scroll_letters_delay_str = "<br/><label for='scroll_letters_delay'>Scroll Letter Delay (ms)</label><br/><input type='number' name='scroll_letters_delay' min='0' max='300' value='33'>";
-
-	// const char* meteor_decay_checkbox_str = "<br/><label for='meteorDecay'>Meteor Decay</label><br/><input type='checkbox' name='meteorDecay'>";
-	// const char* meteor_random_checkbox_str = "<br/><label for='meteorRandom'>Meteor Tail</label><br/><input type='checkbox' name='meteorRandom'>";
-	const char* global_fps_str = "<br/><label for='globalFps'>Global FPS</label><br/><input type='number' name='globalFps' min='10' max='120' value='30'>";
-	// const char* force_dummy_data_str = "<br/><p>Force Dummy Data: " + String(forceDummyData) + "</p><br/>";
-	const char* show_serial_str = "<br/><label for 'show_serial'>Show Serial</label><br/><input type='checkbox' name='show_serial'>";
-
-	new (&field_color_theme) WiFiManagerParameter(custom_radio_str);				  // custom html input
-	new (&field_xml_data) WiFiManagerParameter(xml_data_radio_str);				  	 // custom html input
-	new (&field_global_brightness) WiFiManagerParameter(global_brightness_str);		 // custom html input
-	new (&field_scroll_letters_delay) WiFiManagerParameter(scroll_letters_delay_str); // custom html input
-	// new (&field_force_dummy_data) WiFiManagerParameter(force_dummy_data_str);		 // custom html input
-	// new (&field_meteor_tail_decay) WiFiManagerParameter(meteor_decay_checkbox_str);	  // custom html input
-	// new (&field_meteor_tail_random) WiFiManagerParameter(meteor_random_checkbox_str); // custom html input
-	new (&field_global_fps) WiFiManagerParameter(global_fps_str);					  // custom html input
-	new (&field_show_serial) WiFiManagerParameter(show_serial_str);					 // custom html input
-
-	wm.addParameter(&field_color_theme);
-	wm.addParameter(&field_xml_data);
-	wm.addParameter(&field_global_brightness);
-	wm.addParameter(&field_scroll_letters_delay);
-	// wm.addParameter(&field_force_dummy_data);
-	// wm.addParameter(&field_meteor_tail_decay);
-	// wm.addParameter(&field_meteor_tail_random);
-	wm.addParameter(&field_global_fps);
-	wm.addParameter(&field_show_serial);
+	// wm.setPreSaveConfigCallback(saveParamsCallback);
+	// wm.setPreSaveParamsCallback(saveParamsCallback);
 	wm.setSaveParamsCallback(saveParamsCallback);
-	std::vector<const char*> menu = { "wifi", "info", "param", "sep", "restart", "exit" };
+	std::vector<const char*> menu = { "wifi", "info", "param", "sep", "restart" };
 	wm.setMenu(menu);
 
 	// set dark theme
 	wm.setClass("invert");
 
-	// FileUtils::Config config = FileUtils::config;
+	int brightnessMapped = MathHelpers::map(FileUtils::config.displayLED.brightness, 8, 255, 0, 100);
+	new (&param_show_serial) WiFiManagerParameter("show_serial", "Show Serial", FileUtils::config.debugUtils.showSerial ? "1" : "0", 1, "type='number' min='0' max='1' step='1'");
+	new (&param_brightness) WiFiManagerParameter("brightness", "Brightness", String(FileUtils::config.displayLED.brightness).c_str(), 3, "type='range' min='0' max='100' step='5'");
+
+	wm.addParameter(&param_show_serial);
+	wm.addParameter(&param_brightness);
+
+
+
+
+
+
+
+
+
 
 
 	Serial.print("Existing WiFi credentials: ");
@@ -2155,7 +2554,9 @@ void setup()
 			Serial.print(String(dev.termColor("red")) + "Failed to connect to WiFi" + String(dev.termColor("reset")));
 		} else // Wifi connection successful
 		{
-			Serial.print(String(dev.termColor("green")) + "Connected to WiFi successfuly" + String(dev.termColor("reset")) + "\n");
+			char successStringBuffer[256];
+			snprintf(successStringBuffer, sizeof(successStringBuffer), "%sConnected to WiFi successfully%s\n", dev.termColor("green"), dev.termColor("reset"));
+			Serial.print(successStringBuffer);
 		}
 
 	} else {
@@ -2184,7 +2585,6 @@ void setup()
 
 	const char* apPassword = FileUtils::config.wifiNetwork.apPass;
 	DevUtils::SerialBanners::printWiFiConfigBanner(apPassword, wm); // Display Wifi config portal connection info
-
 
 
 
@@ -2307,7 +2707,7 @@ void loop()
 					}
 
 					/* Free the queue item */
-					freeSempaphoreItem(infoBuffer);
+					freeSemaphoreItem(infoBuffer);
 
 					displayDurationTimer = millis(); // Sync reference variable for timer
 				} else {

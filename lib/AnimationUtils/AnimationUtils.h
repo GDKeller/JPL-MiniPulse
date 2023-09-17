@@ -11,11 +11,6 @@
     #include <MathHelpers.h>
 #endif
 
-
-#ifndef SPIFFS_H
-    #include <SPIFFS.h>
-#endif
-
 #ifndef ARDUINOJSON_H
     #include <ArduinoJson.h>
 #endif

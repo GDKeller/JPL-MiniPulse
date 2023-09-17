@@ -37,25 +37,4 @@ void AnimationUtils::updateBrightness(int brightness)
 	brightness = constrain(brightness, 8, 255); // Constrain brightness to 8-255
 	FileUtils::config.displayLED.brightness = brightness; // Update global brightness value
 	FastLED.setBrightness(brightness);
-
-	/* Write new brightness to user config file */
-	if (SPIFFS.exists("/config_user.json")) {
-		File configFile = SPIFFS.open("/config_user.json", "w");
-		if (!configFile) {
-			if (FileUtils::config.debugUtils.showSerial)
-				Serial.println("Failed to open config file for writing");
-			return;
-		} else {
-			DynamicJsonDocument doc(1024);
-			JsonVariant jsonVariantBrightness = doc.to<JsonVariant>();
-			jsonVariantBrightness.set(brightness);
-
-			std::vector<std::pair<String, JsonVariant>> updates = {
-				{"displayLED.brightness", jsonVariantBrightness}
-			};
-
-
-			FileUtils::saveUserConfig(updates);
-		}
-	}
 }

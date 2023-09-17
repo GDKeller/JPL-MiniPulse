@@ -15,8 +15,8 @@
 #include <utility>
 #endif
 
-#ifndef SPIFFS_H
-#include <SPIFFS.h>
+#ifndef LITTLEFS_H
+#include <LittleFS.h>
 #endif
 
 #ifndef JSON_H
@@ -90,9 +90,6 @@ class FileUtils {
         int colorTheme;
     };
 
-    static void merge(JsonObject& dest, const JsonObject& src);
-
-    public:
     struct Config {
         DebugUtils debugUtils;
         WifiNetwork wifiNetwork;
@@ -102,14 +99,25 @@ class FileUtils {
         TimersDelays timersDelays;
         Miscellaneous miscellaneous;
     };
+
+
+    public:
     static Config config;
 
-
-    static void loadConfig();
-    static void loadDefaultConfig(JsonDocument& doc);
-    static void loadUserConfig(JsonDocument& doc);
-    static void saveUserConfig(const std::vector<std::pair<String, JsonVariant>>& updates);
-
+    static bool checkConfigFileExists();
+    static void createConfigFile();
+    static void initConfigFile();
+    static void printAllConfigFileKeys();
+    static void updateDebugUtilsField(const char* key, const JsonVariant& value);
+    static void updateWifiNetworkField(const char* key, const JsonVariant& value);
+    static void updatePinsHardwareField(const char* key, const JsonVariant& value);
+    static void updateDisplayLEDField(const char* key, const JsonVariant& value);
+    static void updateTextTypographyField(const char* key, const JsonVariant& value);
+    static void updateTimersDelaysField(const char* key, const JsonVariant& value);
+    static void updateMiscellaneousField(const char* key, const JsonVariant& value);
+    static void writeConfigFileBool(const char* key, bool value);
+    static void writeConfigFileInt(const char* key, int value);
+    static void writeConfigFileString(const char* key, const char* value);
 };
 
 #endif
