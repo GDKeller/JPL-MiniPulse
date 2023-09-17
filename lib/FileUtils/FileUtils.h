@@ -105,9 +105,11 @@ class FileUtils {
     static Config config;
 
     static bool checkConfigFileExists();
-    static void createConfigFile();
+    static bool createConfigFile();
     static void initConfigFile();
     static void printAllConfigFileKeys();
+    static void setConfigValuesFromFile(File configFile);
+    static bool checkOrCreateConfigFile();
     static void updateDebugUtilsField(const char* key, const JsonVariant& value);
     static void updateWifiNetworkField(const char* key, const JsonVariant& value);
     static void updatePinsHardwareField(const char* key, const JsonVariant& value);

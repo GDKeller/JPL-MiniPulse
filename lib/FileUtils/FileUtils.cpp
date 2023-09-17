@@ -5,7 +5,7 @@
 FileUtils::Config FileUtils::config = {
 	{ // debugUtils
 		false, // testCores
-		false, // showSerial
+		true, // showSerial
 		false, // diagMeasure
 		false, // disableWiFi
 		false  // testLEDs
@@ -28,7 +28,7 @@ FileUtils::Config FileUtils::config = {
 		32  // potentiometer
 	},
 	{ // displayLED
-		255, // brightness
+		8, // brightness
 		60,  // fps
 		800, // outerPixelsTotal
 		800, // middlePixelsTotal
@@ -55,29 +55,77 @@ FileUtils::Config FileUtils::config = {
 };
 
 
-void  FileUtils::createConfigFile() {
-	File configFile = LittleFS.open("/config.json", "w");
-	if (!configFile) {
-		Serial.println("Failed to create file");
+
+
+void FileUtils::initConfigFile() {
+	Serial.println("Initializing config file... ");
+	bool fileInitSuccess = FileUtils::checkOrCreateConfigFile();
+	if (!fileInitSuccess) {
+		Serial.println("Failed checking and creating config file");
 		return;
 	}
 
-	configFile.print("{}");
-	configFile.close();
+	File configFile = LittleFS.open("/config.json", "r");
+	setConfigValuesFromFile(configFile);
 }
 
 bool FileUtils::checkConfigFileExists() {
-	return LittleFS.exists("/config.json") ? true : false;
+	bool fileExists = LittleFS.exists("/config.json");
+	return fileExists;
 }
 
-void FileUtils::initConfigFile() {
-	if (!checkConfigFileExists()) {
-		Serial.println("Config file does not exist, creating...");
-		createConfigFile();
+bool FileUtils::createConfigFile() {
+	File configFile = LittleFS.open("/config.json", "w");
+	if (!configFile) {
+		Serial.println("Failed to create file");
+		return false;
 	} else {
-		Serial.println("Config file found");
+		configFile.print("{}");
+		configFile.flush();
+		configFile.close();
+		return true;
 	}
 }
+
+bool FileUtils::checkOrCreateConfigFile() {
+	if (!checkConfigFileExists()) {
+		Serial.println("Config file does not exist, creating...");
+		return createConfigFile();
+	} else {
+		Serial.println("Config file found");
+		return true;
+	}
+}
+
+
+
+void FileUtils::setConfigValuesFromFile(File configFile) {
+	Serial.println("Setting config values from file...");
+	// File configFile = LittleFS.open("/config.json", "r");
+	if (!configFile) {
+		Serial.println("Failed to open config file for reading");
+		return;
+	}
+
+	StaticJsonDocument<1024> doc;
+	DeserializationError error = deserializeJson(doc, configFile);
+	if (error) {
+		Serial.println("Failed to parse config file");
+		return;
+	}
+
+	configFile.close();
+
+	for (JsonPair kv : doc.as<JsonObject>()) {
+		Serial.print(kv.key().c_str() + String(": ") + kv.value().as<String>() + String("\n"));
+		if (kv.key() == "showSerial") {
+			FileUtils::config.debugUtils.showSerial = kv.value().as<bool>();
+		} else if (kv.key() == "brightness") {
+			FileUtils::config.displayLED.brightness = kv.value().as<int>();
+		}
+	}
+}
+
 
 void FileUtils::printAllConfigFileKeys() {
 	File configFile = LittleFS.open("/config.json", "r");
@@ -96,12 +144,15 @@ void FileUtils::printAllConfigFileKeys() {
 	configFile.close();
 
 	for (JsonPair kv : doc.as<JsonObject>()) {
-		Serial.println(kv.key().c_str());
+		Serial.print(kv.key().c_str() + String(": ") + kv.value().as<String>() + String("\n"));
 	}
 }
 
 
 void FileUtils::updateDebugUtilsField(const char* key, const JsonVariant& value) {
+	Serial.print("Updating debug utils field - " + String(key) + ": " + String(value.as<bool>()));
+
+
 	if (strcmp(key, "testCores") == 0) {
 		config.debugUtils.testCores = value;
 	} else if (strcmp(key, "showSerial") == 0) {
@@ -269,7 +320,7 @@ void FileUtils::writeConfigFileInt(const char* key, int value) {
 
 	configFile.close();
 
-	doc[key] = value;
+	doc[key] = value; // Update file value
 
 	configFile = LittleFS.open("/config.json", "w");
 	if (!configFile) {
@@ -277,17 +328,15 @@ void FileUtils::writeConfigFileInt(const char* key, int value) {
 		return;
 	}
 
-	serializeJson(doc, configFile);
-	configFile.flush();
-
 	if (serializeJson(doc, configFile) == 0) {
 		Serial.println("Failed to write to config file");
 		return;
 	}
-	
-	configFile.close();
 
-	Serial.println("Config key " + String(key) + " set to " + String(value));
+	configFile.flush(); // Flush file to write
+	configFile.close(); // Close file
+
+	Serial.println("CONFIG FILE saved: " + String(key) + " == " + String(value));
 }
 
 void FileUtils::writeConfigFileString(const char* key, const char* value) {

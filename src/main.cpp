@@ -71,6 +71,248 @@ HTTPClient http; // Used for fetching data
 #pragma endregion
 
 
+#define FORMAT_LITTLEFS_IF_FAILED true
+
+void listDir(fs::FS& fs, const char* dirname, uint8_t levels) {
+	Serial.printf("Listing directory: %s\r\n", dirname);
+
+	File root = fs.open(dirname);
+	if (!root) {
+		Serial.println("- failed to open directory");
+		return;
+	}
+	if (!root.isDirectory()) {
+		Serial.println(" - not a directory");
+		return;
+	}
+
+	File file = root.openNextFile();
+	while (file) {
+		if (file.isDirectory()) {
+			Serial.print("  DIR : ");
+
+			Serial.print(file.name());
+			time_t t = file.getLastWrite();
+			struct tm* tmstruct = localtime(&t);
+			Serial.printf("  LAST WRITE: %d-%02d-%02d %02d:%02d:%02d\n", (tmstruct->tm_year) + 1900, (tmstruct->tm_mon) + 1, tmstruct->tm_mday, tmstruct->tm_hour, tmstruct->tm_min, tmstruct->tm_sec);
+
+			if (levels) {
+				listDir(fs, file.name(), levels - 1);
+			}
+		} else {
+			Serial.print("  FILE: ");
+			Serial.print(file.name());
+			Serial.print("  SIZE: ");
+
+			Serial.print(file.size());
+			time_t t = file.getLastWrite();
+			struct tm* tmstruct = localtime(&t);
+			Serial.printf("  LAST WRITE: %d-%02d-%02d %02d:%02d:%02d\n", (tmstruct->tm_year) + 1900, (tmstruct->tm_mon) + 1, tmstruct->tm_mday, tmstruct->tm_hour, tmstruct->tm_min, tmstruct->tm_sec);
+		}
+		file = root.openNextFile();
+	}
+}
+
+void createDir(fs::FS& fs, const char* path) {
+	Serial.printf("Creating Dir: %s\n", path);
+	if (fs.mkdir(path)) {
+		Serial.println("Dir created");
+	} else {
+		Serial.println("mkdir failed");
+	}
+}
+
+void removeDir(fs::FS& fs, const char* path) {
+	Serial.printf("Removing Dir: %s\n", path);
+	if (fs.rmdir(path)) {
+		Serial.println("Dir removed");
+	} else {
+		Serial.println("rmdir failed");
+	}
+}
+
+void readFile(fs::FS& fs, const char* path) {
+	Serial.printf("Reading file: %s\r\n", path);
+
+	File file = fs.open(path);
+	if (!file || file.isDirectory()) {
+		Serial.println("- failed to open file for reading");
+		return;
+	}
+
+	Serial.println("- read from file:");
+	while (file.available()) {
+		Serial.write(file.read());
+	}
+	file.close();
+}
+
+void writeFile(fs::FS& fs, const char* path, const char* message) {
+	Serial.printf("Writing file: %s\r\n", path);
+
+	File file = fs.open(path, FILE_WRITE);
+	if (!file) {
+		Serial.println("- failed to open file for writing");
+		return;
+	}
+	if (file.print(message)) {
+		Serial.println("- file written");
+	} else {
+		Serial.println("- write failed");
+	}
+	file.close();
+}
+
+void appendFile(fs::FS& fs, const char* path, const char* message) {
+	Serial.printf("Appending to file: %s\r\n", path);
+
+	File file = fs.open(path, FILE_APPEND);
+	if (!file) {
+		Serial.println("- failed to open file for appending");
+		return;
+	}
+	if (file.print(message)) {
+		Serial.println("- message appended");
+	} else {
+		Serial.println("- append failed");
+	}
+	file.close();
+}
+
+void renameFile(fs::FS& fs, const char* path1, const char* path2) {
+	Serial.printf("Renaming file %s to %s\r\n", path1, path2);
+	if (fs.rename(path1, path2)) {
+		Serial.println("- file renamed");
+	} else {
+		Serial.println("- rename failed");
+	}
+}
+
+void deleteFile(fs::FS& fs, const char* path) {
+	Serial.printf("Deleting file: %s\r\n", path);
+	if (fs.remove(path)) {
+		Serial.println("- file deleted");
+	} else {
+		Serial.println("- delete failed");
+	}
+}
+
+// SPIFFS-like write and delete file
+
+// See: https://github.com/esp8266/Arduino/blob/master/libraries/LittleFS/src/LittleFS.cpp#L60
+void writeFile2(fs::FS& fs, const char* path, const char* message) {
+	if (!fs.exists(path)) {
+		if (strchr(path, '/')) {
+			Serial.printf("Create missing folders of: %s\r\n", path);
+			char* pathStr = strdup(path);
+			if (pathStr) {
+				char* ptr = strchr(pathStr, '/');
+				while (ptr) {
+					*ptr = 0;
+					fs.mkdir(pathStr);
+					*ptr = '/';
+					ptr = strchr(ptr + 1, '/');
+				}
+			}
+			free(pathStr);
+		}
+	}
+
+	Serial.printf("Writing file to: %s\r\n", path);
+	File file = fs.open(path, FILE_WRITE);
+	if (!file) {
+		Serial.println("- failed to open file for writing");
+		return;
+	}
+	if (file.print(message)) {
+		Serial.println("- file written");
+	} else {
+		Serial.println("- write failed");
+	}
+	file.close();
+}
+
+// See:  https://github.com/esp8266/Arduino/blob/master/libraries/LittleFS/src/LittleFS.h#L149
+void deleteFile2(fs::FS& fs, const char* path) {
+	Serial.printf("Deleting file and empty folders on path: %s\r\n", path);
+
+	if (fs.remove(path)) {
+		Serial.println("- file deleted");
+	} else {
+		Serial.println("- delete failed");
+	}
+
+	char* pathStr = strdup(path);
+	if (pathStr) {
+		char* ptr = strrchr(pathStr, '/');
+		if (ptr) {
+			Serial.printf("Removing all empty folders on path: %s\r\n", path);
+		}
+		while (ptr) {
+			*ptr = 0;
+			fs.rmdir(pathStr);
+			ptr = strrchr(pathStr, '/');
+		}
+		free(pathStr);
+	}
+}
+
+void testFileIO(fs::FS& fs, const char* path) {
+	Serial.printf("Testing file I/O with %s\r\n", path);
+
+	static uint8_t buf[512];
+	size_t len = 0;
+	File file = fs.open(path, FILE_WRITE);
+	if (!file) {
+		Serial.println("- failed to open file for writing");
+		return;
+	}
+
+	size_t i;
+	Serial.print("- writing");
+	uint32_t start = millis();
+	for (i = 0; i < 2048; i++) {
+		if ((i & 0x001F) == 0x001F) {
+			Serial.print(".");
+		}
+		file.write(buf, 512);
+	}
+	Serial.println("");
+	uint32_t end = millis() - start;
+	Serial.printf(" - %u bytes written in %u ms\r\n", 2048 * 512, end);
+	file.close();
+
+	file = fs.open(path);
+	start = millis();
+	end = start;
+	i = 0;
+	if (file && !file.isDirectory()) {
+		len = file.size();
+		size_t flen = len;
+		start = millis();
+		Serial.print("- reading");
+		while (len) {
+			size_t toRead = len;
+			if (toRead > 512) {
+				toRead = 512;
+			}
+			file.read(buf, toRead);
+			if ((i++ & 0x001F) == 0x001F) {
+				Serial.print(".");
+			}
+			len -= toRead;
+		}
+		Serial.println("");
+		end = millis() - start;
+		Serial.printf("- %u bytes read in %u ms\r\n", flen, end);
+		file.close();
+	} else {
+		Serial.println("- failed to open file for reading");
+	}
+}
+
+
+
 // Placeholder for XML data
 // const char* dummyXmlData = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?><dsn><station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" /><dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS24" windSpeed="5.556"><downSignal dataRate="28000000" frequency="25900000000" power="-91.3965" signalType="data" spacecraft="JWST" spacecraftID="-170" /><downSignal dataRate="40000" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="JWST" spacecraftID="-170" /><upSignal dataRate="16000" frequency="2090" power="4.804" signalType="data" spacecraft="JWST" spacecraftID="-170" /><target downlegRange="1.653e+06" id="170" name="JWST" rtlt="11.03" uplegRange="1.653e+06" /></dish><dish azimuthAngle="287.7" elevationAngle="18.74" isArray="false" isDDOR="false" isMSPA="false" name="DSS26" windSpeed="5.556"><downSignal dataRate="4000000" frequency="8439000000" power="-138.1801" signalType="none" spacecraft="MRO" spacecraftID="-74" /><upSignal dataRate="2000" frequency="7183" power="0.0000" signalType="none" spacecraft="MRO" spacecraftID="-74" /><target downlegRange="8.207e+07" id="74" name="MRO" rtlt="547.5" uplegRange="8.207e+07" /></dish><station friendlyName="Madrid" name="mdscc" timeUTC="1670419133000" timeZoneOffset="3600000" /><dish azimuthAngle="103.0" elevationAngle="80.19" isArray="false" isDDOR="false" isMSPA="false" name="DSS56" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="2250000000" power="-478.1842" signalType="none" spacecraft="CHDR" spacecraftID="-151" /><target downlegRange="1.417e+05" id="151" name="CHDR" rtlt="0.9455" uplegRange="1.417e+05" /></dish><dish azimuthAngle="196.5" elevationAngle="30.71" isArray="false" isDDOR="false" isMSPA="false" name="DSS65" windSpeed="5.556"><downSignal dataRate="87650" frequency="2278000000" power="-112.7797" signalType="data" spacecraft="ACE" spacecraftID="-92" /><upSignal dataRate="1000" frequency="2098" power="0.2630" signalType="data" spacecraft="ACE" spacecraftID="-92" /><target downlegRange="1.389e+06" id="92" name="ACE" rtlt="9.266" uplegRange="1.389e+06" /></dish><dish azimuthAngle="124.5" elevationAngle="53.41" isArray="false" isDDOR="false" isMSPA="false" name="DSS53" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8436000000" power="-170.1741" signalType="none" spacecraft="LICI" spacecraftID="-210" /><target downlegRange="4.099e+06" id="210" name="LICI" rtlt="27.34" uplegRange="4.099e+06" /></dish><dish azimuthAngle="219.7" elevationAngle="22.84" isArray="false" isDDOR="false" isMSPA="false" name="DSS54" windSpeed="5.556"><upSignal dataRate="2000" frequency="2066" power="1.758" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><downSignal dataRate="245800" frequency="2245000000" power="-110.7082" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><target downlegRange="1.331e+06" id="21" name="SOHO" rtlt="8.882" uplegRange="1.331e+06" /></dish><dish azimuthAngle="120.0" elevationAngle="46.53" isArray="false" isDDOR="false" isMSPA="false" name="DSS63" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8415000000" power="-478.2658" signalType="none" spacecraft="TEST" spacecraftID="-99" /><target downlegRange="-1.000e+00" id="99" name="TEST" rtlt="-1.0000" uplegRange="-1.000e+00" /></dish><station friendlyName="Canberra" name="cdscc" timeUTC="1670419133000" timeZoneOffset="39600000" /><dish azimuthAngle="330.6" elevationAngle="37.39" isArray="false" isDDOR="false" isMSPA="false" name="DSS34" windSpeed="3.087"><upSignal dataRate="250000" frequency="2041" power="0.2421" signalType="data" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="974200" frequency="2217000000" power="-116.4022" signalType="none" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="2000000" frequency="2216000000" power="-107.4503" signalType="carrier" spacecraft="EM1" spacecraftID="-23" /><target downlegRange="3.870e+05" id="23" name="EM1" rtlt="2.581" uplegRange="3.869e+05" /></dish><dish azimuthAngle="10.27" elevationAngle="28.97" isArray="false" isDDOR="false" isMSPA="false" name="DSS35" windSpeed="3.087"><downSignal dataRate="11.63" frequency="8446000000" power="-141.8096" signalType="data" spacecraft="MVN" spacecraftID="-202" /><upSignal dataRate="7.813" frequency="7189" power="8.303" signalType="data" spacecraft="MVN" spacecraftID="-202" /><target downlegRange="8.207e+07" id="202" name="MVN" rtlt="547.5" uplegRange="8.207e+07" /></dish><dish azimuthAngle="207.0" elevationAngle="15.51" isArray="false" isDDOR="false" isMSPA="false" name="DSS43" windSpeed="3.087"><upSignal dataRate="16.00" frequency="2114" power="20.20" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><downSignal dataRate="160.0" frequency="8420000000" power="-156.2618" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><target downlegRange="1.984e+10" id="32" name="VGR2" rtlt="132300" uplegRange="1.984e+10" /></dish><dish azimuthAngle="7.205" elevationAngle="26.82" isArray="false" isDDOR="false" isMSPA="false" name="DSS36" windSpeed="3.087"><downSignal dataRate="8500000" frequency="8475000000" power="-120.3643" signalType="none" spacecraft="KPLO" spacecraftID="-155" /><downSignal dataRate="8192" frequency="2261000000" power="-104.9668" signalType="data" spacecraft="KPLO" spacecraftID="-155" /><target downlegRange="4.405e+05" id="155" name="KPLO" rtlt="2.939" uplegRange="4.405e+05" /></dish><timestamp>1670419133000</timestamp></dsn>)==--==";
 // const char* dummyXmlData2 = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?><dsn><station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" /><dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS24" windSpeed="5.556"><downSignal dataRate="28000000" frequency="25900000000" power="-91.3965" signalType="data" spacecraft="JWST" spacecraftID="-170" /><downSignal dataRate="40000" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="JWST" spacecraftID="-170" /><upSignal dataRate="16000" frequency="2090" power="4.804" signalType="data" spacecraft="JWST" spacecraftID="-170" /><target downlegRange="1.653e+06" id="170" name="JWST" rtlt="11.03" uplegRange="1.653e+06" /></dish><dish azimuthAngle="287.7" elevationAngle="18.74" isArray="false" isDDOR="false" isMSPA="false" name="DSS26" windSpeed="5.556"><downSignal dataRate="4000000" frequency="8439000000" power="-138.1801" signalType="none" spacecraft="MRO" spacecraftID="-74" /><upSignal dataRate="2000" frequency="7183" power="0.0000" signalType="none" spacecraft="MRO" spacecraftID="-74" /><target downlegRange="8.207e+07" id="74" name="MRO" rtlt="547.5" uplegRange="8.207e+07" /></dish><station friendlyName="Madrid" name="mdscc" timeUTC="1670419133000" timeZoneOffset="3600000" /><dish azimuthAngle="103.0" elevationAngle="80.19" isArray="false" isDDOR="false" isMSPA="false" name="DSS56" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="2250000000" power="-478.1842" signalType="none" spacecraft="CHDR" spacecraftID="-151" /><target downlegRange="1.417e+05" id="151" name="CHDR" rtlt="0.9455" uplegRange="1.417e+05" /></dish><dish azimuthAngle="196.5" elevationAngle="30.71" isArray="false" isDDOR="false" isMSPA="false" name="DSS65" windSpeed="5.556"><downSignal dataRate="87650" frequency="2278000000" power="-112.7797" signalType="data" spacecraft="ACE" spacecraftID="-92" /><upSignal dataRate="1000" frequency="2098" power="0.2630" signalType="data" spacecraft="ACE" spacecraftID="-92" /><target downlegRange="1.389e+06" id="92" name="ACE" rtlt="9.266" uplegRange="1.389e+06" /></dish><dish azimuthAngle="124.5" elevationAngle="53.41" isArray="false" isDDOR="false" isMSPA="false" name="DSS53" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8436000000" power="-170.1741" signalType="none" spacecraft="LICI" spacecraftID="-210" /><target downlegRange="4.099e+06" id="210" name="LICI" rtlt="27.34" uplegRange="4.099e+06" /></dish><dish azimuthAngle="219.7" elevationAngle="22.84" isArray="false" isDDOR="false" isMSPA="false" name="DSS54" windSpeed="5.556"><upSignal dataRate="2000" frequency="2066" power="1.758" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><downSignal dataRate="245800" frequency="2245000000" power="-110.7082" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><target downlegRange="1.331e+06" id="21" name="SOHO" rtlt="8.882" uplegRange="1.331e+06" /></dish><dish azimuthAngle="120.0" elevationAngle="46.53" isArray="false" isDDOR="false" isMSPA="false" name="DSS63" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8415000000" power="-478.2658" signalType="none" spacecraft="TEST" spacecraftID="-99" /><target downlegRange="-1.000e+00" id="99" name="TEST" rtlt="-1.0000" uplegRange="-1.000e+00" /></dish><station friendlyName="Canberra" name="cdscc" timeUTC="1670419133000" timeZoneOffset="39600000" /><dish azimuthAngle="330.6" elevationAngle="37.39" isArray="false" isDDOR="false" isMSPA="false" name="DSS34" windSpeed="3.087"><upSignal dataRate="250000" frequency="2041" power="0.2421" signalType="data" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="974200" frequency="2217000000" power="-116.4022" signalType="none" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="2000000" frequency="2216000000" power="-107.4503" signalType="carrier" spacecraft="EM1" spacecraftID="-23" /><target downlegRange="3.870e+05" id="23" name="EM1" rtlt="2.581" uplegRange="3.869e+05" /></dish><dish azimuthAngle="10.27" elevationAngle="28.97" isArray="false" isDDOR="false" isMSPA="false" name="DSS35" windSpeed="3.087"><downSignal dataRate="11.63" frequency="8446000000" power="-141.8096" signalType="data" spacecraft="MVN" spacecraftID="-202" /><upSignal dataRate="7.813" frequency="7189" power="8.303" signalType="data" spacecraft="MVN" spacecraftID="-202" /><target downlegRange="8.207e+07" id="202" name="MVN" rtlt="547.5" uplegRange="8.207e+07" /></dish><dish azimuthAngle="207.0" elevationAngle="15.51" isArray="false" isDDOR="false" isMSPA="false" name="DSS43" windSpeed="3.087"><upSignal dataRate="16.00" frequency="2114" power="20.20" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><downSignal dataRate="160.0" frequency="8420000000" power="-156.2618" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><target downlegRange="1.984e+10" id="32" name="VGR2" rtlt="132300" uplegRange="1.984e+10" /></dish><dish azimuthAngle="7.205" elevationAngle="26.82" isArray="false" isDDOR="false" isMSPA="false" name="DSS36" windSpeed="3.087"><downSignal dataRate="8500000" frequency="8475000000" power="-120.3643" signalType="none" spacecraft="KPLO" spacecraftID="-155" /><downSignal dataRate="8192" frequency="2261000000" power="-104.9668" signalType="data" spacecraft="KPLO" spacecraftID="-155" /><target downlegRange="4.405e+05" id="155" name="KPLO" rtlt="2.939" uplegRange="4.405e+05" /></dish><timestamp>1670419133000</timestamp></dsn>)==--==";
@@ -725,37 +967,58 @@ String getParam(String name)
 // }
 
 void saveParamsCallback() {
+	Serial.print("\n\n----------------------------------------\nPORTAL FORM SUBMITTED\n----------------------------------------\n\n");
+	
+	/* Set serial show config key from input */
+
+	// Get input value
 	String showSerialValue = getParam("show_serial");
-	Serial.print("show_serial: " + showSerialValue + "\n");
+	Serial.print("show_serial input: " + showSerialValue + "\n");
+	
+	// Convert to bool
 	bool showSerialValueBool = strcmp(showSerialValue.c_str(), "1") == 0 ? true : false;
+	Serial.print("show serial bool: " + String(showSerialValueBool) + "\n");
+	
+	// Set program config
+	Serial.print("Previous config showSerial: " + String(FileUtils::config.debugUtils.showSerial) + "\n");
 	FileUtils::config.debugUtils.showSerial = showSerialValueBool;
-	Serial.print("config showSerial: " + String(FileUtils::config.debugUtils.showSerial) + "\n");
-
+	Serial.print("New config showSerial: " + String(FileUtils::config.debugUtils.showSerial) + "\n");
+	
+	// Set file config
 	FileUtils::writeConfigFileBool("showSerial", FileUtils::config.debugUtils.showSerial);
+	readFile(LittleFS, "/config.json");
+	Serial.println();
+	
 
-	if (wm.server->hasArg("show_serial")) {
-		Serial.print(wm.server->arg("show_serial") + "\n");
-	}
 
+
+	/* Set brightness config key from input */
+
+	// Get input value
 	String brightnessValue = getParam("brightness");
 	Serial.print("brightness: " + brightnessValue + "\n");
+	
+	// Convert to int
 	int brightnessInt = atoi(brightnessValue.c_str());
+	
+	// Map brightness
 	int brightnessMapped = MathHelpers::map(brightnessInt, 0, 100, 8, 255);
-	FileUtils::config.displayLED.brightness = brightnessMapped;
+	
+	// Set program config
+	Serial.print("Previous config brightness: " + String(FileUtils::config.displayLED.brightness) + "\n");
+	FileUtils::config.displayLED.brightness = brightnessInt;
+	Serial.print("New config brightness: " + String(FileUtils::config.displayLED.brightness) + "\n");
+
+	// Set file config
+	FileUtils::writeConfigFileInt("brightness", FileUtils::config.displayLED.brightness);
+	readFile(LittleFS, "/config.json");
+	Serial.println();
+
+	// Set LEDs brightness	
 	setGlobalBrightness(FileUtils::config.displayLED.brightness);
 
 
-	FileUtils::writeConfigFileInt("brightness", FileUtils::config.displayLED.brightness);
-
-	Serial.print("config brightness: " + String(FileUtils::config.displayLED.brightness) + "\n");
-
-
-	if (wm.server->hasArg("brightness")) {
-		Serial.print(wm.server->arg("brightness") + "\n");
-	}
-
-
-
+	Serial.print("END PORTAL FORM CALLBACK\n----------------------------------------\n\n");
 }
 
 #pragma endregion -- END WIFIMANAGER HANDLING
@@ -2131,245 +2394,6 @@ void getData(void* parameter) {
 
 
 
-#define FORMAT_LITTLEFS_IF_FAILED true
-
-void listDir(fs::FS& fs, const char* dirname, uint8_t levels) {
-	Serial.printf("Listing directory: %s\r\n", dirname);
-
-	File root = fs.open(dirname);
-	if (!root) {
-		Serial.println("- failed to open directory");
-		return;
-	}
-	if (!root.isDirectory()) {
-		Serial.println(" - not a directory");
-		return;
-	}
-
-	File file = root.openNextFile();
-	while (file) {
-		if (file.isDirectory()) {
-			Serial.print("  DIR : ");
-
-			Serial.print(file.name());
-			time_t t = file.getLastWrite();
-			struct tm* tmstruct = localtime(&t);
-			Serial.printf("  LAST WRITE: %d-%02d-%02d %02d:%02d:%02d\n", (tmstruct->tm_year) + 1900, (tmstruct->tm_mon) + 1, tmstruct->tm_mday, tmstruct->tm_hour, tmstruct->tm_min, tmstruct->tm_sec);
-
-			if (levels) {
-				listDir(fs, file.name(), levels - 1);
-			}
-		} else {
-			Serial.print("  FILE: ");
-			Serial.print(file.name());
-			Serial.print("  SIZE: ");
-
-			Serial.print(file.size());
-			time_t t = file.getLastWrite();
-			struct tm* tmstruct = localtime(&t);
-			Serial.printf("  LAST WRITE: %d-%02d-%02d %02d:%02d:%02d\n", (tmstruct->tm_year) + 1900, (tmstruct->tm_mon) + 1, tmstruct->tm_mday, tmstruct->tm_hour, tmstruct->tm_min, tmstruct->tm_sec);
-		}
-		file = root.openNextFile();
-	}
-}
-
-void createDir(fs::FS& fs, const char* path) {
-	Serial.printf("Creating Dir: %s\n", path);
-	if (fs.mkdir(path)) {
-		Serial.println("Dir created");
-	} else {
-		Serial.println("mkdir failed");
-	}
-}
-
-void removeDir(fs::FS& fs, const char* path) {
-	Serial.printf("Removing Dir: %s\n", path);
-	if (fs.rmdir(path)) {
-		Serial.println("Dir removed");
-	} else {
-		Serial.println("rmdir failed");
-	}
-}
-
-void readFile(fs::FS& fs, const char* path) {
-	Serial.printf("Reading file: %s\r\n", path);
-
-	File file = fs.open(path);
-	if (!file || file.isDirectory()) {
-		Serial.println("- failed to open file for reading");
-		return;
-	}
-
-	Serial.println("- read from file:");
-	while (file.available()) {
-		Serial.write(file.read());
-	}
-	file.close();
-}
-
-void writeFile(fs::FS& fs, const char* path, const char* message) {
-	Serial.printf("Writing file: %s\r\n", path);
-
-	File file = fs.open(path, FILE_WRITE);
-	if (!file) {
-		Serial.println("- failed to open file for writing");
-		return;
-	}
-	if (file.print(message)) {
-		Serial.println("- file written");
-	} else {
-		Serial.println("- write failed");
-	}
-	file.close();
-}
-
-void appendFile(fs::FS& fs, const char* path, const char* message) {
-	Serial.printf("Appending to file: %s\r\n", path);
-
-	File file = fs.open(path, FILE_APPEND);
-	if (!file) {
-		Serial.println("- failed to open file for appending");
-		return;
-	}
-	if (file.print(message)) {
-		Serial.println("- message appended");
-	} else {
-		Serial.println("- append failed");
-	}
-	file.close();
-}
-
-void renameFile(fs::FS& fs, const char* path1, const char* path2) {
-	Serial.printf("Renaming file %s to %s\r\n", path1, path2);
-	if (fs.rename(path1, path2)) {
-		Serial.println("- file renamed");
-	} else {
-		Serial.println("- rename failed");
-	}
-}
-
-void deleteFile(fs::FS& fs, const char* path) {
-	Serial.printf("Deleting file: %s\r\n", path);
-	if (fs.remove(path)) {
-		Serial.println("- file deleted");
-	} else {
-		Serial.println("- delete failed");
-	}
-}
-
-// SPIFFS-like write and delete file
-
-// See: https://github.com/esp8266/Arduino/blob/master/libraries/LittleFS/src/LittleFS.cpp#L60
-void writeFile2(fs::FS& fs, const char* path, const char* message) {
-	if (!fs.exists(path)) {
-		if (strchr(path, '/')) {
-			Serial.printf("Create missing folders of: %s\r\n", path);
-			char* pathStr = strdup(path);
-			if (pathStr) {
-				char* ptr = strchr(pathStr, '/');
-				while (ptr) {
-					*ptr = 0;
-					fs.mkdir(pathStr);
-					*ptr = '/';
-					ptr = strchr(ptr + 1, '/');
-				}
-			}
-			free(pathStr);
-		}
-	}
-
-	Serial.printf("Writing file to: %s\r\n", path);
-	File file = fs.open(path, FILE_WRITE);
-	if (!file) {
-		Serial.println("- failed to open file for writing");
-		return;
-	}
-	if (file.print(message)) {
-		Serial.println("- file written");
-	} else {
-		Serial.println("- write failed");
-	}
-	file.close();
-}
-
-// See:  https://github.com/esp8266/Arduino/blob/master/libraries/LittleFS/src/LittleFS.h#L149
-void deleteFile2(fs::FS& fs, const char* path) {
-	Serial.printf("Deleting file and empty folders on path: %s\r\n", path);
-
-	if (fs.remove(path)) {
-		Serial.println("- file deleted");
-	} else {
-		Serial.println("- delete failed");
-	}
-
-	char* pathStr = strdup(path);
-	if (pathStr) {
-		char* ptr = strrchr(pathStr, '/');
-		if (ptr) {
-			Serial.printf("Removing all empty folders on path: %s\r\n", path);
-		}
-		while (ptr) {
-			*ptr = 0;
-			fs.rmdir(pathStr);
-			ptr = strrchr(pathStr, '/');
-		}
-		free(pathStr);
-	}
-}
-
-void testFileIO(fs::FS& fs, const char* path) {
-	Serial.printf("Testing file I/O with %s\r\n", path);
-
-	static uint8_t buf[512];
-	size_t len = 0;
-	File file = fs.open(path, FILE_WRITE);
-	if (!file) {
-		Serial.println("- failed to open file for writing");
-		return;
-	}
-
-	size_t i;
-	Serial.print("- writing");
-	uint32_t start = millis();
-	for (i = 0; i < 2048; i++) {
-		if ((i & 0x001F) == 0x001F) {
-			Serial.print(".");
-		}
-		file.write(buf, 512);
-	}
-	Serial.println("");
-	uint32_t end = millis() - start;
-	Serial.printf(" - %u bytes written in %u ms\r\n", 2048 * 512, end);
-	file.close();
-
-	file = fs.open(path);
-	start = millis();
-	end = start;
-	i = 0;
-	if (file && !file.isDirectory()) {
-		len = file.size();
-		size_t flen = len;
-		start = millis();
-		Serial.print("- reading");
-		while (len) {
-			size_t toRead = len;
-			if (toRead > 512) {
-				toRead = 512;
-			}
-			file.read(buf, toRead);
-			if ((i++ & 0x001F) == 0x001F) {
-				Serial.print(".");
-			}
-			len -= toRead;
-		}
-		Serial.println("");
-		end = millis() - start;
-		Serial.printf("- %u bytes read in %u ms\r\n", flen, end);
-		file.close();
-	} else {
-		Serial.println("- failed to open file for reading");
-	}
-}
 
 
 /* SETUP
@@ -2389,29 +2413,37 @@ void setup()
 		return;
 	}
 
-	listDir(LittleFS, "/", 0);
-	createDir(LittleFS, "/mydir");
-	writeFile(LittleFS, "/mydir/hello2.txt", "Hello2");
-	//writeFile(LittleFS, "/mydir/newdir2/newdir3/hello3.txt", "Hello3");
-	writeFile2(LittleFS, "/mydir/newdir2/newdir3/hello3.txt", "Hello3");
-	listDir(LittleFS, "/", 3);
-	deleteFile(LittleFS, "/mydir/hello2.txt");
-	//deleteFile(LittleFS, "/mydir/newdir2/newdir3/hello3.txt");
-	deleteFile2(LittleFS, "/mydir/newdir2/newdir3/hello3.txt");
-	removeDir(LittleFS, "/mydir");
-	listDir(LittleFS, "/", 3);
-	writeFile(LittleFS, "/hello.txt", "Hello ");
-	appendFile(LittleFS, "/hello.txt", "World!\r\n");
-	readFile(LittleFS, "/hello.txt");
-	renameFile(LittleFS, "/hello.txt", "/foo.txt");
-	readFile(LittleFS, "/foo.txt");
-	deleteFile(LittleFS, "/foo.txt");
-	testFileIO(LittleFS, "/test.txt");
-	deleteFile(LittleFS, "/test.txt");
-
-	Serial.println("Test complete");
 
 
+	// listDir(LittleFS, "/", 0);
+	// createDir(LittleFS, "/mydir");
+	// writeFile(LittleFS, "/mydir/hello2.txt", "Hello2");
+	// //writeFile(LittleFS, "/mydir/newdir2/newdir3/hello3.txt", "Hello3");
+	// writeFile2(LittleFS, "/mydir/newdir2/newdir3/hello3.txt", "Hello3");
+	// listDir(LittleFS, "/", 3);
+	// deleteFile(LittleFS, "/mydir/hello2.txt");
+	// //deleteFile(LittleFS, "/mydir/newdir2/newdir3/hello3.txt");
+	// deleteFile2(LittleFS, "/mydir/newdir2/newdir3/hello3.txt");
+	// removeDir(LittleFS, "/mydir");
+	// listDir(LittleFS, "/", 3);
+	// writeFile(LittleFS, "/hello.txt", "Hello ");
+	// appendFile(LittleFS, "/hello.txt", "World!\r\n");
+	// readFile(LittleFS, "/hello.txt");
+	// renameFile(LittleFS, "/hello.txt", "/foo.txt");
+	// readFile(LittleFS, "/foo.txt");
+	// deleteFile(LittleFS, "/foo.txt");
+	// testFileIO(LittleFS, "/test.txt");
+	// deleteFile(LittleFS, "/test.txt");
+
+	// Serial.println("Test complete");
+	// delay(2000);
+
+	// deleteFile2(LittleFS, "/config.json");
+	// writeFile(LittleFS, "/config.json", "{}");
+
+
+
+	// deleteFile(LittleFS, "/config.json");
 
 
 
@@ -2419,9 +2451,14 @@ void setup()
 	// Make sure we can read the EEPROM
 	if (LittleFS.begin(true)) {
 		Serial.println("LittleFs filesystem mounted successfully");
+		listDir(LittleFS, "/", 3);
+		
 		FileUtils::initConfigFile();
 		Serial.print("Config loaded\n\n");
 		FileUtils::printAllConfigFileKeys();
+		Serial.print("config... \n");
+		Serial.print("showSerial: " + String(FileUtils::config.debugUtils.showSerial) + "\n");
+		Serial.print("brightness: " + String(FileUtils::config.displayLED.brightness) + "\n\n");
 		// Serial.print("ssid: " + String(FileUtils::config.wifiNetwork.apSSID) + "\n");
 		// if (FileUtils::config.wifiNetwork.apPass != nullptr) {
 		// 	Serial.print("password: " + String(FileUtils::config.wifiNetwork.apPass) + "\n");
@@ -2434,8 +2471,6 @@ void setup()
 		Serial.println("Using default config, settings will not be saved");
 	}
 
-
-	listDir(LittleFS, "/", 3);
 
 	// Displaying all config values
 	// Serial.print(String(FileUtils::config.debugUtils.testCores) + "\n");
@@ -2527,7 +2562,7 @@ void setup()
 
 	int brightnessMapped = MathHelpers::map(FileUtils::config.displayLED.brightness, 8, 255, 0, 100);
 	new (&param_show_serial) WiFiManagerParameter("show_serial", "Show Serial", FileUtils::config.debugUtils.showSerial ? "1" : "0", 1, "type='number' min='0' max='1' step='1'");
-	new (&param_brightness) WiFiManagerParameter("brightness", "Brightness", String(FileUtils::config.displayLED.brightness).c_str(), 3, "type='range' min='0' max='100' step='5'");
+	new (&param_brightness) WiFiManagerParameter("brightness", "Brightness", String(FileUtils::config.displayLED.brightness).c_str(), 3, "type='range' min='8' max='255' step='1'");
 
 	wm.addParameter(&param_show_serial);
 	wm.addParameter(&param_brightness);
