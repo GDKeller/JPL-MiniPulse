@@ -24,11 +24,6 @@
 
 #pragma endregion -- END LIBRARIES
 
-#pragma region -- CONFIG STRUCT
-
-
-#pragma endregion -- CONFIG STRUCT
-
 #pragma region -- NAMESPACES
 using namespace tinyxml2; // XML parser
 using namespace std;	  // C++ I/O
@@ -313,6 +308,9 @@ void testFileIO(fs::FS& fs, const char* path) {
 
 
 
+
+#define MAX_XML_SIZE 20480
+
 // Placeholder for XML data
 // const char* dummyXmlData = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?><dsn><station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" /><dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS24" windSpeed="5.556"><downSignal dataRate="28000000" frequency="25900000000" power="-91.3965" signalType="data" spacecraft="JWST" spacecraftID="-170" /><downSignal dataRate="40000" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="JWST" spacecraftID="-170" /><upSignal dataRate="16000" frequency="2090" power="4.804" signalType="data" spacecraft="JWST" spacecraftID="-170" /><target downlegRange="1.653e+06" id="170" name="JWST" rtlt="11.03" uplegRange="1.653e+06" /></dish><dish azimuthAngle="287.7" elevationAngle="18.74" isArray="false" isDDOR="false" isMSPA="false" name="DSS26" windSpeed="5.556"><downSignal dataRate="4000000" frequency="8439000000" power="-138.1801" signalType="none" spacecraft="MRO" spacecraftID="-74" /><upSignal dataRate="2000" frequency="7183" power="0.0000" signalType="none" spacecraft="MRO" spacecraftID="-74" /><target downlegRange="8.207e+07" id="74" name="MRO" rtlt="547.5" uplegRange="8.207e+07" /></dish><station friendlyName="Madrid" name="mdscc" timeUTC="1670419133000" timeZoneOffset="3600000" /><dish azimuthAngle="103.0" elevationAngle="80.19" isArray="false" isDDOR="false" isMSPA="false" name="DSS56" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="2250000000" power="-478.1842" signalType="none" spacecraft="CHDR" spacecraftID="-151" /><target downlegRange="1.417e+05" id="151" name="CHDR" rtlt="0.9455" uplegRange="1.417e+05" /></dish><dish azimuthAngle="196.5" elevationAngle="30.71" isArray="false" isDDOR="false" isMSPA="false" name="DSS65" windSpeed="5.556"><downSignal dataRate="87650" frequency="2278000000" power="-112.7797" signalType="data" spacecraft="ACE" spacecraftID="-92" /><upSignal dataRate="1000" frequency="2098" power="0.2630" signalType="data" spacecraft="ACE" spacecraftID="-92" /><target downlegRange="1.389e+06" id="92" name="ACE" rtlt="9.266" uplegRange="1.389e+06" /></dish><dish azimuthAngle="124.5" elevationAngle="53.41" isArray="false" isDDOR="false" isMSPA="false" name="DSS53" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8436000000" power="-170.1741" signalType="none" spacecraft="LICI" spacecraftID="-210" /><target downlegRange="4.099e+06" id="210" name="LICI" rtlt="27.34" uplegRange="4.099e+06" /></dish><dish azimuthAngle="219.7" elevationAngle="22.84" isArray="false" isDDOR="false" isMSPA="false" name="DSS54" windSpeed="5.556"><upSignal dataRate="2000" frequency="2066" power="1.758" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><downSignal dataRate="245800" frequency="2245000000" power="-110.7082" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><target downlegRange="1.331e+06" id="21" name="SOHO" rtlt="8.882" uplegRange="1.331e+06" /></dish><dish azimuthAngle="120.0" elevationAngle="46.53" isArray="false" isDDOR="false" isMSPA="false" name="DSS63" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8415000000" power="-478.2658" signalType="none" spacecraft="TEST" spacecraftID="-99" /><target downlegRange="-1.000e+00" id="99" name="TEST" rtlt="-1.0000" uplegRange="-1.000e+00" /></dish><station friendlyName="Canberra" name="cdscc" timeUTC="1670419133000" timeZoneOffset="39600000" /><dish azimuthAngle="330.6" elevationAngle="37.39" isArray="false" isDDOR="false" isMSPA="false" name="DSS34" windSpeed="3.087"><upSignal dataRate="250000" frequency="2041" power="0.2421" signalType="data" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="974200" frequency="2217000000" power="-116.4022" signalType="none" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="2000000" frequency="2216000000" power="-107.4503" signalType="carrier" spacecraft="EM1" spacecraftID="-23" /><target downlegRange="3.870e+05" id="23" name="EM1" rtlt="2.581" uplegRange="3.869e+05" /></dish><dish azimuthAngle="10.27" elevationAngle="28.97" isArray="false" isDDOR="false" isMSPA="false" name="DSS35" windSpeed="3.087"><downSignal dataRate="11.63" frequency="8446000000" power="-141.8096" signalType="data" spacecraft="MVN" spacecraftID="-202" /><upSignal dataRate="7.813" frequency="7189" power="8.303" signalType="data" spacecraft="MVN" spacecraftID="-202" /><target downlegRange="8.207e+07" id="202" name="MVN" rtlt="547.5" uplegRange="8.207e+07" /></dish><dish azimuthAngle="207.0" elevationAngle="15.51" isArray="false" isDDOR="false" isMSPA="false" name="DSS43" windSpeed="3.087"><upSignal dataRate="16.00" frequency="2114" power="20.20" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><downSignal dataRate="160.0" frequency="8420000000" power="-156.2618" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><target downlegRange="1.984e+10" id="32" name="VGR2" rtlt="132300" uplegRange="1.984e+10" /></dish><dish azimuthAngle="7.205" elevationAngle="26.82" isArray="false" isDDOR="false" isMSPA="false" name="DSS36" windSpeed="3.087"><downSignal dataRate="8500000" frequency="8475000000" power="-120.3643" signalType="none" spacecraft="KPLO" spacecraftID="-155" /><downSignal dataRate="8192" frequency="2261000000" power="-104.9668" signalType="data" spacecraft="KPLO" spacecraftID="-155" /><target downlegRange="4.405e+05" id="155" name="KPLO" rtlt="2.939" uplegRange="4.405e+05" /></dish><timestamp>1670419133000</timestamp></dsn>)==--==";
 // const char* dummyXmlData2 = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?><dsn><station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" /><dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS24" windSpeed="5.556"><downSignal dataRate="28000000" frequency="25900000000" power="-91.3965" signalType="data" spacecraft="JWST" spacecraftID="-170" /><downSignal dataRate="40000" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="JWST" spacecraftID="-170" /><upSignal dataRate="16000" frequency="2090" power="4.804" signalType="data" spacecraft="JWST" spacecraftID="-170" /><target downlegRange="1.653e+06" id="170" name="JWST" rtlt="11.03" uplegRange="1.653e+06" /></dish><dish azimuthAngle="287.7" elevationAngle="18.74" isArray="false" isDDOR="false" isMSPA="false" name="DSS26" windSpeed="5.556"><downSignal dataRate="4000000" frequency="8439000000" power="-138.1801" signalType="none" spacecraft="MRO" spacecraftID="-74" /><upSignal dataRate="2000" frequency="7183" power="0.0000" signalType="none" spacecraft="MRO" spacecraftID="-74" /><target downlegRange="8.207e+07" id="74" name="MRO" rtlt="547.5" uplegRange="8.207e+07" /></dish><station friendlyName="Madrid" name="mdscc" timeUTC="1670419133000" timeZoneOffset="3600000" /><dish azimuthAngle="103.0" elevationAngle="80.19" isArray="false" isDDOR="false" isMSPA="false" name="DSS56" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="2250000000" power="-478.1842" signalType="none" spacecraft="CHDR" spacecraftID="-151" /><target downlegRange="1.417e+05" id="151" name="CHDR" rtlt="0.9455" uplegRange="1.417e+05" /></dish><dish azimuthAngle="196.5" elevationAngle="30.71" isArray="false" isDDOR="false" isMSPA="false" name="DSS65" windSpeed="5.556"><downSignal dataRate="87650" frequency="2278000000" power="-112.7797" signalType="data" spacecraft="ACE" spacecraftID="-92" /><upSignal dataRate="1000" frequency="2098" power="0.2630" signalType="data" spacecraft="ACE" spacecraftID="-92" /><target downlegRange="1.389e+06" id="92" name="ACE" rtlt="9.266" uplegRange="1.389e+06" /></dish><dish azimuthAngle="124.5" elevationAngle="53.41" isArray="false" isDDOR="false" isMSPA="false" name="DSS53" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8436000000" power="-170.1741" signalType="none" spacecraft="LICI" spacecraftID="-210" /><target downlegRange="4.099e+06" id="210" name="LICI" rtlt="27.34" uplegRange="4.099e+06" /></dish><dish azimuthAngle="219.7" elevationAngle="22.84" isArray="false" isDDOR="false" isMSPA="false" name="DSS54" windSpeed="5.556"><upSignal dataRate="2000" frequency="2066" power="1.758" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><downSignal dataRate="245800" frequency="2245000000" power="-110.7082" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><target downlegRange="1.331e+06" id="21" name="SOHO" rtlt="8.882" uplegRange="1.331e+06" /></dish><dish azimuthAngle="120.0" elevationAngle="46.53" isArray="false" isDDOR="false" isMSPA="false" name="DSS63" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8415000000" power="-478.2658" signalType="none" spacecraft="TEST" spacecraftID="-99" /><target downlegRange="-1.000e+00" id="99" name="TEST" rtlt="-1.0000" uplegRange="-1.000e+00" /></dish><station friendlyName="Canberra" name="cdscc" timeUTC="1670419133000" timeZoneOffset="39600000" /><dish azimuthAngle="330.6" elevationAngle="37.39" isArray="false" isDDOR="false" isMSPA="false" name="DSS34" windSpeed="3.087"><upSignal dataRate="250000" frequency="2041" power="0.2421" signalType="data" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="974200" frequency="2217000000" power="-116.4022" signalType="none" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="2000000" frequency="2216000000" power="-107.4503" signalType="carrier" spacecraft="EM1" spacecraftID="-23" /><target downlegRange="3.870e+05" id="23" name="EM1" rtlt="2.581" uplegRange="3.869e+05" /></dish><dish azimuthAngle="10.27" elevationAngle="28.97" isArray="false" isDDOR="false" isMSPA="false" name="DSS35" windSpeed="3.087"><downSignal dataRate="11.63" frequency="8446000000" power="-141.8096" signalType="data" spacecraft="MVN" spacecraftID="-202" /><upSignal dataRate="7.813" frequency="7189" power="8.303" signalType="data" spacecraft="MVN" spacecraftID="-202" /><target downlegRange="8.207e+07" id="202" name="MVN" rtlt="547.5" uplegRange="8.207e+07" /></dish><dish azimuthAngle="207.0" elevationAngle="15.51" isArray="false" isDDOR="false" isMSPA="false" name="DSS43" windSpeed="3.087"><upSignal dataRate="16.00" frequency="2114" power="20.20" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><downSignal dataRate="160.0" frequency="8420000000" power="-156.2618" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><target downlegRange="1.984e+10" id="32" name="VGR2" rtlt="132300" uplegRange="1.984e+10" /></dish><dish azimuthAngle="7.205" elevationAngle="26.82" isArray="false" isDDOR="false" isMSPA="false" name="DSS36" windSpeed="3.087"><downSignal dataRate="8500000" frequency="8475000000" power="-120.3643" signalType="none" spacecraft="KPLO" spacecraftID="-155" /><downSignal dataRate="8192" frequency="2261000000" power="-104.9668" signalType="data" spacecraft="KPLO" spacecraftID="-155" /><target downlegRange="4.405e+05" id="155" name="KPLO" rtlt="2.939" uplegRange="4.405e+05" /></dish><timestamp>1670419133000</timestamp></dsn>)==--==";
@@ -430,7 +428,7 @@ uint8_t noTargetLimit = 3;		   // After target is not found this many times, swi
 uint8_t retryDataFetchCounter = 0; // Keeps track of how many times data fetch failed
 uint8_t retryDataFetchLimit = 10;  // After dummy data is used this many times, try to get actual data again
 bool dataStarted = false;
-char fetchUrl[64];	// Fixed memory for DSN XML fetch URL - random number is appended when used to prevent caching
+// char fetchUrl[64];	// Fixed memory for DSN XML fetch URL - random number is appended when used to prevent caching
 
 #pragma endregion -- END DATA FETCHING STATE VARS
 
@@ -1881,7 +1879,6 @@ FoundSignals findSignals(XMLElement* xmlDish, CraftQueueItem* tempNewCraft) {
 	return foundSignals;
 }
 
-
 void sendCrafToQueue(CraftQueueItem* newCraft) {
 
 	if (strlen(newCraft->name) != 0 && (newCraft->downSignal != 0 || newCraft->upSignal != 0)) {
@@ -1928,7 +1925,6 @@ void incrementDataParseCounter() {
 		stationCount = 0;
 	}
 }
-
 
 CraftQueueItem* assignValuesToCraftSemaphore(CraftQueueItem* tempNewCraft) {
 	CraftQueueItem* newCraft;
@@ -1977,8 +1973,6 @@ bool isValidCraftQueueItem(CraftQueueItem* item) {
 	// All checks passed
 	return true;
 }
-
-
 
 void parseData(const char* payload)
 {
@@ -2330,8 +2324,6 @@ void parseData(const char* payload)
 	Serial.println("fetch done");
 }
 
-
-
 void logOutput(const char* color, const String& message) {
 	if (FileUtils::config.debugUtils.showSerial == true) {
 		String resetColorString = dev.termColor("reset");
@@ -2355,56 +2347,102 @@ void logOutput(const char* color, const String& message) {
 	}
 }
 
-
-
-
-
-void checkWiFiConnection() {
-	if (WiFi.status() != WL_CONNECTED) {
-		logOutput("", "WiFi Disconnected");
-		usingDummyData = true;
-	} else {
+bool isWiFiConnected() {
+	if (WiFi.status() == WL_CONNECTED) {
 		logOutput("", "WiFi Connected");
-		usingDummyData = false;
+		return true;
+	} else {
+		logOutput("", "WiFi Disconnected");
+		return false;
 	}
 }
 
-void prepareFetchUrl() {
+char* generateFetchUrl() {
+	static char fetchUrl[64];  // Use static storage duration
+	memset(fetchUrl, 0, sizeof(fetchUrl));
 	try {
-		memset(fetchUrl, 0, sizeof(fetchUrl));  // set fetchUrl to empty
 		if (FileUtils::config.wifiNetwork.serverName != NULL) {
-			strcpy(fetchUrl, FileUtils::config.wifiNetwork.serverName); // copy serverName to fetchUrl
-			char randBuffer[9];  // buffer for random number cache buster
-			ltoa(random(999999999), randBuffer, 10); // convert random number to string
-			strcat(fetchUrl, randBuffer);  // append random number to fetchUrl
+			strncpy(fetchUrl, FileUtils::config.wifiNetwork.serverName, sizeof(fetchUrl) - 1);
+			char randBuffer[10];
+			ltoa(random(999999999), randBuffer, 10);
+			strncat(fetchUrl, randBuffer, sizeof(fetchUrl) - strlen(fetchUrl) - 1);
 		}
 	}
 	catch (...) {
 		dev.handleException();
 	}
-
-	if (FileUtils::config.debugUtils.showSerial == true) {
-		logOutput("purple", "fetchUrl: " + String(fetchUrl));
-	}
+	return fetchUrl;
 }
 
-void handleHttpResponse(uint16_t httpResponseCode) {
+
+
+bool handleHttpResponse(uint16_t httpResponseCode) {
 	if (httpResponseCode != 200) {
 		Serial.print("HTTP Response: " + String(httpResponseCode) + " - " + http.errorToString(httpResponseCode) + "\n");
-		noTargetFoundCounter++;
+		return false;
 	} else {
 		try {
-			String res = http.getString();
-			const char* charRes = res.c_str();
+			// String res = http.getString();
+			// const char* charRes = res.c_str();
 			logOutput("green", "HTTP response received");
 			usingDummyData = false;
-			parseData(charRes);
+			return true;
 		}
 		catch (...) {
 			dev.handleException();
+			return false;
 		}
 	}
 }
+
+bool attemptHTTPConnection(const String& url) {
+	if (!http.begin(url.c_str())) {
+		logOutput("red", "Failed to connect to server");
+		return false;
+	}
+	http.setTimeout(5000);
+	http.addHeader("Content-Type", "text/xml");
+	int httpResponseCode = http.GET();
+	return handleHttpResponse(httpResponseCode);
+}
+
+bool fetchHTTPData(const String& url) {
+	const int maxHttpRetries = 3;
+	for (int retry = 0; retry < maxHttpRetries; retry++) {
+		try {
+			if (attemptHTTPConnection(url)) {
+				String res = http.getString();
+				// Serial.println("[fetchHTTPData] HTTP Response: " + res);
+
+				File xmlFile = LittleFS.open("/temp.xml", "w");
+				if (!xmlFile) {
+					logOutput("red", "Failed to open XML file for writing");
+					http.end();
+					return false;
+				}
+
+				size_t bytesWritten = xmlFile.print(res);
+				Serial.println("[fetchHTTPData] Bytes written to XML file: " + String(bytesWritten));
+				xmlFile.close();
+
+				http.end();
+				return true; // XML data saved to LittleFS
+			} else {
+				Serial.println("[fetchHTTPData] Failed to fetch data");
+			}
+			delay(500);
+		}
+		catch (...) {
+			dev.handleException();
+			http.end();  // Close connection in case of an exception
+			delay(1000);
+		}
+	}
+	http.end();  // Ensure connection is closed even if no successful fetch
+	return false;  // No data fetched
+}
+
+
 
 
 void fetchData() {
@@ -2425,53 +2463,58 @@ void fetchData() {
 		return;
 	}
 
-	uint16_t httpResponseCode;
 
-	if (forceDummyData) {
-		usingDummyData = true;
-	} else {
-		checkWiFiConnection();
+	bool dataFetched = false;
+
+	if (!forceDummyData && isWiFiConnected()) {
+		String url = generateFetchUrl();
+		Serial.println("[fetchData] Generated URL: " + url);
+		dataFetched = fetchHTTPData(url);
+		Serial.println(dataFetched ? "[fetchData] Data fetched successfully." : "[fetchData] Failed to fetch data.");
 	}
 
-	if (!usingDummyData) {
-		prepareFetchUrl();
-	}
+	File xmlFile;
 
-	if (FileUtils::config.debugUtils.showSerial == true) {
-		const String usingDummyDataString = usingDummyData ? "TRUE" : "FALSE";
-		Serial.print("Using dummy data: " + usingDummyDataString + "\n");
-	}
+	static char xmlDataBuffer[20480];  // 20KB buffer
 
-	if (usingDummyData) {
-		logOutput("red", "Using dummy xml data");
-		parseData(dummyXmlData);
-		return;
-	}
-
-	if (!http.begin(fetchUrl)) {
-		logOutput("red", "Failed to connect to server");
-		return;
-	}
-
-	try {
-		http.setTimeout(10000);
-		http.addHeader("Content-Type", "text/xml");
-		httpResponseCode = http.GET();
-		if (httpResponseCode == 65535) {
-			Serial.println(http.errorToString(httpResponseCode));
-			// Additional error handling can be added here
+	if (dataFetched) {
+		xmlFile = LittleFS.open("/temp.xml", "r");
+		if (!xmlFile) {
+			Serial.println("[fetchData] Failed to open XML file for reading.");
 			return;
 		}
-	}
-	catch (...) {
-		dev.handleException();
-		return;
+		size_t xmlFileSize = xmlFile.size();
+		Serial.println("[fetchData] XML file size: " + String(xmlFileSize));
+
+		if (xmlFileSize > sizeof(xmlDataBuffer) - 1) {
+			Serial.println("[fetchData] XML file is too large for buffer.");
+			xmlFile.close();
+			return;
+		}
+
+		// Read the entire file into the buffer
+		xmlFile.readBytes(xmlDataBuffer, xmlFileSize);
+		xmlDataBuffer[xmlFileSize] = '\0'; // Null-terminate the string
+
+		xmlFile.close();
+		LittleFS.remove("/temp.xml"); // Optionally delete the file after reading
+
+		Serial.println("[fetchData] XML file read and parsed.");
+
+		// Now you can pass the XML data to the parseData function
+		parseData(xmlDataBuffer);
+	} else {
+		// If no data was fetched, use dummy data
+		Serial.println("[fetchData] Using dummy data.");
+		parseData(dummyXmlData); // Assuming dummyXmlData is a char array
 	}
 
-	handleHttpResponse(httpResponseCode);
 
-	http.end(); // Free up resources
-	if (!dataStarted) dataStarted = true; // Set dataStarted to true after first data fetch
+	if (!dataStarted) {
+		dataStarted = true;  // Set dataStarted to true after first data fetch
+	}
+
+	Serial.println("[fetchData] Finished.");
 	return;
 }
 

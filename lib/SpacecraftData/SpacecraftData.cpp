@@ -1,6 +1,11 @@
 #include <SD.h>
 #include <Arduino.h>
 #include <ArduinoJson.h>
+
+#ifndef DEVUTILS_H
+  #include <DevUtils.h>
+#endif
+
 #include <SpacecraftData.h>
 
 const char *filename = "/spacecraftNames.json";
@@ -143,5 +148,7 @@ void SpacecraftData::loadSpacecraftBlacklist() {
 
 /* Check Blacklist */
 bool SpacecraftData::checkBlacklist(const char *key) {
+  bool isBlacklisted = spacecraftBlacklistJson[key] != nullptr ? true : false; // If the key is not null, it is blacklisted
+  Serial.println(DevUtils::termColor("bg_purple") + ">>> Checking blacklist for" + String(key) + ": " + isBlacklisted ? "true" : "false" + DevUtils::termColor("reset") + "\n");
   return spacecraftBlacklistJson[key] != nullptr ? true : false;
 }
