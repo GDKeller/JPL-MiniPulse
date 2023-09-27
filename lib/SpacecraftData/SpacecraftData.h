@@ -3,7 +3,13 @@
     Created by Grant Keller, November 2022
 */
 
-#include <ArduinoJson.h>
+#ifndef ARDUINO_H
+    #include <ArduinoJson.h>
+#endif
+
+#ifndef DEVUTILS_H
+    #include <DevUtils.h>
+#endif
 
 #ifndef SPACECRAFTDATA_H
 #define SPACECRAFTDATA_H
@@ -11,12 +17,15 @@
 class SpacecraftData
 {
     public:
-    StaticJsonDocument<4096> spacecraftNamesJson;
+    SpacecraftData();
     void loadJson();
     const char* callsignToName(const char* key);
-    StaticJsonDocument<1024> spacecraftBlacklistJson;
     void loadSpacecraftBlacklist();
     bool checkBlacklist(const char* callsign);
+
+    private:
+    DynamicJsonDocument spacecraftNamesJson;
+    DynamicJsonDocument spacecraftBlacklistJson;
 };
 
 struct CraftQueueItem
