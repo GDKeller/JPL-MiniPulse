@@ -1348,234 +1348,93 @@ void doInnerCoreMeteors(bool isDown = true, int pulseCount = 1, int offset = 8, 
 	}
 }
 
-void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_t type)
-{
-	bool showSerial = FileUtils::config.debugUtils.showSerial;
+// Define constant settings for the different rate classes
+struct RateClassSettings {
+    int pulseCount;
+    float factor;
+};
 
-	int stripId = isDown == true ? 2 : 1;
-	int pulseCount = 1;
-	uint8_t randomTypeAny;
-	randomTypeAny = random8(0, 4);
+struct RandomTypeSettings {
+    uint8_t pulseCount;
+    uint8_t height;
+    uint8_t spiralOffset;
+    uint8_t repeats;
+};
 
+const RateClassSettings rateClassSettings[] = {
+    {0, 0},    // Placeholder for rate class 0
+    {1, 0.88},
+    {1, 0.9},
+    {1, 0.92},
+    {2, 0.93},
+    {4, 0.95},
+    {6, 0.97},
+};
 
-	/* Rates 1 & 2 are always meteors */
-	if (rateClass == 1 || rateClass == 2) randomTypeAny = 0;
+const RandomTypeSettings randomTypeSettings[] = {
+    {8, 0, 0, 0},    // Meteor
+    {6, 4, 6, 6},    // Ring
+    {8, 4, 6, 6},    // Spiral
+    {6, 3, 0, 0},    // Wave
+    {6, 2, 6, 4},    // Zigzag
+};
 
-	/* Set rates for first animation */
-	if (isDown && animateFirstCycleDown || !isDown && animateFirstCycleUp) {
-		// Rates 5 & 6 always get a fancy animation at first
-		if (rateClass == 5 || rateClass == 6) randomTypeAny = random8(1, 4);
+void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_t type) {
+    const bool showSerial = FileUtils::config.debugUtils.showSerial;
+    const int stripId = isDown ? 2 : 1;
 
-		// Rates 3 & 4 are always meteors at first
-		if (rateClass == 3 || rateClass == 4) randomTypeAny = 0;
-	}
+    // Determine animation type
+    uint8_t randomTypeAny = (rateClass <= 2) ? 0 : random8(0, 5);
+    if ((isDown && animateFirstCycleDown) || (!isDown && animateFirstCycleUp)) {
+        if (rateClass == 5 || rateClass == 6) {
+            randomTypeAny = random8(1, 5);
+        } else if (rateClass == 3 || rateClass == 4) {
+            randomTypeAny = 0;
+        }
+    }
 
+    // Debug log
+    if (showSerial) {
+        const char* direction = isDown ? "Down" : "Up";
+        char buffer[256];
+        snprintf(buffer, sizeof(buffer), "%s | Rate Class: %d | Offset: %d | Type: %d | Adjust Type: %d\n", direction, rateClass, offset, type, randomTypeAny);
+        Serial.print(buffer);
+    }
 
-	/* testing override */
-	// rateClass = 6;
-	// randomTypeAny = 4;
-	// isDown = false;
+    // Lookup settings
+    const RateClassSettings& rcs = rateClassSettings[rateClass];
+    const RandomTypeSettings& rts = randomTypeSettings[randomTypeAny];
 
-	// randomTypeAny = 3;
-	if (showSerial) {
-		char buffer[256];
-		const char* direction = isDown == true ? "Down" : "Up";
-		snprintf(buffer, sizeof(buffer), "%s | Rate Class: %d | Offset: %d | Type: %d | Adjust Type: %d\n", direction, rateClass, offset, type, randomTypeAny);
-		Serial.print(buffer);
-	}
+    switch (randomTypeAny) {
+        case 1: 
+            animationMeteorPulseRing(stripId, isDown, rts.pulseCount, 32 - (4 * rateClass), false, rcs.factor, rateClass); 
+            break;
+        case 2: 
+            animationSpiralPulseRing(stripId, isDown, rts.height, rts.pulseCount, rts.spiralOffset, rts.repeats, rcs.factor, rateClass); 
+            break;
+        case 3: 
+            waveAnimation(stripId, isDown, rts.pulseCount, rts.height, rts.repeats, true, rateClass); 
+            break;
+        case 4: 
+            zigzagAnimation(stripId, isDown, rts.pulseCount / 2, rts.height, rts.repeats, rts.spiralOffset, rts.pulseCount, true, rateClass); 
+            break;
+        default: 
+            animationMeteorPulseRing(stripId, isDown, rts.pulseCount, 32 - (4 * rateClass), true, rcs.factor, rateClass); 
+    }
 
+    // Set global state variable
+    if (isDown) {
+        animateFirstCycleDown = false;
+    } else {
+        animateFirstCycleUp = false;
+    }
 
-	/* Do animation based on rate class
-	 * Where Animation type 0 isn't explicityly checked, it will fall back to meteors as the default
-	 *
-	 * By rolling a random number that can be greater than the amount of animation types specified for a given rate class,
-	 * those lower rate classes have a lower chance of getting a fancy animation
-	 * This effectively adds "weighting" to the meteors
-	*/
-
-	switch (rateClass) {
-		case 6: { // 1gbps
-			// Serial.print("[Downsignal Gb]");
-			switch (randomTypeAny) {
-				case 1: { // Ring
-					pulseCount = 6;
-					// Serial.print("[Downsignal Gb]");
-					animationMeteorPulseRing(stripId, isDown, pulseCount, 24, false, 3, true, 0.93, rateClass);
-					break;
-				}
-				case 2: { // Spiral
-					pulseCount = 8;
-					uint8_t height = 4;
-					uint8_t spiralOffset = 6;
-					uint8_t repeats = 6;
-					animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats, true, 0.93, rateClass);
-					break;
-				}
-				case 3: { // Wave
-					waveAnimation(stripId, isDown, 3, 4, 6, true, rateClass);
-					break;
-				}
-				case 4: { // Zigzag
-					zigzagAnimation(stripId, isDown, 2, 3, 6, 4, 6, true, rateClass);
-					break;
-				}
-				default: { // Meteor
-					pulseCount = 8;
-					animationMeteorPulseRing(stripId, isDown, pulseCount, 24, true, 3, true, 0.93, rateClass);
-				}
-			} // end switch
-
-			break;
-		}
-		case 5: { // 1mbps
-			// Serial.print("[Downsignal kb]");
-			switch (randomTypeAny) {
-				case 1: { // Ring
-					pulseCount = 4;
-					animationMeteorPulseRing(stripId, isDown, pulseCount, 32, false, 2, true, 0.95, rateClass);
-					break;
-				}
-				case 2: { // Spiral
-					pulseCount = 6;
-					uint8_t height = 3;
-					uint8_t spiralOffset = 3;
-					uint8_t repeats = 4;
-					animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats, false, 0.95, rateClass);
-					break;
-				}
-				case 3: { // Wave
-					waveAnimation(stripId, isDown, 2, 3, 6, true, rateClass);
-					break;
-				}
-				case 4: { // Zigzag
-					zigzagAnimation(stripId, isDown, 1, 4, 4, 2, 1, true, rateClass);
-					break;
-				}
-				default: { // Meteor
-					pulseCount = 4;
-					animationMeteorPulseRing(stripId, isDown, pulseCount, 32, true, 2, true, 0.93, rateClass);
-				}
-
-			} // end switch
-
-			break;
-		}
-		case 4: { // 10kbps
-			// Serial.print("[Downsignal kb]");
-			switch (randomTypeAny) {
-				case 1: { // Ring
-					pulseCount = 2;
-					animationMeteorPulseRing(stripId, isDown, pulseCount, 32, false, 0.93, rateClass);
-					break;
-				}
-				case 2: { // Spiral
-					pulseCount = 3;
-					uint8_t height = 2;
-					uint8_t spiralOffset = 4;
-					uint8_t repeats = 3;
-					animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats, rateClass);
-					break;
-				}
-				case 3: { // Wave
-					waveAnimation(stripId, isDown, 1, 2, 4, false, rateClass);
-					break;
-				}
-				default: { // Meteor
-					pulseCount = 2;
-					animationMeteorPulseRing(stripId, isDown, pulseCount, 16, true, 1, false, rateClass);
-				}
-			}
-
-			break;
-		}
-		case 3: {
-			// Rate Class 3 gets a few fancy animations, but falls back to meteors
-			// Serial.print("[Downsignal kb]");
-			switch (randomTypeAny) {
-				case 1: { // Ring
-					pulseCount = 1;
-					animationMeteorPulseRing(stripId, isDown, pulseCount, 8, false, 1, true, rateClass);
-					break;
-				}
-				case 2: { // Spiral
-					pulseCount = 1;
-					uint8_t height = 2;
-					uint8_t spiralOffset = 2;
-					uint8_t repeats = 2;
-					animationSpiralPulseRing(stripId, isDown, height, pulseCount, spiralOffset, repeats, 0.93, rateClass);
-					break;
-				}
-					  // case 3: { // Wave
-					  // 	waveAnimation(stripId, 1, 12);
-					  // }
-				default: { // Meteor
-					pulseCount = 1;
-					animationMeteorPulseRing(stripId, isDown, pulseCount, 16, true, 1, true, 0.93, rateClass);
-				}
-			}
-
-			break;
-		}
-		case 2: {
-			// Rate Class 2 always only gets meteors
-			// Serial.print("[Downsignal kb]");
-			pulseCount = 1;
-			for (int i = 0; i < 7; i++) {
-				animationMeteorPulseRegion(stripId, random8(0, 11), isDown, 0, pulseCount, 16, true, 1, true, 0.93, rateClass);
-			}
-			break;
-		}
-		case 1: {
-			// Rate Class 1 always only gets meteors
-			// Serial.print("[Downsignal slow]");
-			for (int i = 0; i < 4; i++) {
-				animationMeteorPulseRegion(stripId, random8(0, 11), isDown, 0, pulseCount, 24, true, 1, true, 0.93, rateClass);
-			}
-			break;
-		}
-		case 0: {
-			FastLED.clear(allStrips[stripId]);
-			// Serial.print("[Downsignal -- ]");
-			break;
-		}
-		default: {
-			FastLED.clear(allStrips[stripId]);
-			// Serial.print("[Downsignal n/a ]");
-		}
-	}
-
-	// The first animation has fired for this craft, change global state variable
-	isDown == true ? animateFirstCycleDown = false : animateFirstCycleUp = false;
-
-	/* Inner Core meteors
-	 * These are on the back of the core to not interfere with craft name
-	 * These are always meteors
-	*/
-	if (isDown == true) {
-		switch (rateClass) {
-			case 6: {
-				doInnerCoreMeteors(true, 5, 32, 6, 0.97, rateClass);
-			}
-			case 5: {
-				doInnerCoreMeteors(true, 3, 24, 6, 0.93, rateClass);
-			}
-			case 4: {
-				doInnerCoreMeteors(true, 1, 24, 6, 0.93, rateClass);
-			}
-			case 3: {
-				doInnerCoreMeteors(true, 1, 32, 6, 0.92, rateClass);
-			}
-			case 2: {
-				doInnerCoreMeteors(true, 1, 32, 4, 0.9, rateClass);
-			}
-			case 1: {
-				doInnerCoreMeteors(true, 1, 32, 2, 0.88, rateClass);
-			}
-		}
-	}
-
-	return;
+    // Inner Core meteors
+    if (isDown && rateClass >= 1 && rateClass <= 6) {
+        doInnerCoreMeteors(true, rcs.pulseCount, 32 - (4 * rateClass), rts.repeats, rcs.factor, rateClass);
+    }
 }
+
 
 void drawMeteors()
 {
