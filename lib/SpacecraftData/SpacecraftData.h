@@ -7,6 +7,10 @@
     #include <ArduinoJson.h>
 #endif
 
+#ifndef FILEUTILS_H
+    #include <FileUtils.h>
+#endif
+
 #ifndef DEVUTILS_H
     #include <DevUtils.h>
 #endif

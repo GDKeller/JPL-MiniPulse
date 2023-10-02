@@ -426,7 +426,7 @@ bool forceDummyData = false;
 uint8_t noTargetFoundCounter = 0;  // Keeps track of how many times target is not found
 uint8_t noTargetLimit = 3;		   // After target is not found this many times, switch to dummy XML data
 uint8_t retryDataFetchCounter = 0; // Keeps track of how many times data fetch failed
-uint8_t retryDataFetchLimit = 10;  // After dummy data is used this many times, try to get actual data again
+uint8_t retryDataFetchLimit = 3;  // After dummy data is used this many times, try to get actual data again
 bool dataStarted = false;
 // char fetchUrl[64];	// Fixed memory for DSN XML fetch URL - random number is appended when used to prevent caching
 
@@ -541,9 +541,9 @@ const uint16_t timerDelay = 10000; // Timer for how often to fetch data
 unsigned long animationTimer = 0;
 unsigned long craftDelayTimer = 0;
 const uint16_t craftDelay = 8000; // Wait this long after finishing for new craft to be dipslayed
-const uint16_t displayMinDuration = 1000; // Minimum time to display a craft before switching to next craft
-unsigned long displayDurationTimer = 1000; // Timer to keep track of how long craft has been displayed, set at minimum for no startup delay
-const uint16_t textMeteorGap = 4000;
+const uint16_t displayMinDuration = 10000; // Minimum time to display a craft before switching to next craft
+unsigned long displayDurationTimer = 10000; // Timer to keep track of how long craft has been displayed, set at minimum for no startup delay
+const uint16_t textMeteorGap = 8000;
 const uint8_t meteorOffset = 32;
 const uint8_t offsetHalf = meteorOffset * 0.5;
 
@@ -1139,6 +1139,7 @@ void scrollLetters(const char* spacecraftName, int wordArraySize)
 
 	int wrapPixel = innerPixelsChunkLength + (wordArraySize * (characterHeight + characterKerning)); // Calculate pixel to wrap at
 	startPixel++; // Move to next starting pixel
+
 
 	if (startPixel > wrapPixel) {
 		startPixel = 0;
@@ -1815,15 +1816,11 @@ FoundSignals findSignals(XMLElement* xmlDish, CraftQueueItem* tempNewCraft) {
 
 		const char* elValue = xmlSignal->Value();
 		if (elValue == nullptr) continue; // Error getting value
-		Serial.println("elValue: " + String(elValue));
-
 
 		const char* signalDirection = nullptr;
 		if (strcmp(elValue, "downSignal") == 0) {
-			Serial.println("is down");
 			signalDirection = "down";
 		} else if (strcmp(elValue, "upSignal") == 0) {
-			Serial.println("is up");
 			signalDirection = "up";
 		} else {
 			continue;
@@ -1831,12 +1828,12 @@ FoundSignals findSignals(XMLElement* xmlDish, CraftQueueItem* tempNewCraft) {
 
 		const char* spacecraft = xmlSignal->Attribute("spacecraft");
 		if (spacecraft == nullptr) continue;
-		Serial.println("spacecraft: " + String(spacecraft));
+		// Serial.println("spacecraft: " + String(spacecraft));
 
 
 		const char* signalType = xmlSignal->Attribute("signalType");
 		if (signalType == nullptr) continue;
-		Serial.println("signalType: " + String(signalType));
+		// Serial.println("signalType: " + String(signalType));
 
 
 		if (strcmp(signalType, "data") != 0) continue;
@@ -1846,7 +1843,7 @@ FoundSignals findSignals(XMLElement* xmlDish, CraftQueueItem* tempNewCraft) {
 
 		const char* rate = xmlSignal->Attribute("dataRate");
 		if (rate == nullptr) continue;
-		Serial.println("rate: " + String(rate));
+		// Serial.println("rate: " + String(rate));
 
 		double rateDouble = stod(rate);
 		unsigned long rateLong = static_cast<unsigned long>(rateDouble);
@@ -1868,8 +1865,8 @@ FoundSignals findSignals(XMLElement* xmlDish, CraftQueueItem* tempNewCraft) {
 		}
 	}
 
-	Serial.print("Down signal: " + String(tempNewCraft->downSignal) + "\n");
-	Serial.print("Up signal:   " + String(tempNewCraft->upSignal) + "\n");
+	// Serial.print("Down signal: " + String(tempNewCraft->downSignal) + "\n");
+	// Serial.print("Up signal:   " + String(tempNewCraft->upSignal) + "\n");
 
 	if (tempNewCraft->downSignal == 0 && tempNewCraft->upSignal == 0) {
 		if (FileUtils::config.debugUtils.showSerial == true)
@@ -2222,20 +2219,26 @@ void parseData(const char* payload)
 								/** TARGET HAS BEEN FULLY VALIDATED
 								 * We hav all of the info needed for this new craft
 								 * **/
-								Serial.print("======== TEMP NEW CRAFT ========\n");
-								Serial.print("callsign: " + String(tempNewCraft.callsign) + "\n");
-								Serial.print("name: " + String(tempNewCraft.name) + "\n");
-								Serial.print("nameLength: " + String(tempNewCraft.nameLength) + "\n");
-								Serial.print("downSignal: " + String(tempNewCraft.downSignal) + "\n");
-								Serial.print("upSignal: " + String(tempNewCraft.upSignal) + "\n");
-								Serial.print("================================\n");
+								if (FileUtils::config.debugUtils.showSerial == true) {
+									Serial.print("======== TEMP NEW CRAFT ========\n");
+									Serial.print("callsign: " + String(tempNewCraft.callsign) + "\n");
+									Serial.print("name: " + String(tempNewCraft.name) + "\n");
+									Serial.print("nameLength: " + String(tempNewCraft.nameLength) + "\n");
+									Serial.print("downSignal: " + String(tempNewCraft.downSignal) + "\n");
+									Serial.print("upSignal: " + String(tempNewCraft.upSignal) + "\n");
+									Serial.print("================================\n");
+								}
 
 
 								// A target has been found and validated
-								Serial.println("assign values to craft semaphore");
+								if (FileUtils::config.debugUtils.showSerial == true)
+									Serial.println("assign values to craft semaphore");
+								
 								CraftQueueItem* newCraft = assignValuesToCraftSemaphore(&tempNewCraft);
-
-								Serial.print("craft item is valid");
+								
+								if (FileUtils::config.debugUtils.showSerial == true)
+									Serial.print("craft item is valid");
+	
 								if (isValidCraftQueueItem(newCraft)) {
 									sendCrafToQueue(newCraft);
 
@@ -2244,7 +2247,7 @@ void parseData(const char* payload)
 									dishCount = d; // Set the global dish counter to the current dish number
 									stationCount = s; // Set the global station counter to the current station number
 
-									Serial.println("free semaphore in target loop");
+									// Serial.println("free semaphore in target loop");
 									xSemaphoreGive(freeListMutex);
 
 									break;
@@ -2307,7 +2310,7 @@ void parseData(const char* payload)
 				if (breakParseLoop == true) break;
 			} // End arbitary loop
 
-			Serial.println("incremeent counters");
+			// Serial.println("increment counters");
 			incrementDataParseCounter();
 			return;
 		} else {
@@ -2316,12 +2319,14 @@ void parseData(const char* payload)
 			return;
 		}
 
-		Serial.println("increment parse counter");
+		if (FileUtils::config.debugUtils.showSerial == true)
+			Serial.println("increment parse counter");
+	
 		parseCounter++;
 		xSemaphoreGive(freeListMutex);
 		return;
 	}
-	Serial.println("fetch done");
+	// Serial.println("fetch done");
 }
 
 void logOutput(const char* color, const String& message) {
@@ -2422,13 +2427,15 @@ bool fetchHTTPData(const String& url) {
 				}
 
 				size_t bytesWritten = xmlFile.print(res);
-				Serial.println("[fetchHTTPData] Bytes written to XML file: " + String(bytesWritten));
+				if (FileUtils::config.debugUtils.showSerial == true)
+					Serial.println("[fetchHTTPData] Bytes written to XML file: " + String(bytesWritten));
 				xmlFile.close();
 
 				http.end();
 				return true; // XML data saved to LittleFS
 			} else {
-				Serial.println("[fetchHTTPData] Failed to fetch data");
+				if (FileUtils::config.debugUtils.showSerial == true)
+					Serial.println("[fetchHTTPData] Failed to fetch data");
 			}
 			delay(500);
 		}
@@ -2468,9 +2475,13 @@ void fetchData() {
 
 	if (!forceDummyData && isWiFiConnected()) {
 		String url = generateFetchUrl();
-		Serial.println("[fetchData] Generated URL: " + url);
+		if (FileUtils::config.debugUtils.showSerial == true)
+			Serial.println("[fetchData] Generated URL: " + url);
+	
 		dataFetched = fetchHTTPData(url);
-		Serial.println(dataFetched ? "[fetchData] Data fetched successfully." : "[fetchData] Failed to fetch data.");
+
+		if (FileUtils::config.debugUtils.showSerial == true)
+			Serial.println(dataFetched ? "[fetchData] Data fetched successfully." : "[fetchData] Failed to fetch data.");
 	}
 
 	File xmlFile;
@@ -2480,14 +2491,20 @@ void fetchData() {
 	if (dataFetched) {
 		xmlFile = LittleFS.open("/temp.xml", "r");
 		if (!xmlFile) {
-			Serial.println("[fetchData] Failed to open XML file for reading.");
+			if (FileUtils::config.debugUtils.showSerial == true)
+				Serial.println("[fetchData] Failed to open XML file for reading.");
+
 			return;
 		}
 		size_t xmlFileSize = xmlFile.size();
-		Serial.println("[fetchData] XML file size: " + String(xmlFileSize));
+
+		if (FileUtils::config.debugUtils.showSerial == true)
+			Serial.println("[fetchData] XML file size: " + String(xmlFileSize));
 
 		if (xmlFileSize > sizeof(xmlDataBuffer) - 1) {
-			Serial.println("[fetchData] XML file is too large for buffer.");
+			if (FileUtils::config.debugUtils.showSerial == true)
+				Serial.println("[fetchData] XML file is too large for buffer.");
+			
 			xmlFile.close();
 			return;
 		}
@@ -2499,13 +2516,16 @@ void fetchData() {
 		xmlFile.close();
 		LittleFS.remove("/temp.xml"); // Optionally delete the file after reading
 
-		Serial.println("[fetchData] XML file read and parsed.");
+		if (FileUtils::config.debugUtils.showSerial == true)
+			Serial.println("[fetchData] XML file read and parsed.");
 
 		// Now you can pass the XML data to the parseData function
 		parseData(xmlDataBuffer);
 	} else {
 		// If no data was fetched, use dummy data
-		Serial.println("[fetchData] Using dummy data.");
+		if (FileUtils::config.debugUtils.showSerial == true)
+			Serial.println("[fetchData] Using dummy data.");
+		
 		parseData(dummyXmlData); // Assuming dummyXmlData is a char array
 	}
 
@@ -2514,7 +2534,9 @@ void fetchData() {
 		dataStarted = true;  // Set dataStarted to true after first data fetch
 	}
 
-	Serial.println("[fetchData] Finished.");
+	if (FileUtils::config.debugUtils.showSerial == true)
+		Serial.println("[fetchData] Finished.");
+	
 	return;
 }
 
@@ -2839,11 +2861,19 @@ void loop()
 	doWiFiManager();
 
 	try {
+		// Serial.println("----==== name scroll done: " + String(nameScrollDone) + " ====----");
 		/* Check for new data */
 		if (dataStarted == true
 			&& nameScrollDone == true
 			&& (millis() - displayDurationTimer) > displayMinDuration
 			&& (millis() - craftDelayTimer) > craftDelay) {
+			
+			// Serial.print("\n\n");
+			// Serial.println(">>>>>>>>>>> GET DATA FROM QUEUE <<<<<<<<<<<");
+			// Serial.println("----==== name scroll done: " + String(nameScrollDone) + " ====----");
+			// Serial.print("\n\n");
+			// delay(5000);
+
 
 			/* Print for diagnostic on plotter */
 			if (FileUtils::config.debugUtils.diagMeasure == true)
@@ -2876,12 +2906,17 @@ void loop()
 
 					/* Copy data from queue to buffer */
 					try {
-						if (infoBuffer->name != 0 && strlen(infoBuffer->name) > 0) {
-							currentCraftBuffer.callsign = infoBuffer->callsign;
-							currentCraftBuffer.name = infoBuffer->name;
+						if (infoBuffer != nullptr && infoBuffer->name != nullptr && strlen(infoBuffer->name) > 0) {
+							strncpy(currentCraftBuffer.callsignArray, infoBuffer->callsignArray, sizeof(currentCraftBuffer.callsignArray) - 1);
+							currentCraftBuffer.callsignArray[sizeof(currentCraftBuffer.callsignArray) - 1] = '\0'; // Ensure null-termination
+
+							strncpy(currentCraftBuffer.nameArray, infoBuffer->nameArray, sizeof(currentCraftBuffer.nameArray) - 1);
+							currentCraftBuffer.nameArray[sizeof(currentCraftBuffer.nameArray) - 1] = '\0'; // Ensure null-termination
+
 							currentCraftBuffer.nameLength = infoBuffer->nameLength;
 							currentCraftBuffer.downSignal = infoBuffer->downSignal;
 							currentCraftBuffer.upSignal = infoBuffer->upSignal;
+
 
 							nameScrollDone = false;
 
@@ -2895,7 +2930,14 @@ void loop()
 							noTargetFoundCounter++;
 						}
 					}
+					catch (const std::bad_alloc& e) {
+						Serial.println("Memory allocation error: " + String(e.what()));
+					}
+					catch (const std::exception& e) {
+						Serial.println("Standard exception: " + String(e.what()));
+					}
 					catch (...) {
+						Serial.println("Unknown exception caught");
 						if (FileUtils::config.debugUtils.showSerial == true)
 							Serial.println("Error copying data from queue to buffer");
 						dev.handleException();

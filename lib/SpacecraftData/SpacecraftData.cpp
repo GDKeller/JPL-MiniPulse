@@ -69,7 +69,7 @@ void SpacecraftData::loadJson()
         "PSYC": "Psyche",
         "SOHO": "Solar and Heliospheric Observatory",
         "SPP": "Parker Solar Probe",
-        "STA": "STEREO",
+        "STA": "STEREO A",
         "TESS": "Transiting Exoplanet Survey Satellite",
         "TGO": "ExoMars Trace Gas Orbiter",
         "THB,C": "THEMISB,C",
@@ -137,7 +137,9 @@ void SpacecraftData::loadSpacecraftBlacklist() {
   DeserializationError error = deserializeJson(spacecraftBlacklistJson, file);
 
   if (error) {
-    Serial.print(DevUtils::termColor("red") +  "Spacecraft blacklist loading failed: " + error.c_str() + DevUtils::termColor("reset") + "\n");
+    if (FileUtils::config.debugUtils.showSerial)
+      Serial.print(DevUtils::termColor("red") +  "Spacecraft blacklist loading failed: " + error.c_str() + DevUtils::termColor("reset") + "\n");
+    
     return;
   }
   Serial.println("Spacecraft blacklist loaded");
@@ -148,6 +150,10 @@ void SpacecraftData::loadSpacecraftBlacklist() {
 /* Check Blacklist */
 bool SpacecraftData::checkBlacklist(const char* key) {
   bool isBlacklisted = spacecraftBlacklistJson[key] != nullptr ? true : false; // If the key is not null, it is blacklisted
-  Serial.println(DevUtils::termColor("bg_bright_black") + ">>> Checking blacklist for" + String(key) + ": " + (isBlacklisted ? "true" : "false") + DevUtils::termColor("reset") + "\n");
+  
+  if (FileUtils::config.debugUtils.showSerial)
+    Serial.println(DevUtils::termColor("bg_bright_black") + ">>> Checking blacklist for " + String(key) + ": " + (isBlacklisted ? "true" : "false") + DevUtils::termColor("reset") + "\n");
+  
+  
   return spacecraftBlacklistJson[key] != nullptr ? true : false;
 }
