@@ -1,5 +1,7 @@
 #pragma region -- LIBRARIES
 #include <Arduino.h>		// Arduino core
+#include "soc/timer_group_struct.h" // Timer group struct
+#include "soc/timer_group_reg.h"  // Timer group register
 #include <FS.h>				// File system
 #include <LittleFS.h>		// LittleFS file system
 #include <HTTPClient.h>		// HTTP client
@@ -623,6 +625,12 @@ bool animateFirstCycleUp = true;
 #pragma endregion -- END ANIMATION UTILITIES
 
 #pragma region -- DEV UTILITIES
+
+void feedWatchdog() {
+	TIMERG0.wdt_wprotect=TIMG_WDT_WKEY_VALUE;
+	TIMERG0.wdt_feed=1;
+	TIMERG0.wdt_wprotect=0;
+}
 
 
 void printMeteorArray()
@@ -2412,44 +2420,44 @@ bool attemptHTTPConnection(const String& url) {
 }
 
 bool fetchHTTPData(const String& url) {
-	const int maxHttpRetries = 3;
-	for (int retry = 0; retry < maxHttpRetries; retry++) {
-		try {
-			if (attemptHTTPConnection(url)) {
-				String res = http.getString();
-				// Serial.println("[fetchHTTPData] HTTP Response: " + res);
+    const int maxHttpRetries = 3;
+    for (int retry = 0; retry < maxHttpRetries; retry++) {
+        try {
+            if (attemptHTTPConnection(url)) {
+                feedWatchdog(); // Feed the watchdog timer after attempting connection
 
-				File xmlFile = LittleFS.open("/temp.xml", "w");
-				if (!xmlFile) {
-					logOutput("red", "Failed to open XML file for writing");
-					http.end();
-					return false;
-				}
+                String res = http.getString();
+                feedWatchdog(); // Feed the watchdog timer after fetching the response
 
-				size_t bytesWritten = xmlFile.print(res);
-				if (FileUtils::config.debugUtils.showSerial == true)
-					Serial.println("[fetchHTTPData] Bytes written to XML file: " + String(bytesWritten));
-				xmlFile.close();
+                File xmlFile = LittleFS.open("/temp.xml", "w");
+                if (!xmlFile) {
+                    logOutput("red", "Failed to open XML file for writing");
+                    http.end();
+                    return false;
+                }
 
-				http.end();
-				return true; // XML data saved to LittleFS
-			} else {
-				if (FileUtils::config.debugUtils.showSerial == true)
-					Serial.println("[fetchHTTPData] Failed to fetch data");
-			}
-			delay(500);
-		}
-		catch (...) {
-			dev.handleException();
-			http.end();  // Close connection in case of an exception
-			delay(1000);
-		}
-	}
-	http.end();  // Ensure connection is closed even if no successful fetch
-	return false;  // No data fetched
+                size_t bytesWritten = xmlFile.print(res);
+                xmlFile.close();
+                feedWatchdog(); // Feed the watchdog timer after file operations
+
+                http.end();
+                return true; // XML data saved to LittleFS
+            } else {
+                if (FileUtils::config.debugUtils.showSerial == true)
+                    Serial.println("[fetchHTTPData] Failed to fetch data");
+            }
+            
+            vTaskDelay(pdMS_TO_TICKS(500)); // Replace delay with vTaskDelay
+        }
+        catch (...) {
+            dev.handleException();
+            http.end();  // Close connection in case of an exception
+            vTaskDelay(pdMS_TO_TICKS(1000)); // Replace delay with vTaskDelay
+        }
+    }
+    http.end();  // Ensure connection is closed even if no successful fetch
+    return false;  // No data fetched
 }
-
-
 
 
 void fetchData() {
@@ -2555,6 +2563,9 @@ void getData(void* parameter) {
 				// Serial.println("getData() running");
 				if (uxQueueSpacesAvailable(queue) > 0) {
 					// Serial.println("getData() queue space available");
+					
+					vTaskDelay(pdMS_TO_TICKS(10)); // delay for 10 milliseconds to allow other tasks to run
+					
 					fetchData();
 					lastTime = millis(); // Sync reference variable for timer
 				}
