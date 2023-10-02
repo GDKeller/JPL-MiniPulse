@@ -627,9 +627,9 @@ bool animateFirstCycleUp = true;
 #pragma region -- DEV UTILITIES
 
 void feedWatchdog() {
-	TIMERG0.wdt_wprotect=TIMG_WDT_WKEY_VALUE;
-	TIMERG0.wdt_feed=1;
-	TIMERG0.wdt_wprotect=0;
+	TIMERG0.wdt_wprotect = TIMG_WDT_WKEY_VALUE;
+	TIMERG0.wdt_feed = 1;
+	TIMERG0.wdt_wprotect = 0;
 }
 
 
@@ -2241,12 +2241,12 @@ void parseData(const char* payload)
 								// A target has been found and validated
 								if (FileUtils::config.debugUtils.showSerial == true)
 									Serial.println("assign values to craft semaphore");
-								
+
 								CraftQueueItem* newCraft = assignValuesToCraftSemaphore(&tempNewCraft);
-								
+
 								if (FileUtils::config.debugUtils.showSerial == true)
 									Serial.print("craft item is valid");
-	
+
 								if (isValidCraftQueueItem(newCraft)) {
 									sendCrafToQueue(newCraft);
 
@@ -2329,7 +2329,7 @@ void parseData(const char* payload)
 
 		if (FileUtils::config.debugUtils.showSerial == true)
 			Serial.println("increment parse counter");
-	
+
 		parseCounter++;
 		xSemaphoreGive(freeListMutex);
 		return;
@@ -2420,43 +2420,43 @@ bool attemptHTTPConnection(const String& url) {
 }
 
 bool fetchHTTPData(const String& url) {
-    const int maxHttpRetries = 3;
-    for (int retry = 0; retry < maxHttpRetries; retry++) {
-        try {
-            if (attemptHTTPConnection(url)) {
-                feedWatchdog(); // Feed the watchdog timer after attempting connection
+	const int maxHttpRetries = 3;
+	for (int retry = 0; retry < maxHttpRetries; retry++) {
+		try {
+			if (attemptHTTPConnection(url)) {
+				feedWatchdog(); // Feed the watchdog timer after attempting connection
 
-                String res = http.getString();
-                feedWatchdog(); // Feed the watchdog timer after fetching the response
+				String res = http.getString();
+				feedWatchdog(); // Feed the watchdog timer after fetching the response
 
-                File xmlFile = LittleFS.open("/temp.xml", "w");
-                if (!xmlFile) {
-                    logOutput("red", "Failed to open XML file for writing");
-                    http.end();
-                    return false;
-                }
+				File xmlFile = LittleFS.open("/temp.xml", "w");
+				if (!xmlFile) {
+					logOutput("red", "Failed to open XML file for writing");
+					http.end();
+					return false;
+				}
 
-                size_t bytesWritten = xmlFile.print(res);
-                xmlFile.close();
-                feedWatchdog(); // Feed the watchdog timer after file operations
+				size_t bytesWritten = xmlFile.print(res);
+				xmlFile.close();
+				feedWatchdog(); // Feed the watchdog timer after file operations
 
-                http.end();
-                return true; // XML data saved to LittleFS
-            } else {
-                if (FileUtils::config.debugUtils.showSerial == true)
-                    Serial.println("[fetchHTTPData] Failed to fetch data");
-            }
-            
-            vTaskDelay(pdMS_TO_TICKS(500)); // Replace delay with vTaskDelay
-        }
-        catch (...) {
-            dev.handleException();
-            http.end();  // Close connection in case of an exception
-            vTaskDelay(pdMS_TO_TICKS(1000)); // Replace delay with vTaskDelay
-        }
-    }
-    http.end();  // Ensure connection is closed even if no successful fetch
-    return false;  // No data fetched
+				http.end();
+				return true; // XML data saved to LittleFS
+			} else {
+				if (FileUtils::config.debugUtils.showSerial == true)
+					Serial.println("[fetchHTTPData] Failed to fetch data");
+			}
+
+			vTaskDelay(pdMS_TO_TICKS(500)); // Replace delay with vTaskDelay
+		}
+		catch (...) {
+			dev.handleException();
+			http.end();  // Close connection in case of an exception
+			vTaskDelay(pdMS_TO_TICKS(1000)); // Replace delay with vTaskDelay
+		}
+	}
+	http.end();  // Ensure connection is closed even if no successful fetch
+	return false;  // No data fetched
 }
 
 
@@ -2485,7 +2485,7 @@ void fetchData() {
 		String url = generateFetchUrl();
 		if (FileUtils::config.debugUtils.showSerial == true)
 			Serial.println("[fetchData] Generated URL: " + url);
-	
+
 		dataFetched = fetchHTTPData(url);
 
 		if (FileUtils::config.debugUtils.showSerial == true)
@@ -2512,7 +2512,7 @@ void fetchData() {
 		if (xmlFileSize > sizeof(xmlDataBuffer) - 1) {
 			if (FileUtils::config.debugUtils.showSerial == true)
 				Serial.println("[fetchData] XML file is too large for buffer.");
-			
+
 			xmlFile.close();
 			return;
 		}
@@ -2533,7 +2533,7 @@ void fetchData() {
 		// If no data was fetched, use dummy data
 		if (FileUtils::config.debugUtils.showSerial == true)
 			Serial.println("[fetchData] Using dummy data.");
-		
+
 		parseData(dummyXmlData); // Assuming dummyXmlData is a char array
 	}
 
@@ -2544,7 +2544,7 @@ void fetchData() {
 
 	if (FileUtils::config.debugUtils.showSerial == true)
 		Serial.println("[fetchData] Finished.");
-	
+
 	return;
 }
 
@@ -2563,9 +2563,9 @@ void getData(void* parameter) {
 				// Serial.println("getData() running");
 				if (uxQueueSpacesAvailable(queue) > 0) {
 					// Serial.println("getData() queue space available");
-					
+
 					vTaskDelay(pdMS_TO_TICKS(10)); // delay for 10 milliseconds to allow other tasks to run
-					
+
 					fetchData();
 					lastTime = millis(); // Sync reference variable for timer
 				}
@@ -2761,12 +2761,6 @@ void setup()
 
 
 
-
-
-
-
-
-
 	Serial.print("Existing WiFi credentials: ");
 	if (wm.getWiFiIsSaved() == true) {
 		Serial.print("True\nConnecting to WiFi \"" + String(wm.getWiFiSSID()) + "\"\n");
@@ -2863,187 +2857,109 @@ void setup()
 /* MAIN LOOP
  * Runs repeatedly as long as board is on
  */
-void loop()
-{
-	if (FileUtils::config.debugUtils.testCores == true)
-		if (millis() - lastTime > 4000 && millis() - lastTime < 4500)
-			Serial.print("loop() running on core: " + String(xPortGetCoreID()));
+void loop() {
+	uint32_t currentMillis = millis(); // Store the current time
+
+	bool debugUtilsEnabled = FileUtils::config.debugUtils.showSerial;
+	bool testCoresEnabled = FileUtils::config.debugUtils.testCores;
+	bool diagMeasureEnabled = FileUtils::config.debugUtils.diagMeasure;
+
+	// Check core test
+	if (testCoresEnabled && currentMillis - lastTime > 4000 && currentMillis - lastTime < 4500) {
+		Serial.printf("loop() running on core: %d\n", xPortGetCoreID());
+	}
 
 	doWiFiManager();
 
 	try {
-		// Serial.println("----==== name scroll done: " + String(nameScrollDone) + " ====----");
-		/* Check for new data */
-		if (dataStarted == true
-			&& nameScrollDone == true
-			&& (millis() - displayDurationTimer) > displayMinDuration
-			&& (millis() - craftDelayTimer) > craftDelay) {
-			
-			// Serial.print("\n\n");
-			// Serial.println(">>>>>>>>>>> GET DATA FROM QUEUE <<<<<<<<<<<");
-			// Serial.println("----==== name scroll done: " + String(nameScrollDone) + " ====----");
-			// Serial.print("\n\n");
-			// delay(5000);
+		// Check for new data
+		if (dataStarted && nameScrollDone && (currentMillis - displayDurationTimer) > displayMinDuration && (currentMillis - craftDelayTimer) > craftDelay) {
 
+			if (diagMeasureEnabled) {
+				Serial.printf("Queue: %u\t", uxQueueMessagesWaiting(queue));
+			}
 
-			/* Print for diagnostic on plotter */
-			if (FileUtils::config.debugUtils.diagMeasure == true)
-				Serial.print("Queue: " + String(uxQueueMessagesWaiting(queue)) + "\t");
-
-			CraftQueueItem theInfoBuffer; // Create buffer to hold data from queue
+			CraftQueueItem theInfoBuffer; // Buffer to hold data from queue
 			CraftQueueItem* infoBuffer = &theInfoBuffer;
 
-			/* Receive from queue (data task on core 1) */
-			if (queue != nullptr && infoBuffer != nullptr) {
-				if (xQueueReceive(queue, &infoBuffer, 1) == pdPASS) {
-
-					if (FileUtils::config.debugUtils.showSerial == true) {
-						/* Retrieve Queue banner */
-						char buffer[512];
-						snprintf(buffer, sizeof(buffer),
-							"\n\n"
-							"   ┌────────────────────────────────┐\n"
-							"───│          RETRIEVE QUEUE        │───\n"
-							"   └────────────────────────────────┘\n"
-						);
-						Serial.print(buffer);
-
-						printCurrentQueue(queue); // Print current queue
-
-						Serial.print("-------- DATA RECEIVED from Queue ----------\n");
-						printCraftInfo(0, infoBuffer->callsign, infoBuffer->name, infoBuffer->nameLength, infoBuffer->downSignal, infoBuffer->upSignal);
-						Serial.print("--------------------------------------------\n\n");
-					}
-
-					/* Copy data from queue to buffer */
-					try {
-						if (infoBuffer != nullptr && infoBuffer->name != nullptr && strlen(infoBuffer->name) > 0) {
-							strncpy(currentCraftBuffer.callsignArray, infoBuffer->callsignArray, sizeof(currentCraftBuffer.callsignArray) - 1);
-							currentCraftBuffer.callsignArray[sizeof(currentCraftBuffer.callsignArray) - 1] = '\0'; // Ensure null-termination
-
-							strncpy(currentCraftBuffer.nameArray, infoBuffer->nameArray, sizeof(currentCraftBuffer.nameArray) - 1);
-							currentCraftBuffer.nameArray[sizeof(currentCraftBuffer.nameArray) - 1] = '\0'; // Ensure null-termination
-
-							currentCraftBuffer.nameLength = infoBuffer->nameLength;
-							currentCraftBuffer.downSignal = infoBuffer->downSignal;
-							currentCraftBuffer.upSignal = infoBuffer->upSignal;
-
-
-							nameScrollDone = false;
-
-							/* Current Craft Buffer after copying */
-							if (FileUtils::config.debugUtils.showSerial == true)
-								printCurrentCraftBuffer();
-
-						} else {
-							if (FileUtils::config.debugUtils.showSerial == true)
-								Serial.println("Craft name is empty");
-							noTargetFoundCounter++;
-						}
-					}
-					catch (const std::bad_alloc& e) {
-						Serial.println("Memory allocation error: " + String(e.what()));
-					}
-					catch (const std::exception& e) {
-						Serial.println("Standard exception: " + String(e.what()));
-					}
-					catch (...) {
-						Serial.println("Unknown exception caught");
-						if (FileUtils::config.debugUtils.showSerial == true)
-							Serial.println("Error copying data from queue to buffer");
-						dev.handleException();
-					}
-
-					/* Free the queue item */
-					freeSemaphoreItem(infoBuffer);
-
-					displayDurationTimer = millis(); // Sync reference variable for timer
-				} else {
-					if (FileUtils::config.debugUtils.showSerial == true) {
-						// EVERY_N_MILLISECONDS(5000) {
-						// 	char buffer[512];
-						// 	snprintf(buffer, sizeof(buffer),
-						// 		"\n\n"
-						// 		"   ┌────────────────────────────────┐\n"
-						// 		"───│          RETRIEVE QUEUE        │───\n"
-						// 		"   └────────────────────────────────┘\n"
-						// 		"%sNo data received from queue%s\n",
-						// 		dev.termColor("red"),
-						// 		dev.termColor("reset")
-						// 	);
-						// 	Serial.print(buffer);
-						// }
-					}
+			if (queue && infoBuffer && xQueueReceive(queue, &infoBuffer, 1) == pdPASS) {
+				if (debugUtilsEnabled) {
+					Serial.println("\n\n   ┌────────────────────────────────┐");
+					Serial.println("───│          RETRIEVE QUEUE        │───");
+					Serial.println("   └────────────────────────────────┘");
+					printCurrentQueue(queue);
+					printCraftInfo(0, infoBuffer->callsign, infoBuffer->name, infoBuffer->nameLength, infoBuffer->downSignal, infoBuffer->upSignal);
+					Serial.println("--------------------------------------------\n\n");
 				}
+
+				// Copy data from queue to buffer
+				if (infoBuffer && infoBuffer->name && strlen(infoBuffer->name) > 0) {
+					strncpy(currentCraftBuffer.callsignArray, infoBuffer->callsignArray, sizeof(currentCraftBuffer.callsignArray) - 1);
+					currentCraftBuffer.callsignArray[sizeof(currentCraftBuffer.callsignArray) - 1] = '\0'; // Ensure null-termination
+
+					strncpy(currentCraftBuffer.nameArray, infoBuffer->nameArray, sizeof(currentCraftBuffer.nameArray) - 1);
+					currentCraftBuffer.nameArray[sizeof(currentCraftBuffer.nameArray) - 1] = '\0'; // Ensure null-termination
+
+					currentCraftBuffer.nameLength = infoBuffer->nameLength;
+					currentCraftBuffer.downSignal = infoBuffer->downSignal;
+					currentCraftBuffer.upSignal = infoBuffer->upSignal;
+
+					nameScrollDone = false;
+
+					if (debugUtilsEnabled) {
+						printCurrentCraftBuffer();
+					}
+				} else if (debugUtilsEnabled) {
+					Serial.println("Craft name is empty");
+					noTargetFoundCounter++;
+				}
+
+				freeSemaphoreItem(infoBuffer);
+				displayDurationTimer = currentMillis;
 			}
 		}
-
 	}
 	catch (...) {
 		Serial.println("Error in main loop");
 		dev.handleException();
 	}
 
-	/* Update All LED Animations */
+	// Update All LED Animations
 	try {
 		updateAnimation(currentCraftBuffer.name, currentCraftBuffer.nameLength, currentCraftBuffer.downSignal, currentCraftBuffer.upSignal);
 	}
 	catch (...) {
-		if (FileUtils::config.debugUtils.showSerial == true)
-			Serial.print(String(dev.termColor("red")) + "Error updating animation" + String(dev.termColor("reset")) + "\n");
+		if (debugUtilsEnabled) {
+			Serial.println("Error updating animation");
+		}
 		dev.handleException();
 	}
 
-	/* Serial display diagnostics for plotter */
-	if (FileUtils::config.debugUtils.diagMeasure == true) {
-		// Serial.print("Duration:" + String((millis() - displayDurationTimer) / 1000) + "\t");
-		// Serial.print("Delay:" + String((millis() - craftDelayTimer) / 1000) + "\t");
-		// Serial.print("Queue:" + String(uxQueueMessagesWaiting(queue)) + "\t");
-		// Serial.print("FreeListTop:" + String(freeListTop) + "\t");
-		// Serial.print("stationCount:" + String(stationCount) + "\t");
-		// Serial.print("dishCount:" + String(dishCount) + "\t");
-		// Serial.print("targetCount:" + String(targetCount) + "\t");
-		// Serial.print("signalCount:" + String(signalCount) + "\t");
-		// Serial.print("parseCounter:" + String(parseCounter) + "\t");
-		// Serial.print("noTargetFoundCounter:" + String(noTargetFoundCounter) + "\t");
-		// Serial.print("animationTypeDown:" + String(animationTypeDown) + "\t");
-		// Serial.print("animationTypeUp:" + String(animationTypeUp) + "\t");
-
-		// // perfDiff = (millis() - perfTimer) * 10; // Multiplied by 10 for ease of visualization on plotter
-		// perfDiff = (millis() - perfTimer); // This is the actual value
-		// Serial.print("PerfTimer:" + String(perfDiff) + "\t");
-		// // UBaseType_t uxHighWaterMark;
-		// // uxHighWaterMark = uxTaskGetStackHighWaterMark(xHandleData);
-		// // Serial.print("high_water_mark:"); Serial.print(uxHighWaterMark); Serial.print("\t");
-		// Serial.print(dev.getFreeHeap()); // Value might be being multiplied in getFreeHeap() function for ease of visualization on plotter		
-		// Serial.println();
-
-		perfDiff = (millis() - perfTimer); // This is the actual value
-
-		const int BUF_SIZE = 1024;
-		char buffer[BUF_SIZE];
-		int offset = 0;
-
-		offset += snprintf(buffer + offset, BUF_SIZE - offset, "Duration:%ld\t", (millis() - displayDurationTimer) / 1000);
-		offset += snprintf(buffer + offset, BUF_SIZE - offset, "Delay:%ld\t", (millis() - craftDelayTimer) / 1000);
-		offset += snprintf(buffer + offset, BUF_SIZE - offset, "Queue:%u\t", uxQueueMessagesWaiting(queue));
-		offset += snprintf(buffer + offset, BUF_SIZE - offset, "FreeListTop:%d\t", freeListTop);
-		offset += snprintf(buffer + offset, BUF_SIZE - offset, "stationCount:%d\t", stationCount);
-		offset += snprintf(buffer + offset, BUF_SIZE - offset, "dishCount:%d\t", dishCount);
-		offset += snprintf(buffer + offset, BUF_SIZE - offset, "targetCount:%d\t", targetCount);
-		offset += snprintf(buffer + offset, BUF_SIZE - offset, "signalCount:%d\t", signalCount);
-		offset += snprintf(buffer + offset, BUF_SIZE - offset, "parseCounter:%d\t", parseCounter);
-		offset += snprintf(buffer + offset, BUF_SIZE - offset, "noTargetFoundCounter:%d\t", noTargetFoundCounter);
-		offset += snprintf(buffer + offset, BUF_SIZE - offset, "animationTypeDown:%d\t", animationTypeDown);
-		offset += snprintf(buffer + offset, BUF_SIZE - offset, "animationTypeUp:%d\t", animationTypeUp);
-
-		offset += snprintf(buffer + offset, BUF_SIZE - offset, "PerfTimer:%ld\t", perfDiff);
-		offset += snprintf(buffer + offset, BUF_SIZE - offset, "Free Heap:%d\t", dev.getFreeHeap());
-
-		Serial.println(buffer);
-
-		// parseCounter = 0;		
-		perfTimer = millis(); // Reset performance imter
-
+	// Serial display diagnostics for plotter
+	if (diagMeasureEnabled) {
+		char buffer[1024];
+		snprintf(buffer, sizeof(buffer),
+			"Duration:%ld\tDelay:%ld\tQueue:%u\tFreeListTop:%d\t"
+			"stationCount:%d\tdishCount:%d\ttargetCount:%d\tsignalCount:%d\t"
+			"parseCounter:%d\tnoTargetFoundCounter:%d\tanimationTypeDown:%d\t"
+			"animationTypeUp:%d\tPerfTimer:%ld\tFree Heap:%d\n",
+			(currentMillis - displayDurationTimer) / 1000,
+			(currentMillis - craftDelayTimer) / 1000,
+			uxQueueMessagesWaiting(queue),
+			freeListTop,
+			stationCount,
+			dishCount,
+			targetCount,
+			signalCount,
+			parseCounter,
+			noTargetFoundCounter,
+			animationTypeDown,
+			animationTypeUp,
+			currentMillis - perfTimer,
+			dev.getFreeHeap(),
+			"\n"
+		);
+		Serial.print(buffer);
+		perfTimer = currentMillis;
 	}
 }
