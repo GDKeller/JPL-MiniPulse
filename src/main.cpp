@@ -540,13 +540,15 @@ unsigned long fpsTimer = 0;
 unsigned long perfTimer = 0;
 unsigned long perfDiff = 0;
 unsigned long lastTime = 0; // Init reference variable for timer
+bool firstStartupAnimation = true;
 const uint16_t timerDelay = 10000; // Timer for how often to fetch data
 unsigned long animationTimer = 0;
 unsigned long craftDelayTimer = 0;
 const uint16_t craftDelay = 8000; // Wait this long after finishing for new craft to be dipslayed
-const uint16_t displayMinDuration = 10000; // Minimum time to display a craft before switching to next craft
-unsigned long displayDurationTimer = 10000; // Timer to keep track of how long craft has been displayed, set at minimum for no startup delay
-const uint16_t textMeteorGap = 8000;
+const uint16_t displayMinDuration = 20000; // Minimum time to display a craft before switching to next craft
+unsigned long displayDurationTimer = 0; // Timer to keep track of how long craft has been displayed, set at minimum for no startup delay
+const uint16_t textMeteorGap = 4000;
+const uint16_t animationRepeatGap = 2000;
 const uint8_t meteorOffset = 32;
 const uint8_t offsetHalf = meteorOffset * 0.5;
 
@@ -616,6 +618,7 @@ uint8_t counterEighthSpeed = 1;
 
 // Keeps track of current animation state
 static bool nameScrollDone = true;
+static bool animationInProgress = false;
 static bool animationTypeSetDown = false;
 static bool animationTypeSetUp = false;
 static uint8_t animationTypeDown = 0;
@@ -1154,6 +1157,7 @@ void scrollLetters(const char* spacecraftName, int wordArraySize)
 		startPixel = 0;
 		if (millis() - displayDurationTimer > displayMinDuration) {
 			nameScrollDone = true;
+			animationInProgress = false;
 			animationTypeSetDown = false;
 			animationTypeSetUp = false;
 			animateFirstCycleDown = true;
@@ -1336,7 +1340,7 @@ void laserGunAnimation(uint8_t strip, uint16_t chargeTime, uint8_t firingSize, i
 
 void doInnerCoreMeteors(bool isDown = true, int pulseCount = 1, int offset = 8, int meteorCount = 6, float meteorTailDecayValue = 0.93, int rateClass = 5) {
 	for (int i = 0; i < meteorCount; i++) {
-		animationMeteorPulseRegion(0, random8(4, 8), isDown, 0, pulseCount, offset, true, 1, true, meteorTailDecayValue, rateClass);
+		animationMeteorPulseRegion(0, random8(4, 9), isDown, 0, pulseCount, offset, true, 1, true, meteorTailDecayValue, rateClass);
 	}
 }
 
@@ -1434,7 +1438,7 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 	const int stripId = isDown ? 2 : 1;
 
 
-	Serial.println("rate class: " + String(rateClass));
+	// Serial.println("isDown: " + String(isDown) + " | strip: " + String(stripId) + " | rateClass: " + String(rateClass));
 
 	if (rateClass < 1 || rateClass > 6) {
 		FastLED.clear(allStrips[stripId]);
@@ -1443,7 +1447,7 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 
 	// Determine animation type
 	uint8_t randomTypeAny = (rateClass <= 2) ? 0 : random8(0, 5);
-	Serial.println("random roll: " + String(randomTypeAny));
+	// Serial.println("random roll: " + String(randomTypeAny));
 	if ((isDown && animateFirstCycleDown) || (!isDown && animateFirstCycleUp)) {
 		if (rateClass == 5 || rateClass == 6) {
 			randomTypeAny = random8(1, 5);
@@ -1459,7 +1463,7 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 			randomTypeAny = random8(0, 4);
 		}
 	}
-	Serial.println("random adjusted: " + String(randomTypeAny));
+	// Serial.println("random adjusted: " + String(randomTypeAny));
 
 	// Debug log
 	if (showSerial) {
@@ -1662,6 +1666,7 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 		Serial.print("\t");
 	}
 
+	unsigned long currentMillis = millis(); // Store the current time
 
 	/* Update Scrolling letters animation */
 	if (nameScrollDone == false) {
@@ -1693,30 +1698,31 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 	// Serial.println("After animation roll in main update loop");
 	// Serial.print("displayDurationTimer: "); Serial.println(displayDurationTimer);
 	// Serial.print("displayMinDuration: "); Serial.println(displayMinDuration);
-	// Serial.print("diff: "); Serial.println(millis() - animationTimer);
+	// Serial.print("diff: "); Serial.println(currentMillis - animationTimer);
 	// Serial.print("textMeteorGap: "); Serial.println(textMeteorGap);
 
 	// Fire meteors
-	if (displayDurationTimer > displayMinDuration && (millis() - animationTimer) > textMeteorGap) {
-		// Serial.println("---");
-		// Serial.println("displayDurationTimer > displayMinDuration && (millis() - animationTimer) > textMeteorGap");
-		// Serial.println("---");
-		// printMeteorArray();
-		// Serial.println("Firing meteors");
+	if (displayDurationTimer > displayMinDuration) {
+		bool shouldAnimate = false;
 
-		if (nameScrollDone == false) {
+		if (animationInProgress && (currentMillis - animationTimer) > animationRepeatGap) {
+			shouldAnimate = true;
+		} else if (!animationInProgress && (currentMillis - animationTimer) > textMeteorGap) {
+			shouldAnimate = true;
+		}
+
+		if (shouldAnimate && nameScrollDone == false) {
 			if (FileUtils::config.debugUtils.showSerial == true) {
 				char buffer[256];
 				snprintf(buffer, sizeof(buffer), "%s>>> Fire Meteors: %s | %d | %d%s\n", dev.termColor("bg_blue"), spacecraftName, downSignalRate, upSignalRate, dev.termColor("reset"));
 				Serial.print(buffer);
+				Serial.print("\n\n-----------------------------\n");
+				Serial.print("Fire Meteors: " + String(spacecraftName) + " | " + String(downSignalRate) + " | " + String(upSignalRate) + "\n");
 			}
-			Serial.print("\n\n-----------------------------\n");
-			Serial.print("Fire Meteors: " + String(spacecraftName) + " | " + String(downSignalRate) + " | " + String(upSignalRate) + "\n");
 			doRateBasedAnimation(true, downSignalRate, meteorOffset, animationTypeDown);
 			doRateBasedAnimation(false, upSignalRate, meteorOffset, animationTypeUp);
+			animationTimer = currentMillis; // Reset meteor animation timer
 		}
-
-		animationTimer = millis(); // Reset meteor animation timer
 	}
 
 	drawMeteors(); // Assign new pixels for meteors
@@ -1756,17 +1762,17 @@ const unsigned long MAX_RATE = 1000 * ONE_Mbps; // 1 Gbps
  * Returns rate class as an unsigned int
  */
 unsigned int rateLongToRateClass(unsigned long rate) {
-    // Cap the rate at just above 10 Gbps to catch erroneous values
-    unsigned long cappedRate = (rate > MAX_RATE) ? MAX_RATE : rate;
+	// Cap the rate at just above 10 Gbps to catch erroneous values
+	unsigned long cappedRate = (rate > MAX_RATE) ? MAX_RATE : rate;
 
-    // Classify the rate into one of the 7 rate classes
-    if (cappedRate == 0) return 0; // No Data
-    else if (cappedRate < ONE_Kbps) return 1; // <1 Kbps
-    else if (cappedRate < TEN_Kbps) return 2; // <50 Kbps
-    else if (cappedRate < HUNDRED_Kbps) return 3; // <250 Kbps
-    else if (cappedRate < FIVE_HUNDRED_Kbps) return 4; // <1 Mbps
-    else if (cappedRate < TWO_POINT_FIVE_Mbps) return 5; // <2.5 Mbps
-    else return 6; // 2.5 Mbps and above
+	// Classify the rate into one of the 7 rate classes
+	if (cappedRate == 0) return 0; // No Data
+	else if (cappedRate < ONE_Kbps) return 1; // <1 Kbps
+	else if (cappedRate < TEN_Kbps) return 2; // <50 Kbps
+	else if (cappedRate < HUNDRED_Kbps) return 3; // <250 Kbps
+	else if (cappedRate < FIVE_HUNDRED_Kbps) return 4; // <1 Mbps
+	else if (cappedRate < TWO_POINT_FIVE_Mbps) return 5; // <2.5 Mbps
+	else return 6; // 2.5 Mbps and above
 }
 
 
@@ -2883,7 +2889,12 @@ void loop() {
 				}
 
 				freeSemaphoreItem(infoBuffer);
-				displayDurationTimer = currentMillis;
+
+				if (!firstStartupAnimation) {
+					firstStartupAnimation = false;
+				} else {
+					displayDurationTimer = currentMillis;
+				}
 			}
 		}
 	}
