@@ -377,39 +377,40 @@ const char* data_animation_test = PROGMEM R"==--==(<?xml version='1.0' encoding=
 <dsn>
     <station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" />
     <dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS24" windSpeed="5.556">
-        <downSignal dataRate="1" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="Rate1" spacecraftID="-170" />
-        <upSignal dataRate="1" frequency="2090" power="4.804" signalType="data" spacecraft="Rate1" spacecraftID="-170" />
+        <downSignal dataRate="1.163e+01" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="Rate1" spacecraftID="-170" />
+        <upSignal dataRate="1.163e+01" frequency="2090" power="4.804" signalType="data" spacecraft="Rate1" spacecraftID="-170" />
         <target downlegRange="1.653e+06" id="170" name="Rate1" rtlt="11.03" uplegRange="1.653e+06" />
     </dish>
     <dish azimuthAngle="287.7" elevationAngle="18.74" isArray="false" isDDOR="false" isMSPA="false" name="DSS26" windSpeed="5.556">
-        <downSignal dataRate="1025" frequency="8439000000" power="-138.1801" signalType="data" spacecraft="Rate2" spacecraftID="-74" />
-        <upSignal dataRate="1025" frequency="7183" power="0.0000" signalType="data" spacecraft="Rate2" spacecraftID="-74" />
+        <downSignal dataRate="6.400e+03" frequency="8439000000" power="-138.1801" signalType="data" spacecraft="Rate2" spacecraftID="-74" />
+        <upSignal dataRate="6.400e+03" frequency="7183" power="0.0000" signalType="data" spacecraft="Rate2" spacecraftID="-74" />
         <target downlegRange="8.207e+07" id="74" name="Rate2" rtlt="547.5" uplegRange="8.207e+07" />
     </dish>
     <station friendlyName="Madrid" name="mdscc" timeUTC="1670419133000" timeZoneOffset="3600000" />
     <dish azimuthAngle="103.0" elevationAngle="80.19" isArray="false" isDDOR="false" isMSPA="false" name="DSS56" windSpeed="5.556">
-        <downSignal dataRate="5121" frequency="2250000000" power="-478.1842" signalType="data" spacecraft="Rate3" spacecraftID="-151" />
-        <upSignal dataRate="5121" frequency="2250000000" power="-478.1842" signalType="data" spacecraft="Rate3" spacecraftID="-151" />
+        <downSignal dataRate="5.000e+04" frequency="2250000000" power="-478.1842" signalType="data" spacecraft="Rate3" spacecraftID="-151" />
+        <upSignal dataRate="5.000e+04" frequency="2250000000" power="-478.1842" signalType="data" spacecraft="Rate3" spacecraftID="-151" />
         <target downlegRange="1.417e+05" id="151" name="Rate3" rtlt="0.9455" uplegRange="1.417e+05" />
     </dish>
     <dish azimuthAngle="196.5" elevationAngle="30.71" isArray="false" isDDOR="false" isMSPA="false" name="DSS65" windSpeed="5.556">
-        <downSignal dataRate="102401" frequency="2278000000" power="-112.7797" signalType="data" spacecraft="Rate4" spacecraftID="-92" />
-        <upSignal dataRate="102401" frequency="2098" power="0.2630" signalType="data" spacecraft="Rate4" spacecraftID="-92" />
+        <downSignal dataRate="2.458e+05" frequency="2278000000" power="-112.7797" signalType="data" spacecraft="Rate4" spacecraftID="-92" />
+        <upSignal dataRate="2.458e+05" frequency="2098" power="0.2630" signalType="data" spacecraft="Rate4" spacecraftID="-92" />
         <target downlegRange="1.389e+06" id="92" name="Rate4" rtlt="9.266" uplegRange="1.389e+06" />
     </dish>
     <station friendlyName="Canberra" name="cdscc" timeUTC="1670419133000" timeZoneOffset="39600000" />
     <dish azimuthAngle="124.5" elevationAngle="53.41" isArray="false" isDDOR="false" isMSPA="false" name="DSS53" windSpeed="5.556">
-        <downSignal dataRate="1048577" frequency="8436000000" power="-170.1741" signalType="data" spacecraft="Rate5" spacecraftID="-210" />
-        <upSignal dataRate="1048577" frequency="8436000000" power="-170.1741" signalType="data" spacecraft="Rate5" spacecraftID="-210" />
+        <downSignal dataRate="1.190e+06" frequency="8436000000" power="-170.1741" signalType="data" spacecraft="Rate5" spacecraftID="-210" />
+        <upSignal dataRate="1.190e+06" frequency="8436000000" power="-170.1741" signalType="data" spacecraft="Rate5" spacecraftID="-210" />
         <target downlegRange="4.099e+06" id="210" name="Rate5" rtlt="27.34" uplegRange="4.099e+06" />
     </dish>
     <dish azimuthAngle="219.7" elevationAngle="22.84" isArray="false" isDDOR="false" isMSPA="false" name="DSS54" windSpeed="5.556">
-        <upSignal dataRate="1024000001" frequency="2066" power="1.758" signalType="data" spacecraft="Rate6" spacecraftID="-21" />
-        <downSignal dataRate="1024000001" frequency="2245000000" power="-110.7082" signalType="data" spacecraft="Rate6" spacecraftID="-21" />
+        <downSignal dataRate="2.621e+06" frequency="2245000000" power="-110.7082" signalType="data" spacecraft="Rate6" spacecraftID="-21" />
+        <upSignal dataRate="2.621e+06" frequency="2066" power="1.758" signalType="data" spacecraft="Rate6" spacecraftID="-21" />
         <target downlegRange="1.331e+06" id="21" name="Rate6" rtlt="8.882" uplegRange="1.331e+06" />
     </dish>
     <timestamp>1670419133000</timestamp>
 </dsn>)==--==";
+
 
 const char* dummyXmlData = data_animation_test;
 
@@ -1375,52 +1376,52 @@ struct RandomTypeSettings {
 
 
 const InnerCoreMeteorSettings innerCoreSettings[6] = {
-	{pulseCount: 1, offset: 32, meteorCount: 2, meteorTailDecayValue: 0.88},	// Rate class 1
-	{pulseCount: 1, offset: 32, meteorCount: 4, meteorTailDecayValue: 0.90},	// Rate class 2
-	{pulseCount: 1, offset: 32, meteorCount: 6, meteorTailDecayValue: 0.92},	// Rate class 3
-	{pulseCount: 1, offset: 24, meteorCount: 6, meteorTailDecayValue: 0.93},	// Rate class 4
-	{pulseCount: 3, offset: 24, meteorCount: 6, meteorTailDecayValue: 0.93},	// Rate class 5
-	{pulseCount: 5, offset: 32, meteorCount: 6, meteorTailDecayValue: 0.97,}	// Rate class 6
+	{pulseCount: 1, offset : 32, meteorCount : 2, meteorTailDecayValue : 0.88},	// Rate class 1
+	{pulseCount: 1, offset : 32, meteorCount : 4, meteorTailDecayValue : 0.90},	// Rate class 2
+	{pulseCount: 1, offset : 32, meteorCount : 6, meteorTailDecayValue : 0.92},	// Rate class 3
+	{pulseCount: 1, offset : 24, meteorCount : 6, meteorTailDecayValue : 0.93},	// Rate class 4
+	{pulseCount: 3, offset : 24, meteorCount : 6, meteorTailDecayValue : 0.93},	// Rate class 5
+	{pulseCount: 5, offset : 32, meteorCount : 6, meteorTailDecayValue : 0.97,}	// Rate class 6
 };
 
 const RateClassSettings rateClass6Settings[] = {
-	/* Meteors */	{pulseCount: 8, offset: 24, randomizeOffset: true, meteorSize: 3, hasTail: true, meteorTailDecayValue: 0.93},
-	/* Ring */		{pulseCount: 6, offset: 24, randomizeOffset: false, meteorSize: 3, hasTail: true, meteorTailDecayValue: 0.93},
-	/* Spiral */ 	{pulseCount: 8, offset: 6, height: 4, repeats: 6, hasTail: true, meteorTailDecayValue: 0.93},
-	/* Wave */		{numberOfWaves: 3, waveSize: 4, interval: 6, hasTail: false},
-	/* Zigzag */	{pulseCount: 2, offset: 6, height: 4, zigzagSize: 3, interval: 6, hasTail: true},
+	/* Meteors */	{pulseCount: 8, offset : 24, randomizeOffset : true, meteorSize : 3, hasTail : true, meteorTailDecayValue : 0.93},
+	/* Ring */		{pulseCount: 6, offset : 24, randomizeOffset : false, meteorSize : 3, hasTail : true, meteorTailDecayValue : 0.93},
+	/* Spiral */ 	{pulseCount: 8, offset : 6, height : 4, repeats : 6, hasTail : true, meteorTailDecayValue : 0.93},
+	/* Wave */		{numberOfWaves: 3, waveSize : 4, interval : 6, hasTail : false},
+	/* Zigzag */	{pulseCount: 2, offset : 6, height : 4, zigzagSize : 3, interval : 6, hasTail : true},
 };
 
 const RateClassSettings rateClass5Settings[] = {
-	/* Meteors */	{pulseCount: 4, offset: 32, randomizeOffset: true, meteorSize: 2, hasTail: true, meteorTailDecayValue: 0.93},
-	/* Ring */		{pulseCount: 4, offset: 32, randomizeOffset: false, meteorSize: 2, hasTail: true, meteorTailDecayValue: 0.95},
-	/* Spiral */ 	{pulseCount: 6, offset: 3, height: 3, repeats: 4, meteorTailDecayValue: 0.95},
-	/* Wave */		{numberOfWaves: 2, waveSize: 3, interval: 6, hasTail: true},
-	/* Zigzag */	{pulseCount: 4, offset: 0, height: 2, zigzagSize: 4, interval: 1, hasTail: true},
+	/* Meteors */	{pulseCount: 4, offset : 32, randomizeOffset : true, meteorSize : 2, hasTail : true, meteorTailDecayValue : 0.93},
+	/* Ring */		{pulseCount: 4, offset : 32, randomizeOffset : false, meteorSize : 2, hasTail : true, meteorTailDecayValue : 0.95},
+	/* Spiral */ 	{pulseCount: 6, offset : 3, height : 3, repeats : 4, meteorTailDecayValue : 0.95},
+	/* Wave */		{numberOfWaves: 2, waveSize : 3, interval : 6, hasTail : true},
+	/* Zigzag */	{pulseCount: 4, offset : 0, height : 2, zigzagSize : 4, interval : 1, hasTail : true},
 };
 
 const RateClassSettings rateClass4Settings[] = {
-	/* Meteor */	{pulseCount: 2, offset: 16, randomizeOffset: true, meteorSize: 1, hasTail: false},
-	/* Ring */		{pulseCount: 2, offset: 32, randomizeOffset: false, meteorTailDecayValue: 0.93},
-	/* Spiral */	{pulseCount: 3, offset: 4, height: 2, repeats: 3},
-	/* Wave */		{numberOfWaves: 1, waveSize: 2, interval: 4, hasTail: false},
+	/* Meteor */	{pulseCount: 2, offset : 16, randomizeOffset : true, meteorSize : 1, hasTail : false},
+	/* Ring */		{pulseCount: 2, offset : 32, randomizeOffset : false, meteorTailDecayValue : 0.93},
+	/* Spiral */	{pulseCount: 3, offset : 4, height : 2, repeats : 3},
+	/* Wave */		{numberOfWaves: 1, waveSize : 2, interval : 4, hasTail : false},
 	/* Zigzag */	{},
 };
 
 const RateClassSettings rateClass3Settings[] = {
-	/* Meteors */	{pulseCount: 1, offset: 16, randomizeOffset: true, meteorSize: 1, hasTail: true, meteorTailDecayValue: 0.93},
-	/* Ring */		{pulseCount: 1, offset: 8, randomizeOffset: false, meteorSize: 1, hasTail: true},
-	/* Spiral */	{pulseCount: 1, offset: 2, height: 2, repeats: 2, meteorTailDecayValue: 0.93},
+	/* Meteors */	{pulseCount: 1, offset : 16, randomizeOffset : true, meteorSize : 1, hasTail : true, meteorTailDecayValue : 0.93},
+	/* Ring */		{pulseCount: 1, offset : 8, randomizeOffset : false, meteorSize : 1, hasTail : true},
+	/* Spiral */	{pulseCount: 1, offset : 2, height : 2, repeats : 2, meteorTailDecayValue : 0.93},
 	/* Wave */		{},
 	/* Zigzag */	{},
 };
 
 const RateClassSettings rateClass2Settings[] = {
-	/* Meteors */	{pulseCount: 1, offset: 16, randomizeOffset: true, meteorSize: 1, hasTail: true, meteorTailDecayValue: 0.93},
+	/* Meteors */	{pulseCount: 1, offset : 16, randomizeOffset : true, meteorSize : 1, hasTail : true, meteorTailDecayValue : 0.93},
 };
 
 const RateClassSettings rateClass1Settings[] = {
-	/* Meteors */	{pulseCount: 1, offset: 24, randomizeOffset: true, meteorSize: 1, hasTail: true, meteorTailDecayValue: 0.93},
+	/* Meteors */	{pulseCount: 1, offset : 24, randomizeOffset : true, meteorSize : 1, hasTail : true, meteorTailDecayValue : 0.93},
 	/* Ring */		{},
 	/* Spiral */	{},
 	/* Wave */		{},
@@ -1432,7 +1433,7 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 	const bool showSerial = FileUtils::config.debugUtils.showSerial;
 	const int stripId = isDown ? 2 : 1;
 
-	
+
 	Serial.println("rate class: " + String(rateClass));
 
 	if (rateClass < 1 || rateClass > 6) {
@@ -1739,33 +1740,35 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 
 #pragma region -- DATA FUNCTIONS
 
+
+const unsigned long ONE_Kbps = 1000;
+const unsigned long TEN_Kbps = 10 * 1000;
+const unsigned long FIFTY_Kbps = 50 * 1000;
+const unsigned long HUNDRED_Kbps = 100 * 1000;
+const unsigned long TWO_FIFTY_Kbps = 250 * 1000;
+const unsigned long FIVE_HUNDRED_Kbps = 500 * 1000;
+const unsigned long ONE_Mbps = 1000 * 1000;
+const unsigned long TWO_Mbps = 2 * ONE_Mbps;
+const unsigned long TWO_POINT_FIVE_Mbps = 2.5 * ONE_Mbps;
+const unsigned long MAX_RATE = 1000 * ONE_Mbps; // 1 Gbps
+
 /* Convert long rate to rate class
  * Returns rate class as an unsigned int
  */
 unsigned int rateLongToRateClass(unsigned long rate) {
+    // Cap the rate at just above 10 Gbps to catch erroneous values
+    unsigned long cappedRate = (rate > MAX_RATE) ? MAX_RATE : rate;
 
-	// Add a check for rate ceiling of 100Gbps to catch erroneous values, set to max rate
-	unsigned long cappedRate;
-	if (rate > 100000000000)
-		cappedRate = (1024 * 1000000) + 1;
-	else
-		cappedRate = rate;
-
-	if (cappedRate > ((1024 * 1024) * 2))
-		return 6; // > 2mbps
-	else if (cappedRate > (1024 * 1024))
-		return 5; // > 1mbps
-	else if (cappedRate > (1024 * 250))
-		return 4; // > 250kbps
-	else if (cappedRate > (1024 * 50))
-		return 3; // > 50kbps
-	else if (cappedRate > 1024)
-		return 2; // > 1kbps
-	else if (cappedRate > 0)
-		return 1; // > < 1kbps
-	else
-		return 0; // 0
+    // Classify the rate into one of the 7 rate classes
+    if (cappedRate == 0) return 0; // No Data
+    else if (cappedRate < ONE_Kbps) return 1; // <1 Kbps
+    else if (cappedRate < TEN_Kbps) return 2; // <50 Kbps
+    else if (cappedRate < HUNDRED_Kbps) return 3; // <250 Kbps
+    else if (cappedRate < FIVE_HUNDRED_Kbps) return 4; // <1 Mbps
+    else if (cappedRate < TWO_POINT_FIVE_Mbps) return 5; // <2.5 Mbps
+    else return 6; // 2.5 Mbps and above
 }
+
 
 struct FoundSignals {
 	unsigned int downSignal;
@@ -1818,6 +1821,11 @@ FoundSignals findSignals(XMLElement* xmlDish, CraftQueueItem* tempNewCraft) {
 		if (rateLong == 0) continue;
 
 		unsigned int rateClass = rateLongToRateClass(rateLong);
+
+		// Serial.println("------");
+		// Serial.println("parsed: " + String(tempNewCraft->callsign) + " | long: " + String(rateLong) + " | rateClass: " + String(rateClass));
+		// Serial.println("------");
+
 		if (rateClass == 0) continue;
 
 		if (strcmp(signalDirection, "down") == 0) {
