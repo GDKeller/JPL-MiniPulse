@@ -1168,36 +1168,28 @@ void createMeteor(int strip, int region, bool directionDown = true, int startPix
 	CHSV meteorColor = currentColors.meteor;
 
 	for (int i = 0; i < animate.ActiveMeteorArraySize; i++) {
-		if (animate.ActiveMeteors[i] != nullptr) {
-			// Serial.print("Could not create meteor #"); Serial.print(i); Serial.print(" startPixel: "); Serial.println(animate.ActiveMeteors[i]->firstPixel);
-			continue;
+		if (animate.ActiveMeteors[i] == nullptr) {
+			animate.ActiveMeteors[i] = new Meteor{
+				directionDown,				// directionDown
+				startPixel,					// firstPixel
+				region,						// region
+				(int)outerPixelsChunkLength,// regionLength
+				meteorColor,				// pColor
+				meteorSize,					// meteorSize
+				hasTail,					// hasTail
+				meteorTailDecay,			// meteorTrailDecay
+				meteorTailDecayValue,		// meteorTrailDecayValue
+				meteorTailRandom,			// meteorRandomDecay
+				currentColors.tailHue,		// tailHueStart
+				false,						// tailHueAdd
+				0.75,						// tailHueExponent
+				currentColors.tailSaturation,// tailHueSaturation
+				allStrips[strip],			// rStrip
+				rateClass
+			};
+			break;
 		}
-
-		animate.ActiveMeteors[i] = new Meteor{
-			directionDown,				  // directionDown
-			startPixel,					  // firstPixel
-			region,						  // region
-			(int)outerPixelsChunkLength,  // regionLength
-			meteorColor,				  // pColor
-			meteorSize,					  // meteorSize
-			hasTail,					  // hasTail
-			meteorTailDecay,			  // meteorTrailDecay
-			meteorTailDecayValue,		  // meteorTrailDecayValue
-			meteorTailRandom,			  // meteorRandomDecay
-			currentColors.tailHue,		  // tailHueStart
-			false,						  // tailHueAdd
-			0.75,						  // tailHueExponent
-			currentColors.tailSaturation, // tailHueSaturation
-			allStrips[strip],			  // rStrip
-			rateClass
-		};
-		// Serial.print("Created new meteor #"); Serial.print(i); Serial.print(" startPixel: "); Serial.println(animate.ActiveMeteors[i]->firstPixel);
-
-		break;
 	}
-
-	if (animate.ActiveMeteorsSize > 499)
-		animate.ActiveMeteorsSize = 0;
 }
 
 void animationMeteorPulseRegion(
@@ -1318,7 +1310,6 @@ void zigzagAnimation(uint8_t strip, bool isDown, uint8_t pulseCount, uint8_t zig
 	}
 }
 
-
 void laserGunAnimation(uint8_t strip, uint16_t chargeTime, uint8_t firingSize, int rateClass)
 {
 	// Charging up animation
@@ -1348,91 +1339,199 @@ void doInnerCoreMeteors(bool isDown = true, int pulseCount = 1, int offset = 8, 
 	}
 }
 
+struct InnerCoreMeteorSettings {
+	bool isDown;
+	int pulseCount;
+	int offset;
+	int meteorCount;
+	float meteorTailDecayValue;
+};
+
 // Define constant settings for the different rate classes
 struct RateClassSettings {
-    int pulseCount;
-    float factor;
+	int pulseCount;
+	int offset;
+	int height;
+	int numberOfWaves;
+	int waveSize;
+	int zigzagSize;
+	int interval;
+	int spiralMultiplier;
+	int repeats;
+	bool randomizeOffset;
+	int meteorSize;
+	bool hasTail;
+	int meteorCount;
+	float meteorTailDecayValue;
 };
+
 
 struct RandomTypeSettings {
-    uint8_t pulseCount;
-    uint8_t height;
-    uint8_t spiralOffset;
-    uint8_t repeats;
+	int pulseCount;
+	int height;
+	int spiralOffset;
+	int repeats;
 };
 
-const RateClassSettings rateClassSettings[] = {
-    {0, 0},    // Placeholder for rate class 0
-    {1, 0.88},
-    {1, 0.9},
-    {1, 0.92},
-    {2, 0.93},
-    {4, 0.95},
-    {6, 0.97},
+
+const InnerCoreMeteorSettings innerCoreSettings[6] = {
+	{pulseCount: 1, offset: 32, meteorCount: 2, meteorTailDecayValue: 0.88},	// Rate class 1
+	{pulseCount: 1, offset: 32, meteorCount: 4, meteorTailDecayValue: 0.90},	// Rate class 2
+	{pulseCount: 1, offset: 32, meteorCount: 6, meteorTailDecayValue: 0.92},	// Rate class 3
+	{pulseCount: 1, offset: 24, meteorCount: 6, meteorTailDecayValue: 0.93},	// Rate class 4
+	{pulseCount: 3, offset: 24, meteorCount: 6, meteorTailDecayValue: 0.93},	// Rate class 5
+	{pulseCount: 5, offset: 32, meteorCount: 6, meteorTailDecayValue: 0.97,}	// Rate class 6
 };
 
-const RandomTypeSettings randomTypeSettings[] = {
-    {8, 0, 0, 0},    // Meteor
-    {6, 4, 6, 6},    // Ring
-    {8, 4, 6, 6},    // Spiral
-    {6, 3, 0, 0},    // Wave
-    {6, 2, 6, 4},    // Zigzag
+const RateClassSettings rateClass6Settings[] = {
+	/* Meteors */	{pulseCount: 8, offset: 24, randomizeOffset: true, meteorSize: 3, hasTail: true, meteorTailDecayValue: 0.93},
+	/* Ring */		{pulseCount: 6, offset: 24, randomizeOffset: false, meteorSize: 3, hasTail: true, meteorTailDecayValue: 0.93},
+	/* Spiral */ 	{pulseCount: 8, offset: 6, height: 4, repeats: 6, hasTail: true, meteorTailDecayValue: 0.93},
+	/* Wave */		{numberOfWaves: 3, waveSize: 4, interval: 6, hasTail: false},
+	/* Zigzag */	{pulseCount: 2, offset: 6, height: 4, zigzagSize: 3, interval: 6, hasTail: true},
 };
+
+const RateClassSettings rateClass5Settings[] = {
+	/* Meteors */	{pulseCount: 4, offset: 32, randomizeOffset: true, meteorSize: 2, hasTail: true, meteorTailDecayValue: 0.93},
+	/* Ring */		{pulseCount: 4, offset: 32, randomizeOffset: false, meteorSize: 2, hasTail: true, meteorTailDecayValue: 0.95},
+	/* Spiral */ 	{pulseCount: 6, offset: 3, height: 3, repeats: 4, meteorTailDecayValue: 0.95},
+	/* Wave */		{numberOfWaves: 2, waveSize: 3, interval: 6, hasTail: true},
+	/* Zigzag */	{pulseCount: 4, offset: 0, height: 2, zigzagSize: 4, interval: 1, hasTail: true},
+};
+
+const RateClassSettings rateClass4Settings[] = {
+	/* Meteor */	{pulseCount: 2, offset: 16, randomizeOffset: true, meteorSize: 1, hasTail: false},
+	/* Ring */		{pulseCount: 2, offset: 32, randomizeOffset: false, meteorTailDecayValue: 0.93},
+	/* Spiral */	{pulseCount: 3, offset: 4, height: 2, repeats: 3},
+	/* Wave */		{numberOfWaves: 1, waveSize: 2, interval: 4, hasTail: false},
+	/* Zigzag */	{},
+};
+
+const RateClassSettings rateClass3Settings[] = {
+	/* Meteors */	{pulseCount: 1, offset: 16, randomizeOffset: true, meteorSize: 1, hasTail: true, meteorTailDecayValue: 0.93},
+	/* Ring */		{pulseCount: 1, offset: 8, randomizeOffset: false, meteorSize: 1, hasTail: true},
+	/* Spiral */	{pulseCount: 1, offset: 2, height: 2, repeats: 2, meteorTailDecayValue: 0.93},
+	/* Wave */		{},
+	/* Zigzag */	{},
+};
+
+const RateClassSettings rateClass2Settings[] = {
+	/* Meteors */	{pulseCount: 1, offset: 16, randomizeOffset: true, meteorSize: 1, hasTail: true, meteorTailDecayValue: 0.93},
+};
+
+const RateClassSettings rateClass1Settings[] = {
+	/* Meteors */	{pulseCount: 1, offset: 24, randomizeOffset: true, meteorSize: 1, hasTail: true, meteorTailDecayValue: 0.93},
+	/* Ring */		{},
+	/* Spiral */	{},
+	/* Wave */		{},
+	/* Zigzag */	{},
+};
+
 
 void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_t type) {
-    const bool showSerial = FileUtils::config.debugUtils.showSerial;
-    const int stripId = isDown ? 2 : 1;
+	const bool showSerial = FileUtils::config.debugUtils.showSerial;
+	const int stripId = isDown ? 2 : 1;
 
-    // Determine animation type
-    uint8_t randomTypeAny = (rateClass <= 2) ? 0 : random8(0, 5);
-    if ((isDown && animateFirstCycleDown) || (!isDown && animateFirstCycleUp)) {
-        if (rateClass == 5 || rateClass == 6) {
-            randomTypeAny = random8(1, 5);
-        } else if (rateClass == 3 || rateClass == 4) {
-            randomTypeAny = 0;
-        }
-    }
+	
+	Serial.println("rate class: " + String(rateClass));
 
-    // Debug log
-    if (showSerial) {
-        const char* direction = isDown ? "Down" : "Up";
-        char buffer[256];
-        snprintf(buffer, sizeof(buffer), "%s | Rate Class: %d | Offset: %d | Type: %d | Adjust Type: %d\n", direction, rateClass, offset, type, randomTypeAny);
-        Serial.print(buffer);
-    }
+	if (rateClass < 1 || rateClass > 6) {
+		FastLED.clear(allStrips[stripId]);
+		return;
+	}
 
-    // Lookup settings
-    const RateClassSettings& rcs = rateClassSettings[rateClass];
-    const RandomTypeSettings& rts = randomTypeSettings[randomTypeAny];
+	// Determine animation type
+	uint8_t randomTypeAny = (rateClass <= 2) ? 0 : random8(0, 5);
+	Serial.println("random roll: " + String(randomTypeAny));
+	if ((isDown && animateFirstCycleDown) || (!isDown && animateFirstCycleUp)) {
+		if (rateClass == 5 || rateClass == 6) {
+			randomTypeAny = random8(1, 5);
+		} else if (rateClass == 3 || rateClass == 4) {
+			randomTypeAny = 0;
+		}
+	} else {
+		if (rateClass == 5 || rateClass == 6) {
+			randomTypeAny = random8(0, 5);
+		} else if (rateClass == 3) {
+			randomTypeAny = random8(0, 3);
+		} else if (rateClass == 4) {
+			randomTypeAny = random8(0, 4);
+		}
+	}
+	Serial.println("random adjusted: " + String(randomTypeAny));
 
-    switch (randomTypeAny) {
-        case 1: 
-            animationMeteorPulseRing(stripId, isDown, rts.pulseCount, 32 - (4 * rateClass), false, rcs.factor, rateClass); 
-            break;
-        case 2: 
-            animationSpiralPulseRing(stripId, isDown, rts.height, rts.pulseCount, rts.spiralOffset, rts.repeats, rcs.factor, rateClass); 
-            break;
-        case 3: 
-            waveAnimation(stripId, isDown, rts.pulseCount, rts.height, rts.repeats, true, rateClass); 
-            break;
-        case 4: 
-            zigzagAnimation(stripId, isDown, rts.pulseCount / 2, rts.height, rts.repeats, rts.spiralOffset, rts.pulseCount, true, rateClass); 
-            break;
-        default: 
-            animationMeteorPulseRing(stripId, isDown, rts.pulseCount, 32 - (4 * rateClass), true, rcs.factor, rateClass); 
-    }
+	// Debug log
+	if (showSerial) {
+		const char* direction = isDown ? "Down" : "Up";
+		char buffer[256];
+		snprintf(buffer, sizeof(buffer), "%s | Rate Class: %d | Offset: %d | Type: %d | Adjust Type: %d\n", direction, rateClass, offset, type, randomTypeAny);
+		Serial.print(buffer);
+	}
 
-    // Set global state variable
-    if (isDown) {
-        animateFirstCycleDown = false;
-    } else {
-        animateFirstCycleUp = false;
-    }
+	// Lookup settings
+	const RateClassSettings* currentRateSettings = nullptr;
 
-    // Inner Core meteors
-    if (isDown && rateClass >= 1 && rateClass <= 6) {
-        doInnerCoreMeteors(true, rcs.pulseCount, 32 - (4 * rateClass), rts.repeats, rcs.factor, rateClass);
-    }
+	switch (rateClass) {
+		case 6:
+			currentRateSettings = rateClass6Settings;
+			break;
+		case 5:
+			currentRateSettings = rateClass5Settings;
+			break;
+		case 4:
+			currentRateSettings = rateClass4Settings;
+			break;
+		case 3:
+			currentRateSettings = rateClass3Settings;
+			break;
+		case 2:
+			currentRateSettings = rateClass2Settings;
+			break;
+		case 1:
+			currentRateSettings = rateClass1Settings;
+			break;
+	}
+
+	if (currentRateSettings) {
+		const RateClassSettings& settings = currentRateSettings[randomTypeAny];
+
+		if (rateClass == 1 || rateClass == 2) {
+			animationMeteorPulseRegion(stripId, random8(0, 11), isDown, 0, settings.pulseCount, settings.offset, settings.randomizeOffset, settings.meteorSize, settings.hasTail, settings.meteorTailDecayValue, rateClass);
+		} else {
+			switch (randomTypeAny) {
+				case 0:
+					animationMeteorPulseRing(stripId, isDown, settings.pulseCount, settings.offset, settings.randomizeOffset, settings.meteorSize, settings.hasTail, settings.meteorTailDecayValue, rateClass);
+					break;
+				case 1:
+					animationMeteorPulseRing(stripId, isDown, settings.pulseCount, settings.offset, settings.randomizeOffset, settings.meteorSize, settings.hasTail, settings.meteorTailDecayValue, rateClass);
+					break;
+				case 2:
+					animationSpiralPulseRing(stripId, isDown, settings.height, settings.pulseCount, settings.spiralMultiplier, settings.repeats, settings.hasTail, settings.meteorTailDecayValue, rateClass);
+					break;
+				case 3:
+					waveAnimation(stripId, isDown, settings.numberOfWaves, settings.waveSize, settings.interval, settings.hasTail, rateClass);
+					break;
+				case 4:
+					zigzagAnimation(stripId, isDown, settings.pulseCount, settings.zigzagSize, settings.offset, settings.height, settings.interval, settings.hasTail, rateClass);
+					break;
+			}
+		}
+	}
+
+
+	// Set global state variable
+	if (isDown) {
+		animateFirstCycleDown = false;
+	} else {
+		animateFirstCycleUp = false;
+	}
+
+	const InnerCoreMeteorSettings& ics = innerCoreSettings[rateClass - 1];
+
+	// Inner Core meteors
+	if (isDown) {
+		doInnerCoreMeteors(true, ics.pulseCount, ics.offset, ics.meteorCount, ics.meteorTailDecayValue, rateClass);
+	}
 }
 
 
@@ -1610,6 +1709,8 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 				snprintf(buffer, sizeof(buffer), "%s>>> Fire Meteors: %s | %d | %d%s\n", dev.termColor("bg_blue"), spacecraftName, downSignalRate, upSignalRate, dev.termColor("reset"));
 				Serial.print(buffer);
 			}
+			Serial.print("\n\n-----------------------------\n");
+			Serial.print("Fire Meteors: " + String(spacecraftName) + " | " + String(downSignalRate) + " | " + String(upSignalRate) + "\n");
 			doRateBasedAnimation(true, downSignalRate, meteorOffset, animationTypeDown);
 			doRateBasedAnimation(false, upSignalRate, meteorOffset, animationTypeUp);
 		}
