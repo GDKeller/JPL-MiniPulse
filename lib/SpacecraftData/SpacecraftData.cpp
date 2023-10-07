@@ -94,7 +94,13 @@ void SpacecraftData::loadJson()
         "TD10": "Tracking and Data Relay Satellites (TDRS)",
         "TD11": "Tracking and Data Relay Satellites (TDRS)",
         "TD12": "Tracking and Data Relay Satellites (TDRS)",
-        "TD13": "Tracking and Data Relay Satellites (TDRS)"
+        "TD13": "Tracking and Data Relay Satellites (TDRS)",
+        "Rate1": "Test Rate 1",
+        "Rate2": "Test Rate 2",
+        "Rate3": "Test Rate 3",
+        "Rate4": "Test Rate 4",
+        "Rate5": "Test Rate 5",
+        "Rate6": "Test Rate 6"
       }
     )=---=";
 

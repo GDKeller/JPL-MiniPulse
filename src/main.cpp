@@ -1346,36 +1346,35 @@ void doInnerCoreMeteors(bool isDown = true, int pulseCount = 1, int offset = 8, 
 
 struct InnerCoreMeteorSettings {
 	bool isDown;
-	int pulseCount;
-	int offset;
-	int meteorCount;
+	uint8_t pulseCount;
+	uint8_t offset;
+	uint8_t meteorCount;
 	float meteorTailDecayValue;
 };
 
 // Define constant settings for the different rate classes
 struct RateClassSettings {
-	int pulseCount;
-	int offset;
-	int height;
-	int numberOfWaves;
-	int waveSize;
-	int zigzagSize;
-	int interval;
-	int spiralMultiplier;
-	int repeats;
+	uint8_t pulseCount;
+	uint8_t offset;
+	uint8_t height;
+	uint8_t numberOfWaves;
+	uint8_t waveSize;
+	uint8_t zigzagSize;
+	uint8_t interval;
+	uint8_t spiralMultiplier;
+	uint8_t repeats;
 	bool randomizeOffset;
-	int meteorSize;
+	uint8_t meteorSize;
 	bool hasTail;
-	int meteorCount;
+	uint8_t meteorCount;
 	float meteorTailDecayValue;
 };
 
-
 struct RandomTypeSettings {
-	int pulseCount;
-	int height;
-	int spiralOffset;
-	int repeats;
+	uint8_t pulseCount;
+	uint8_t height;
+	uint8_t spiralOffset;
+	uint8_t repeats;
 };
 
 
@@ -1432,36 +1431,45 @@ const RateClassSettings rateClass1Settings[] = {
 	/* Zigzag */	{},
 };
 
+const RateClassSettings* rateClassSettings[] = {
+    rateClass1Settings,
+    rateClass2Settings,
+    rateClass3Settings,
+    rateClass4Settings,
+    rateClass5Settings,
+    rateClass6Settings
+};
+
 
 void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_t type) {
+	if (rateClass < 1 || rateClass > 6) return; // Invalid rate class
+
 	const bool showSerial = FileUtils::config.debugUtils.showSerial;
-	const int stripId = isDown ? 2 : 1;
+	const uint8_t stripId = isDown ? 2 : 1;
 
 
 	// Serial.println("isDown: " + String(isDown) + " | strip: " + String(stripId) + " | rateClass: " + String(rateClass));
 
-	if (rateClass < 1 || rateClass > 6) {
-		FastLED.clear(allStrips[stripId]);
-		return;
-	}
 
 	// Determine animation type
-	uint8_t randomTypeAny = (rateClass <= 2) ? 0 : random8(0, 5);
+	// uint8_t randomTypeAny = (rateClass <= 2) ? 0 : random8(0, 5);
+	uint8_t randomTypeAny;
 	// Serial.println("random roll: " + String(randomTypeAny));
+	
 	if ((isDown && animateFirstCycleDown) || (!isDown && animateFirstCycleUp)) {
-		if (rateClass == 5 || rateClass == 6) {
-			randomTypeAny = random8(1, 5);
-		} else if (rateClass == 3 || rateClass == 4) {
-			randomTypeAny = 0;
-		}
+        if (rateClass == 5 || rateClass == 6) {
+            randomTypeAny = random8(1, 5);
+        } else if (rateClass == 3 || rateClass == 4) {
+            randomTypeAny = 0;
+        }
+    } else if (rateClass == 5 || rateClass == 6) {
+        randomTypeAny = random8(0, 5);
+    } else if (rateClass == 4) {
+        randomTypeAny = random8(0, 4);
+    } else if (rateClass == 3) {
+        randomTypeAny = random8(0, 3);
 	} else {
-		if (rateClass == 5 || rateClass == 6) {
-			randomTypeAny = random8(0, 5);
-		} else if (rateClass == 3) {
-			randomTypeAny = random8(0, 3);
-		} else if (rateClass == 4) {
-			randomTypeAny = random8(0, 4);
-		}
+		randomTypeAny = 0;
 	}
 	// Serial.println("random adjusted: " + String(randomTypeAny));
 
@@ -1474,28 +1482,7 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 	}
 
 	// Lookup settings
-	const RateClassSettings* currentRateSettings = nullptr;
-
-	switch (rateClass) {
-		case 6:
-			currentRateSettings = rateClass6Settings;
-			break;
-		case 5:
-			currentRateSettings = rateClass5Settings;
-			break;
-		case 4:
-			currentRateSettings = rateClass4Settings;
-			break;
-		case 3:
-			currentRateSettings = rateClass3Settings;
-			break;
-		case 2:
-			currentRateSettings = rateClass2Settings;
-			break;
-		case 1:
-			currentRateSettings = rateClass1Settings;
-			break;
-	}
+	const RateClassSettings* currentRateSettings = rateClassSettings[rateClass - 1];
 
 	if (currentRateSettings) {
 		const RateClassSettings& settings = currentRateSettings[randomTypeAny];
@@ -1505,8 +1492,6 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 		} else {
 			switch (randomTypeAny) {
 				case 0:
-					animationMeteorPulseRing(stripId, isDown, settings.pulseCount, settings.offset, settings.randomizeOffset, settings.meteorSize, settings.hasTail, settings.meteorTailDecayValue, rateClass);
-					break;
 				case 1:
 					animationMeteorPulseRing(stripId, isDown, settings.pulseCount, settings.offset, settings.randomizeOffset, settings.meteorSize, settings.hasTail, settings.meteorTailDecayValue, rateClass);
 					break;
@@ -1524,18 +1509,20 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 	}
 
 
-	// Set global state variable
-	if (isDown) {
-		animateFirstCycleDown = false;
-	} else {
-		animateFirstCycleUp = false;
-	}
-
 	const InnerCoreMeteorSettings& ics = innerCoreSettings[rateClass - 1];
 
 	// Inner Core meteors
 	if (isDown) {
-		doInnerCoreMeteors(true, ics.pulseCount, ics.offset, ics.meteorCount, ics.meteorTailDecayValue, rateClass);
+		// doInnerCoreMeteors(true, ics.pulseCount, ics.offset, ics.meteorCount, ics.meteorTailDecayValue, rateClass);
+
+		// Inlined doCoreMeteors() here for performance		
+		for (uint8_t i = 0; i < ics.meteorCount; i++) {
+			animationMeteorPulseRegion(0, random8(4, 9), isDown, 0, ics.pulseCount, offset, true, 1, true, ics.meteorTailDecayValue, rateClass);
+		}
+
+		animateFirstCycleDown = false;
+	} else {
+		animateFirstCycleUp = false;
 	}
 }
 
@@ -1543,7 +1530,7 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 void drawMeteors()
 {
 	// Update meteor animations
-	for (int i = 0; i < animate.ActiveMeteorArraySize; i++) {
+	for (uint16_t i = 0; i < animate.ActiveMeteorArraySize; i++) {
 		if (animate.ActiveMeteors[i] != nullptr)
 			animate.animateMeteor(animate.ActiveMeteors[i]);
 	}
@@ -1719,8 +1706,13 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 				Serial.print("\n\n-----------------------------\n");
 				Serial.print("Fire Meteors: " + String(spacecraftName) + " | " + String(downSignalRate) + " | " + String(upSignalRate) + "\n");
 			}
-			doRateBasedAnimation(true, downSignalRate, meteorOffset, animationTypeDown);
-			doRateBasedAnimation(false, upSignalRate, meteorOffset, animationTypeUp);
+
+			if (downSignalRate > 0)
+				doRateBasedAnimation(true, downSignalRate, meteorOffset, animationTypeDown); // Down animation
+
+			if (upSignalRate > 0)
+				doRateBasedAnimation(false, upSignalRate, meteorOffset, animationTypeUp); // Up animation
+	
 			animationTimer = currentMillis; // Reset meteor animation timer
 		}
 	}
@@ -1740,6 +1732,7 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 	if (FileUtils::config.debugUtils.diagMeasure)
 		FastLED.countFPS();
 	// updateSpeedCounters();
+
 }
 
 #pragma endregion -- ANIMATION FUNCTIONS
@@ -2832,9 +2825,10 @@ void setup()
  * Runs repeatedly as long as board is on
  */
 void loop() {
+
 	uint32_t currentMillis = millis(); // Store the current time
 
-	bool debugUtilsEnabled = FileUtils::config.debugUtils.showSerial;
+	bool showSerial = FileUtils::config.debugUtils.showSerial;
 	bool testCoresEnabled = FileUtils::config.debugUtils.testCores;
 	bool diagMeasureEnabled = FileUtils::config.debugUtils.diagMeasure;
 
@@ -2857,7 +2851,7 @@ void loop() {
 			CraftQueueItem* infoBuffer = &theInfoBuffer;
 
 			if (queue && infoBuffer && xQueueReceive(queue, &infoBuffer, 1) == pdPASS) {
-				if (debugUtilsEnabled) {
+				if (showSerial) {
 					Serial.println("\n\n   ┌────────────────────────────────┐");
 					Serial.println("───│          RETRIEVE QUEUE        │───");
 					Serial.println("   └────────────────────────────────┘");
@@ -2880,10 +2874,10 @@ void loop() {
 
 					nameScrollDone = false;
 
-					if (debugUtilsEnabled) {
+					if (showSerial) {
 						printCurrentCraftBuffer();
 					}
-				} else if (debugUtilsEnabled) {
+				} else if (showSerial) {
 					Serial.println("Craft name is empty");
 					noTargetFoundCounter++;
 				}
@@ -2908,7 +2902,7 @@ void loop() {
 		updateAnimation(currentCraftBuffer.name, currentCraftBuffer.nameLength, currentCraftBuffer.downSignal, currentCraftBuffer.upSignal);
 	}
 	catch (...) {
-		if (debugUtilsEnabled) {
+		if (showSerial) {
 			Serial.println("Error updating animation");
 		}
 		dev.handleException();
