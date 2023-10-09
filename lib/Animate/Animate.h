@@ -3,6 +3,10 @@
     Created by Grant Keller, November 2022
 */
 
+#ifndef ALGORITHM_H
+#include <algorithm>
+#endif
+
 #ifndef FASTLED_H
 #include <FastLED.h>
 #endif
@@ -36,19 +40,19 @@ struct Meteor {
     bool tailHueAdd;
     double tailHueExponent;
     int tailHueSaturation;
-    CRGB *&rStrip;
+    CRGB*& rStrip;
     int rateClass;
 };
 
 class Animate {
     static AnimationUtils aUtilAnimate;
     public:
-        static const uint16_t ActiveMeteorArraySize = 500;
-        Meteor* ActiveMeteors[ActiveMeteorArraySize] = {nullptr};
-        size_t ActiveMeteorsSize = 0;
-        void animateMeteor(Meteor* meteor);
+    static const uint16_t ActiveMeteorArraySize = 500;
+    Meteor* ActiveMeteors[ActiveMeteorArraySize] = { nullptr };
+    size_t ActiveMeteorsSize = 0;
+    void animateMeteor(Meteor* meteor);
 
-        Animate();
+    Animate();
 };
 
 #endif

@@ -5,8 +5,8 @@
 FileUtils::Config FileUtils::config = {
 	{ // debugUtils
 		false, // testCores
-		true, // showSerial
-		false, // diagMeasure
+		false, // showSerial
+		true, // diagMeasure
 		false, // disableWiFi
 		false  // testLEDs
 	},

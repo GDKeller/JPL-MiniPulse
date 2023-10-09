@@ -56,7 +56,7 @@ String DevUtils::termColor(const char* color) {
 
 String DevUtils::getFreeHeap() {
     char buffer[32];
-    snprintf(buffer, sizeof(buffer), "MEM_Free_Heap:%u\t", ESP.getFreeHeap());
+    snprintf(buffer, sizeof(buffer), "MEM_Free_Heap:%u", ESP.getFreeHeap());
     return buffer;
 }
 
@@ -68,7 +68,7 @@ void DevUtils::printFreeHeap() {
     printString += "MEM_Free_Heap:";
     printString += ESP.getFreeHeap() * 0.001; // Value being divided for visualization on plotter
     // printString += ESP.getFreeHeap();	// This is the actual value
-    printString += "\t";
+    printString += "\n";
     // printString += termColor("reset");
     // printString += "\n";
 

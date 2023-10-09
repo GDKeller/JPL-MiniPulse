@@ -1,5 +1,9 @@
 #include <Animate.h>
 
+#ifndef MATHHELPERS_H
+#include <MathHelpers.h>
+#endif
+
 Animate::Animate() {}
 
 AnimationUtils Animate::aUtilAnimate = AnimationUtils();
@@ -25,7 +29,7 @@ void Animate::animateMeteor(Meteor* meteor)
 	int hue = tailHueStart;
 
 	int tailLength = 12;
-	int tailSection = 256/tailLength;
+	int tailSection = 256 / tailLength;
 	int halfTailSection = tailSection * 0.5;
 	int adjustedLength = (meteorSize + tailLength) * 2;
 
@@ -96,23 +100,30 @@ void Animate::animateMeteor(Meteor* meteor)
 		// 	trailColor = CHSV(hue, tailHueSaturation, brightValue);
 		// }
 
+		// meteorTrailDecayValue = std::max(0.97, meteorTrailDecayValue + 0.01);
+
 
 		if (meteorTrailDecay == true) {
 			// int satExpo = ceil(tailHueSaturation * log(d + 1)); // Calculate logarithmic growth
 			// satExpo += random(32) - 16;							// Add random variance to saturation
 			// uint8_t satValue = satExpo > tailHueSaturation ? tailHueSaturation : (satExpo < 0 ? 0 : satExpo);
-			// int brightExpo = ceil(255 * mPower(meteorTrailDecayValue, d)); // Calculate exponential decay
+			int brightExpo = ceil(223 * MathHelpers::mPower(meteorTrailDecayValue, d)); // Calculate exponential decay
 			// int brightExpo = 255 - (d * random8(8, 32));
 			// int brightExpo = 255 / ((d + 2) );
-			int tailBrightness = 255 - round((tailSection * d) * 0.5);
-			tailBrightness += (random8(tailSection) - (halfTailSection));	// Add randomvariance to brightness
-			
-			uint8_t brightValue = tailBrightness > 255 ? 255 : (tailBrightness < 0 ? 0 : tailBrightness);
+			const int tailBrightness = brightExpo;
+
+			// This version calculate brightness based on defined tail length
+			// int tailBrightness = 255 - round((tailSection * d) * 0.5);
+			// tailBrightness += (random8(tailSection) - (halfTailSection));	// Add random variance to brightness
+
+			// uint8_t brightValue = tailBrightness > 255 ? 255 : (tailBrightness < 0 ? 0 : tailBrightness);
+			uint8_t brightValue = std::min(223, std::max(0, tailBrightness)); // Clamp brightness to 0-255 via min/max
+
 			// int randVal = (4 * d) * (4 * d); // Calculate random variance
 			// int hueRandom = hue + (random(randVal) - (randVal / 2));
 			// brightValue = 255;
 			// Serial.println(brightValue);
-			// delay(1000);
+
 			uint8_t brightCalc = dim8_raw(brightValue);
 			trailColor = CHSV(hue, tailHueSaturation, brightCalc);
 		} else {

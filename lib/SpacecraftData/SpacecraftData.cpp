@@ -49,7 +49,6 @@ void SpacecraftData::loadJson()
         "LFL": "Lunar Flashlight",
         "HMAP": "Lunar Hydrogen Mapper",
         "LRO": "Lunar Reconnaissance Orbiter",
-        "MMS1,2,3,4": "Magnetospheric MultiScale Formation Flyers",
         "MMS1": "Magnetospheric MultiScale Formation Flyer 1",
         "MMS2": "Magnetospheric MultiScale Formation Flyer 2",
         "MMS3": "Magnetospheric MultiScale Formation Flyer 3",
@@ -72,7 +71,6 @@ void SpacecraftData::loadJson()
         "STA": "STEREO A",
         "TESS": "Transiting Exoplanet Survey Satellite",
         "TGO": "ExoMars Trace Gas Orbiter",
-        "THB,C": "THEMISB,C",
         "THB": "THEMIS B",
         "THC": "THEMIS C",
         "TM": "TeamMiles",
@@ -85,7 +83,6 @@ void SpacecraftData::loadJson()
         "GBRA": "Ground Based Radio Astronomy",
         "GSSR": "Goldstone Solar System Radar",
         "GVRT": "Goldstone Apple Valley Radio Telescope",
-        "RFC(VLBI)": "Reference Frame Calibration",
         "SGP": "Space Geodesy Program",
         "TDR6": "Tracking and Data Relay Satellites (TDRS)",
         "TDR7": "Tracking and Data Relay Satellites (TDRS)",
@@ -117,12 +114,21 @@ void SpacecraftData::loadJson()
 }
 
 const char* SpacecraftData::callsignToName(const char* key) {
+  // Serial.print("\n\n>>>>>>>>>>>>>>>>>-------------------------\nLooking for spacecraft name for callsign: " + String(key) + "\n");
   if (spacecraftNamesJson.containsKey(key)) {
-    return spacecraftNamesJson[key];
+    const char* spacecraftName = spacecraftNamesJson[key];
+    // Serial.println(String("Extracted Value: ") + spacecraftName);
+    // Serial.println("Key found: " + String(key) + " = " + String(spacecraftName));
+    // Serial.print(">>>>>>>>>>>>>>>>>-------------------------\n\n");
+    return spacecraftName;
   }
 
+  // Serial.println("Key not found: " + String(key));
+  // Serial.print(">>>>>>>>>>>>>>>>>-------------------------\n\n");
   return key;
 }
+
+
 
 /**
  * Spacecraft Blacklist
@@ -130,10 +136,13 @@ const char* SpacecraftData::callsignToName(const char* key) {
  * Returns true if spacecraft is on blacklist
  */
 void SpacecraftData::loadSpacecraftBlacklist() {
+  // "RFC(VLBI)": "Reference Frame Calibration"
+
   static const char file[] = PROGMEM R"=---=(
       {
         "TEST": true,
-        "DSN": true
+        "DSN": true,
+        "RFC(VLBI)": "Reference Frame Calibration"
       }
     )=---=";
 
@@ -144,8 +153,8 @@ void SpacecraftData::loadSpacecraftBlacklist() {
 
   if (error) {
     if (FileUtils::config.debugUtils.showSerial)
-      Serial.print(DevUtils::termColor("red") +  "Spacecraft blacklist loading failed: " + error.c_str() + DevUtils::termColor("reset") + "\n");
-    
+      Serial.print(DevUtils::termColor("red") + "Spacecraft blacklist loading failed: " + error.c_str() + DevUtils::termColor("reset") + "\n");
+
     return;
   }
   Serial.println("Spacecraft blacklist loaded");
@@ -156,10 +165,10 @@ void SpacecraftData::loadSpacecraftBlacklist() {
 /* Check Blacklist */
 bool SpacecraftData::checkBlacklist(const char* key) {
   bool isBlacklisted = spacecraftBlacklistJson[key] != nullptr ? true : false; // If the key is not null, it is blacklisted
-  
+
   if (FileUtils::config.debugUtils.showSerial)
     Serial.println(DevUtils::termColor("bg_bright_black") + ">>> Checking blacklist for " + String(key) + ": " + (isBlacklisted ? "true" : "false") + DevUtils::termColor("reset") + "\n");
-  
-  
+
+
   return spacecraftBlacklistJson[key] != nullptr ? true : false;
 }
