@@ -6,7 +6,7 @@ FileUtils::Config FileUtils::config = {
 	{ // debugUtils
 		false, // testCores
 		false, // showSerial
-		true, // diagMeasure
+		false, // diagMeasure
 		false, // disableWiFi
 		false  // testLEDs
 	},
@@ -41,6 +41,7 @@ FileUtils::Config FileUtils::config = {
 		8000, // craftDelay
 		1000  // displayMinDuration
 	},
+
 	{ // textTypography
 		4,    // characterWidth
 		4000, // textMeteorGap
@@ -120,6 +121,8 @@ void FileUtils::setConfigValuesFromFile(File configFile) {
 		Serial.print(kv.key().c_str() + String(": ") + kv.value().as<String>() + String("\n"));
 		if (kv.key() == "showSerial") {
 			FileUtils::config.debugUtils.showSerial = kv.value().as<bool>();
+		} else if (kv.key() == "diagMeasure") {
+			FileUtils::config.debugUtils.diagMeasure = kv.value().as<int>();
 		} else if (kv.key() == "brightness") {
 			FileUtils::config.displayLED.brightness = kv.value().as<int>();
 		}

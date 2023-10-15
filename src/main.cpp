@@ -474,6 +474,7 @@ WiFiManagerParameter param_brightness;		   // global param ( for non blocking w 
 // WiFiManagerParameter field_meteor_tail_random; // global param ( for non blocking w params )
 // WiFiManagerParameter field_global_fps;
 WiFiManagerParameter param_show_serial;
+WiFiManagerParameter param_show_diagnostics;
 // WiFiManagerParameter field_scroll_letters_delay;
 // WiFiManagerParameter field_show_serial("show_serial", "Show Serial", FileUtils::config.debugUtils.showSerial, 1);
 bool portalRunning = false;
@@ -483,6 +484,7 @@ struct wmParams
 	String xml_data_radio;
 	String brightness;
 	String show_serial;
+	String show_diagnostics;
 	String scroll_letters_delay;
 };
 
@@ -546,9 +548,11 @@ unsigned long animationTimer = 0;
 unsigned long craftDelayTimer = 0;
 const uint16_t craftDelay = 8000; // Wait this long after finishing for new craft to be dipslayed
 const uint16_t displayMinDuration = 20000; // Minimum time to display a craft before switching to next craft
-unsigned long displayDurationTimer = 0; // Timer to keep track of how long craft has been displayed, set at minimum for no startup delay
-const uint16_t textMeteorGap = 4000;
-const uint16_t animationRepeatGap = 2000;
+unsigned long displayDurationTimer = 20000; // Timer to keep track of how long craft has been displayed, set at minimum for no startup delay
+const uint16_t textMeteorGap = 6000;
+const uint16_t animationRepeatGap = 3000;
+unsigned long animationCleanupTimer = 0;
+const uint16_t animationCleanupDelay = 8000;
 const uint8_t meteorOffset = 32;
 const uint8_t offsetHalf = meteorOffset * 0.5;
 
@@ -980,7 +984,6 @@ void saveParamsCallback() {
 	Serial.print("\n\n----------------------------------------\nPORTAL FORM SUBMITTED\n----------------------------------------\n\n");
 
 	/* Set serial show config key from input */
-
 	// Get input value
 	String showSerialValue = getParam("show_serial");
 	Serial.print("show_serial input: " + showSerialValue + "\n");
@@ -996,6 +999,26 @@ void saveParamsCallback() {
 
 	// Set file config
 	FileUtils::writeConfigFileBool("showSerial", FileUtils::config.debugUtils.showSerial);
+	readFile(LittleFS, "/config.json");
+	Serial.println();
+
+
+	/* Set show diagnostics config key from input */
+	// Get input value
+	String showDiagnosticsValue = getParam("show_diagnostics");
+	Serial.print("show_diagnostics input: " + showDiagnosticsValue + "\n");
+
+	// Convert to bool
+	bool showDiagnosticsValueBool = strcmp(showDiagnosticsValue.c_str(), "1") == 0 ? true : false;
+	Serial.print("show diagnostics bool: " + String(showDiagnosticsValueBool) + "\n");
+
+	// Set program config
+	Serial.print("Previous config showDiagnostics: " + String(FileUtils::config.debugUtils.diagMeasure) + "\n");
+	FileUtils::config.debugUtils.diagMeasure = showDiagnosticsValueBool;
+	Serial.print("New config showDiagnostics: " + String(FileUtils::config.debugUtils.diagMeasure) + "\n");
+
+	// Set file config
+	FileUtils::writeConfigFileBool("diagMeasure", FileUtils::config.debugUtils.diagMeasure);
 	readFile(LittleFS, "/config.json");
 	Serial.println();
 
@@ -1155,15 +1178,23 @@ void scrollLetters(const char* spacecraftName, int wordArraySize)
 
 	if (startPixel > wrapPixel) {
 		startPixel = 0;
-		if (millis() - displayDurationTimer > displayMinDuration) {
-			nameScrollDone = true;
-			animationInProgress = false;
-			animationTypeSetDown = false;
-			animationTypeSetUp = false;
-			animateFirstCycleDown = true;
-			animateFirstCycleUp = true;
-			craftDelayTimer = millis();
-		}
+		nameScrollDone = true;
+		animationInProgress = false;
+		animationTypeSetDown = false;
+		animationTypeSetUp = false;
+		animateFirstCycleDown = true;
+		animateFirstCycleUp = true;
+		craftDelayTimer = millis();
+
+		// if (millis() - displayDurationTimer > displayMinDuration) {
+		// 	nameScrollDone = true;
+		// 	animationInProgress = false;
+		// 	animationTypeSetDown = false;
+		// 	animationTypeSetUp = false;
+		// 	animateFirstCycleDown = true;
+		// 	animateFirstCycleUp = true;
+		// 	craftDelayTimer = millis();
+		// }
 	}
 }
 
@@ -1383,16 +1414,16 @@ const InnerCoreMeteorSettings innerCoreSettings[6] = {
 const RateClassSettings rateClass6Settings[] = {
 	/* Meteors */
 	{pulseCount: 8, offset : 24, randomizeOffset : true, meteorSize : 2, hasTail : true, meteorTailDecayValue : 0.97},
-	
+
 	/* Ring */
 	{pulseCount: 6, offset : 24, randomizeOffset : false, meteorSize : 3, hasTail : true, meteorTailDecayValue : 0.97},
-	
+
 	/* Spiral */
 	{pulseCount: 8, offset : 4, height : 2, repeats : 6, hasTail : true, meteorTailDecayValue : 0.96},
-	
+
 	/* Wave */
 	{numberOfWaves: 4, waveSize : 3, interval : 4, hasTail : true, meteorTailDecayValue : 0.97},
-	
+
 	/* Zigzag */
 	{pulseCount: 2, offset : 8, height : 3, zigzagSize : 3, interval : 3, hasTail : true, meteorTailDecayValue : 0.97},
 };
@@ -1687,16 +1718,22 @@ void updateMeteors()
  */
 void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int downSignalRate, int upSignalRate)
 {
-	if (FileUtils::config.debugUtils.diagMeasure == true) {
+	const bool showDiagnostics = FileUtils::config.debugUtils.diagMeasure;
+
+	if (showDiagnostics == true) {
 		Serial.print("FPS:");
 		Serial.print(FastLED.getFPS() * 1);
 		Serial.print(",");
 	}
 
 	unsigned long currentMillis = millis(); // Store the current time
+	const unsigned long currentDisplayDuration = currentMillis - displayDurationTimer;
+
+	if (showDiagnostics)
+		Serial.print("animationCleanup:" + String(displayMinDuration + animationCleanupDelay) + ",");
 
 	/* Update Scrolling letters animation */
-	if (nameScrollDone == false) {
+	if (nameScrollDone == false && currentDisplayDuration < displayMinDuration + animationCleanupDelay ) {
 		// Serial.println("-------- scroll letters: " + String(spacecraftName));
 		scrollLetters(spacecraftName, spacecraftNameSize);
 	}
@@ -1728,17 +1765,44 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 	// Serial.print("diff: "); Serial.println(currentMillis - animationTimer);
 	// Serial.print("textMeteorGap: "); Serial.println(textMeteorGap);
 
+	// if (millis() - displayDurationTimer > displayMinDuration) {
 	// Fire meteors
-	if (displayDurationTimer > displayMinDuration) {
+	
+	if (showDiagnostics)
+		Serial.print(
+			"displayDurationTimer:" + String(displayDurationTimer) +
+			", displayMinDuration:" + String(displayMinDuration) +
+			", display_diff:" + String(currentMillis - displayDurationTimer) +
+			", textMeteorGap:" + String(textMeteorGap) +
+			", animationTimer" + String(animationTimer) +
+			", animationRepeatGap:" + String(animationRepeatGap) +
+			", animation_diff" + String(currentMillis - animationTimer) +
+			", animationInProgress:" + String(animationInProgress) +
+			", nameScrollDone:" + String(nameScrollDone) +
+			", currentDisplayDuration:" + String(currentDisplayDuration) +
+			","
+		);
+
+	if (
+		currentDisplayDuration < displayMinDuration
+		&& currentDisplayDuration > textMeteorGap
+	) {
 		bool shouldAnimate = false;
 
-		if (animationInProgress && (currentMillis - animationTimer) > animationRepeatGap) {
+		// if (animationInProgress && (currentMillis - animationTimer) > animationRepeatGap) {
+		// 	shouldAnimate = true;
+		// } else if (!animationInProgress && (currentMillis - animationTimer) > textMeteorGap) {
+		// 	shouldAnimate = true;
+		// }
+
+		if ((currentMillis - animationTimer) > animationRepeatGap) {
 			shouldAnimate = true;
-		} else if (!animationInProgress && (currentMillis - animationTimer) > textMeteorGap) {
+		} else if ((currentMillis - animationTimer) > textMeteorGap) {
 			shouldAnimate = true;
 		}
 
-		if (shouldAnimate && nameScrollDone == false) {
+		// if (shouldAnimate && nameScrollDone == false) {
+		if (shouldAnimate) {
 			if (FileUtils::config.debugUtils.showSerial == true) {
 				char buffer[256];
 				snprintf(buffer, sizeof(buffer), "%s>>> Fire Meteors: %s | %d | %d%s\n", dev.termColor("bg_blue"), spacecraftName, downSignalRate, upSignalRate, dev.termColor("reset"));
@@ -1769,7 +1833,7 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 
 	updateMeteors(); // Update first pixel location for all active Meteors in array
 
-	if (FileUtils::config.debugUtils.diagMeasure)
+	if (showDiagnostics)
 		FastLED.countFPS();
 	// updateSpeedCounters();
 
@@ -2655,6 +2719,7 @@ void setup()
 		FileUtils::printAllConfigFileKeys();
 		Serial.print("config... \n");
 		Serial.print("showSerial: " + String(FileUtils::config.debugUtils.showSerial) + "\n");
+		Serial.print("diagMeasure: " + String(FileUtils::config.debugUtils.diagMeasure) + "\n");
 		Serial.print("brightness: " + String(FileUtils::config.displayLED.brightness) + "\n\n");
 		// Serial.print("ssid: " + String(FileUtils::config.wifiNetwork.apSSID) + "\n");
 		// if (FileUtils::config.wifiNetwork.apPass != nullptr) {
@@ -2759,9 +2824,11 @@ void setup()
 
 	int brightnessMapped = MathHelpers::map(FileUtils::config.displayLED.brightness, 8, 255, 0, 100);
 	new (&param_show_serial) WiFiManagerParameter("show_serial", "Show Serial", FileUtils::config.debugUtils.showSerial ? "1" : "0", 1, "type='number' min='0' max='1' step='1'");
+	new (&param_show_diagnostics) WiFiManagerParameter("show_diagnostics", "Show Diagnostics", FileUtils::config.debugUtils.diagMeasure ? "1" : "0", 1, "type='number' min='0' max='1' step='1'");
 	new (&param_brightness) WiFiManagerParameter("brightness", "Brightness", String(FileUtils::config.displayLED.brightness).c_str(), 3, "type='range' min='8' max='255' step='1'");
 
 	wm.addParameter(&param_show_serial);
+	wm.addParameter(&param_show_diagnostics);
 	wm.addParameter(&param_brightness);
 
 
@@ -2881,7 +2948,7 @@ void loop() {
 
 	try {
 		// Check for new data
-		if (dataStarted && nameScrollDone && (currentMillis - displayDurationTimer) > displayMinDuration && (currentMillis - craftDelayTimer) > craftDelay) {
+		if (dataStarted && nameScrollDone && (currentMillis - displayDurationTimer) > displayMinDuration + animationCleanupDelay && (currentMillis - craftDelayTimer) > craftDelay) {
 
 			if (diagMeasureEnabled) {
 				// Serial.printf("Queue: %u\n", uxQueueMessagesWaiting(queue));
