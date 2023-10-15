@@ -107,7 +107,7 @@ void Animate::animateMeteor(Meteor* meteor)
 			// int satExpo = ceil(tailHueSaturation * log(d + 1)); // Calculate logarithmic growth
 			// satExpo += random(32) - 16;							// Add random variance to saturation
 			// uint8_t satValue = satExpo > tailHueSaturation ? tailHueSaturation : (satExpo < 0 ? 0 : satExpo);
-			int brightExpo = ceil(223 * MathHelpers::mPower(meteorTrailDecayValue, d)); // Calculate exponential decay
+			int brightExpo = ceil(200 * MathHelpers::mPower(meteorTrailDecayValue, d)); // Calculate exponential decay
 			// int brightExpo = 255 - (d * random8(8, 32));
 			// int brightExpo = 255 / ((d + 2) );
 			const int tailBrightness = brightExpo;
@@ -117,14 +117,15 @@ void Animate::animateMeteor(Meteor* meteor)
 			// tailBrightness += (random8(tailSection) - (halfTailSection));	// Add random variance to brightness
 
 			// uint8_t brightValue = tailBrightness > 255 ? 255 : (tailBrightness < 0 ? 0 : tailBrightness);
-			uint8_t brightValue = std::min(223, std::max(0, tailBrightness)); // Clamp brightness to 0-255 via min/max
+			uint8_t brightValue = std::min(200, std::max(0, tailBrightness)); // Clamp brightness to 0-255 via min/max
+			if (brightValue < 32) brightValue = 0;
 
 			// int randVal = (4 * d) * (4 * d); // Calculate random variance
 			// int hueRandom = hue + (random(randVal) - (randVal / 2));
 			// brightValue = 255;
 			// Serial.println(brightValue);
 
-			uint8_t brightCalc = dim8_raw(brightValue);
+			uint8_t brightCalc = dim8_video(brightValue);
 			trailColor = CHSV(hue, tailHueSaturation, brightCalc);
 		} else {
 			// int satCalc = tailHueSaturation - (d * 16);
