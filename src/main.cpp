@@ -1413,47 +1413,47 @@ const InnerCoreMeteorSettings innerCoreSettings[6] = {
 
 const RateClassSettings rateClass6Settings[] = {
 	/* Meteors */
-	{pulseCount: 8, offset : 24, randomizeOffset : true, meteorSize : 2, hasTail : true, meteorTailDecayValue : 0.97},
+	{pulseCount: 4, offset : 32, randomizeOffset : true, meteorSize : 2, hasTail : true, meteorTailDecayValue : 0.97},
 
 	/* Ring */
-	{pulseCount: 6, offset : 24, randomizeOffset : false, meteorSize : 3, hasTail : true, meteorTailDecayValue : 0.97},
+	{pulseCount: 4, offset : 24, randomizeOffset : false, meteorSize : 2, hasTail : true, meteorTailDecayValue : 0.97},
 
 	/* Spiral */
-	{pulseCount: 8, offset : 4, height : 2, repeats : 6, hasTail : true, meteorTailDecayValue : 0.96},
+	{pulseCount: 4, offset : 4, height : 2, repeats : 5, hasTail : true, meteorTailDecayValue : 0.96},
 
 	/* Wave */
-	{numberOfWaves: 4, waveSize : 3, interval : 4, hasTail : true, meteorTailDecayValue : 0.97},
+	{numberOfWaves: 3, waveSize : 3, interval : 16, hasTail : true, meteorTailDecayValue : 0.97},
 
 	/* Zigzag */
-	{pulseCount: 2, offset : 8, height : 3, zigzagSize : 3, interval : 3, hasTail : true, meteorTailDecayValue : 0.97},
+	{pulseCount: 3, offset : 24, height : 3, zigzagSize : 3, interval : 3, hasTail : true, meteorTailDecayValue : 0.97},
 };
 
 const RateClassSettings rateClass5Settings[] = {
 	/* Meteors */
-	{pulseCount: 4, offset : 32, randomizeOffset : true, meteorSize : 2, hasTail : true, meteorTailDecayValue : 0.96},
+	{pulseCount: 3, offset : 48, randomizeOffset : true, meteorSize : 2, hasTail : true, meteorTailDecayValue : 0.96},
 
 	/* Ring */
-	{pulseCount: 4, offset : 32, randomizeOffset : false, meteorSize : 2, hasTail : true, meteorTailDecayValue : 0.96},
+	{pulseCount: 3, offset : 32, randomizeOffset : false, meteorSize : 2, hasTail : true, meteorTailDecayValue : 0.96},
 
 	/* Spiral */
-	{pulseCount: 6, offset : 3, height : 3, repeats : 4, hasTail : true, meteorTailDecayValue : 0.96},
+	{pulseCount: 3, offset : 4, height : 3, repeats : 4, hasTail : true, meteorTailDecayValue : 0.96},
 
 	/* Wave */
-	{numberOfWaves: 3, waveSize : 3, interval : 2, hasTail : true, meteorTailDecayValue : 0.96},
+	{numberOfWaves: 2, waveSize : 3, interval : 16, hasTail : true, meteorTailDecayValue : 0.96},
 
 	/* Zigzag */
-	{pulseCount: 2, offset : 8, height : 2, zigzagSize : 4, interval : 1, hasTail : true, meteorTailDecayValue : 0.96},
+	{pulseCount: 2, offset : 32, height : 2, zigzagSize : 3, interval : 1, hasTail : true, meteorTailDecayValue : 0.96},
 };
 
 const RateClassSettings rateClass4Settings[] = {
 	/* Meteor */
-	{pulseCount: 2, offset : 16, randomizeOffset : true, meteorSize : 1, hasTail : true, meteorTailDecayValue : 0.96},
+	{pulseCount: 2, offset : 64, randomizeOffset : true, meteorSize : 1, hasTail : true, meteorTailDecayValue : 0.96},
 
 	/* Ring */
 	{pulseCount: 2, offset : 32, randomizeOffset : false, hasTail : true, meteorTailDecayValue : 0.96},
 
 	/* Spiral */
-	{pulseCount: 3, offset : 4, height : 2, repeats : 3, hasTail : true, meteorTailDecayValue : 0.96},
+	{pulseCount: 2, offset : 4, height : 2, repeats : 3, hasTail : true, meteorTailDecayValue : 0.96},
 
 	/* Wave */
 	{numberOfWaves: 1, waveSize : 2, interval : 4, hasTail : true, meteorTailDecayValue : 0.96},
@@ -1464,10 +1464,10 @@ const RateClassSettings rateClass4Settings[] = {
 
 const RateClassSettings rateClass3Settings[] = {
 	/* Meteors */
-	{pulseCount: 1, offset : 16, randomizeOffset : true, meteorSize : 1, hasTail : true, meteorTailDecayValue : 0.95},
+	{pulseCount: 1, offset : 64, randomizeOffset : true, meteorSize : 1, hasTail : true, meteorTailDecayValue : 0.95},
 
 	/* Ring */
-	{pulseCount: 1, offset : 8, randomizeOffset : false, meteorSize : 1, hasTail : true, meteorTailDecayValue : 0.95},
+	{pulseCount: 1, offset : 32, randomizeOffset : false, meteorSize : 1, hasTail : true, meteorTailDecayValue : 0.95},
 
 	/* Spiral */
 	{pulseCount: 1, offset : 2, height : 2, repeats : 2, hasTail : true, meteorTailDecayValue : 0.95},

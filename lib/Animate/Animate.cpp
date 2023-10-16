@@ -4,12 +4,16 @@
 #include <MathHelpers.h>
 #endif
 
+
 Animate::Animate() {}
 
 AnimationUtils Animate::aUtilAnimate = AnimationUtils();
 
+
 void Animate::animateMeteor(Meteor* meteor)
 {
+	int tailStartBrightness = tailBrightnessMap[0];
+
 	CRGB* strip = meteor->rStrip;
 	int region = meteor->region;
 	int regionLength = meteor->regionLength;
@@ -28,8 +32,8 @@ void Animate::animateMeteor(Meteor* meteor)
 	CHSV pRepeatColor = pColor;
 	int hue = tailHueStart;
 
-	int tailLength = 12;
-	int tailSection = 256 / tailLength;
+	int tailLength = tailBrightnessMapLength;
+	int tailSection = tailStartBrightness / tailLength;
 	int halfTailSection = tailSection * 0.5;
 	int adjustedLength = (meteorSize + tailLength) * 2;
 
@@ -46,8 +50,9 @@ void Animate::animateMeteor(Meteor* meteor)
 
 	bool endTail = false;
 
+
 	// Draw every LED in entire region 
-	for (int d = 1; d < (adjustedLength + 2) + 1; d++) {
+	for (int d = 1; d < (adjustedLength)+1; d++) {
 		int currentPixel;
 		if (meteor->directionDown == true) {
 			currentPixel = drawPixel + d + 1;
@@ -107,18 +112,31 @@ void Animate::animateMeteor(Meteor* meteor)
 			// int satExpo = ceil(tailHueSaturation * log(d + 1)); // Calculate logarithmic growth
 			// satExpo += random(32) - 16;							// Add random variance to saturation
 			// uint8_t satValue = satExpo > tailHueSaturation ? tailHueSaturation : (satExpo < 0 ? 0 : satExpo);
-			int brightExpo = ceil(200 * MathHelpers::mPower(meteorTrailDecayValue, d)); // Calculate exponential decay
+			// int brightExpo = ceil(tailStartBrightness * MathHelpers::mPower(meteorTrailDecayValue, d)); // Calculate exponential decay
 			// int brightExpo = 255 - (d * random8(8, 32));
 			// int brightExpo = 255 / ((d + 2) );
-			const int tailBrightness = brightExpo;
+			// const int tailBrightness = brightExpo;
 
 			// This version calculate brightness based on defined tail length
-			// int tailBrightness = 255 - round((tailSection * d) * 0.5);
+			// int tailBrightness = tailStartBrightness - round((tailSection * d) * 0.5);
+
+			int tailBrightness;
+			if (d >= 0 && d < tailBrightnessMapLength * 2) {
+				if (d % 2 == 1) { // Check if d is odd
+					tailBrightness = tailBrightnessMap[(d - 1) / 2];
+				} else {
+					tailBrightness = tailBrightnessMap[d / 2];
+				}
+			} else {
+				tailBrightness = 0;
+			}
+
 			// tailBrightness += (random8(tailSection) - (halfTailSection));	// Add random variance to brightness
+			tailBrightness += (random8(16) - 8);	// Add random variance to brightness
 
 			// uint8_t brightValue = tailBrightness > 255 ? 255 : (tailBrightness < 0 ? 0 : tailBrightness);
-			uint8_t brightValue = std::min(200, std::max(0, tailBrightness)); // Clamp brightness to 0-255 via min/max
-			if (brightValue < 32) brightValue = 0;
+			uint8_t brightValue = std::min(tailStartBrightness, std::max(0, tailBrightness)); // Clamp brightness to 8-190 via min/max
+			// if (brightValue < 4) brightValue = 0;
 
 			// int randVal = (4 * d) * (4 * d); // Calculate random variance
 			// int hueRandom = hue + (random(randVal) - (randVal / 2));
@@ -135,7 +153,8 @@ void Animate::animateMeteor(Meteor* meteor)
 			// int brightCalc = 255 - (d * 16);
 			// brightCalc += random(32) - 16;
 			// brightValue = brightCalc < 0 ? 0 : brightCalc;
-			trailColor = CHSV(hue, tailHueSaturation, 255);
+			// trailColor = CHSV(hue, tailHueSaturation, 255);
+			trailColor = CHSV(0, 0, 128);
 		}
 
 		// Cycle hue through time
