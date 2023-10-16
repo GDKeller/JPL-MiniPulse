@@ -65,14 +65,12 @@ void Animate::animateMeteor(Meteor* meteor)
 		}
 
 		if (d - 1 % 2 == 0) {
-			// aUtilAnimate.setPixelColor(*strip, currentPixel, pRepeatColor);
 			strip[currentPixel] = pRepeatColor;
 			continue;
 		}
 
 		// Draw meteor
 		if (d < (meteorSize * 2) + 1) {
-			// aUtilAnimate.setPixelColor(*strip, currentPixel, pColor);
 			strip[currentPixel] = pColor;
 			continue;
 		}
@@ -162,7 +160,6 @@ void Animate::animateMeteor(Meteor* meteor)
 
 		// Make sure the pixel right after the meteor will get drawn so meteor values aren't repeated
 		if (d < (meteorSize + 1)) {
-			// aUtilAnimate.setPixelColor(*strip, currentPixel, pTrailColor);
 			strip[currentPixel] = trailColor;
 			continue;
 		}
