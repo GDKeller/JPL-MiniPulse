@@ -595,10 +595,9 @@ CHSV bottomPixelMap[5] = { CHSV(0, 0, 0) };
 
 TextCharacter textCharacter;
 static int characterWidth;
-static  int characterHeight = 7;
+static  int characterHeight = 9;
 static int characterKerning = 3;
-static int letterSpacing = 7;
-static int letterTotalPixels = 28;
+static int letterSpacing = 9;
 
 #pragma endregion -- END TEXT SETTINGS
 
@@ -1163,6 +1162,8 @@ void scrollLetters(const char* spacecraftName, int wordArraySize)
 
 		if (characterWidth == 4) {
 			doLetterRegions(theLetter, (FileUtils::config.displayLED.innerChunks - 1), letterPixel);	// Start 1 strip to the left of first strip
+		} else if (characterWidth == 5) {
+			doLetterRegions(theLetter, (FileUtils::config.displayLED.innerChunks - 2), letterPixel);	// Start 2 strip to the left of first strip
 		} else {
 			doLetterRegions(theLetter, 0, letterPixel);
 			// doLetterRegions(theLetter, 7, letterPixel);

@@ -43,7 +43,7 @@ FileUtils::Config FileUtils::config = {
 	},
 
 	{ // textTypography
-		4,    // characterWidth
+		5,    // characterWidth
 		4000, // textMeteorGap
 		32    // meteorOffset
 	},
