@@ -34,7 +34,7 @@ class SpacecraftData
 
 struct CraftQueueItem
 {
-    char callsignArray[10] = { 0 };
+    char callsignArray[40] = { 0 };
     const char* callsign = &callsignArray[0];
     char nameArray[100] = { 0 };
     const char* name = &nameArray[0];

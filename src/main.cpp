@@ -376,7 +376,7 @@ const char* data_Sept6 = PROGMEM R"==--==(<dsn>
 const char* data_animation_test = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?>
 <dsn>
     <station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" />
-    <dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS24" windSpeed="5.556">
+	<dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS24" windSpeed="5.556">
         <downSignal dataRate="1.163e+01" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="Rate1" spacecraftID="-170" />
         <upSignal dataRate="1.163e+01" frequency="2090" power="4.804" signalType="data" spacecraft="Rate1" spacecraftID="-170" />
         <target downlegRange="1.653e+06" id="170" name="Rate1" rtlt="11.03" uplegRange="1.653e+06" />
@@ -409,6 +409,24 @@ const char* data_animation_test = PROGMEM R"==--==(<?xml version='1.0' encoding=
         <target downlegRange="1.331e+06" id="21" name="Rate6" rtlt="8.882" uplegRange="1.331e+06" />
     </dish>
     <timestamp>1670419133000</timestamp>
+</dsn>)==--==";
+
+
+// Font test
+const char* data_font_test = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?>
+<dsn>
+    <station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" />
+	<dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS2" windSpeed="5.556">
+        <downSignal dataRate="1.163e+01" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="abcdefghijklmnopqrstuvwxyz 0123456789" spacecraftID="-170" />
+        <upSignal dataRate="1.163e+01" frequency="2090" power="4.804" signalType="data" spacecraft="abcdefghijklmnopqrstuvwxyz 0123456789" spacecraftID="-170" />
+        <target downlegRange="1.653e+06" id="170" name="abcdefghijklmnopqrstuvwxyz 0123456789" rtlt="11.03" uplegRange="1.653e+06" />
+    </dish>
+	<dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS2" windSpeed="5.556">
+        <downSignal dataRate="1.163e+01" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="abcdefghijklmnopqrstuvwxyz 0123456789" spacecraftID="-170" />
+        <upSignal dataRate="1.163e+01" frequency="2090" power="4.804" signalType="data" spacecraft="abcdefghijklmnopqrstuvwxyz 0123456789" spacecraftID="-170" />
+        <target downlegRange="1.653e+06" id="170" name="abcdefghijklmnopqrstuvwxyz 0123456789" rtlt="11.03" uplegRange="1.653e+06" />
+    </dish>
+	<timestamp>1670419133000</timestamp>
 </dsn>)==--==";
 
 
@@ -494,7 +512,7 @@ struct wmParams
 /* WIFI MANAGER CUSTOM FIELD PARAMETERS */
 // const char* color_theme_str = "<br/><label for='customfieldid'>Color Theme</label><br/><input type='radio' name='customfieldid' value='0' checked> White<br><input type='radio' name='customfieldid' value='1'> Cyber<br><input type='radio' name='customfieldid' value='2'> Valentine<br><input type='radio' name='customfieldid' value='3'> Moonlight";
 const char* xml_data_radio_str = "<br/><label for='xml_data_radio'>XML Data</label><br/><input type='radio' name='xml_data_radio' value='0' checked> Live<br><input type='radio' name='xml_data_radio' value='1'> Dummy<input type='radio' name='xml_data_radio' value='2'> Animation Test";
-const char* global_brightness_str = "<br/><label for='global_brightness'>Global Brightness</label><br/><input type='number' name='global_brightness' min='1' max='255' value='255'>";
+const char* global_brightness_str = "<br/><label for='global_brightness'>Global Brightness</label><br/><input type='number' name='global_brightness' min='1' max='160' value='160'>";
 const char* scroll_letters_delay_str = "<br/><label for='scroll_letters_delay'>Scroll Letter Delay (ms)</label><br/><input type='number' name='scroll_letters_delay' min='0' max='300' value='33'>";
 
 // const char* meteor_decay_checkbox_str = "<br/><label for='meteorDecay'>Meteor Decay</label><br/><input type='checkbox' name='meteorDecay'>";
@@ -596,7 +614,7 @@ CHSV bottomPixelMap[5] = { CHSV(0, 0, 0) };
 TextCharacter textCharacter;
 static int characterWidth;
 static  int characterHeight = 9;
-static int characterKerning = 3;
+static int characterKerning = 4;
 static int letterSpacing = 9;
 
 #pragma endregion -- END TEXT SETTINGS
@@ -1034,7 +1052,7 @@ void saveParamsCallback() {
 	int brightnessInt = atoi(brightnessValue.c_str());
 
 	// Map brightness
-	int brightnessMapped = MathHelpers::map(brightnessInt, 0, 100, 8, 255);
+	int brightnessMapped = MathHelpers::map(brightnessInt, 0, 100, 8, 160);
 
 	// Set program config
 	Serial.print("Previous config brightness: " + String(FileUtils::config.displayLED.brightness) + "\n");
@@ -1837,7 +1855,6 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 	if (showDiagnostics)
 		FastLED.countFPS();
 	// updateSpeedCounters();
-
 }
 
 #pragma endregion -- ANIMATION FUNCTIONS
@@ -2223,10 +2240,12 @@ void parseData(const char* payload)
 								}
 
 
-								/* Get the craft name to compare in finding signal */
-								size_t result = strlcpy(tempNewCraft.callsignArray, target, 10);
+								int callsignArrayLength = sizeof(CraftQueueItem::callsignArray);
 
-								if (result >= 10) {
+								/* Get the craft name to compare in finding signal */
+								size_t result = strlcpy(tempNewCraft.callsignArray, target, callsignArrayLength);
+
+								if (result >= callsignArrayLength) {
 									if (FileUtils::config.debugUtils.showSerial == true) {
 										Serial.print(dev.termColor("red"));
 										Serial.println("Problem copying callsign to tempNewCraft.callsignArray: truncated copy");
@@ -2422,7 +2441,7 @@ void logOutput(const char* color, const String& message) {
 		char* buffer = (char*)malloc(bufferSize);
 		if (buffer) {
 			snprintf(buffer, bufferSize, "%s%s%s\n", coloredMessage, message.c_str(), resetColor);
-			Serial.print(buffer);
+			Serial.println(buffer);
 			free(buffer);
 		} else {
 			// handle memory allocation failure
@@ -2823,10 +2842,10 @@ void setup()
 	// set dark theme
 	wm.setClass("invert");
 
-	int brightnessMapped = MathHelpers::map(FileUtils::config.displayLED.brightness, 8, 255, 0, 100);
+	int brightnessMapped = MathHelpers::map(FileUtils::config.displayLED.brightness, 8, 160, 0, 100);
 	new (&param_show_serial) WiFiManagerParameter("show_serial", "Show Serial", FileUtils::config.debugUtils.showSerial ? "1" : "0", 1, "type='number' min='0' max='1' step='1'");
 	new (&param_show_diagnostics) WiFiManagerParameter("show_diagnostics", "Show Diagnostics", FileUtils::config.debugUtils.diagMeasure ? "1" : "0", 1, "type='number' min='0' max='1' step='1'");
-	new (&param_brightness) WiFiManagerParameter("brightness", "Brightness", String(FileUtils::config.displayLED.brightness).c_str(), 3, "type='range' min='8' max='255' step='1'");
+	new (&param_brightness) WiFiManagerParameter("brightness", "Brightness", String(FileUtils::config.displayLED.brightness).c_str(), 3, "type='range' min='8' max='160' step='1'");
 
 	wm.addParameter(&param_show_serial);
 	wm.addParameter(&param_show_diagnostics);
