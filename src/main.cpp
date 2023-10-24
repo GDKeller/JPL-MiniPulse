@@ -1306,6 +1306,7 @@ void animationSpiralPulseRing(
 	bool directionDown = true,
 	uint8_t height = 2,
 	uint8_t pulseCount = 2,
+	uint8_t offset = 12,
 	uint8_t spiralMultiplier = 6,
 	uint8_t repeats = 4,
 	bool hasTail = true,
@@ -1313,9 +1314,16 @@ void animationSpiralPulseRing(
 	int rateClass = 5)
 {
 
-	for (int i = 0; i < outerChunks; i++) {
-		animationMeteorPulseRegion(strip, i, directionDown, (i * spiralMultiplier * -1), 5, ((outerChunks + 1) * spiralMultiplier), false, height, hasTail, meteorTailDecayValue, rateClass);
-		// animationMeteorPulseRegion(strip, i, directionDown, (i * spiralMultiplier * -1) - height - 6, 5, ((outerChunks + 1) * spiralMultiplier), false, height, true, 0.9);
+	Serial.println("--- height: " + String(height) + " | pulseCount: " + String(pulseCount) + " | offset: " + String(offset) + " | spiralMultiplier: " + String(spiralMultiplier) + " | repeats: " + String(repeats) + " | hasTail: " + String(hasTail) + " | meteorTailDecayValue: " + String(meteorTailDecayValue) + " | rateClass: " + String(rateClass));
+
+	for (int p = 0; p < pulseCount; p++) {
+		for (int i = 0; i < outerChunks; i++) {
+			int16_t startPixel = ((i * spiralMultiplier) + (p * offset)) * -1;
+			// int16_t startPixel = (i * spiralMultiplier) * -1;
+			Serial.println("startPixel: " + String(startPixel) + "	| offset: " + String((outerChunks + 1) * spiralMultiplier));
+			animationMeteorPulseRegion(strip, i, directionDown, startPixel, 5, ((outerChunks + 1) * spiralMultiplier), false, height, hasTail, meteorTailDecayValue, rateClass);
+			// animationMeteorPulseRegion(strip, i, directionDown, (i * spiralMultiplier * -1) - height - 6, 5, ((outerChunks + 1) * spiralMultiplier), false, height, true, 0.9);
+		}
 	}
 }
 
@@ -1435,10 +1443,10 @@ const RateClassSettings rateClass6Settings[] = {
 	{pulseCount: 4, offset : 32, randomizeOffset : true, meteorSize : 2, hasTail : true, meteorTailDecayValue : 0.97},
 
 	/* Ring */
-	{pulseCount: 4, offset : 24, randomizeOffset : false, meteorSize : 2, hasTail : true, meteorTailDecayValue : 0.97},
+	{pulseCount: 8, offset : 16, randomizeOffset : false, meteorSize : 2, hasTail : true, meteorTailDecayValue : 0.97},
 
 	/* Spiral */
-	{pulseCount: 4, offset : 4, height : 2, repeats : 5, hasTail : true, meteorTailDecayValue : 0.96},
+	{pulseCount: 3, offset : 14, height : 2, spiralMultiplier : 2, repeats : 1, hasTail : true, meteorTailDecayValue : 0.96},
 
 	/* Wave */
 	{numberOfWaves: 3, waveSize : 3, interval : 16, hasTail : true, meteorTailDecayValue : 0.97},
@@ -1452,10 +1460,10 @@ const RateClassSettings rateClass5Settings[] = {
 	{pulseCount: 3, offset : 48, randomizeOffset : true, meteorSize : 2, hasTail : true, meteorTailDecayValue : 0.96},
 
 	/* Ring */
-	{pulseCount: 3, offset : 32, randomizeOffset : false, meteorSize : 2, hasTail : true, meteorTailDecayValue : 0.96},
+	{pulseCount: 5, offset : 32, randomizeOffset : false, meteorSize : 2, hasTail : true, meteorTailDecayValue : 0.96},
 
 	/* Spiral */
-	{pulseCount: 3, offset : 4, height : 3, repeats : 4, hasTail : true, meteorTailDecayValue : 0.96},
+	{pulseCount: 2, offset : 14, height : 2, spiralMultiplier : 3, repeats : 1, hasTail : true, meteorTailDecayValue : 0.96},
 
 	/* Wave */
 	{numberOfWaves: 2, waveSize : 3, interval : 16, hasTail : true, meteorTailDecayValue : 0.96},
@@ -1469,10 +1477,10 @@ const RateClassSettings rateClass4Settings[] = {
 	{pulseCount: 2, offset : 64, randomizeOffset : true, meteorSize : 1, hasTail : true, meteorTailDecayValue : 0.96},
 
 	/* Ring */
-	{pulseCount: 2, offset : 32, randomizeOffset : false, hasTail : true, meteorTailDecayValue : 0.96},
+	{pulseCount: 3, offset : 48, randomizeOffset : false, hasTail : true, meteorTailDecayValue : 0.96},
 
 	/* Spiral */
-	{pulseCount: 2, offset : 4, height : 2, repeats : 3, hasTail : true, meteorTailDecayValue : 0.96},
+	{pulseCount: 1, offset : 16, height : 1, spiralMultiplier : 4, repeats : 1, hasTail : true, meteorTailDecayValue : 0.96},
 
 	/* Wave */
 	{numberOfWaves: 1, waveSize : 2, interval : 4, hasTail : true, meteorTailDecayValue : 0.96},
@@ -1489,7 +1497,7 @@ const RateClassSettings rateClass3Settings[] = {
 	{pulseCount: 1, offset : 32, randomizeOffset : false, meteorSize : 1, hasTail : true, meteorTailDecayValue : 0.95},
 
 	/* Spiral */
-	{pulseCount: 1, offset : 2, height : 2, repeats : 2, hasTail : true, meteorTailDecayValue : 0.95},
+	{pulseCount: 1, offset : 14, height : 1, spiralMultiplier : 5, repeats : 1, hasTail : true, meteorTailDecayValue : 0.95},
 
 	/* Wave */
 	{},
@@ -1499,7 +1507,7 @@ const RateClassSettings rateClass3Settings[] = {
 };
 
 const RateClassSettings rateClass2Settings[] = {
-	/* Meteors */	{pulseCount: 1, offset : 96, randomizeOffset : true, meteorSize : 1, hasTail : true, meteorTailDecayValue : 0.97},
+	/* Meteors */	{pulseCount: 1, offset : 64, randomizeOffset : true, meteorSize : 1, hasTail : true, meteorTailDecayValue : 0.97},
 };
 
 const RateClassSettings rateClass1Settings[] = {
@@ -1559,6 +1567,10 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 	} else {
 		randomTypeAny = 0;
 	}
+
+	if (rateClass == 3 || rateClass == 4 || rateClass == 5 || rateClass == 6) {
+		randomTypeAny = 2;
+	}
 	// Serial.println("random adjusted: " + String(randomTypeAny));
 
 	// Debug log
@@ -1585,7 +1597,7 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 					animationMeteorPulseRing(stripId, isDown, settings.pulseCount, settings.offset, settings.randomizeOffset, settings.meteorSize, settings.hasTail, settings.meteorTailDecayValue, rateClass);
 					break;
 				case 2:
-					animationSpiralPulseRing(stripId, isDown, settings.height, settings.pulseCount, settings.spiralMultiplier, settings.repeats, settings.hasTail, settings.meteorTailDecayValue, rateClass);
+					animationSpiralPulseRing(stripId, isDown, settings.height, settings.pulseCount, settings.offset, settings.spiralMultiplier, settings.repeats, settings.hasTail, settings.meteorTailDecayValue, rateClass);
 					break;
 				case 3:
 					waveAnimation(stripId, isDown, settings.numberOfWaves, settings.waveSize, settings.interval, settings.hasTail, settings.meteorTailDecayValue, rateClass);
@@ -1752,7 +1764,7 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 		Serial.print("animationCleanup:" + String(displayMinDuration + animationCleanupDelay) + ",");
 
 	/* Update Scrolling letters animation */
-	if (nameScrollDone == false && currentDisplayDuration < displayMinDuration + animationCleanupDelay ) {
+	if (nameScrollDone == false && currentDisplayDuration < displayMinDuration + animationCleanupDelay) {
 		// Serial.println("-------- scroll letters: " + String(spacecraftName));
 		scrollLetters(spacecraftName, spacecraftNameSize);
 	}
@@ -1786,7 +1798,7 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 
 	// if (millis() - displayDurationTimer > displayMinDuration) {
 	// Fire meteors
-	
+
 	if (showDiagnostics)
 		Serial.print(
 			"displayDurationTimer:" + String(displayDurationTimer) +
@@ -1805,7 +1817,7 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 	if (
 		currentDisplayDuration < displayMinDuration
 		&& currentDisplayDuration > textMeteorGap
-	) {
+		) {
 		bool shouldAnimate = false;
 
 		// if (animationInProgress && (currentMillis - animationTimer) > animationRepeatGap) {

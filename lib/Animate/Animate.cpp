@@ -130,7 +130,7 @@ void Animate::animateMeteor(Meteor* meteor)
 			}
 
 			// tailBrightness += (random8(tailSection) - (halfTailSection));	// Add random variance to brightness
-			tailBrightness += (random8(16) - 8);	// Add random variance to brightness
+			tailBrightness += (random8(32) - 16);	// Add random variance to brightness
 
 			// uint8_t brightValue = tailBrightness > 255 ? 255 : (tailBrightness < 0 ? 0 : tailBrightness);
 			uint8_t brightValue = std::min(tailStartBrightness, std::max(0, tailBrightness)); // Clamp brightness to 8-190 via min/max
@@ -172,7 +172,10 @@ void Animate::animateMeteor(Meteor* meteor)
 
 			pRepeatColor = trailColor;
 
-			if (brightValue == 0) continue;
+			if (brightValue == 0) {
+				// endTail = true;
+				continue;
+			}
 		}
 		if (brightValue == 0) endTail == true;
 		// if (meteorTrailDecay == true)
