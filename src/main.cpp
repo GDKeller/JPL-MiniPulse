@@ -411,29 +411,6 @@ const char* data_animation_test = PROGMEM R"==--==(<?xml version='1.0' encoding=
     <timestamp>1670419133000</timestamp>
 </dsn>)==--==";
 
-// Test dummy data that cycles through the rate classes
-const char* data_animation_test_single = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?>
-<dsn>
-    <station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" />
-    <dish azimuthAngle="196.5" elevationAngle="30.71" isArray="false" isDDOR="false" isMSPA="false" name="DSS65" windSpeed="5.556">
-        <downSignal dataRate="2.458e+05" frequency="2278000000" power="-112.7797" signalType="data" spacecraft="Rate4" spacecraftID="-92" />
-        <upSignal dataRate="2.458e+05" frequency="2098" power="0.2630" signalType="data" spacecraft="Rate4" spacecraftID="-92" />
-        <target downlegRange="1.389e+06" id="92" name="Rate4" rtlt="9.266" uplegRange="1.389e+06" />
-    </dish>
-    <station friendlyName="Canberra" name="cdscc" timeUTC="1670419133000" timeZoneOffset="39600000" />
-    <dish azimuthAngle="124.5" elevationAngle="53.41" isArray="false" isDDOR="false" isMSPA="false" name="DSS53" windSpeed="5.556">
-        <downSignal dataRate="1.190e+06" frequency="8436000000" power="-170.1741" signalType="data" spacecraft="Rate5" spacecraftID="-210" />
-        <upSignal dataRate="1.190e+06" frequency="8436000000" power="-170.1741" signalType="data" spacecraft="Rate5" spacecraftID="-210" />
-        <target downlegRange="4.099e+06" id="210" name="Rate5" rtlt="27.34" uplegRange="4.099e+06" />
-    </dish>
-    <dish azimuthAngle="219.7" elevationAngle="22.84" isArray="false" isDDOR="false" isMSPA="false" name="DSS54" windSpeed="5.556">
-        <downSignal dataRate="2.621e+06" frequency="2245000000" power="-110.7082" signalType="data" spacecraft="Rate6" spacecraftID="-21" />
-        <upSignal dataRate="2.621e+06" frequency="2066" power="1.758" signalType="data" spacecraft="Rate6" spacecraftID="-21" />
-        <target downlegRange="1.331e+06" id="21" name="Rate6" rtlt="8.882" uplegRange="1.331e+06" />
-    </dish>
-    <timestamp>1670419133000</timestamp>
-</dsn>)==--==";
-
 
 // Font test
 const char* data_font_test = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?>
@@ -453,7 +430,7 @@ const char* data_font_test = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-
 </dsn>)==--==";
 
 
-const char* dummyXmlData = data_animation_test_single;
+const char* dummyXmlData = data_animation_test;
 
 static int scrollLettersDelay = 33;
 static CEveryNMilliseconds scrollLettersTimer = CEveryNMilliseconds(scrollLettersDelay);
@@ -1370,16 +1347,12 @@ void waveAnimation(
 	
 	for (uint8_t wave = 0; wave < numberOfWaves; wave++) {
 		for (uint8_t region = 0; region < outerChunks; region++) {
-			// int startPixel = (wave * intervalAdjusted) * numberOfWaves * -1;
 			int startPixel = 0;
-			// Serial.println("first startPixel: " + String(startPixel));
 
 			if (region < outerChunks / 2) {
 				startPixel -= (intervalAdjusted * region) + (offset * wave);
-				// Serial.println("EVE startPixel: " + String(startPixel) + " -=  (" + String(intervalAdjusted) + " * " + String(region) + ") - (" + String(offset) + " * " + String(wave) + ") = " + String(startPixel));
 			} else {
 				startPixel -= (intervalAdjusted * (outerChunks - region)) + (offset * wave);
-				// Serial.println("ODD startPixel: (" + String(intervalAdjusted) + " * " + String(region) + ") - (" + String(offset) + " * " + String(wave) + ") = " + String(startPixel));
 			}
 
 			createMeteor(strip, startRegion, isDown, startPixel, waveSize, hasTail, meteorTailDecayValue, rateClass);
@@ -1499,7 +1472,7 @@ const RateClassSettings rateClass6Settings[] = {
 	{offset : 22, numberOfWaves: 5, waveSize : 5, interval : 5, hasTail : true, meteorTailDecayValue : 0.96},
 
 	/* Zigzag */
-	{pulseCount: 3, offset : 24, height : 3, zigzagSize : 3, interval : 3, hasTail : true, meteorTailDecayValue : 0.97},
+	{pulseCount: 3, offset : 18, height : 5, zigzagSize : 3, interval : 5, hasTail : true, meteorTailDecayValue : 0.97},
 };
 
 const RateClassSettings rateClass5Settings[] = {
@@ -1516,7 +1489,7 @@ const RateClassSettings rateClass5Settings[] = {
 	{offset : 32, numberOfWaves: 3, waveSize : 4, interval : 4, hasTail : true, meteorTailDecayValue : 0.96},
 
 	/* Zigzag */
-	{pulseCount: 2, offset : 32, height : 2, zigzagSize : 3, interval : 1, hasTail : true, meteorTailDecayValue : 0.96},
+	{pulseCount: 2, offset : 28, height : 4, zigzagSize : 3, interval : 3, hasTail : true, meteorTailDecayValue : 0.96},
 };
 
 const RateClassSettings rateClass4Settings[] = {
@@ -1530,7 +1503,7 @@ const RateClassSettings rateClass4Settings[] = {
 	{pulseCount: 1, offset : 16, height : 1, spiralMultiplier : 4, repeats : 1, hasTail : true, meteorTailDecayValue : 0.96},
 
 	/* Wave */
-	{offset : 48, numberOfWaves: 2, waveSize : 3, interval : 4, hasTail : true, meteorTailDecayValue : 0.96},
+	{offset : 52, numberOfWaves: 2, waveSize : 3, interval : 4, hasTail : true, meteorTailDecayValue : 0.96},
 
 	/* Zigzag */
 	{},
@@ -1628,10 +1601,6 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 		randomTypeAny = 0;
 	}
 
-	if (rateClass == 4 || rateClass == 5 || rateClass == 6) {
-		randomTypeAny = 3;
-	}
-	// Serial.println("random adjusted: " + String(randomTypeAny));
 
 	// Debug log
 	if (showSerial == true) {
