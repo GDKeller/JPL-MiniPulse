@@ -1719,6 +1719,8 @@ void updateMeteors()
 		if (animate.ActiveMeteors[i] != nullptr) {
 			Meteor* thisMeteor = animate.ActiveMeteors[i];
 			int rateClass = thisMeteor->rateClass;
+			int region = thisMeteor->region;
+			bool directionDown = thisMeteor->directionDown;
 
 			if (debugMeasure) {
 				// Count the active meteors for diagnostic output
@@ -1753,7 +1755,25 @@ void updateMeteors()
 				}
 			}
 
-			thisMeteor->firstPixel += 2;
+			thisMeteor->firstPixel += 2; // Move meteor 2 pixels (visually moves by 1 due to back/front LED pairs)
+			
+
+
+			int newRegion = region + 1;
+
+			if (directionDown == true) {
+				if (newRegion > outerChunks) {
+					newRegion = 0;
+				}
+			} else {
+				if (newRegion > middleChunks) {
+					newRegion = 0;
+				}
+			}
+
+			thisMeteor->region = newRegion;
+
+
 
 			// When meteor reaches the end of the region, animate corresponding bottom pixel
 			if (thisMeteor->firstPixel == thisMeteor->regionLength + 2 && thisMeteor->region % 2 == 1) {
