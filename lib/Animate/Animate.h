@@ -56,13 +56,13 @@ class Animate {
         110,
         100,
         90,
-        75,
+        80,
+        70,
         60,
         50,
         40,
         30,
-        0,
-        0,
+        20,
     };
     int tailBrightnessMapLength = sizeof(tailBrightnessMap) / sizeof(tailBrightnessMap[0]); // length of array
 

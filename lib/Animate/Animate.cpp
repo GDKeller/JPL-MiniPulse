@@ -130,11 +130,14 @@ void Animate::animateMeteor(Meteor* meteor)
 			}
 
 			// tailBrightness += (random8(tailSection) - (halfTailSection));	// Add random variance to brightness
-			tailBrightness += (random8(32) - 16);	// Add random variance to brightness
+			uint8_t tailNumberVarianceCalc = (d + 2) * 4;
+			tailBrightness += random8(tailNumberVarianceCalc) - (tailNumberVarianceCalc - 8);
+			// tailBrightness += (random8(32) - 16);	// Add random variance to brightness
 
 			// uint8_t brightValue = tailBrightness > 255 ? 255 : (tailBrightness < 0 ? 0 : tailBrightness);
-			uint8_t brightValue = std::min(tailStartBrightness, std::max(0, tailBrightness)); // Clamp brightness to 8-190 via min/max
+			uint8_t brightValue = std::min(tailStartBrightness + 8, std::max(8, tailBrightness)); // Clamp brightness to 8-190 via min/max
 			// if (brightValue < 4) brightValue = 0;
+			if (d > (tailBrightnessMapLength * 2) + 4) brightValue = 0; // Turn off tail after tailSectionLength pixels
 
 			// int randVal = (4 * d) * (4 * d); // Calculate random variance
 			// int hueRandom = hue + (random(randVal) - (randVal / 2));
