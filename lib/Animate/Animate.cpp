@@ -35,7 +35,7 @@ void Animate::animateMeteor(Meteor* meteor)
 	int tailLength = tailBrightnessMapLength;
 	int tailSection = tailStartBrightness / tailLength;
 	int halfTailSection = tailSection * 0.5;
-	int adjustedLength = (meteorSize + tailLength) * 2;
+	int adjustedLength = ((meteorSize + tailLength) * 2);
 
 	// First pixel of each region
 	int startPixel = meteor->directionDown == true ?
@@ -75,6 +75,7 @@ void Animate::animateMeteor(Meteor* meteor)
 			continue;
 		}
 
+		// Serial.println("--- hasTail: " + String(hasTail));
 		if (hasTail == false) {
 			if (d > (meteorSize * 2) - 1) // Multiply by two for pixel doubling on inward/outward LED pairs on stick
 			{
@@ -155,7 +156,7 @@ void Animate::animateMeteor(Meteor* meteor)
 			// brightCalc += random(32) - 16;
 			// brightValue = brightCalc < 0 ? 0 : brightCalc;
 			// trailColor = CHSV(hue, tailHueSaturation, 255);
-			trailColor = CHSV(0, 0, 128);
+			trailColor = CHSV(0, 0, 0);
 		}
 
 		// Cycle hue through time
@@ -180,7 +181,7 @@ void Animate::animateMeteor(Meteor* meteor)
 				continue;
 			}
 		}
-		if (brightValue == 0) endTail == true;
+		// if (brightValue == 0) endTail == true;
 		// if (meteorTrailDecay == true)
 		// 	strip[currentPixel].fadeToBlackBy(d * 8);
 	} // End for loop

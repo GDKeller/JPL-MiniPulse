@@ -42,6 +42,7 @@ struct Meteor {
     int tailHueSaturation;
     CRGB*& rStrip;
     int rateClass;
+    uint8_t animationType;
 };
 
 class Animate {
@@ -55,14 +56,14 @@ class Animate {
         120,
         110,
         100,
+        95,
         90,
+        85,
         80,
+        75,
         70,
+        65,
         60,
-        50,
-        40,
-        30,
-        20,
     };
     int tailBrightnessMapLength = sizeof(tailBrightnessMap) / sizeof(tailBrightnessMap[0]); // length of array
 
