@@ -33,7 +33,7 @@ struct Meteor {
     CHSV pColor;
     int meteorSize;
     bool hasTail;
-    bool meteorTrailDecay;
+    bool meteorTailDecay;
     float meteorTrailDecayValue;
     bool meteorRandomDecay;
     int tailHueStart;
@@ -48,8 +48,8 @@ struct Meteor {
 class Animate {
     static AnimationUtils aUtilAnimate;
     const uint8_t tailBrightnessMap[8] = {
-        200,
         180,
+        170,
         160,
         140,
         135,

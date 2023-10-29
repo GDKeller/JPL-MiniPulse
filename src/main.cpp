@@ -650,7 +650,7 @@ static int letterSpacing = 9;
 
 uint8_t fpsInMs = 1000 / fpsRate;
 bool meteorTailDecay = true;
-bool meteorTailRandom = false;
+bool meteorTailRandom = true;
 
 // State counters to enable fractional animation speeds
 // These all start at 1 and get incremented during animation update
@@ -1586,7 +1586,7 @@ const RateClassSettings rateClass6Settings[] = {
 	{pulseCount: 4, offset : 32, randomizeOffset : true, meteorSize : 2, hasTail : true, meteorTailDecayValue : 0.97},
 
 	/* Ring */
-	{pulseCount: 8, offset : 16, randomizeOffset : false, meteorSize : 2, hasTail : true, meteorTailDecayValue : 0.97},
+	{pulseCount: 6, offset : 18, randomizeOffset : false, meteorSize : 4, hasTail : true, meteorTailDecayValue : 0.97},
 
 	/* Spiral */
 	{pulseCount: 3, offset : 14, height : 2, spiralMultiplier : 2, repeats : 1, hasTail : true, meteorTailDecayValue : 0.96},
@@ -1595,7 +1595,7 @@ const RateClassSettings rateClass6Settings[] = {
 	{offset: 40, numberOfWaves : 3, waveSize : 4, interval : 2, hasTail : true, meteorTailDecayValue : 0.96},
 
 	/* Zigzag */
-	{pulseCount: 3, offset : 18, height : 5, zigzagSize : 3, interval : 5, hasTail : true, meteorTailDecayValue : 0.97},
+	{pulseCount: 3, offset : 18, height : 5, zigzagSize : 3, interval : 4, hasTail : true, meteorTailDecayValue : 0.97},
 };
 
 const RateClassSettings rateClass5Settings[] = {
