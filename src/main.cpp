@@ -1528,7 +1528,7 @@ const InnerCoreMeteorSettings innerCoreSettings[6] = {
 	{pulseCount: 1, offset : 32, meteorCount : 6, meteorTailDecayValue : 0.92},	// Rate class 3
 	{pulseCount: 1, offset : 24, meteorCount : 6, meteorTailDecayValue : 0.93},	// Rate class 4
 	{pulseCount: 3, offset : 24, meteorCount : 6, meteorTailDecayValue : 0.93},	// Rate class 5
-	{pulseCount: 5, offset : 32, meteorCount : 6, meteorTailDecayValue : 0.97,}	// Rate class 6
+	{pulseCount: 5, offset : 32, meteorCount : 6, meteorTailDecayValue : 0.97,}	// Rate class 6	
 };
 
 const RateClassSettings rateClass6Settings[] = {
@@ -2014,7 +2014,7 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 				doRateBasedAnimation(true, downSignalRate, meteorOffset, animationTypeDown); // Down animation
 
 			if (upSignalRate > 0)
-				// doRateBasedAnimation(false, upSignalRate, meteorOffset, animationTypeUp); // Up animation
+				doRateBasedAnimation(false, upSignalRate, meteorOffset, animationTypeUp); // Up animation
 
 				animationTimer = currentMillis; // Reset meteor animation timer
 		}
