@@ -451,7 +451,7 @@ const char* data_font_test = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-
 </dsn>)==--==";
 
 
-const char* dummyXmlData = data_animation_test;
+const char* dummyXmlData = data_animation_test_single;
 
 static int scrollLettersDelay = 33;
 static CEveryNMilliseconds scrollLettersTimer = CEveryNMilliseconds(scrollLettersDelay);
@@ -514,31 +514,32 @@ WiFiManagerParameter param_brightness;		   // global param ( for non blocking w 
 // WiFiManagerParameter field_global_fps;
 WiFiManagerParameter param_show_serial;
 WiFiManagerParameter param_show_diagnostics;
+WiFiManagerParameter param_force_animation_type;
 // WiFiManagerParameter field_scroll_letters_delay;
 // WiFiManagerParameter field_show_serial("show_serial", "Show Serial", FileUtils::config.debugUtils.showSerial, 1);
 bool portalRunning = false;
-struct wmParams
-{
-	String customfieldid;
-	String xml_data_radio;
-	String brightness;
-	String show_serial;
-	String show_diagnostics;
-	String scroll_letters_delay;
-};
+// struct wmParams
+// {
+// 	String customfieldid;
+// 	String xml_data_radio;
+// 	String brightness;
+// 	String show_serial;
+// 	String show_diagnostics;
+// 	String scroll_letters_delay;
+// };
 
 
 
 
 /* WIFI MANAGER CUSTOM FIELD PARAMETERS */
 // const char* color_theme_str = "<br/><label for='customfieldid'>Color Theme</label><br/><input type='radio' name='customfieldid' value='0' checked> White<br><input type='radio' name='customfieldid' value='1'> Cyber<br><input type='radio' name='customfieldid' value='2'> Valentine<br><input type='radio' name='customfieldid' value='3'> Moonlight";
-const char* xml_data_radio_str = "<br/><label for='xml_data_radio'>XML Data</label><br/><input type='radio' name='xml_data_radio' value='0' checked> Live<br><input type='radio' name='xml_data_radio' value='1'> Dummy<input type='radio' name='xml_data_radio' value='2'> Animation Test";
-const char* global_brightness_str = "<br/><label for='global_brightness'>Global Brightness</label><br/><input type='number' name='global_brightness' min='1' max='160' value='160'>";
-const char* scroll_letters_delay_str = "<br/><label for='scroll_letters_delay'>Scroll Letter Delay (ms)</label><br/><input type='number' name='scroll_letters_delay' min='0' max='300' value='33'>";
+// const char* xml_data_radio_str = "<br/><label for='xml_data_radio'>XML Data</label><br/><input type='radio' name='xml_data_radio' value='0' checked> Live<br><input type='radio' name='xml_data_radio' value='1'> Dummy<input type='radio' name='xml_data_radio' value='2'> Animation Test";
+// const char* global_brightness_str = "<br/><label for='global_brightness'>Global Brightness</label><br/><input type='number' name='global_brightness' min='1' max='160' value='160'>";
+// const char* scroll_letters_delay_str = "<br/><label for='scroll_letters_delay'>Scroll Letter Delay (ms)</label><br/><input type='number' name='scroll_letters_delay' min='0' max='300' value='33'>";
 
 // const char* meteor_decay_checkbox_str = "<br/><label for='meteorDecay'>Meteor Decay</label><br/><input type='checkbox' name='meteorDecay'>";
 // const char* meteor_random_checkbox_str = "<br/><label for='meteorRandom'>Meteor Tail</label><br/><input type='checkbox' name='meteorRandom'>";
-const char* global_fps_str = "<br/><label for='globalFps'>Global FPS</label><br/><input type='number' name='globalFps' min='10' max='120' value='30'>";
+// const char* global_fps_str = "<br/><label for='globalFps'>Global FPS</label><br/><input type='number' name='globalFps' min='10' max='120' value='30'>";
 // const char* force_dummy_data_str = "<br/><p>Force Dummy Data: " + String(forceDummyData) + "</p><br/>";
 
 
@@ -1020,12 +1021,12 @@ String getParam(String name)
 // }
 
 void saveParamsCallback() {
-	Serial.print("\n\n----------------------------------------\nPORTAL FORM SUBMITTED\n----------------------------------------\n\n");
+	Serial.print("\n\n<--------- PORTAL FORM SUBMITTED --------->\n\n");
 
 	/* Set serial show config key from input */
 	// Get input value
 	String showSerialValue = getParam("show_serial");
-	Serial.print("show_serial input: " + showSerialValue + "\n");
+	Serial.print("---\nshow_serial input: " + showSerialValue + "\n");
 
 	// Convert to bool
 	bool showSerialValueBool = strcmp(showSerialValue.c_str(), "1") == 0 ? true : false;
@@ -1045,7 +1046,7 @@ void saveParamsCallback() {
 	/* Set show diagnostics config key from input */
 	// Get input value
 	String showDiagnosticsValue = getParam("show_diagnostics");
-	Serial.print("show_diagnostics input: " + showDiagnosticsValue + "\n");
+	Serial.print("---\nshow_diagnostics input: " + showDiagnosticsValue + "\n");
 
 	// Convert to bool
 	bool showDiagnosticsValueBool = strcmp(showDiagnosticsValue.c_str(), "1") == 0 ? true : false;
@@ -1062,13 +1063,22 @@ void saveParamsCallback() {
 	Serial.println();
 
 
+	/* Set forced animaiton type from input */
+	// Get input value
+	String forcedAnimationTypeValue = getParam("force_animation_type");
+	Serial.print("---\nforced_animation_type input: " + forcedAnimationTypeValue + "\n");
+
+	// Set program variable
+	Serial.println("Previous forcedAnimationType: " + String(animate.forcedAnimationType));
+	animate.forcedAnimationType = atoi(forcedAnimationTypeValue.c_str());
+	Serial.println("New forcedAnimationType: " + String(animate.forcedAnimationType));
 
 
 	/* Set brightness config key from input */
 
 	// Get input value
 	String brightnessValue = getParam("brightness");
-	Serial.print("brightness: " + brightnessValue + "\n");
+	Serial.print("---\nbrightness input: " + brightnessValue + "\n");
 
 	// Convert to int
 	int brightnessInt = atoi(brightnessValue.c_str());
@@ -1090,7 +1100,7 @@ void saveParamsCallback() {
 	setGlobalBrightness(FileUtils::config.displayLED.brightness);
 
 
-	Serial.print("END PORTAL FORM CALLBACK\n----------------------------------------\n\n");
+	Serial.print("\n<--------- END PORTAL FORM CALLBACK --------->\n\n");
 }
 
 #pragma endregion -- END WIFIMANAGER HANDLING
@@ -1137,7 +1147,23 @@ void reverseStripsArray(void)
 	reverse(allStrips, allStrips + 4);
 }
 
-/* Display letter from array */
+// Utility to wrap meteor region if its out of bounds
+uint8_t regionWrap(int8_t region, bool isDown)
+{
+	if (isDown) {
+		if (region == outerChunks) return  0; // Wrap around to first strip, 1st pixel
+		if (region == outerChunks + 1) return  1; // Wrap around to first strip, 2nd pixel
+		if (region < 0) return outerChunks - 1; // Wrap around to last strip
+	} else {
+		if (region == middleChunks) return  0; // Wrap around to first strip, 1st pixel
+		if (region == middleChunks + 1) return  1; // Wrap around to first strip, 2nd pixel
+		if (region < 0) return middleChunks - 1; // Wrap around to last strip
+	}
+
+	return region;
+}
+
+// Display letter from array
 void doLetterRegions(char theLetter, int regionStart, int startingPixel)
 {
 	const TextCharacter::TextCharacterInfo ledCharacter = textCharacter.getCharacter(theLetter, characterWidth);
@@ -1240,7 +1266,16 @@ void scrollLetters(const char* spacecraftName, int wordArraySize)
 }
 
 // Create Meteor object
-void createMeteor(int strip, int region, bool directionDown = true, int startPixel = 0, uint8_t meteorSize = 1, bool hasTail = true, float meteorTailDecayValue = 0.92, int rateClass = 5, uint8_t animationType = 0)
+void createMeteor(
+	int strip,
+	int region,
+	bool directionDown = true,
+	int startPixel = 0,
+	uint8_t meteorSize = 1,
+	bool hasTail = true,
+	float meteorTailDecayValue = 0.92,
+	int rateClass = 5,
+	uint8_t animationType = 0)
 {
 	CHSV meteorColor = currentColors.meteor;
 
@@ -1373,6 +1408,7 @@ void animationSpiralPulseRing(
 	}
 }
 
+
 void waveAnimation(
 	uint8_t strip,
 	bool isDown,
@@ -1386,10 +1422,24 @@ void waveAnimation(
 	uint8_t animationType = 0)
 {
 	uint8_t intervalAdjusted = interval * 2; // Interval is doubled because the LEDs are in front/back pairs
-	uint8_t startRegion = random8(0, outerChunks);
+	uint8_t startRegion;
+
+	if (isDown) {
+		startRegion = random8(0, outerChunks);
+	} else {
+		startRegion = random8(0, middleChunks);
+	}
 
 	for (uint8_t wave = 0; wave < numberOfWaves; wave++) {
-		for (uint8_t region = 0; region < outerChunks; region++) {
+		if (isDown) {
+			startRegion += 2;
+		} else {
+			startRegion -= 2;
+		}
+
+		startRegion = regionWrap(startRegion, isDown);
+
+		for (uint8_t region = 0; region < (isDown ? outerChunks : middleChunks); region++) {
 			int startPixel = 0;
 
 			if (region < outerChunks / 2) {
@@ -1411,7 +1461,7 @@ void waveAnimation(
 			);
 
 			startRegion++;
-			if (startRegion >= outerChunks) startRegion = 0; // Wrap around to first strip
+			startRegion = regionWrap(startRegion, isDown);
 		}
 	}
 }
@@ -1542,7 +1592,7 @@ const RateClassSettings rateClass6Settings[] = {
 	{pulseCount: 3, offset : 14, height : 2, spiralMultiplier : 2, repeats : 1, hasTail : true, meteorTailDecayValue : 0.96},
 
 	/* Wave */
-	{offset: 48, numberOfWaves : 3, waveSize : 4, interval : 4, hasTail : true, meteorTailDecayValue : 0.96},
+	{offset: 40, numberOfWaves : 3, waveSize : 4, interval : 2, hasTail : true, meteorTailDecayValue : 0.96},
 
 	/* Zigzag */
 	{pulseCount: 3, offset : 18, height : 5, zigzagSize : 3, interval : 5, hasTail : true, meteorTailDecayValue : 0.97},
@@ -1559,7 +1609,7 @@ const RateClassSettings rateClass5Settings[] = {
 	{pulseCount: 2, offset : 14, height : 2, spiralMultiplier : 3, repeats : 1, hasTail : true, meteorTailDecayValue : 0.96},
 
 	/* Wave */
-	{offset: 48, numberOfWaves : 2, waveSize : 3, interval : 3, hasTail : true, meteorTailDecayValue : 0.96},
+	{offset: 40, numberOfWaves : 3, waveSize : 3, interval : 2, hasTail : true, meteorTailDecayValue : 0.96},
 
 	/* Zigzag */
 	{pulseCount: 2, offset : 28, height : 4, zigzagSize : 3, interval : 3, hasTail : true, meteorTailDecayValue : 0.96},
@@ -1674,7 +1724,8 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 		randomTypeAny = 0;
 	}
 
-	// randomTypeAny = 0;
+	if (animate.forcedAnimationType > 0)
+		randomTypeAny = animate.forcedAnimationType - 1;
 
 	// Debug log
 	if (showSerial == true) {
@@ -1784,7 +1835,7 @@ void updateMeteors()
 
 	bool updateTable[6] = { false };
 	bool spiralUpdateTable[6] = { false };
-	
+
 
 	/* Update rate classes at different intervals */
 	EVERY_N_MILLISECONDS(timingTable[0]) {
@@ -1803,8 +1854,8 @@ void updateMeteors()
 		updateTable[4] = true; // Rate class 5
 	}
 	updateTable[5] = true; // Rate 6 is not slowed, it runs as fast as possible
-	
-	
+
+
 	EVERY_N_MILLISECONDS(timingTable[0] * 4) {
 		spiralUpdateTable[0] = true;
 	}
@@ -1825,7 +1876,7 @@ void updateMeteors()
 	}
 
 
-	
+
 
 	// // Print the updateTable array
 	// Serial.print("updateTable: ");
@@ -1858,30 +1909,10 @@ void updateMeteors()
 
 			if (shouldSpiral == true && doSpiral == true) {
 				int8_t newRegion = region;
-
-				if (directionDown == true) {
-					newRegion -= 1;
-					if (newRegion == outerChunks + 1) {
-						newRegion = 1;
-					} else if (newRegion == outerChunks) {
-						newRegion = 0;
-					} else if (newRegion == -1) {
-						newRegion = outerChunks - 1;
-					} else if (newRegion < -1) {
-						newRegion = outerChunks + 2;
-					}
-				} else {
-					newRegion += 1;
-					if (newRegion >= middleChunks) {
-						newRegion = 0;
-					} else if (newRegion < 0) {
-						newRegion = middleChunks - 1;
-					}
-				}
-
-				thisMeteor->region = newRegion;
+				directionDown == true ? newRegion -= 1 : newRegion += 1; // Move meteor region based on direction
+				newRegion = regionWrap(newRegion, directionDown); // Check for wrap around 
+				thisMeteor->region = newRegion; // Update region in meteor object
 			}
-
 
 			// Not ready to update meteor location, skip
 			if (updateTable[rateClass - 1] == false) {
@@ -2016,7 +2047,7 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 			if (upSignalRate > 0)
 				doRateBasedAnimation(false, upSignalRate, meteorOffset, animationTypeUp); // Up animation
 
-				animationTimer = currentMillis; // Reset meteor animation timer
+			animationTimer = currentMillis; // Reset meteor animation timer
 		}
 	}
 
@@ -3023,12 +3054,18 @@ void setup()
 	wm.setClass("invert");
 
 	int brightnessMapped = MathHelpers::map(FileUtils::config.displayLED.brightness, 8, 160, 0, 100);
+
+	/* Developer Settings */
 	new (&param_show_serial) WiFiManagerParameter("show_serial", "Show Serial", FileUtils::config.debugUtils.showSerial ? "1" : "0", 1, "type='number' min='0' max='1' step='1'");
 	new (&param_show_diagnostics) WiFiManagerParameter("show_diagnostics", "Show Diagnostics", FileUtils::config.debugUtils.diagMeasure ? "1" : "0", 1, "type='number' min='0' max='1' step='1'");
-	new (&param_brightness) WiFiManagerParameter("brightness", "Brightness", String(FileUtils::config.displayLED.brightness).c_str(), 3, "type='range' min='8' max='160' step='1'");
+	new (&param_force_animation_type) WiFiManagerParameter("force_animation_type", "Force Animation Type", String(animate.forcedAnimationType).c_str(), 1, "type='number' min='0' max='5' step='1'");
 
 	wm.addParameter(&param_show_serial);
 	wm.addParameter(&param_show_diagnostics);
+	wm.addParameter(&param_force_animation_type);
+
+	/* User Settings */
+	new (&param_brightness) WiFiManagerParameter("brightness", "Brightness", String(FileUtils::config.displayLED.brightness).c_str(), 3, "type='range' min='8' max='160' step='1'");
 	wm.addParameter(&param_brightness);
 
 

@@ -47,28 +47,21 @@ struct Meteor {
 
 class Animate {
     static AnimationUtils aUtilAnimate;
-    const uint8_t tailBrightnessMap[16] = {
+    const uint8_t tailBrightnessMap[8] = {
         200,
         180,
         160,
         140,
+        135,
         130,
+        125,
         120,
-        110,
-        100,
-        95,
-        90,
-        85,
-        80,
-        75,
-        70,
-        65,
-        60,
     };
     int tailBrightnessMapLength = sizeof(tailBrightnessMap) / sizeof(tailBrightnessMap[0]); // length of array
 
 
     public:
+    uint8_t forcedAnimationType = 0;
     static const uint16_t ActiveMeteorArraySize = 500;
     Meteor* ActiveMeteors[ActiveMeteorArraySize] = { nullptr };
     size_t ActiveMeteorsSize = 0;

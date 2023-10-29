@@ -32,10 +32,13 @@ void Animate::animateMeteor(Meteor* meteor)
 	CHSV pRepeatColor = pColor;
 	int hue = tailHueStart;
 
+	// Calculations are multiplied by two for pixel doubling on frontside/backside LED pairs on stick
+
+	// Calculate tail length
 	int tailLength = tailBrightnessMapLength;
 	int tailSection = tailStartBrightness / tailLength;
 	int halfTailSection = tailSection * 0.5;
-	int adjustedLength = ((meteorSize + tailLength) * 2);
+	int adjustedLength = ((meteorSize + tailLength) * 2); // Length of animation for both sides of LED strip
 
 	// First pixel of each region
 	int startPixel = meteor->directionDown == true ?
@@ -48,11 +51,13 @@ void Animate::animateMeteor(Meteor* meteor)
 	int regionStart = regionLength * region; // Calculate the pixel before the region start
 	int regionEnd = (regionLength * (region + 1) - 1); // Calculate the pixel after the region end
 
-	bool endTail = false;
+	bool endTail = false; // Flag to end tail
 
 
-	// Draw every LED in entire region 
-	for (int d = 1; d < (adjustedLength)+1; d++) {
+	// Draw every LED based on meteor size and tail length
+	for (int d = 1; d < (adjustedLength) + 2; d++) {
+		
+		// Set current pixel to draw
 		int currentPixel;
 		if (meteor->directionDown == true) {
 			currentPixel = drawPixel + d + 1;
@@ -64,28 +69,29 @@ void Animate::animateMeteor(Meteor* meteor)
 			if (currentPixel > regionEnd) continue;
 		}
 
+		// Draw backside LED
 		if (d - 1 % 2 == 0) {
-			strip[currentPixel] = pRepeatColor;
+			strip[currentPixel] = pRepeatColor; // Set pixel to match frontside LED
 			continue;
 		}
 
-		// Draw meteor
+		// Draw meteor core
 		if (d < (meteorSize * 2) + 1) {
-			strip[currentPixel] = pColor;
+			strip[currentPixel] = pColor; // Set pixel color
 			continue;
 		}
 
-		// Serial.println("--- hasTail: " + String(hasTail));
+		// No tail, so turn off pixel
 		if (hasTail == false) {
-			if (d > (meteorSize * 2) - 1) // Multiply by two for pixel doubling on inward/outward LED pairs on stick
-			{
+			if (d > (meteorSize * 2) - 1) {
 				strip[currentPixel] = CHSV(0, 0, 0);
 				continue;
 			}
 		}
 
+		// If end tail has been flagged, end the loop
 		if (endTail == true) {
-			strip[currentPixel] = CHSV(0, 0, 0);
+			strip[currentPixel] = CHSV(0, 0, 0); // Turn off pixel
 			break;
 		}
 
@@ -120,14 +126,16 @@ void Animate::animateMeteor(Meteor* meteor)
 			// int tailBrightness = tailStartBrightness - round((tailSection * d) * 0.5);
 
 			int tailBrightness;
-			if (d >= 0 && d < tailBrightnessMapLength * 2) {
+			if (d >= 0 && d < (tailBrightnessMapLength * 2) - 1) {
 				if (d % 2 == 1) { // Check if d is odd
 					tailBrightness = tailBrightnessMap[(d - 1) / 2];
 				} else {
 					tailBrightness = tailBrightnessMap[d / 2];
 				}
 			} else {
-				tailBrightness = 0;
+				// endTail = true;
+				strip[currentPixel] = CHSV(0, 0, 0);
+				continue;
 			}
 
 			// tailBrightness += (random8(tailSection) - (halfTailSection));	// Add random variance to brightness
