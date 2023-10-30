@@ -146,6 +146,12 @@ void FileUtils::printAllConfigFileKeys() {
 
 	configFile.close();
 
+	Serial.print("\n");
+	Serial.print("┌────────────────────────────────┐\n");
+	Serial.print("│        CONFIG FILE KEYS        │\n");
+	Serial.print("└────────────────────────────────┘\n");
+	
+
 	for (JsonPair kv : doc.as<JsonObject>()) {
 		Serial.print(kv.key().c_str() + String(": ") + kv.value().as<String>() + String("\n"));
 	}
