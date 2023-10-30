@@ -14,52 +14,52 @@ void Animate::animateMeteor(Meteor* meteor)
 {
 	// Set variables from meteor struct
 	CRGB* strip = meteor->rStrip;
-	uint8_t region = meteor->region;
-	uint8_t regionLength = meteor->regionLength;
+	int region = meteor->region;
+	int regionLength = meteor->regionLength;
 	CHSV pColor = meteor->pColor;
-	int8_t meteorSize = meteor->meteorSize;
+	int meteorSize = meteor->meteorSize;
 	bool hasTail = meteor->hasTail;
 	bool meteorRandomDecay = meteor->meteorRandomDecay;
-	int8_t tailHueStart = meteor->tailHueStart;
+	int tailHueStart = meteor->tailHueStart;
 	bool tailHueAdd = meteor->tailHueAdd;
-	double_t tailHueExponent = meteor->tailHueExponent;
-	int8_t tailHueSaturation = meteor->tailHueSaturation;
-	int8_t beginPixel = meteor->firstPixel;
+	double tailHueExponent = meteor->tailHueExponent;
+	int tailHueSaturation = meteor->tailHueSaturation;
+	int beginPixel = meteor->firstPixel;
 
 	CHSV pRepeatColor = pColor; // Initalize repeat color to meteor color
-	int8_t hue = tailHueStart;
+	int hue = tailHueStart;
 
 	// Calculations are multiplied by two for pixel doubling on frontside/backside LED pairs on stick
 
 	// Calculate tail length
-	uint8_t tailStartBrightness = tailBrightnessMap[0];
-	uint8_t tailBrightnessMax = tailStartBrightness + 8;
-	uint8_t tailLength = tailBrightnessMapLength;
-	uint8_t tailSection = tailStartBrightness / tailLength;
-	uint8_t halfTailSection = tailSection * 0.5;
-	uint8_t adjustedLength = ((meteorSize + tailLength) * 2); // Length of animation for both sides of LED strip
+	int tailStartBrightness = tailBrightnessMap[0];
+	int tailBrightnessMax = tailStartBrightness + 8;
+	int tailLength = tailBrightnessMapLength;
+	int tailSection = tailStartBrightness / tailLength;
+	int halfTailSection = tailSection * 0.5;
+	int adjustedLength = ((meteorSize + tailLength) * 2); // Length of animation for both sides of LED strip
 
 	// First pixel of each region
-	int8_t startPixel = meteor->directionDown == true ?
+	int startPixel = meteor->directionDown == true ?
 		((region + 1) * regionLength) - 1 : startPixel = region * regionLength;
 
 	// Current pixel to draw
-	int8_t drawPixel = meteor->directionDown == true
+	int drawPixel = meteor->directionDown == true
 		? startPixel - beginPixel
 		: drawPixel = startPixel + beginPixel;
 
 	// Calculate region start and end
-	int8_t regionStart = regionLength * region; // Calculate the pixel before the region start
-	int8_t regionEnd = (regionLength * (region + 1) - 1); // Calculate the pixel after the region end
+	int regionStart = regionLength * region; // Calculate the pixel before the region start
+	int regionEnd = (regionLength * (region + 1) - 1); // Calculate the pixel after the region end
 
 	bool endTail = false; // Flag to end tail
 
 
 	// Draw every LED based on meteor size and tail length
-	for (int8_t d = 1; d < (adjustedLength) + 2; d++) {
+	for (int d = 1; d < (adjustedLength) + 2; d++) {
 		
 		// Set current pixel to draw
-		int8_t currentPixel;
+		int currentPixel;
 		if (meteor->directionDown == true) {
 			currentPixel = drawPixel + d + 1;
 			if (currentPixel > regionEnd) break;
@@ -97,7 +97,7 @@ void Animate::animateMeteor(Meteor* meteor)
 		}
 
 		// Set tail brightness
-		int8_t tailBrightness;
+		int tailBrightness;
 		if (d < 0 || d > (tailBrightnessMapLength * 2) - 1) {
 			// This LED is out of bounds, turn off pixel
 			strip[currentPixel] = CHSV(0, 0, 0);

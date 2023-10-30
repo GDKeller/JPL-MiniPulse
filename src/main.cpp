@@ -451,7 +451,7 @@ const char* data_font_test = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-
 </dsn>)==--==";
 
 
-const char* dummyXmlData = data_animation_test_single;
+const char* dummyXmlData = data_animation_test;
 
 static int scrollLettersDelay = 33;
 static CEveryNMilliseconds scrollLettersTimer = CEveryNMilliseconds(scrollLettersDelay);
