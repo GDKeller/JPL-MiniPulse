@@ -1,0 +1,5 @@
+{
+    "TEST": true,
+    "DSN": true,
+    "RFC(VLBI)": "Reference Frame Calibration"
+}

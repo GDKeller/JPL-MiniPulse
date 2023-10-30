@@ -15,6 +15,10 @@
     #include <DevUtils.h>
 #endif
 
+#ifndef FAST_LED_H
+    #include <FastLED.h>
+#endif
+
 #ifndef SPACECRAFTDATA_H
 #define SPACECRAFTDATA_H
 
@@ -23,12 +27,21 @@ class SpacecraftData
     public:
     SpacecraftData();
     void loadJson();
-    const char* callsignToName(const char* key);
+    void loadSpacecraftNames();
+    void loadSpacecraftNamesRaw();
+    void loadSpacecraftPlaceholderRates();
     void loadSpacecraftBlacklist();
+    void loadSpacecraftBlacklistRaw();
+    const char* callsignToName(const char* key);
+    const char* getPlaceholderRate(const char* key);
     bool checkBlacklist(const char* callsign);
 
     private:
+    // static const char spacecraftNamesJsonRaw[];
+    // static const char spacecraftPlaceholderRatesJsonRaw[];
+    // static const char spacecraftBlacklistJsonRaw[];
     DynamicJsonDocument spacecraftNamesJson;
+    DynamicJsonDocument spacecraftPlaceholderRatesJson;
     DynamicJsonDocument spacecraftBlacklistJson;
 };
 

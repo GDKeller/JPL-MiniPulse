@@ -110,6 +110,61 @@ void listDir(fs::FS& fs, const char* dirname, uint8_t levels) {
 	}
 }
 
+void listFilesystem(fs::FS& fs, const char* dirname, int8_t loop = 0) {
+	// Serial.printf("Listing directory: %s\r\n", dirname);
+
+	File root = fs.open(dirname);
+	if (!root) {
+		Serial.println("- failed to open directory");
+		return;
+	}
+	if (!root.isDirectory()) {
+		Serial.println(" - not a directory");
+		return;
+	}
+
+	File file = root.openNextFile();
+	while (file) {
+		for (int8_t i = 0; i < loop; i++) {
+			Serial.print("    ");
+		}
+
+		Serial.print("└──");
+
+		if (file.isDirectory()) {
+			Serial.print("/");
+			Serial.print(file.name());
+			time_t t = file.getLastWrite();
+			struct tm* tmstruct = localtime(&t);
+			Serial.printf(
+				"  LAST WRITE: %d-%02d-%02d %02d:%02d:%02d\n",
+				(tmstruct->tm_year) + 1900, (tmstruct->tm_mon) + 1,
+				tmstruct->tm_mday, tmstruct->tm_hour,
+				tmstruct->tm_min, tmstruct->tm_sec
+			);
+
+			// Create a new path with leading '/'
+			String newPath = String(dirname) + "/" + file.name();
+			listFilesystem(fs, newPath.c_str(), loop + 1);
+		} else {
+			Serial.print(" ");
+			Serial.print(file.name());
+			Serial.print("  SIZE: ");
+			Serial.print(file.size());
+			time_t t = file.getLastWrite();
+			struct tm* tmstruct = localtime(&t);
+			Serial.printf(
+				"  LAST WRITE: %d-%02d-%02d %02d:%02d:%02d\n",
+				(tmstruct->tm_year) + 1900, (tmstruct->tm_mon) + 1,
+				tmstruct->tm_mday, tmstruct->tm_hour,
+				tmstruct->tm_min, tmstruct->tm_sec
+			);
+		}
+		file = root.openNextFile();
+	}
+}
+
+
 void createDir(fs::FS& fs, const char* path) {
 	Serial.printf("Creating Dir: %s\n", path);
 	if (fs.mkdir(path)) {
@@ -451,7 +506,7 @@ const char* data_font_test = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-
 </dsn>)==--==";
 
 
-const char* dummyXmlData = data_animation_test_single;
+const char* dummyXmlData = data_animation_test;
 
 static int scrollLettersDelay = 33;
 static CEveryNMilliseconds scrollLettersTimer = CEveryNMilliseconds(scrollLettersDelay);
@@ -733,7 +788,15 @@ String returnCraftInfo(uint listPosition, const char* callsign, const char* name
 
 void printCurrentQueue(QueueHandle_t queue) {
 	char buffer[1024]; // Create a buffer to hold the serial output
-	snprintf(buffer, sizeof(buffer), "\n%s========= QUEUE %d/%d ==========%s\n", dev.termColor("purple"), uxQueueMessagesWaiting(queue), MAX_ITEMS, dev.termColor("reset"));
+	snprintf(
+		buffer,
+		sizeof(buffer),
+		"\n%s========= QUEUE %d/%d ==========%s\n",
+		dev.termColor("purple"),
+		uxQueueMessagesWaiting(queue),
+		MAX_ITEMS,
+		dev.termColor("reset")
+	);
 
 	if (uxQueueMessagesWaiting(queue) > 0) {
 		QueueHandle_t tempQueue = xQueueCreate(5, sizeof(CraftQueueItem)); // Create a temporary queue to hold the items
@@ -1167,6 +1230,15 @@ uint8_t regionWrap(int8_t region, bool isDown)
 void doLetterRegions(char theLetter, int regionStart, int startingPixel)
 {
 	const TextCharacter::TextCharacterInfo ledCharacter = textCharacter.getCharacter(theLetter, characterWidth);
+	
+	// Check if characterWidth is zero, if so, return from the function to avoid division by zero
+    if (characterWidth == 0) {
+        characterWidth = 5;
+		Serial.println("Error: characterWidth is zero - setting to 5");
+        // return;
+    }
+
+	
 	const uint16_t regionOffset = innerPixelsChunkLength * regionStart;
 
 	int16_t pixel = startingPixel + regionOffset;
@@ -1176,6 +1248,9 @@ void doLetterRegions(char theLetter, int regionStart, int startingPixel)
 
 	for (int i = 0; i < ledCharacter.characterTotalPixels; i++) {
 		int j = i + 1;
+		// Serial.print("j: " + String(j) + "\n");
+		// Serial.println("characterWidth: " + String(characterWidth) + "\n");
+
 		int regionInt = (j % characterWidth) - 1;
 		if (regionInt < 0)
 			regionInt = characterWidth - 1;
@@ -1278,6 +1353,8 @@ void createMeteor(
 	uint8_t animationType = 0)
 {
 	CHSV meteorColor = currentColors.meteor;
+
+	region = regionWrap(region, directionDown);
 
 	for (int i = 0; i < animate.ActiveMeteorArraySize; i++) {
 		if (animate.ActiveMeteors[i] == nullptr) {
@@ -2129,6 +2206,18 @@ FoundSignals findSignals(XMLElement* xmlDish, CraftQueueItem* tempNewCraft) {
 			continue;
 		}
 
+		bool isDown;
+		if (strcmp(signalDirection, "down") == 0) {
+			isDown = true;
+		} else if (strcmp(signalDirection, "up") == 0) {
+			isDown = false;
+		} else {
+			continue;
+		}
+
+		if (isDown != true && isDown != false) continue;
+
+
 		const char* spacecraft = xmlSignal->Attribute("spacecraft");
 		if (spacecraft == nullptr) continue;
 		// Serial.println("spacecraft: " + String(spacecraft));
@@ -2151,8 +2240,24 @@ FoundSignals findSignals(XMLElement* xmlDish, CraftQueueItem* tempNewCraft) {
 		double rateDouble = stod(rate);
 		unsigned long rateLong = static_cast<unsigned long>(rateDouble);
 		if (rateLong == 0) continue;
+		// if (rateLong == 0) {
+		// 	if (isDown) {
+		// 		Serial.println("down rate is 0, skipping");
+		// 		continue;
+		// 	} else {
+		// 		Serial.println("up rate is 0, using placeholder");
+		// 	}
+		// }
+
+
+
+
+
+
+		// Serial.println("rateLong: " + String(rateLong));
 
 		unsigned int rateClass = rateLongToRateClass(rateLong);
+		// Serial.println("rateClass: " + String(rateClass));
 
 		// Serial.println("------");
 		// Serial.println("parsed: " + String(tempNewCraft->callsign) + " | long: " + String(rateLong) + " | rateClass: " + String(rateClass));
@@ -2160,10 +2265,10 @@ FoundSignals findSignals(XMLElement* xmlDish, CraftQueueItem* tempNewCraft) {
 
 		if (rateClass == 0) continue;
 
-		if (strcmp(signalDirection, "down") == 0) {
+		if (isDown == true) {
 			tempNewCraft->downSignal = rateClass;
 			foundSignals.downSignal = rateClass;
-		} else if (strcmp(signalDirection, "up") == 0) {
+		} else if (isDown == false) {
 			tempNewCraft->upSignal = rateClass;
 			foundSignals.upSignal = rateClass;
 		}
@@ -2943,12 +3048,19 @@ void setup()
 	// Make sure we can read the EEPROM
 	if (LittleFS.begin(true)) {
 		Serial.println("LittleFs filesystem mounted successfully");
-		listDir(LittleFS, "/", 3);
+		Serial.print("\n");
+		Serial.print("┌────────────────────────────────┐\n");
+		Serial.print("│ ./data  |   ROOT FILESYSTEM    │\n");
+		Serial.print("└────────────────────────────────┘\n");
+		listFilesystem(LittleFS, "/");
+		Serial.print("\n");
+		Serial.print("└────────────────────────────────┘\n\n");
 
 		FileUtils::initConfigFile();
 		Serial.print("Config loaded\n\n");
 		FileUtils::printAllConfigFileKeys();
-		Serial.print("config... \n");
+
+		Serial.print("\n\nCONFIG... \n");
 		Serial.print("showSerial: " + String(FileUtils::config.debugUtils.showSerial) + "\n");
 		Serial.print("diagMeasure: " + String(FileUtils::config.debugUtils.diagMeasure) + "\n");
 		Serial.print("brightness: " + String(FileUtils::config.displayLED.brightness) + "\n\n");
@@ -2958,7 +3070,7 @@ void setup()
 		// } else {
 		// 	Serial.print("password: NULL\n");
 		// }
-		// Serial.print("serverName: " + String(FileUtils::config.wifiNetwork.serverName) + "\n");
+		Serial.print("serverName: " + String(FileUtils::config.wifiNetwork.serverName) + "\n");
 	} else {
 		Serial.println("An Error has occurred while mounting LittleFS filesystem");
 		Serial.println("Using default config, settings will not be saved");
@@ -3153,8 +3265,7 @@ void setup()
 	}
 
 	http.setReuse(true);	   // Use persistent connection
-	data.loadJson();		   // Load data from json file
-	data.loadSpacecraftBlacklist(); // Load spacecraft blacklist from json file
+	data.loadJson();		   // Load JSON data for spacecraft lookup
 
 	/* Assign config to global state variables */
 	characterWidth = FileUtils::config.textTypography.characterWidth;
