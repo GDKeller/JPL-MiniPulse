@@ -31,10 +31,15 @@ class SpacecraftData
     public:
     // SpacecraftData();
     static void loadJson();
-    static void loadSpacecraftNamesProgmem();
-    static void loadSpacecraftBlacklistProgmem();
+    // static void loadSpacecraftNamesProgmem();
+    static void loadSpacecraftNamesFile();
+    // static void loadSpacecraftBlacklistProgmem();
+    static void loadSpacecraftBlacklistFile();
     static void loadSpacecraftPlaceholderRatesFile();
     // static void loadSpacecraftPlaceholderRatesProgmem();
+    
+    static void createAndWriteNamesFile();
+    static void createAndWriteBlacklistFile();
     static void createAndWritePlaceholderRatesFile();
     static const char* callsignToName(const char* key);
     static bool checkBlacklist(const char* callsign);

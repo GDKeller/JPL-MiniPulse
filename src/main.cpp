@@ -1946,10 +1946,11 @@ FoundSignals findSignals(XMLElement* xmlDish, CraftQueueItem* tempNewCraft) {
 				continue;
 			} else {
 				Serial.println("up rate is 0, using placeholder");
+				const char* placeholderRate = SpacecraftData::getPlaceholderRate(tempNewCraft->callsign);
+				rateDouble = stod(placeholderRate);
+				rateLong = static_cast<unsigned long>(rateDouble);
 			}
 		}
-
-
 
 
 
@@ -2831,20 +2832,18 @@ void setup()
 
 	int brightnessMapped = MathHelpers::map(FileUtils::config.displayLED.brightness, 8, 160, 0, 100);
 
-	/* Developer Settings */
-	new (&param_show_serial) WiFiManagerParameter("show_serial", "Show Serial", FileUtils::config.debugUtils.showSerial ? "1" : "0", 1, "type='number' min='0' max='1' step='1'");
-	new (&param_show_diagnostics) WiFiManagerParameter("show_diagnostics", "Show Diagnostics", FileUtils::config.debugUtils.diagMeasure ? "1" : "0", 1, "type='number' min='0' max='1' step='1'");
-	new (&param_force_animation_type) WiFiManagerParameter("force_animation_type", "Force Animation Type", String(animate.forcedAnimationType).c_str(), 1, "type='number' min='0' max='5' step='1'");
-
-	wm.addParameter(&param_show_serial);
-	wm.addParameter(&param_show_diagnostics);
-	wm.addParameter(&param_force_animation_type);
 
 	/* User Settings */
 	new (&param_brightness) WiFiManagerParameter("brightness", "Brightness", String(FileUtils::config.displayLED.brightness).c_str(), 3, "type='range' min='8' max='160' step='1'");
 	wm.addParameter(&param_brightness);
 
-
+	/* Developer Settings */
+	new (&param_show_serial) WiFiManagerParameter("show_serial", "Show Serial", FileUtils::config.debugUtils.showSerial ? "1" : "0", 1, "type='number' min='0' max='1' step='1'");
+	new (&param_show_diagnostics) WiFiManagerParameter("show_diagnostics", "Show Diagnostics", FileUtils::config.debugUtils.diagMeasure ? "1" : "0", 1, "type='number' min='0' max='1' step='1'");
+	new (&param_force_animation_type) WiFiManagerParameter("force_animation_type", "Force Animation Type", String(animate.forcedAnimationType).c_str(), 1, "type='number' min='0' max='5' step='1'");
+	wm.addParameter(&param_show_serial);
+	wm.addParameter(&param_show_diagnostics);
+	wm.addParameter(&param_force_animation_type);
 
 
 
@@ -3065,4 +3064,3 @@ void loop() {
 		// perfTimer = currentMillis;
 	}
 }
- 
