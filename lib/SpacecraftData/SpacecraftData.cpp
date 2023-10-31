@@ -201,17 +201,12 @@ void SpacecraftData::createAndWritePlaceholderRatesFile() {
 
     // Check & create spacecraft_data directory
     Serial.println("Looking for spacecraft_data directory...");
-    delay(3000);
     FileUtils::createDir("spacecraft_data");
     FileUtils::createDir("ok");
-
-    // delay(3000);
 
     // Check & create JSON
     Serial.println("Looking for placeholder_rates.json...");
     FileUtils::listFilesystem("/", 0);
-    
-    delay(2000);
 
     try {        
         bool fileExists = LittleFS.exists("/placeholder_rates.json");
@@ -223,184 +218,6 @@ void SpacecraftData::createAndWritePlaceholderRatesFile() {
         Serial.println("Error: " + String(e.what()));
     }
 
-    delay(3000);
-
-    // Map of spacecraft placeholder rates
-    // Serial.println("Creating placeholder rates map...");
-    // std::map<std::string, std::vector<std::string>> SpacecraftData = {
-    //     {"CAPS", {
-    //         "7.813e+00",
-    //         "1.250e+02",
-    //         "9.999e+02",
-    //         "4.000e+03"
-    //     }},
-    //     {"DART", {
-    //         "7.813e+00",
-    //         "2.000e+03",
-    //         "1.600e+04"
-    //     }},
-    //     {"DSSR", {
-    //         "1.000e+03",
-    //         "2.000e+03",
-    //         "4.000e+03",
-    //         "1.600e+04"
-    //     }},
-    //     {"JWST", {
-    //         "1.250e+02",
-    //         "2.500e+02",
-    //         "4.000e+03",
-    //         "2.500e+05"
-    //     }},
-    //     {"KPLO", {
-    //         "7.813e+00",
-    //         "1.250e+02",
-    //         "2.500e+02",
-    //         "4.000e+03",
-    //         "1.600e+04",
-    //         "2.500e+05"
-    //     }},
-    //     {"LICI", {
-    //         "7.813e+00",
-    //         "1.600e+01",
-    //         "5.000e+02",
-    //         "4.000e+03",
-    //         "1.600e+04"
-    //     }},
-    //     {"M01O", {
-    //         "7.813e+00",
-    //         "2.500e+02",
-    //         "2.000e+03",
-    //         "2.500e+05"
-    //     }},
-    //     {"M20", {
-    //         "7.813e+00",
-    //         "1.250e+02",
-    //         "1.000e+03",
-    //         "2.000e+03",
-    //         "1.600e+04"
-    //     }},
-    //     {"MMS1", {
-    //         "7.813e+00",
-    //         "1.250e+02",
-    //         "1.000e+03",
-    //         "2.500e+05"
-    //     }},
-    //     {"MMS2", {
-    //         "6.250e+01",
-    //         "2.500e+02",
-    //         "1.000e+03"
-    //     }},
-    //     {"MMS3", {
-    //         "2.500e+02",
-    //         "1.000e+03",
-    //         "3.200e+04",
-    //         "2.500e+05"
-    //     }},
-    //     {"MMS4", {
-    //         "0.000e+00",
-    //         "2.500e+02",
-    //         "2.000e+03"
-    //     }},
-    //     {"MRO", {
-    //         "7.812e+00",
-    //         "6.250e+01",
-    //         "1.250e+02",
-    //         "4.000e+03",
-    //         "1.600e+04"
-    //     }},
-    //     {"MSL", {
-    //         "7.813e+00",
-    //         "1.250e+02",
-    //         "4.000e+03",
-    //         "1.600e+04"
-    //     }},
-    //     {"MVN", {
-    //         "7.813e+00",
-    //         "9.999e+02",
-    //         "2.000e+03",
-    //         "1.600e+04",
-    //         "2.500e+05"
-    //     }},
-    //     {"PLSS", {
-    //         "7.813e+00",
-    //         "6.250e+01",
-    //         "5.000e+02",
-    //         "4.000e+03",
-    //         "1.600e+04",
-    //         "2.500e+05"
-    //     }},
-    //     {"SPP", {
-    //         "7.813e+00",
-    //         "6.250e+01",
-    //         "9.999e+02",
-    //         "4.000e+03",
-    //         "3.200e+04"
-    //     }},
-    //     {"SOHO", {
-    //         "7.813e+00",
-    //         "9.999e+02",
-    //         "4.000e+03",
-    //         "1.600e+04",
-    //         "2.500e+05"
-    //     }},
-    //     {"TESS", {
-    //         "7.813e+00",
-    //         "4.000e+03",
-    //         "1.600e+04",
-    //         "2.500e+05"
-    //     }},
-    //     {"THEMIS-A", {
-    //         "7.813e+00",
-    //         "9.999e+02",
-    //         "4.000e+03",
-    //         "3.200e+04",
-    //         "2.500e+05"
-    //     }},
-    //     {"THEMIS-B", {
-    //         "7.813e+00",
-    //         "9.999e+02",
-    //         "4.000e+03",
-    //         "3.200e+04",
-    //         "2.500e+05"
-    //     }},
-    //     {"THEMIS-C", {
-    //         "7.813e+00",
-    //         "9.999e+02",
-    //         "4.000e+03",
-    //         "3.200e+04",
-    //         "2.500e+05"
-    //     }},
-    //     {"THEMIS-D", {
-    //         "7.813e+00",
-    //         "9.999e+02",
-    //         "1.000e+03",
-    //         "3.200e+04",
-    //         "2.500e+05"
-    //     }},
-    //     {"THEMIS-E", {
-    //         "7.813e+00",
-    //         "9.999e+02",
-    //         "4.000e+03",
-    //         "3.200e+04",
-    //         "2.500e+05"
-    //     }},
-    //     {"VIK1", {
-    //         "2.500e+02",
-    //         "4.000e+03"
-    //     }},
-    //     {"VIK2", {
-    //         "2.500e+02",
-    //         "4.000e+03"
-    //     }},
-    //     {"WIND", {
-    //         "7.813e+00",
-    //         "9.999e+02",
-    //         "4.000e+03",
-    //         "1.600e+04",
-    //         "2.500e+05"
-    //     }},
-    // };
-
 
     // Open file for writing
     Serial.println("Opening placeholder_rates.json for writing...");
@@ -411,19 +228,8 @@ void SpacecraftData::createAndWritePlaceholderRatesFile() {
     }
 
     // Create a JSON document
-    Serial.println("Creating JSON document...");
-    // StaticJsonDocument<6144> doc;
+    Serial.println("Clearing global JSON document...");
     spacecraftPlaceholderRatesJson.clear();
-
-    // // Populate the document with your data
-    // // Serial.println("Populating JSON document...");
-    // // for (const auto& pair : SpacecraftData) {
-    // //     JsonArray array = doc.createNestedArray(pair.first);
-        
-    // //     for (const auto& rate : pair.second) {
-    // //         array.add(rate);
-    // //     }
-    // // }
 
      // Adding spacecraft data directly into the JSON object
     JsonArray caps = spacecraftPlaceholderRatesJson.createNestedArray("CAPS");
@@ -611,12 +417,12 @@ void SpacecraftData::createAndWritePlaceholderRatesFile() {
     // Clean up
     file.close();
     Serial.print(DevUtils::termColor("green") + "Spacecraft placeholder rates written to placeholder_rates.json" + DevUtils::termColor("reset") + "\n");
-    // print all keys in placeholder_rates.json
+
     Serial.println("Printing all keys in placeholder_rates.json...");
     for (const auto& pair : spacecraftPlaceholderRatesJson.as<JsonObject>()) {
         Serial.println(pair.key().c_str());
     }
-    Serial.println("Done");
+    Serial.println("\nDone\n-------------\n");
 }
 
 /**
@@ -897,7 +703,6 @@ void SpacecraftData::loadSpacecraftPlaceholderRatesFile() {
 //         return;
 //     }
 
-
 // }
 
 
@@ -950,14 +755,13 @@ bool SpacecraftData::checkBlacklist(const char* key) {
 const char* SpacecraftData::getPlaceholderRate(const char* key) {
     // Look for key in JSON
     File jsonFile = LittleFS.open("/spacecraft_data/placeholder_rates.json", "r");
-    // if jsonFile has key, print it
+
     if (jsonFile) {
         Serial.println("File \"placeholder_rates.json\" opened");
     } else {
-        Serial.println("Failed to open placeholder_rates.json");
+        Serial.println(DevUtils::termColor("red") + "Failed to open placeholder_rates.json" + DevUtils::termColor("reset") + "\n");
     }
 
-    // DynamicJsonDocument jsonBuffer(2048);
     // put jsonFile into jsonBuffer
     DeserializationError error = deserializeJson(spacecraftPlaceholderRatesJson, jsonFile);
     jsonFile.close();
@@ -973,10 +777,6 @@ const char* SpacecraftData::getPlaceholderRate(const char* key) {
         Serial.println(pair.key().c_str());
     }
 
-
-    // for (const auto& pair : spacecraftPlaceholderRatesJson.as<JsonObject>()) {
-    //     Serial.println(pair.key().c_str());
-    // }
 
     
     if (spacecraftPlaceholderRatesJson.containsKey(key)) {
@@ -995,9 +795,9 @@ const char* SpacecraftData::getPlaceholderRate(const char* key) {
             Serial.println("Random index: " + String(randomIndex));
 
             // print all items in array
-            // for (JsonVariant v : arr) {
-            //     Serial.println(v.as<String>());
-            // }
+            for (JsonVariant v : arr) {
+                Serial.println(v.as<String>());
+            }
             Serial.print("\n\n");
             Serial.println("Array size: " + String(arr.size()));
 
