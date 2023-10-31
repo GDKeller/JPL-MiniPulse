@@ -210,6 +210,16 @@ const char* data_font_test = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-
 	<timestamp>1670419133000</timestamp>
 </dsn>)==--==";
 
+// Test DSN Maintenance mode XML
+const char* data_dsn_maintenance = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?>
+<dsn>
+	<station name="gdscc" friendlyName="Goldstone" timeUTC="1698785318000" timeZoneOffset="-25200000"/>
+	<station name="mdscc" friendlyName="Madrid" timeUTC="1698785318000" timeZoneOffset="3600000"/>
+	<station name="cdscc" friendlyName="Canberra" timeUTC="1698785318000" timeZoneOffset="39600000"/>
+	<timestamp>1698785318000</timestamp>
+</dsn>)==--==";
+
+
 // Set the data to use
 const char* dummyXmlData = data_Sept6;
 
