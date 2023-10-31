@@ -7,6 +7,10 @@
 #include <ArduinoJson.h>
 #endif
 
+#ifndef LittleFS_H
+#include <LittleFS.h>
+#endif
+
 #ifndef FILEUTILS_H
 #include <FileUtils.h>
 #endif
@@ -25,19 +29,21 @@
 class SpacecraftData
 {
     public:
-    SpacecraftData();
-    void loadJson();
-    void loadSpacecraftNamesProgmem();
-    void loadSpacecraftBlacklistProgmem();
-    void loadSpacecraftPlaceholderRatesProgmem();
-    const char* callsignToName(const char* key);
-    bool checkBlacklist(const char* callsign);
-    const char* getPlaceholderRate(const char* key);
+    // SpacecraftData();
+    static void loadJson();
+    static void loadSpacecraftNamesProgmem();
+    static void loadSpacecraftBlacklistProgmem();
+    static void loadSpacecraftPlaceholderRatesFile();
+    // static void loadSpacecraftPlaceholderRatesProgmem();
+    static void createAndWritePlaceholderRatesFile();
+    static const char* callsignToName(const char* key);
+    static bool checkBlacklist(const char* callsign);
+    static const char* getPlaceholderRate(const char* key);
 
     private:
-    DynamicJsonDocument spacecraftNamesJson;
-    DynamicJsonDocument spacecraftBlacklistJson;
-    DynamicJsonDocument spacecraftPlaceholderRatesJson;
+    static DynamicJsonDocument spacecraftNamesJson;
+    static DynamicJsonDocument spacecraftBlacklistJson;
+    static DynamicJsonDocument spacecraftPlaceholderRatesJson;
 };
 
 struct CraftQueueItem

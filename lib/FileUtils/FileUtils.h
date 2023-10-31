@@ -104,6 +104,16 @@ class FileUtils {
     public:
     static Config config;
 
+    static void listDir(const char* dirname, uint8_t levels);
+    static void listFilesystem(const char* dirname, int8_t loop);
+    static void createDir(const char* path);
+    static void removeDir(const char* path);
+    static void readFile(const char* path);
+    static void writeFile(const char* path, const char* message);
+    static void appendFile(const char* path, const char* message);
+    static void renameFile(const char* path1, const char* path2);
+    static void deleteFile(const char* path);
+
     static bool checkConfigFileExists();
     static bool createConfigFile();
     static void initConfigFile();
