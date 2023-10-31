@@ -69,304 +69,8 @@ HTTPClient http; // Used for fetching data
 
 
 #define FORMAT_LITTLEFS_IF_FAILED true
-
-void listDir(fs::FS& fs, const char* dirname, uint8_t levels) {
-	Serial.printf("Listing directory: %s\r\n", dirname);
-
-	File root = fs.open(dirname);
-	if (!root) {
-		Serial.println("- failed to open directory");
-		return;
-	}
-	if (!root.isDirectory()) {
-		Serial.println(" - not a directory");
-		return;
-	}
-
-	File file = root.openNextFile();
-	while (file) {
-		if (file.isDirectory()) {
-			Serial.print("  DIR : ");
-
-			Serial.print(file.name());
-			time_t t = file.getLastWrite();
-			struct tm* tmstruct = localtime(&t);
-			Serial.printf("  LAST WRITE: %d-%02d-%02d %02d:%02d:%02d\n", (tmstruct->tm_year) + 1900, (tmstruct->tm_mon) + 1, tmstruct->tm_mday, tmstruct->tm_hour, tmstruct->tm_min, tmstruct->tm_sec);
-
-			if (levels) {
-				listDir(fs, file.name(), levels - 1);
-			}
-		} else {
-			Serial.print("  FILE: ");
-			Serial.print(file.name());
-			Serial.print("  SIZE: ");
-
-			Serial.print(file.size());
-			time_t t = file.getLastWrite();
-			struct tm* tmstruct = localtime(&t);
-			Serial.printf("  LAST WRITE: %d-%02d-%02d %02d:%02d:%02d\n", (tmstruct->tm_year) + 1900, (tmstruct->tm_mon) + 1, tmstruct->tm_mday, tmstruct->tm_hour, tmstruct->tm_min, tmstruct->tm_sec);
-		}
-		file = root.openNextFile();
-	}
-}
-
-void listFilesystem(fs::FS& fs, const char* dirname, int8_t loop = 0) {
-	// Serial.printf("Listing directory: %s\r\n", dirname);
-
-	File root = fs.open(dirname);
-	if (!root) {
-		Serial.println("- failed to open directory");
-		return;
-	}
-	if (!root.isDirectory()) {
-		Serial.println(" - not a directory");
-		return;
-	}
-
-	File file = root.openNextFile();
-	while (file) {
-		for (int8_t i = 0; i < loop; i++) {
-			Serial.print("    ");
-		}
-
-		Serial.print("└──");
-
-		if (file.isDirectory()) {
-			Serial.print("/");
-			Serial.print(file.name());
-			time_t t = file.getLastWrite();
-			struct tm* tmstruct = localtime(&t);
-			Serial.printf(
-				"  LAST WRITE: %d-%02d-%02d %02d:%02d:%02d\n",
-				(tmstruct->tm_year) + 1900, (tmstruct->tm_mon) + 1,
-				tmstruct->tm_mday, tmstruct->tm_hour,
-				tmstruct->tm_min, tmstruct->tm_sec
-			);
-
-			// Create a new path with leading '/'
-			String newPath = String(dirname) + "/" + file.name();
-			listFilesystem(fs, newPath.c_str(), loop + 1);
-		} else {
-			Serial.print(" ");
-			Serial.print(file.name());
-			Serial.print("  SIZE: ");
-			Serial.print(file.size());
-			time_t t = file.getLastWrite();
-			struct tm* tmstruct = localtime(&t);
-			Serial.printf(
-				"  LAST WRITE: %d-%02d-%02d %02d:%02d:%02d\n",
-				(tmstruct->tm_year) + 1900, (tmstruct->tm_mon) + 1,
-				tmstruct->tm_mday, tmstruct->tm_hour,
-				tmstruct->tm_min, tmstruct->tm_sec
-			);
-		}
-		file = root.openNextFile();
-	}
-}
-
-
-void createDir(fs::FS& fs, const char* path) {
-	Serial.printf("Creating Dir: %s\n", path);
-	if (fs.mkdir(path)) {
-		Serial.println("Dir created");
-	} else {
-		Serial.println("mkdir failed");
-	}
-}
-
-void removeDir(fs::FS& fs, const char* path) {
-	Serial.printf("Removing Dir: %s\n", path);
-	if (fs.rmdir(path)) {
-		Serial.println("Dir removed");
-	} else {
-		Serial.println("rmdir failed");
-	}
-}
-
-void readFile(fs::FS& fs, const char* path) {
-	Serial.printf("Reading file: %s\r\n", path);
-
-	File file = fs.open(path);
-	if (!file || file.isDirectory()) {
-		Serial.println("- failed to open file for reading");
-		return;
-	}
-
-	Serial.println("- read from file:");
-	while (file.available()) {
-		Serial.write(file.read());
-	}
-	file.close();
-}
-
-void writeFile(fs::FS& fs, const char* path, const char* message) {
-	Serial.printf("Writing file: %s\r\n", path);
-
-	File file = fs.open(path, FILE_WRITE);
-	if (!file) {
-		Serial.println("- failed to open file for writing");
-		return;
-	}
-	if (file.print(message)) {
-		Serial.println("- file written");
-	} else {
-		Serial.println("- write failed");
-	}
-	file.close();
-}
-
-void appendFile(fs::FS& fs, const char* path, const char* message) {
-	Serial.printf("Appending to file: %s\r\n", path);
-
-	File file = fs.open(path, FILE_APPEND);
-	if (!file) {
-		Serial.println("- failed to open file for appending");
-		return;
-	}
-	if (file.print(message)) {
-		Serial.println("- message appended");
-	} else {
-		Serial.println("- append failed");
-	}
-	file.close();
-}
-
-void renameFile(fs::FS& fs, const char* path1, const char* path2) {
-	Serial.printf("Renaming file %s to %s\r\n", path1, path2);
-	if (fs.rename(path1, path2)) {
-		Serial.println("- file renamed");
-	} else {
-		Serial.println("- rename failed");
-	}
-}
-
-void deleteFile(fs::FS& fs, const char* path) {
-	Serial.printf("Deleting file: %s\r\n", path);
-	if (fs.remove(path)) {
-		Serial.println("- file deleted");
-	} else {
-		Serial.println("- delete failed");
-	}
-}
-
-// SPIFFS-like write and delete file
-
-// See: https://github.com/esp8266/Arduino/blob/master/libraries/LittleFS/src/LittleFS.cpp#L60
-void writeFile2(fs::FS& fs, const char* path, const char* message) {
-	if (!fs.exists(path)) {
-		if (strchr(path, '/')) {
-			Serial.printf("Create missing folders of: %s\r\n", path);
-			char* pathStr = strdup(path);
-			if (pathStr) {
-				char* ptr = strchr(pathStr, '/');
-				while (ptr) {
-					*ptr = 0;
-					fs.mkdir(pathStr);
-					*ptr = '/';
-					ptr = strchr(ptr + 1, '/');
-				}
-			}
-			free(pathStr);
-		}
-	}
-
-	Serial.printf("Writing file to: %s\r\n", path);
-	File file = fs.open(path, FILE_WRITE);
-	if (!file) {
-		Serial.println("- failed to open file for writing");
-		return;
-	}
-	if (file.print(message)) {
-		Serial.println("- file written");
-	} else {
-		Serial.println("- write failed");
-	}
-	file.close();
-}
-
-// See:  https://github.com/esp8266/Arduino/blob/master/libraries/LittleFS/src/LittleFS.h#L149
-void deleteFile2(fs::FS& fs, const char* path) {
-	Serial.printf("Deleting file and empty folders on path: %s\r\n", path);
-
-	if (fs.remove(path)) {
-		Serial.println("- file deleted");
-	} else {
-		Serial.println("- delete failed");
-	}
-
-	char* pathStr = strdup(path);
-	if (pathStr) {
-		char* ptr = strrchr(pathStr, '/');
-		if (ptr) {
-			Serial.printf("Removing all empty folders on path: %s\r\n", path);
-		}
-		while (ptr) {
-			*ptr = 0;
-			fs.rmdir(pathStr);
-			ptr = strrchr(pathStr, '/');
-		}
-		free(pathStr);
-	}
-}
-
-void testFileIO(fs::FS& fs, const char* path) {
-	Serial.printf("Testing file I/O with %s\r\n", path);
-
-	static uint8_t buf[512];
-	size_t len = 0;
-	File file = fs.open(path, FILE_WRITE);
-	if (!file) {
-		Serial.println("- failed to open file for writing");
-		return;
-	}
-
-	size_t i;
-	Serial.print("- writing");
-	uint32_t start = millis();
-	for (i = 0; i < 2048; i++) {
-		if ((i & 0x001F) == 0x001F) {
-			Serial.print(".");
-		}
-		file.write(buf, 512);
-	}
-	Serial.println("");
-	uint32_t end = millis() - start;
-	Serial.printf(" - %u bytes written in %u ms\r\n", 2048 * 512, end);
-	file.close();
-
-	file = fs.open(path);
-	start = millis();
-	end = start;
-	i = 0;
-	if (file && !file.isDirectory()) {
-		len = file.size();
-		size_t flen = len;
-		start = millis();
-		Serial.print("- reading");
-		while (len) {
-			size_t toRead = len;
-			if (toRead > 512) {
-				toRead = 512;
-			}
-			file.read(buf, toRead);
-			if ((i++ & 0x001F) == 0x001F) {
-				Serial.print(".");
-			}
-			len -= toRead;
-		}
-		Serial.println("");
-		end = millis() - start;
-		Serial.printf("- %u bytes read in %u ms\r\n", flen, end);
-		file.close();
-	} else {
-		Serial.println("- failed to open file for reading");
-	}
-}
-
-
-
-
 #define MAX_XML_SIZE 20480
+
 
 // Placeholder for XML data
 // const char* dummyXmlData = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?><dsn><station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" /><dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS24" windSpeed="5.556"><downSignal dataRate="28000000" frequency="25900000000" power="-91.3965" signalType="data" spacecraft="JWST" spacecraftID="-170" /><downSignal dataRate="40000" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="JWST" spacecraftID="-170" /><upSignal dataRate="16000" frequency="2090" power="4.804" signalType="data" spacecraft="JWST" spacecraftID="-170" /><target downlegRange="1.653e+06" id="170" name="JWST" rtlt="11.03" uplegRange="1.653e+06" /></dish><dish azimuthAngle="287.7" elevationAngle="18.74" isArray="false" isDDOR="false" isMSPA="false" name="DSS26" windSpeed="5.556"><downSignal dataRate="4000000" frequency="8439000000" power="-138.1801" signalType="none" spacecraft="MRO" spacecraftID="-74" /><upSignal dataRate="2000" frequency="7183" power="0.0000" signalType="none" spacecraft="MRO" spacecraftID="-74" /><target downlegRange="8.207e+07" id="74" name="MRO" rtlt="547.5" uplegRange="8.207e+07" /></dish><station friendlyName="Madrid" name="mdscc" timeUTC="1670419133000" timeZoneOffset="3600000" /><dish azimuthAngle="103.0" elevationAngle="80.19" isArray="false" isDDOR="false" isMSPA="false" name="DSS56" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="2250000000" power="-478.1842" signalType="none" spacecraft="CHDR" spacecraftID="-151" /><target downlegRange="1.417e+05" id="151" name="CHDR" rtlt="0.9455" uplegRange="1.417e+05" /></dish><dish azimuthAngle="196.5" elevationAngle="30.71" isArray="false" isDDOR="false" isMSPA="false" name="DSS65" windSpeed="5.556"><downSignal dataRate="87650" frequency="2278000000" power="-112.7797" signalType="data" spacecraft="ACE" spacecraftID="-92" /><upSignal dataRate="1000" frequency="2098" power="0.2630" signalType="data" spacecraft="ACE" spacecraftID="-92" /><target downlegRange="1.389e+06" id="92" name="ACE" rtlt="9.266" uplegRange="1.389e+06" /></dish><dish azimuthAngle="124.5" elevationAngle="53.41" isArray="false" isDDOR="false" isMSPA="false" name="DSS53" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8436000000" power="-170.1741" signalType="none" spacecraft="LICI" spacecraftID="-210" /><target downlegRange="4.099e+06" id="210" name="LICI" rtlt="27.34" uplegRange="4.099e+06" /></dish><dish azimuthAngle="219.7" elevationAngle="22.84" isArray="false" isDDOR="false" isMSPA="false" name="DSS54" windSpeed="5.556"><upSignal dataRate="2000" frequency="2066" power="1.758" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><downSignal dataRate="245800" frequency="2245000000" power="-110.7082" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><target downlegRange="1.331e+06" id="21" name="SOHO" rtlt="8.882" uplegRange="1.331e+06" /></dish><dish azimuthAngle="120.0" elevationAngle="46.53" isArray="false" isDDOR="false" isMSPA="false" name="DSS63" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8415000000" power="-478.2658" signalType="none" spacecraft="TEST" spacecraftID="-99" /><target downlegRange="-1.000e+00" id="99" name="TEST" rtlt="-1.0000" uplegRange="-1.000e+00" /></dish><station friendlyName="Canberra" name="cdscc" timeUTC="1670419133000" timeZoneOffset="39600000" /><dish azimuthAngle="330.6" elevationAngle="37.39" isArray="false" isDDOR="false" isMSPA="false" name="DSS34" windSpeed="3.087"><upSignal dataRate="250000" frequency="2041" power="0.2421" signalType="data" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="974200" frequency="2217000000" power="-116.4022" signalType="none" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="2000000" frequency="2216000000" power="-107.4503" signalType="carrier" spacecraft="EM1" spacecraftID="-23" /><target downlegRange="3.870e+05" id="23" name="EM1" rtlt="2.581" uplegRange="3.869e+05" /></dish><dish azimuthAngle="10.27" elevationAngle="28.97" isArray="false" isDDOR="false" isMSPA="false" name="DSS35" windSpeed="3.087"><downSignal dataRate="11.63" frequency="8446000000" power="-141.8096" signalType="data" spacecraft="MVN" spacecraftID="-202" /><upSignal dataRate="7.813" frequency="7189" power="8.303" signalType="data" spacecraft="MVN" spacecraftID="-202" /><target downlegRange="8.207e+07" id="202" name="MVN" rtlt="547.5" uplegRange="8.207e+07" /></dish><dish azimuthAngle="207.0" elevationAngle="15.51" isArray="false" isDDOR="false" isMSPA="false" name="DSS43" windSpeed="3.087"><upSignal dataRate="16.00" frequency="2114" power="20.20" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><downSignal dataRate="160.0" frequency="8420000000" power="-156.2618" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><target downlegRange="1.984e+10" id="32" name="VGR2" rtlt="132300" uplegRange="1.984e+10" /></dish><dish azimuthAngle="7.205" elevationAngle="26.82" isArray="false" isDDOR="false" isMSPA="false" name="DSS36" windSpeed="3.087"><downSignal dataRate="8500000" frequency="8475000000" power="-120.3643" signalType="none" spacecraft="KPLO" spacecraftID="-155" /><downSignal dataRate="8192" frequency="2261000000" power="-104.9668" signalType="data" spacecraft="KPLO" spacecraftID="-155" /><target downlegRange="4.405e+05" id="155" name="KPLO" rtlt="2.939" uplegRange="4.405e+05" /></dish><timestamp>1670419133000</timestamp></dsn>)==--==";
@@ -427,10 +131,15 @@ const char* data_Sept6 = PROGMEM R"==--==(<dsn>
 <timestamp>1694004780000</timestamp>
 </dsn>)==--==";
 
-// Test dummy data that cycles through the rate classes
+// Test dummy data that cycles through all rate classes
 const char* data_animation_test = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?>
 <dsn>
     <station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" />
+	<dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS24" windSpeed="5.556">
+        <downSignal dataRate="1.163e+01" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="TEST" spacecraftID="-170" />
+        <upSignal dataRate="0" frequency="2090" power="4.804" signalType="data" spacecraft="TEST" spacecraftID="-170" />
+        <target downlegRange="1.653e+06" id="170" name="TEST" rtlt="11.03" uplegRange="1.653e+06" />
+    </dish>
 	<dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS24" windSpeed="5.556">
         <downSignal dataRate="1.163e+01" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="Rate1" spacecraftID="-170" />
         <upSignal dataRate="1.163e+01" frequency="2090" power="4.804" signalType="data" spacecraft="Rate1" spacecraftID="-170" />
@@ -466,7 +175,7 @@ const char* data_animation_test = PROGMEM R"==--==(<?xml version='1.0' encoding=
     <timestamp>1670419133000</timestamp>
 </dsn>)==--==";
 
-// Test dummy data that cycles through the rate classes
+// Test dummy data that cycles through specific rate classes
 const char* data_animation_test_single = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?>
 <dsn>
     <station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" />
@@ -488,7 +197,7 @@ const char* data_animation_test_single = PROGMEM R"==--==(<?xml version='1.0' en
     <timestamp>1670419133000</timestamp>
 </dsn>)==--==";
 
-// Font test
+// Test font by scrolling alphanumberic characters
 const char* data_font_test = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?>
 <dsn>
     <station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" />
@@ -505,11 +214,7 @@ const char* data_font_test = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-
 	<timestamp>1670419133000</timestamp>
 </dsn>)==--==";
 
-
 const char* dummyXmlData = data_animation_test;
-
-static int scrollLettersDelay = 33;
-static CEveryNMilliseconds scrollLettersTimer = CEveryNMilliseconds(scrollLettersDelay);
 
 
 /* STATE TRACKING
@@ -1057,8 +762,6 @@ String getParam(String name)
 // 		setGlobalBrightness(inputGlobalBrightnessValue);
 // 		FileUtils::config.debugUtils.showSerial = inputShowSerialValue;
 
-// 		scrollLettersDelay = inputScrollLettersDelayValue;
-// 		scrollLettersTimer.setPeriod(inputScrollLettersDelayValue);
 // 		// setAnimationParams(inputGlobalFpsValue, inputMeteorTailDecayValue, inputMeteorTailRandomValue);
 
 // 		DynamicJsonDocument doc(1024);
@@ -2239,15 +1942,16 @@ FoundSignals findSignals(XMLElement* xmlDish, CraftQueueItem* tempNewCraft) {
 
 		double rateDouble = stod(rate);
 		unsigned long rateLong = static_cast<unsigned long>(rateDouble);
-		if (rateLong == 0) continue;
-		// if (rateLong == 0) {
-		// 	if (isDown) {
-		// 		Serial.println("down rate is 0, skipping");
-		// 		continue;
-		// 	} else {
-		// 		Serial.println("up rate is 0, using placeholder");
-		// 	}
-		// }
+	
+		// if (rateLong == 0) continue;
+		if (rateLong == 0) {
+			if (isDown) {
+				Serial.println("down rate is 0, skipping");
+				continue;
+			} else {
+				Serial.println("up rate is 0, using placeholder");
+			}
+		}
 
 
 
@@ -3231,6 +2935,22 @@ void setup()
 
 
 
+	http.setReuse(true);	   // Use persistent connection
+	data.loadJson();		   // Load JSON data for spacecraft lookup
+	// data.loadSpacecraftNamesProgmem(); // Load raw spacecraft names for lookup
+	// data.loadSpacecraftPlaceholderRatesRaw(); // Load raw spacecraft placeholder rates for lookup
+	// data.loadSpacecraftBlacklistRaw(); // Load raw spacecraft blacklist for lookup
+	// data.loadSpacecraftBlacklist();
+	delay(3000);
+
+
+	/* Assign config to global state variables */
+	characterWidth = FileUtils::config.textTypography.characterWidth;
+
+	setColorTheme(colorTheme); // Set color theme
+	// drawBottomPixels();		   // Draw initial bottom pixels
+	delay(100);				   // Small delay to allow bottom pixels to draw
+
 
 	/* DATA TASK SETUP */
 	// Initialize the queue item pool
@@ -3242,6 +2962,8 @@ void setup()
 	freeList[3] = &itemPool[3];
 	freeList[4] = &itemPool[4];
 	xSemaphoreGive(freeListMutex); // Give the mutex back when done accessing shared data
+
+	// delay(5000);
 
 	/* Initialize the data task on the second core */
 	xTaskCreatePinnedToCore(
@@ -3264,15 +2986,6 @@ void setup()
 		ESP.restart();
 	}
 
-	http.setReuse(true);	   // Use persistent connection
-	data.loadJson();		   // Load JSON data for spacecraft lookup
-
-	/* Assign config to global state variables */
-	characterWidth = FileUtils::config.textTypography.characterWidth;
-
-	setColorTheme(colorTheme); // Set color theme
-	// drawBottomPixels();		   // Draw initial bottom pixels
-	delay(100);				   // Small delay to allow bottom pixels to draw
 }
 
 
