@@ -33,7 +33,7 @@ struct Meteor {
     CHSV pColor;
     int meteorSize;
     bool hasTail;
-    bool meteorTrailDecay;
+    bool meteorTailDecay;
     float meteorTrailDecayValue;
     bool meteorRandomDecay;
     int tailHueStart;
@@ -42,32 +42,26 @@ struct Meteor {
     int tailHueSaturation;
     CRGB*& rStrip;
     int rateClass;
+    uint8_t animationType;
 };
 
 class Animate {
     static AnimationUtils aUtilAnimate;
-    const uint8_t tailBrightnessMap[16] = {
-        200,
+    const uint8_t tailBrightnessMap[8] = {
         180,
+        170,
         160,
         140,
+        135,
         130,
+        125,
         120,
-        110,
-        100,
-        90,
-        75,
-        60,
-        50,
-        40,
-        30,
-        0,
-        0,
     };
     int tailBrightnessMapLength = sizeof(tailBrightnessMap) / sizeof(tailBrightnessMap[0]); // length of array
 
 
     public:
+    uint8_t forcedAnimationType = 0;
     static const uint16_t ActiveMeteorArraySize = 500;
     Meteor* ActiveMeteors[ActiveMeteorArraySize] = { nullptr };
     size_t ActiveMeteorsSize = 0;

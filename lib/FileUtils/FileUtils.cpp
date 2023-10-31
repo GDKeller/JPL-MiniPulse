@@ -56,8 +56,196 @@ FileUtils::Config FileUtils::config = {
 };
 
 
+/* General File/Folder functions */
+
+void FileUtils::listDir(const char* dirname, uint8_t levels) {
+	Serial.printf("Listing directory: %s\r\n", dirname);
+
+	File root = LittleFS.open(dirname);
+	if (!root) {
+		Serial.println("- failed to open directory");
+		return;
+	}
+	if (!root.isDirectory()) {
+		Serial.println(" - not a directory");
+		return;
+	}
+
+	File file = root.openNextFile();
+	while (file) {
+		if (file.isDirectory()) {
+			Serial.print("  DIR : ");
+
+			Serial.print(file.name());
+			time_t t = file.getLastWrite();
+			struct tm* tmstruct = localtime(&t);
+			Serial.printf("  LAST WRITE: %d-%02d-%02d %02d:%02d:%02d\n", (tmstruct->tm_year) + 1900, (tmstruct->tm_mon) + 1, tmstruct->tm_mday, tmstruct->tm_hour, tmstruct->tm_min, tmstruct->tm_sec);
+
+			if (levels) {
+				listDir(file.name(), levels - 1);
+			}
+		} else {
+			Serial.print("  FILE: ");
+			Serial.print(file.name());
+			Serial.print("  SIZE: ");
+
+			Serial.print(file.size());
+			time_t t = file.getLastWrite();
+			struct tm* tmstruct = localtime(&t);
+			Serial.printf("  LAST WRITE: %d-%02d-%02d %02d:%02d:%02d\n", (tmstruct->tm_year) + 1900, (tmstruct->tm_mon) + 1, tmstruct->tm_mday, tmstruct->tm_hour, tmstruct->tm_min, tmstruct->tm_sec);
+		}
+		file = root.openNextFile();
+	}
+}
+
+void FileUtils::listFilesystem(const char* dirname, int8_t loop = 0) {
+	// Serial.printf("Listing directory: %s\r\n", dirname);
+
+	File root = LittleFS.open(dirname);
+	if (!root) {
+		Serial.println("- failed to open directory");
+		return;
+	}
+	if (!root.isDirectory()) {
+		Serial.println(" - not a directory");
+		return;
+	}
+
+	File file = root.openNextFile();
+	while (file) {
+		for (int8_t i = 0; i < loop; i++) {
+			Serial.print("    ");
+		}
+
+		Serial.print("└──");
+
+		if (file.isDirectory()) {
+			Serial.print("/");
+			Serial.print(file.name());
+			time_t t = file.getLastWrite();
+			struct tm* tmstruct = localtime(&t);
+			Serial.printf(
+				"  LAST WRITE: %d-%02d-%02d %02d:%02d:%02d\n",
+				(tmstruct->tm_year) + 1900, (tmstruct->tm_mon) + 1,
+				tmstruct->tm_mday, tmstruct->tm_hour,
+				tmstruct->tm_min, tmstruct->tm_sec
+			);
+
+			// Create a new path with leading '/'
+			String newPath = String(dirname) + "/" + file.name();
+			listFilesystem(newPath.c_str(), loop + 1);
+		} else {
+			Serial.print(" ");
+			Serial.print(file.name());
+			Serial.print("  SIZE: ");
+			Serial.print(file.size());
+			time_t t = file.getLastWrite();
+			struct tm* tmstruct = localtime(&t);
+			Serial.printf(
+				"  LAST WRITE: %d-%02d-%02d %02d:%02d:%02d\n",
+				(tmstruct->tm_year) + 1900, (tmstruct->tm_mon) + 1,
+				tmstruct->tm_mday, tmstruct->tm_hour,
+				tmstruct->tm_min, tmstruct->tm_sec
+			);
+		}
+		file = root.openNextFile();
+	}
+}
+
+void FileUtils::createDir(const char* path) {
+	// prinmt free heap
+	Serial.print("Free heap: " + String(ESP.getFreeHeap()) + "\n");
+	Serial.printf("Creating Dir: %s\n", path);
+	try {
+		if (LittleFS.mkdir(path)) {
+			Serial.println("Dir created");
+		} else {
+			Serial.println("mkdir failed");
+		}
+	} catch (const std::exception& e) {
+		Serial.println(e.what());
+	}
+}
+
+void FileUtils::removeDir(const char* path) {
+	Serial.printf("Removing Dir: %s\n", path);
+	if (LittleFS.rmdir(path)) {
+		Serial.println("Dir removed");
+	} else {
+		Serial.println("rmdir failed");
+	}
+}
+
+void FileUtils::readFile(const char* path) {
+	Serial.printf("Reading file: %s\r\n", path);
+
+	File file = LittleFS.open(path);
+	if (!file || file.isDirectory()) {
+		Serial.println("- failed to open file for reading");
+		return;
+	}
+
+	Serial.println("- read from file:");
+	while (file.available()) {
+		Serial.write(file.read());
+	}
+	file.close();
+}
+
+void FileUtils::writeFile(const char* path, const char* message) {
+	Serial.printf("Writing file: %s\r\n", path);
+
+	File file = LittleFS.open(path, FILE_WRITE);
+	if (!file) {
+		Serial.println("- failed to open file for writing");
+		return;
+	}
+	if (file.print(message)) {
+		Serial.println("- file written");
+	} else {
+		Serial.println("- write failed");
+	}
+	file.close();
+}
+
+void FileUtils::appendFile(const char* path, const char* message) {
+	Serial.printf("Appending to file: %s\r\n", path);
+
+	File file = LittleFS.open(path, FILE_APPEND);
+	if (!file) {
+		Serial.println("- failed to open file for appending");
+		return;
+	}
+	if (file.print(message)) {
+		Serial.println("- message appended");
+	} else {
+		Serial.println("- append failed");
+	}
+	file.close();
+}
+
+void FileUtils::renameFile(const char* path1, const char* path2) {
+	Serial.printf("Renaming file %s to %s\r\n", path1, path2);
+	if (LittleFS.rename(path1, path2)) {
+		Serial.println("- file renamed");
+	} else {
+		Serial.println("- rename failed");
+	}
+}
+
+void FileUtils::deleteFile(const char* path) {
+	Serial.printf("Deleting file: %s\r\n", path);
+	if (LittleFS.remove(path)) {
+		Serial.println("- file deleted");
+	} else {
+		Serial.println("- delete failed");
+	}
+}
 
 
+
+
+/* Config file functions */
 void FileUtils::initConfigFile() {
 	Serial.println("Initializing config file... ");
 	bool fileInitSuccess = FileUtils::checkOrCreateConfigFile();
@@ -98,8 +286,6 @@ bool FileUtils::checkOrCreateConfigFile() {
 	}
 }
 
-
-
 void FileUtils::setConfigValuesFromFile(File configFile) {
 	Serial.println("Setting config values from file...");
 	// File configFile = LittleFS.open("/config.json", "r");
@@ -129,7 +315,6 @@ void FileUtils::setConfigValuesFromFile(File configFile) {
 	}
 }
 
-
 void FileUtils::printAllConfigFileKeys() {
 	File configFile = LittleFS.open("/config.json", "r");
 	if (!configFile) {
@@ -146,11 +331,19 @@ void FileUtils::printAllConfigFileKeys() {
 
 	configFile.close();
 
+	Serial.print("\n");
+	Serial.print("┌────────────────────────────────┐\n");
+	Serial.print("│        CONFIG FILE KEYS        │\n");
+	Serial.print("└────────────────────────────────┘\n");
+	
+
 	for (JsonPair kv : doc.as<JsonObject>()) {
 		Serial.print(kv.key().c_str() + String(": ") + kv.value().as<String>() + String("\n"));
 	}
 }
 
+
+/* Update/Write values to config */
 
 void FileUtils::updateDebugUtilsField(const char* key, const JsonVariant& value) {
 	Serial.print("Updating debug utils field - " + String(key) + ": " + String(value.as<bool>()));

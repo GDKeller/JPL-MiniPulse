@@ -12,16 +12,13 @@ AnimationUtils Animate::aUtilAnimate = AnimationUtils();
 
 void Animate::animateMeteor(Meteor* meteor)
 {
-	int tailStartBrightness = tailBrightnessMap[0];
-
+	// Set variables from meteor struct
 	CRGB* strip = meteor->rStrip;
 	int region = meteor->region;
 	int regionLength = meteor->regionLength;
 	CHSV pColor = meteor->pColor;
 	int meteorSize = meteor->meteorSize;
 	bool hasTail = meteor->hasTail;
-	bool meteorTrailDecay = meteor->meteorTrailDecay;
-	float meteorTrailDecayValue = meteor->meteorTrailDecayValue;
 	bool meteorRandomDecay = meteor->meteorRandomDecay;
 	int tailHueStart = meteor->tailHueStart;
 	bool tailHueAdd = meteor->tailHueAdd;
@@ -29,30 +26,39 @@ void Animate::animateMeteor(Meteor* meteor)
 	int tailHueSaturation = meteor->tailHueSaturation;
 	int beginPixel = meteor->firstPixel;
 
-	CHSV pRepeatColor = pColor;
+	CHSV pRepeatColor = pColor; // Initalize repeat color to meteor color
 	int hue = tailHueStart;
 
+	// Calculations are multiplied by two for pixel doubling on frontside/backside LED pairs on stick
+
+	// Calculate tail length
+	int tailStartBrightness = tailBrightnessMap[0];
+	int tailBrightnessMax = tailStartBrightness + 8;
 	int tailLength = tailBrightnessMapLength;
 	int tailSection = tailStartBrightness / tailLength;
 	int halfTailSection = tailSection * 0.5;
-	int adjustedLength = (meteorSize + tailLength) * 2;
+	int adjustedLength = ((meteorSize + tailLength) * 2); // Length of animation for both sides of LED strip
 
 	// First pixel of each region
 	int startPixel = meteor->directionDown == true ?
 		((region + 1) * regionLength) - 1 : startPixel = region * regionLength;
 
 	// Current pixel to draw
-	int drawPixel = meteor->directionDown == true ?
-		startPixel - beginPixel : drawPixel = startPixel + beginPixel;
+	int drawPixel = meteor->directionDown == true
+		? startPixel - beginPixel
+		: drawPixel = startPixel + beginPixel;
 
+	// Calculate region start and end
 	int regionStart = regionLength * region; // Calculate the pixel before the region start
 	int regionEnd = (regionLength * (region + 1) - 1); // Calculate the pixel after the region end
 
-	bool endTail = false;
+	bool endTail = false; // Flag to end tail
 
 
-	// Draw every LED in entire region 
-	for (int d = 1; d < (adjustedLength)+1; d++) {
+	// Draw every LED based on meteor size and tail length
+	for (int d = 1; d < (adjustedLength) + 2; d++) {
+		
+		// Set current pixel to draw
 		int currentPixel;
 		if (meteor->directionDown == true) {
 			currentPixel = drawPixel + d + 1;
@@ -64,121 +70,81 @@ void Animate::animateMeteor(Meteor* meteor)
 			if (currentPixel > regionEnd) continue;
 		}
 
+		// Draw backside LED
 		if (d - 1 % 2 == 0) {
-			strip[currentPixel] = pRepeatColor;
+			strip[currentPixel] = pRepeatColor; // Set pixel to match frontside LED
 			continue;
 		}
 
-		// Draw meteor
+		// Draw meteor core
 		if (d < (meteorSize * 2) + 1) {
-			strip[currentPixel] = pColor;
+			strip[currentPixel] = pColor; // Set pixel color
 			continue;
 		}
 
+		// No tail, so turn off pixel
 		if (hasTail == false) {
-			if (d > (meteorSize * 2) - 1) // Multiply by two for pixel doubling on inward/outward LED pairs on stick
-			{
+			if (d > (meteorSize * 2) - 1) {
 				strip[currentPixel] = CHSV(0, 0, 0);
 				continue;
 			}
 		}
 
+		// If end tail has been flagged, end the loop
 		if (endTail == true) {
-			strip[currentPixel] = CHSV(0, 0, 0);
+			strip[currentPixel] = CHSV(0, 0, 0); // Turn off pixel
 			break;
 		}
 
-		// Draw tail
-		uint8_t brightValue;
-		CHSV trailColor;
-		// if (meteorTrailDecay == true) {
-		// 	// You can adjust the calculations for brightValue here to control the rate of decay
-		// 	brightValue = 255 * pow(meteorTrailDecayValue, d);
-		// 	// Ensure brightValue does not exceed 255 or go below 0
-		// 	brightValue = brightValue > 255 ? 255 : (brightValue < 0 ? 0 : brightValue);
-		// 	trailColor = CHSV(hue, tailHueSaturation, brightValue);
-		// } else {
-		// 	int brightCalc = 255 - (d * 16);
-		// 	brightValue = brightCalc < 0 ? 0 : brightCalc;
-		// 	trailColor = CHSV(hue, tailHueSaturation, brightValue);
-		// }
-
-		// meteorTrailDecayValue = std::max(0.97, meteorTrailDecayValue + 0.01);
-
-
-		if (meteorTrailDecay == true) {
-			// int satExpo = ceil(tailHueSaturation * log(d + 1)); // Calculate logarithmic growth
-			// satExpo += random(32) - 16;							// Add random variance to saturation
-			// uint8_t satValue = satExpo > tailHueSaturation ? tailHueSaturation : (satExpo < 0 ? 0 : satExpo);
-			// int brightExpo = ceil(tailStartBrightness * MathHelpers::mPower(meteorTrailDecayValue, d)); // Calculate exponential decay
-			// int brightExpo = 255 - (d * random8(8, 32));
-			// int brightExpo = 255 / ((d + 2) );
-			// const int tailBrightness = brightExpo;
-
-			// This version calculate brightness based on defined tail length
-			// int tailBrightness = tailStartBrightness - round((tailSection * d) * 0.5);
-
-			int tailBrightness;
-			if (d >= 0 && d < tailBrightnessMapLength * 2) {
-				if (d % 2 == 1) { // Check if d is odd
-					tailBrightness = tailBrightnessMap[(d - 1) / 2];
-				} else {
-					tailBrightness = tailBrightnessMap[d / 2];
-				}
-			} else {
-				tailBrightness = 0;
-			}
-
-			// tailBrightness += (random8(tailSection) - (halfTailSection));	// Add random variance to brightness
-			tailBrightness += (random8(32) - 16);	// Add random variance to brightness
-
-			// uint8_t brightValue = tailBrightness > 255 ? 255 : (tailBrightness < 0 ? 0 : tailBrightness);
-			uint8_t brightValue = std::min(tailStartBrightness, std::max(0, tailBrightness)); // Clamp brightness to 8-190 via min/max
-			// if (brightValue < 4) brightValue = 0;
-
-			// int randVal = (4 * d) * (4 * d); // Calculate random variance
-			// int hueRandom = hue + (random(randVal) - (randVal / 2));
-			// brightValue = 255;
-			// Serial.println(brightValue);
-
-			uint8_t brightCalc = dim8_video(brightValue);
-			trailColor = CHSV(hue, tailHueSaturation, brightCalc);
+		// Set tail brightness
+		int tailBrightness;
+		if (d < 0 || d > (tailBrightnessMapLength * 2) - 1) {
+			// This LED is out of bounds, turn off pixel
+			strip[currentPixel] = CHSV(0, 0, 0);
+			continue;
 		} else {
-			// int satCalc = tailHueSaturation - (d * 16);
-			// satCalc += random(32) - 16;
-			// uint8_t satValue = satCalc < 0 ? 0 : satCalc;
-			// int satValue = tailHueSaturation;
-			// int brightCalc = 255 - (d * 16);
-			// brightCalc += random(32) - 16;
-			// brightValue = brightCalc < 0 ? 0 : brightCalc;
-			// trailColor = CHSV(hue, tailHueSaturation, 255);
-			trailColor = CHSV(0, 0, 128);
+			// Look up tail brightness from map
+			tailBrightness = d % 2 == 1
+				? tailBrightnessMap[(d - 1) / 2] // This LED is odd
+				: tailBrightnessMap[d / 2]; // This LED is even
 		}
 
-		// Cycle hue through time
-		// tailHueAdd == true ? hue += ceil(4096 * mPower(tailHueExponent, d)) : hue -= ceil(4096 * mPower(tailHueExponent, d));
+		
+		if (meteorRandomDecay == true) {
+			// Calculate random variance
+			uint8_t tailNumberVarianceCalc = (d + 2) * 4;
+			tailBrightness += random8(tailNumberVarianceCalc) - (tailNumberVarianceCalc - 8);
+		}
+
+		// Clamp brightness to 8-190 via min/max
+		uint8_t brightValue = std::min((int)tailBrightnessMax, std::max(8, (int)tailBrightness));
+		
+		// Turn off tail after tailSectionLength pixels
+		if (d > (tailBrightnessMapLength * 2) + 4) brightValue = 0;
+
+		// Adjust brightness for gamma correction
+		uint8_t brightCalc = dim8_video(brightValue); // dim8_video floor is 1
+
+		// Create tail color color object
+		CHSV tailColor = CHSV(hue, tailHueSaturation, brightCalc);
+
 
 		// Make sure the pixel right after the meteor will get drawn so meteor values aren't repeated
 		if (d < (meteorSize + 1)) {
-			strip[currentPixel] = trailColor;
+			strip[currentPixel] = tailColor;
 			continue;
 		}
 
-		// Roll the dice on showing each pixel for a "fizzle" effect
-		if (meteorRandomDecay == true) {
-			if (random8(10) < 5) strip[currentPixel] = trailColor;
-		} else {
-			strip[currentPixel] = trailColor;
+		strip[currentPixel] = tailColor;
 
-			pRepeatColor = trailColor;
+		pRepeatColor = tailColor;
 
-			if (brightValue == 0) {
-				// endTail = true;
-				continue;
-			}
+		if (brightValue == 0) {
+			// endTail = true;
+			continue;
 		}
-		if (brightValue == 0) endTail == true;
-		// if (meteorTrailDecay == true)
-		// 	strip[currentPixel].fadeToBlackBy(d * 8);
+
+		// if (brightValue == 0) endTail == true;
+	
 	} // End for loop
 }
