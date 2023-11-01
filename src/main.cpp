@@ -1,4 +1,4 @@
-const char* currentFirmwareVersion = "0.9.3"; // Current firmware version
+const char* currentFirmwareVersion = "0.9.5"; // Current firmware version
 
 #pragma region -- LIBRARIES
 #include <Arduino.h>		// Arduino core
@@ -441,42 +441,55 @@ void setupOtaUpdate() {
 	httpUpdate.onError(update_error);
 }
 
-bool checkFirmwareUpdateAvailable() {
-	char buffer[2048];
-	int offset = 0;
+const char* getRemoteFirmwareVersion() {
+	static char buffer[16];
 	
 	HTTPClient httpFirmware;
 	httpFirmware.begin("http://develop.kellerdigital.com/minipulse/latest_version.txt");
 	int httpCode = httpFirmware.GET();
+	Serial.println("HTTP code: " + String(httpCode));
+	
 	if (httpCode == HTTP_CODE_OK) {
 		String latestVersion = httpFirmware.getString();
-		Serial.println("Remote latest_version.txt: " + latestVersion);
-		
-		offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Latest version: %s\n", latestVersion.c_str());
-
-
-
-		if (strcmp(latestVersion.c_str(), currentFirmwareVersion) != 0) {
-			offset += snprintf(buffer + offset, sizeof(buffer) - offset, "New firmware available, updating...\n");
-			Serial.print(buffer);
-			return true;
-		} else {
-			offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Firmware is up to date\n");
-		}
+		Serial.println("Remote version: " + latestVersion);
+		strncpy(buffer, latestVersion.c_str(), sizeof(buffer) - 1);
 	} else {
-		offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Error fetching latest firmware version\n");
+		Serial.println("Failed to fetch remote version");
+		buffer[0] = '\0';
 	}
 
 	httpFirmware.end();
+	return buffer;
+}
+
+bool checkFirmwareUpdateAvailable() { 
+	// char buffer[2048];
+	// int offset = 0;
 	
-	Serial.print(buffer);
+	const char* latestVersion = getRemoteFirmwareVersion();
+	
+	// offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Remote version: %s\n", latestVersion);
+
+	if (strcmp(latestVersion, "" ) == 0) {
+		// offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Unable to fetch latest version from remote server\n");
+		// Serial.print(buffer);
+		return false;
+	}
+
+	if (strcmp(latestVersion, currentFirmwareVersion) != 0) {
+		// offset += snprintf(buffer + offset, sizeof(buffer) - offset, "New firmware available!\n");
+		// Serial.print(buffer);
+		return true;
+	} else {
+		// offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Firmware is up to date\n");
+	}
+
+	// Serial.print(buffer);
 	return false;
 }
 
 void updateFirmwareOta() {
-	if (!checkFirmwareUpdateAvailable()) {
-		return;
-	}
+	if (!checkFirmwareUpdateAvailable()) return;
 	
 	char buffer[2048];
 	int offset = 0;
@@ -742,6 +755,23 @@ void configPortalCallback() {
 void webServerCallback() {
 	Serial.print("\n" + String(dev.termColor("green")) + "[CALLBACK] webServerCallback fired" + dev.termColor("reset") + "\n\n");
 	portalRunning = true;
+
+	wm.server->on("/get-remote-version-number", HTTP_GET, []() {
+		const char* remoteFirmwareVersion = getRemoteFirmwareVersion();
+		String response = "Remote Version: " + String(remoteFirmwareVersion);
+
+		wm.server->send(200, "text/plain", response);
+	});
+
+	wm.server->on("/get-latest-version-number", HTTP_GET, []() {
+		const char* remoteFirmwareVersion = getRemoteFirmwareVersion();
+		bool updateAvailable = checkFirmwareUpdateAvailable();
+		const char* updateAvailableText = updateAvailable ? "true" : "false";
+		String response = "Current version: " + String(currentFirmwareVersion) + "<br>Remote Version: " + String(remoteFirmwareVersion) + "<br>Update available: " + String(updateAvailableText);
+
+		wm.server->send(200, "text/plain", response);
+
+	});
 
 	wm.server->on("/trigger-firmware-update", HTTP_GET, []() {
 		bool updateAvailable = checkFirmwareUpdateAvailable();
@@ -2006,6 +2036,8 @@ struct FoundSignals {
 };
 
 FoundSignals findSignals(XMLElement* xmlDish, CraftQueueItem* tempNewCraft) {
+	bool showSerial = FileUtils::config.debugUtils.showSerial;
+	
 	FoundSignals foundSignals = { 0, 0 };
 
 	if (FileUtils::config.debugUtils.showSerial == true)
@@ -2064,10 +2096,13 @@ FoundSignals findSignals(XMLElement* xmlDish, CraftQueueItem* tempNewCraft) {
 		// if (rateLong == 0) continue;
 		if (rateLong == 0) {
 			if (isDown) {
-				Serial.println("down rate is 0, skipping");
+				if (showSerial)
+					Serial.println("Downsignal rate is 0, skipping");
 				continue;
 			} else {
-				Serial.println("up rate is 0, using placeholder");
+				if (showSerial)
+					Serial.println("Upsignal rate is 0 - using placeholder");
+
 				const char* placeholderRate = SpacecraftData::getPlaceholderRate(tempNewCraft->callsign);
 				rateDouble = stod(placeholderRate);
 				rateLong = static_cast<unsigned long>(rateDouble);
@@ -2972,12 +3007,25 @@ void setup()
 	wm.addParameter(&param_force_animation_type);
 
 	/* Custom */
-	const char* update_button_html = PROGMEM R"---(
-		<p><button id="customButton">Update Firmware</button></p>
-		<p id="updateResponse"></p>
+	const char* update_button_html = R"---(
+		<div>
+			<div style="display: inline-block; border: 1px solid gray;padding:5px 20px;">
+				<p id="firmwareStatus" style="margin-top:0;></p>
+				<p id="updateResponse"></p>
+				<button id="updateButton">Update Firmware</button>
+			</div>
+		</div>
 		<script>
-			document.getElementById("customButton").addEventListener('click', function() {
-				alert("Custom button pressed");
+			fetch('/get-latest-version-number')
+			.then(function (response) {
+				return response.text();
+			}).
+			then(function (text) {
+				document.getElementById("firmwareStatus").innerHTML = text;
+				console.log(text);
+			})
+
+			document.getElementById("updateButton").addEventListener('click', function() {
 				fetch('/trigger-firmware-update')
 				.then(function (response) {
 					return response.text();

@@ -45,6 +45,7 @@ void SpacecraftData::createAndWriteNamesFile() {
     spacecraftNamesJson["PLC"] = "Akatsuki";
     spacecraftNamesJson["ARGO"] = "ArgoMoon";
     spacecraftNamesJson["BIOS"] = "BioSentinel";
+    spacecraftNamesJson["CAPS"] = "Capstone";
     spacecraftNamesJson["CHDR"] = "Chandra Xray Observatory";
     spacecraftNamesJson["CH2"] = "Chandrayaan 2";
     spacecraftNamesJson["CUE3"] = "CU Earth Escape Explorer";
@@ -379,6 +380,7 @@ void SpacecraftData::createAndWriteBlacklistFile() {
     spacecraftBlacklistJson["TEST"] = true;
     spacecraftBlacklistJson["DSN"] = true;
     spacecraftBlacklistJson["RFC(VLBI)"] = true;
+    spacecraftBlacklistJson["GO19"];
 
     // Serialize JSON to file
     Serial.println("Serializing JSON to file...");
