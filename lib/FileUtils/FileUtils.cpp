@@ -28,7 +28,7 @@ FileUtils::Config FileUtils::config = {
 		32  // potentiometer
 	},
 	{ // displayLED
-		8, // brightness
+		127, // brightness
 		60,  // fps
 		800, // outerPixelsTotal
 		800, // middlePixelsTotal

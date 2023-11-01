@@ -1,3 +1,5 @@
+const char* currentFirmwareVersion = "0.9.3"; // Current firmware version
+
 #pragma region -- LIBRARIES
 #include <Arduino.h>		// Arduino core
 #include "soc/timer_group_struct.h" // Timer group struct
@@ -5,6 +7,7 @@
 #include <FS.h>				// File system
 #include <LittleFS.h>		// LittleFS file system
 #include <HTTPClient.h>		// HTTP client
+#include <HTTPUpdate.h> 	// HTTP update
 #include <FastLED.h>		// FastLED lib
 #include <tinyxml2.h>		// XML parser
 #include <iostream>			// C++ I/O
@@ -282,6 +285,7 @@ WiFiManagerParameter param_brightness;		   // global param ( for non blocking w 
 WiFiManagerParameter param_show_serial;
 WiFiManagerParameter param_show_diagnostics;
 WiFiManagerParameter param_force_animation_type;
+// WiFiManagerParameter param_update_firmware;
 // WiFiManagerParameter field_scroll_letters_delay;
 // WiFiManagerParameter field_show_serial("show_serial", "Show Serial", FileUtils::config.debugUtils.showSerial, 1);
 bool portalRunning = false;
@@ -412,6 +416,99 @@ static int letterSpacing = 9;
 /* FUNCTIONS
 * Doing things
 */
+
+void update_started() {
+	Serial.println("CALLBACK:  HTTP update process started");
+}
+
+void update_finished() {
+	Serial.println("CALLBACK:  HTTP update process finished");
+}
+
+void update_progress(int cur, int total) {
+	Serial.printf("CALLBACK:  HTTP update process at %d of %d bytes...\n", cur, total);
+}
+
+void update_error(int err) {
+	Serial.printf("CALLBACK:  HTTP update fatal error code %d\n", err);
+}
+
+void setupOtaUpdate() {
+	Serial.println("Setting up OTA update...");
+	httpUpdate.onStart(update_started);
+	httpUpdate.onEnd(update_finished);
+	httpUpdate.onProgress(update_progress);
+	httpUpdate.onError(update_error);
+}
+
+bool checkFirmwareUpdateAvailable() {
+	char buffer[2048];
+	int offset = 0;
+	
+	HTTPClient httpFirmware;
+	httpFirmware.begin("http://develop.kellerdigital.com/minipulse/latest_version.txt");
+	int httpCode = httpFirmware.GET();
+	if (httpCode == HTTP_CODE_OK) {
+		String latestVersion = httpFirmware.getString();
+		Serial.println("Remote latest_version.txt: " + latestVersion);
+		
+		offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Latest version: %s\n", latestVersion.c_str());
+
+
+
+		if (strcmp(latestVersion.c_str(), currentFirmwareVersion) != 0) {
+			offset += snprintf(buffer + offset, sizeof(buffer) - offset, "New firmware available, updating...\n");
+			Serial.print(buffer);
+			return true;
+		} else {
+			offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Firmware is up to date\n");
+		}
+	} else {
+		offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Error fetching latest firmware version\n");
+	}
+
+	httpFirmware.end();
+	
+	Serial.print(buffer);
+	return false;
+}
+
+void updateFirmwareOta() {
+	if (!checkFirmwareUpdateAvailable()) {
+		return;
+	}
+	
+	char buffer[2048];
+	int offset = 0;
+	offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n--------\nAttempting to update firmware from remote server...\n");
+
+
+	WiFiClient client;
+	t_httpUpdate_return ret = httpUpdate.update(client, "http://develop.kellerdigital.com/minipulse/firmware.bin");
+	// Or:
+	//t_httpUpdate_return ret = httpUpdate.update(client, "server", 80, "/file.bin");
+
+	switch (ret) {
+		case HTTP_UPDATE_FAILED:
+			offset += snprintf(buffer + offset, sizeof(buffer) - offset, ">> HTTP_UPDATE_FAILED Error (%d): %s\n", httpUpdate.getLastError(), httpUpdate.getLastErrorString().c_str());
+			break;
+
+		case HTTP_UPDATE_NO_UPDATES:
+			offset += snprintf(buffer + offset, sizeof(buffer) - offset, ">> HTTP_UPDATE_NO_UPDATES");
+			break;
+
+		case HTTP_UPDATE_OK:
+			offset += snprintf(buffer + offset, sizeof(buffer) - offset, ">> HTTP_UPDATE_OK");
+			break;
+		
+		default:
+			offset += snprintf(buffer + offset, sizeof(buffer) - offset, ">> HTTP_UPDATE Unknown error");
+			break;
+	}
+	
+	offset += snprintf(buffer + offset, sizeof(buffer) - offset, "OTA update complete\n--------\n\n");
+	Serial.print(buffer);
+}
 
 #pragma region -- ANIMATION UTILITIES
 
@@ -619,6 +716,7 @@ void doWiFiManager()
 		}
 	}
 	catch (...) {
+		Serial.println("Error: doWiFiManager() failed");
 		dev.handleException();
 	}
 }
@@ -644,6 +742,16 @@ void configPortalCallback() {
 void webServerCallback() {
 	Serial.print("\n" + String(dev.termColor("green")) + "[CALLBACK] webServerCallback fired" + dev.termColor("reset") + "\n\n");
 	portalRunning = true;
+
+	wm.server->on("/trigger-firmware-update", HTTP_GET, []() {
+		bool updateAvailable = checkFirmwareUpdateAvailable();
+		updateFirmwareOta();
+		if (updateAvailable) {
+			wm.server->send(200, "text/plain", "New firmware available, updating...");
+		} else {
+			wm.server->send(200, "text/plain", "Firmware is up to date");
+		}
+	});
 }
 
 void setColorTheme(uint8_t colorTheme)
@@ -865,6 +973,7 @@ void saveParamsCallback() {
 	Serial.print("New config brightness: " + String(FileUtils::config.displayLED.brightness) + "\n");
 
 	// Set file conf                                                                                                                         ConfigFileInt("brightness", FileUtils::config.displayLED.brightness);
+	FileUtils::writeConfigFileInt("brightness", FileUtils::config.displayLED.brightness);
 	FileUtils::readFile("/config.json");
 	Serial.println();
 
@@ -939,15 +1048,15 @@ uint8_t regionWrap(int8_t region, bool isDown)
 void doLetterRegions(char theLetter, int regionStart, int startingPixel)
 {
 	const TextCharacter::TextCharacterInfo ledCharacter = textCharacter.getCharacter(theLetter, characterWidth);
-	
-	// Check if characterWidth is zero, if so, return from the function to avoid division by zero
-    if (characterWidth == 0) {
-        characterWidth = 5;
-		Serial.println("Error: characterWidth is zero - setting to 5");
-        // return;
-    }
 
-	
+	// Check if characterWidth is zero, if so, return from the function to avoid division by zero
+	if (characterWidth == 0) {
+		characterWidth = 5;
+		Serial.println("Error: characterWidth is zero - setting to 5");
+		// return;
+	}
+
+
 	const uint16_t regionOffset = innerPixelsChunkLength * regionStart;
 
 	int16_t pixel = startingPixel + regionOffset;
@@ -1818,22 +1927,25 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 
 		// if (shouldAnimate && nameScrollDone == false) {
 		if (shouldAnimate) {
-			if (FileUtils::config.debugUtils.showSerial == true) {
-				char buffer[256];
-				snprintf(buffer, sizeof(buffer), "%s>>> Fire Meteors: %s | %d | %d%s\n", dev.termColor("bg_blue"), spacecraftName, downSignalRate, upSignalRate, dev.termColor("reset"));
-				Serial.print(buffer);
-				Serial.print("\n\n-----------------------------\n");
-				Serial.print("Fire Meteors: " + String(spacecraftName) + " | " + String(downSignalRate) + " | " + String(upSignalRate) + "\n");
+			if (downSignalRate > 0 || upSignalRate > 0) {
+
+				if (FileUtils::config.debugUtils.showSerial == true) {
+					char buffer[256];
+					snprintf(buffer, sizeof(buffer), "%s>>> Fire Meteors: %s | %d | %d%s\n", dev.termColor("bg_blue"), spacecraftName, downSignalRate, upSignalRate, dev.termColor("reset"));
+					Serial.print(buffer);
+					Serial.print("\n\n-----------------------------\n");
+					Serial.print("Fire Meteors: " + String(spacecraftName) + " | " + String(downSignalRate) + " | " + String(upSignalRate) + "\n");
+				}
+
+				if (downSignalRate > 0)
+					// printMeteorArray();
+					doRateBasedAnimation(true, downSignalRate, meteorOffset, animationTypeDown); // Down animation
+
+				if (upSignalRate > 0)
+					doRateBasedAnimation(false, upSignalRate, meteorOffset, animationTypeUp); // Up animation
+
+				animationTimer = currentMillis; // Reset meteor animation timer
 			}
-
-			if (downSignalRate > 0)
-				// printMeteorArray();
-				doRateBasedAnimation(true, downSignalRate, meteorOffset, animationTypeDown); // Down animation
-
-			if (upSignalRate > 0)
-				doRateBasedAnimation(false, upSignalRate, meteorOffset, animationTypeUp); // Up animation
-
-			animationTimer = currentMillis; // Reset meteor animation timer
 		}
 	}
 
@@ -1948,7 +2060,7 @@ FoundSignals findSignals(XMLElement* xmlDish, CraftQueueItem* tempNewCraft) {
 
 		double rateDouble = stod(rate);
 		unsigned long rateLong = static_cast<unsigned long>(rateDouble);
-	
+
 		// if (rateLong == 0) continue;
 		if (rateLong == 0) {
 			if (isDown) {
@@ -2500,6 +2612,7 @@ char* generateFetchUrl() {
 		}
 	}
 	catch (...) {
+		Serial.println("Error: generateFetchUrl() failed");
 		dev.handleException();
 	}
 	return fetchUrl;
@@ -2520,6 +2633,7 @@ bool handleHttpResponse(uint16_t httpResponseCode) {
 			return true;
 		}
 		catch (...) {
+			Serial.println("Error: handleHttpResponse() failed");
 			dev.handleException();
 			return false;
 		}
@@ -2568,6 +2682,7 @@ bool fetchHTTPData(const String& url) {
 			vTaskDelay(pdMS_TO_TICKS(500)); // Replace delay with vTaskDelay
 		}
 		catch (...) {
+			Serial.println("Error: fetchHTTPData() failed");
 			dev.handleException();
 			http.end();  // Close connection in case of an exception
 			vTaskDelay(pdMS_TO_TICKS(1000)); // Replace delay with vTaskDelay
@@ -2690,7 +2805,7 @@ void getData(void* parameter) {
 			}
 		}
 		catch (...) {
-			Serial.println("getData() exception");
+			Serial.println("Error: getData() failed");
 			dev.handleException();
 		}
 	}
@@ -2711,6 +2826,7 @@ void setup()
 	Serial.begin(115200); // Begin serial communications, ESP32 uses 115200 rate
 
 	DevUtils::SerialBanners::printBootSplashBanner(); // Display fancy splash ASCII graphics
+	Serial.print("VERSION: " + String(currentFirmwareVersion) + "\n\n");
 	Serial.print("Starting...\n\n");
 
 	// Initialize LittleFS
@@ -2855,6 +2971,32 @@ void setup()
 	wm.addParameter(&param_show_diagnostics);
 	wm.addParameter(&param_force_animation_type);
 
+	/* Custom */
+	const char* update_button_html = PROGMEM R"---(
+		<p><button id="customButton">Update Firmware</button></p>
+		<p id="updateResponse"></p>
+		<script>
+			document.getElementById("customButton").addEventListener('click', function() {
+				alert("Custom button pressed");
+				fetch('/trigger-firmware-update')
+				.then(function (response) {
+					return response.text();
+				})
+				.then(function (text) {
+					document.getElementById("updateResponse").innerHTML = text;
+					console.log("response:", text);
+				})
+				.catch(function (error) {
+					console.error(error);
+				});
+			});
+		</script>
+	)---";
+
+	wm.setCustomHeadElement(update_button_html);
+
+	// WiFiManagerParameter param_update_firmware(update_button_html.c_str());
+	// wm.addParameter(&param_update_firmware);
 
 
 	Serial.print("Existing WiFi credentials: ");
@@ -2905,12 +3047,14 @@ void setup()
 
 
 	http.setReuse(true);	   // Use persistent connection
+	setupOtaUpdate();		   // Setup OTA update
+
 	SpacecraftData::loadJson();		   // Load JSON data for spacecraft lookup
 	// SpacecraftData::loadSpacecraftNamesProgmem(); // Load raw spacecraft names for lookup
 	// SpacecraftData::loadSpacecraftPlaceholderRatesRaw(); // Load raw spacecraft placeholder rates for lookup
 	// SpacecraftData::loadSpacecraftBlacklistRaw(); // Load raw spacecraft blacklist for lookup
 	// SpacecraftData::loadSpacecraftBlacklist();
-	delay(3000);
+	delay(100);
 
 
 	/* Assign config to global state variables */
@@ -2954,6 +3098,9 @@ void setup()
 		}
 		ESP.restart();
 	}
+
+	// updateFirmwareOta(); // Check for OTA update
+	delay(1000);
 
 }
 
@@ -3030,7 +3177,7 @@ void loop() {
 		}
 	}
 	catch (...) {
-		Serial.println("Error in main loop");
+		Serial.println("Error: loop() getting new data failed");
 		dev.handleException();
 	}
 
@@ -3040,7 +3187,7 @@ void loop() {
 	}
 	catch (...) {
 		if (showSerial) {
-			Serial.println("Error updating animation");
+			Serial.println("Error: updateAnimation() failed");
 		}
 		dev.handleException();
 	}
