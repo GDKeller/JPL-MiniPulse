@@ -794,11 +794,6 @@ bool SpacecraftData::checkBlacklist(const char* key) {
     DeserializationError error = deserializeJson(spacecraftBlacklistJson, jsonFile);
     jsonFile.close();
 
-    // for (JsonPair kv : spacecraftBlacklistJson.as<JsonObject>()) {
-    //     // Serial.println("Key: " + kv.key().c_str() + ", Value: " + kv.value().as<String>());
-    //     Serial.println(String(kv.key().c_str()) + ": " + kv.value().as<String>());
-    // }
-
     if (showSerial)
         Serial.print("-----\n\n");
 
@@ -807,7 +802,7 @@ bool SpacecraftData::checkBlacklist(const char* key) {
     if (showSerial)
         Serial.println(DevUtils::termColor("bg_bright_black") + ">>> Checking blacklist for " + String(key) + ": " + (isBlacklisted ? "true" : "false") + DevUtils::termColor("reset") + "\n");
 
-
+    vTaskDelay(pdMS_TO_TICKS(500)); // Delay to allow JSON file to be closed so the next load doesn't look in cache
     return spacecraftBlacklistJson[key] != nullptr ? true : false;
 }
 

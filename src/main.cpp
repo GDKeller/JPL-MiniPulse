@@ -2292,8 +2292,8 @@ void parseData(const char* payload)
 			bool breakParseLoop = false;
 
 			/* Loop through all XML elements */
-			// 100 is an arbitrary number to prevent an infinite loop
-			for (int i = 0; i < 100; i++) {
+			// 10 is an arbitrary number to prevent an infinite loop
+			for (int i = 0; i < 10; i++) {
 				if (FileUtils::config.debugUtils.showSerial == true) {
 					Serial.print("\n───────────────────────────────────────────────────────────────────\n");
 					Serial.print("  Parse Counters -- Station: " + String(stationCount) + " | Dish: " + String(dishCount) + " | Target: " + String(targetCount) + " | Signal: " + String(signalCount));
@@ -2302,6 +2302,8 @@ void parseData(const char* payload)
 				try {
 					int s = 0; // Create station elements counter
 					for (XMLElement* xmlStation = root->FirstChildElement("station"); true; xmlStation = xmlStation->NextSiblingElement("station")) {
+						vTaskDelay(pdMS_TO_TICKS(100)); // Slow the station loop
+						
 						if (FileUtils::config.debugUtils.showSerial == true)
 							Serial.print("== stationCount: " + String(stationCount) + " | s: " + String(s) + "\n");
 
@@ -2333,6 +2335,8 @@ void parseData(const char* payload)
 						bool goToNextStation = false;
 						int d = 0; // Create dish elements counter
 						for (XMLElement* xmlDish = xmlStation->NextSiblingElement(); xmlDish != NULL; xmlDish = xmlDish->NextSiblingElement()) {
+							vTaskDelay(pdMS_TO_TICKS(100)); // Slow the dish loop
+							
 							if (FileUtils::config.debugUtils.showSerial == true)
 								Serial.print("==== dishCount: " + String(dishCount) + " | d: " + String(d) + "\n");
 
@@ -2359,6 +2363,8 @@ void parseData(const char* payload)
 							int t = 0; // Create target elements counter
 
 							for (XMLElement* xmlTarget = xmlDish->FirstChildElement("target"); true; xmlTarget = xmlTarget->NextSiblingElement("target")) {
+								vTaskDelay(pdMS_TO_TICKS(100)); // Slow the target loop
+
 								if (FileUtils::config.debugUtils.showSerial == true)
 									Serial.print("====== targetCount: " + String(targetCount) + " | t: " + String(t) + "\n");
 
@@ -2408,7 +2414,8 @@ void parseData(const char* payload)
 
 								if (SpacecraftData::checkBlacklist(target) == true) {
 									if (FileUtils::config.debugUtils.showSerial == true)
-										Serial.print(String(dev.termColor("red")) + "Blacklisted target, skipping..." + String(dev.termColor("reset")) + "\n");
+										Serial.print(String(dev.termColor("red")) + "Blacklisted target, skipping..." + String(dev.termColor("reset")) + "\n");	
+									vTaskDelay(pdMS_TO_TICKS(200)); // Delay to allow JSON file to be closed so the next load doesn't look in cache
 									t++;
 									continue;
 								}
@@ -2585,6 +2592,7 @@ void parseData(const char* payload)
 
 			// Serial.println("increment counters");
 			incrementDataParseCounter();
+			xSemaphoreGive(freeListMutex); // The semaphore must be freed when this function is retured
 			return;
 		} else {
 			// There are no free items in the queue item pool
@@ -2691,10 +2699,10 @@ bool fetchHTTPData(const String& url) {
 	for (int retry = 0; retry < maxHttpRetries; retry++) {
 		try {
 			if (attemptHTTPConnection(url)) {
-				feedWatchdog(); // Feed the watchdog timer after attempting connection
+				feedWatchdog(); // HTTP connection can sometimes be slow
 
 				String res = http.getString();
-				feedWatchdog(); // Feed the watchdog timer after fetching the response
+				feedWatchdog(); // The response may be large, just in case
 
 				File xmlFile = LittleFS.open("/temp.xml", "w");
 				if (!xmlFile) {
@@ -2705,7 +2713,7 @@ bool fetchHTTPData(const String& url) {
 
 				size_t bytesWritten = xmlFile.print(res);
 				xmlFile.close();
-				feedWatchdog(); // Feed the watchdog timer after file operations
+				feedWatchdog(); // Just in case writing to the file is slow
 
 				http.end();
 				return true; // XML data saved to LittleFS
@@ -2714,7 +2722,7 @@ bool fetchHTTPData(const String& url) {
 					Serial.println("[fetchHTTPData] Failed to fetch data");
 			}
 
-			vTaskDelay(pdMS_TO_TICKS(500)); // Replace delay with vTaskDelay
+			vTaskDelay(pdMS_TO_TICKS(500)); // Wait to allow other tasks to run
 		}
 		catch (...) {
 			Serial.println("Error: fetchHTTPData() failed");
@@ -2832,7 +2840,7 @@ void getData(void* parameter) {
 				if (uxQueueSpacesAvailable(queue) > 0) {
 					// Serial.println("getData() queue space available");
 
-					vTaskDelay(pdMS_TO_TICKS(10)); // delay for 10 milliseconds to allow other tasks to run
+					vTaskDelay(pdMS_TO_TICKS(100)); // Delay to allow other tasks to run
 
 					fetchData();
 					lastTime = millis(); // Sync reference variable for timer
@@ -2843,6 +2851,8 @@ void getData(void* parameter) {
 			Serial.println("Error: getData() failed");
 			dev.handleException();
 		}
+	
+		vTaskDelay(pdMS_TO_TICKS(100)); // delay for 10 milliseconds to allow other tasks to run
 	}
 }
 
@@ -2902,15 +2912,7 @@ void setup()
 		Serial.println("Using default config, settings will not be saved");
 	}
 
-
-	// Displaying all config values
-	// Serial.print(String(FileUtils::config.debugUtils.testCores) + "\n");
-	// Serial.print(String(FileUtils::config.debugUtils.showSerial) + "\n");
-	// Serial.print(String(FileUtils::config.debugUtils.testLEDs) + "\n");
-
-
-	// reset settings - wipe stored credentials for testing
-	// these are stored by the esp library
+	// Reset settings - wipe stored credentials for testing
 	// wm.resetSettings();
 
 	if (FileUtils::config.debugUtils.showSerial == false) {
@@ -3043,8 +3045,6 @@ void setup()
 
 	wm.setCustomHeadElement(update_button_html);
 
-	// WiFiManagerParameter param_update_firmware(update_button_html.c_str());
-	// wm.addParameter(&param_update_firmware);
 
 
 	Serial.print("Existing WiFi credentials: ");
@@ -3123,8 +3123,6 @@ void setup()
 	freeList[3] = &itemPool[3];
 	freeList[4] = &itemPool[4];
 	xSemaphoreGive(freeListMutex); // Give the mutex back when done accessing shared data
-
-	// delay(5000);
 
 	/* Initialize the data task on the second core */
 	xTaskCreatePinnedToCore(

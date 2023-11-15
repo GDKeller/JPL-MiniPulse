@@ -13,12 +13,12 @@ class TextCharacter {
     public:
     TextCharacter();
     struct TextCharacterInfo {
-        int* characterArray;
+        const int8_t* characterArray;
         int characterTotalPixels;
     };
     const TextCharacterInfo getCharacter(char theChar, int width);
     private:
-    int* getCharacterArray(char character, int width);
+    const int8_t* getCharacterArray(char character, int width);
 };
 
 #endif

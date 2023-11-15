@@ -6,7 +6,7 @@ TextCharacter::TextCharacter() {}
 // 3 x 5
 #pragma region -- 3 x 5
 
-int character_space_3x5[20] = {
+const int8_t character_space_3x5[20] = {
   0, 0, 0, 0,
   0, 0, 0, 0,
   0, 0, 0, 0,
@@ -14,7 +14,7 @@ int character_space_3x5[20] = {
   0, 0, 0, 0
 };
 
-int character_a_3x5[20] = {
+const int8_t character_a_3x5[20] = {
   0, 0, 1, 0,
   0, 1, 0, 1,
   0, 1, 1, 1,
@@ -22,7 +22,7 @@ int character_a_3x5[20] = {
   0, 1, 0, 1
 };
 
-int character_b_3x5[20] = {
+const int8_t character_b_3x5[20] = {
   0, 1, 1, 1,
   0, 1, 0, 1,
   0, 1, 1, 0,
@@ -30,7 +30,7 @@ int character_b_3x5[20] = {
   0, 1, 1, 1
 };
 
-int character_c_3x5[20] = {
+const int8_t character_c_3x5[20] = {
   0, 1, 1, 1,
   0, 1, 0, 0,
   0, 1, 0, 0,
@@ -38,7 +38,7 @@ int character_c_3x5[20] = {
   0, 1, 1, 1
 };
 
-int character_d_3x5[20] = {
+const int8_t character_d_3x5[20] = {
   0, 1, 1, 0,
   0, 1, 0, 1,
   0, 1, 0, 1,
@@ -46,7 +46,7 @@ int character_d_3x5[20] = {
   0, 1, 1, 0
 };
 
-int character_e_3x5[20] = {
+const int8_t character_e_3x5[20] = {
   0, 1, 1, 1,
   0, 1, 0, 0,
   0, 1, 1, 0,
@@ -54,7 +54,7 @@ int character_e_3x5[20] = {
   0, 1, 1, 1
 };
 
-int character_f_3x5[20] = {
+const int8_t character_f_3x5[20] = {
   0, 1, 1, 1,
   0, 1, 0, 0,
   0, 1, 1, 1,
@@ -62,7 +62,7 @@ int character_f_3x5[20] = {
   0, 1, 0, 0
 };
 
-int character_g_3x5[20] = {
+const int8_t character_g_3x5[20] = {
   0, 1, 1, 1,
   0, 1, 0, 0,
   0, 1, 0, 1,
@@ -70,7 +70,7 @@ int character_g_3x5[20] = {
   0, 1, 1, 1
 };
 
-int character_h_3x5[20] = {
+const int8_t character_h_3x5[20] = {
   0, 1, 0, 1,
   0, 1, 0, 1,
   0, 1, 1, 1,
@@ -78,7 +78,7 @@ int character_h_3x5[20] = {
   0, 1, 0, 1
 };
 
-int character_i_3x5[20] = {
+const int8_t character_i_3x5[20] = {
   0, 1, 1, 1,
   0, 0, 1, 0,
   0, 0, 1, 0,
@@ -86,7 +86,7 @@ int character_i_3x5[20] = {
   0, 1, 1, 1
 };
 
-int character_j_3x5[20] = {
+const int8_t character_j_3x5[20] = {
   0, 0, 0, 1,
   0, 0, 0, 1,
   0, 0, 0, 1,
@@ -94,7 +94,7 @@ int character_j_3x5[20] = {
   0, 1, 1, 1
 };
 
-int character_k_3x5[20] = {
+const int8_t character_k_3x5[20] = {
   0, 1, 0, 1,
   0, 1, 0, 1,
   0, 1, 1, 0,
@@ -102,7 +102,7 @@ int character_k_3x5[20] = {
   0, 1, 0, 1
 };
 
-int character_l_3x5[20] = {
+const int8_t character_l_3x5[20] = {
   0, 1, 0, 0,
   0, 1, 0, 0,
   0, 1, 0, 0,
@@ -110,7 +110,7 @@ int character_l_3x5[20] = {
   0, 1, 1, 1
 };
 
-int character_m_3x5[20] = {
+const int8_t character_m_3x5[20] = {
   0, 1, 0, 1,
   0, 1, 1, 1,
   0, 1, 0, 1,
@@ -118,7 +118,7 @@ int character_m_3x5[20] = {
   0, 1, 0, 1
 };
 
-int character_n_3x5[20] = {
+const int8_t character_n_3x5[20] = {
   0, 1, 1, 0,
   0, 1, 0, 1,
   0, 1, 0, 1,
@@ -126,7 +126,7 @@ int character_n_3x5[20] = {
   0, 1, 0, 1
 };
 
-int character_o_3x5[20] = {
+const int8_t character_o_3x5[20] = {
   0, 1, 1, 1,
   0, 1, 0, 1,
   0, 1, 0, 1,
@@ -134,7 +134,7 @@ int character_o_3x5[20] = {
   0, 1, 1, 1
 };
 
-int character_p_3x5[20] = {
+const int8_t character_p_3x5[20] = {
   0, 1, 1, 1,
   0, 1, 0, 1,
   0, 1, 1, 1,
@@ -142,7 +142,7 @@ int character_p_3x5[20] = {
   0, 1, 0, 0
 };
 
-int character_q_3x5[20] = {
+const int8_t character_q_3x5[20] = {
   0, 1, 1, 1,
   0, 1, 0, 1,
   0, 1, 0, 1,
@@ -150,7 +150,7 @@ int character_q_3x5[20] = {
   0, 0, 0, 1
 };
 
-int character_r_3x5[20] = {
+const int8_t character_r_3x5[20] = {
   0, 1, 1, 1,
   0, 1, 0, 1,
   0, 1, 1, 1,
@@ -158,7 +158,7 @@ int character_r_3x5[20] = {
   0, 1, 0, 1
 };
 
-int character_s_3x5[20] = {
+const int8_t character_s_3x5[20] = {
   0, 1, 1, 1,
   0, 1, 0, 0,
   0, 1, 1, 1,
@@ -166,7 +166,7 @@ int character_s_3x5[20] = {
   0, 1, 1, 1
 };
 
-int character_t_3x5[20] = {
+const int8_t character_t_3x5[20] = {
   0, 1, 1, 1,
   0, 0, 1, 0,
   0, 0, 1, 0,
@@ -174,7 +174,7 @@ int character_t_3x5[20] = {
   0, 0, 1, 0
 };
 
-int character_u_3x5[20] = {
+const int8_t character_u_3x5[20] = {
   0, 1, 0, 1,
   0, 1, 0, 1,
   0, 1, 0, 1,
@@ -182,7 +182,7 @@ int character_u_3x5[20] = {
   0, 1, 1, 1
 };
 
-int character_v_3x5[20] = {
+const int8_t character_v_3x5[20] = {
   0, 1, 0, 1,
   0, 1, 0, 1,
   0, 1, 0, 1,
@@ -190,7 +190,7 @@ int character_v_3x5[20] = {
   0, 0, 1, 0
 };
 
-int character_w_3x5[20] = {
+const int8_t character_w_3x5[20] = {
   0, 1, 0, 1,
   0, 1, 0, 1,
   0, 1, 0, 1,
@@ -198,7 +198,7 @@ int character_w_3x5[20] = {
   0, 1, 0, 1
 };
 
-int character_x_3x5[20] = {
+const int8_t character_x_3x5[20] = {
   0, 1, 0, 1,
   0, 1, 0, 1,
   0, 0, 1, 0,
@@ -206,7 +206,7 @@ int character_x_3x5[20] = {
   0, 1, 0, 1
 };
 
-int character_y_3x5[20] = {
+const int8_t character_y_3x5[20] = {
   0, 1, 0, 1,
   0, 1, 0, 1,
   0, 0, 1, 0,
@@ -214,7 +214,7 @@ int character_y_3x5[20] = {
   0, 0, 1, 0
 };
 
-int character_z_3x5[20] = {
+const int8_t character_z_3x5[20] = {
   0, 1, 1, 1,
   0, 0, 0, 1,
   0, 0, 1, 0,
@@ -222,7 +222,7 @@ int character_z_3x5[20] = {
   0, 1, 1, 1
 };
 
-int character_0_3x5[20] = {
+const int8_t character_0_3x5[20] = {
   0, 0, 1, 0,
   0, 1, 0, 1,
   0, 1, 0, 1,
@@ -230,7 +230,7 @@ int character_0_3x5[20] = {
   0, 0, 1, 0
 };
 
-int character_1_3x5[20] = {
+const int8_t character_1_3x5[20] = {
   0, 0, 1, 0,
   0, 1, 1, 0,
   0, 0, 1, 0,
@@ -238,7 +238,7 @@ int character_1_3x5[20] = {
   0, 1, 1, 1
 };
 
-int character_2_3x5[20] = {
+const int8_t character_2_3x5[20] = {
   0, 0, 1, 0,
   0, 1, 0, 1,
   0, 0, 1, 0,
@@ -246,7 +246,7 @@ int character_2_3x5[20] = {
   0, 1, 1, 1
 };
 
-int character_3x5_3x5[20] = {
+const int8_t character_3x5_3x5[20] = {
   0, 1, 1, 1,
   0, 0, 0, 1,
   0, 0, 1, 1,
@@ -254,7 +254,7 @@ int character_3x5_3x5[20] = {
   0, 1, 1, 1
 };
 
-int character_4_3x5[20] = {
+const int8_t character_4_3x5[20] = {
   0, 0, 0, 1,
   0, 0, 1, 1,
   0, 1, 1, 1,
@@ -262,7 +262,7 @@ int character_4_3x5[20] = {
   0, 0, 0, 1
 };
 
-int character_5_3x5[20] = {
+const int8_t character_5_3x5[20] = {
   0, 1, 1, 1,
   0, 1, 0, 0,
   0, 1, 1, 0,
@@ -270,7 +270,7 @@ int character_5_3x5[20] = {
   0, 1, 1, 0
 };
 
-int character_6_3x5[20] = {
+const int8_t character_6_3x5[20] = {
   0, 1, 1, 1,
   0, 1, 0, 0,
   0, 1, 1, 1,
@@ -278,7 +278,7 @@ int character_6_3x5[20] = {
   0, 1, 1, 1
 };
 
-int character_7_3x5[20] = {
+const int8_t character_7_3x5[20] = {
   0, 1, 1, 1,
   0, 0, 0, 1,
   0, 0, 1, 0,
@@ -286,7 +286,7 @@ int character_7_3x5[20] = {
   0, 1, 0, 0
 };
 
-int character_8_3x5[20] = {
+const int8_t character_8_3x5[20] = {
   0, 1, 1, 1,
   0, 1, 0, 1,
   0, 1, 1, 1,
@@ -294,7 +294,7 @@ int character_8_3x5[20] = {
   0, 1, 1, 1
 };
 
-int character_9_3x5[20] = {
+const int8_t character_9_3x5[20] = {
   0, 1, 1, 1,
   0, 1, 0, 1,
   0, 1, 1, 1,
@@ -305,7 +305,7 @@ int character_9_3x5[20] = {
 #pragma endregion -- 3 x 5
 
 #pragma ragion -- 3 x 7
-int character_space_3x7[21] = {
+const int8_t character_space_3x7[21] = {
   0, 0, 0,
   0, 0, 0,
   0, 0, 0,
@@ -315,7 +315,7 @@ int character_space_3x7[21] = {
   0, 0, 0
 };
 
-int character_a_3x7[21] = {
+const int8_t character_a_3x7[21] = {
   0, 1, 0,
   0, 1, 0,
   1, 0, 1,
@@ -325,7 +325,7 @@ int character_a_3x7[21] = {
   1, 0, 1
 };
 
-int character_b_3x7[21] = {
+const int8_t character_b_3x7[21] = {
   1, 1, 1,
   1, 0, 1,
   1, 0, 1,
@@ -335,7 +335,7 @@ int character_b_3x7[21] = {
   1, 1, 1
 };
 
-int character_c_3x7[21] = {
+const int8_t character_c_3x7[21] = {
   1, 1, 1,
   1, 0, 0,
   1, 0, 0,
@@ -345,7 +345,7 @@ int character_c_3x7[21] = {
   1, 1, 1
 };
 
-int character_d_3x7[21] = {
+const int8_t character_d_3x7[21] = {
   1, 0, 0,
   1, 1, 0,
   1, 0, 1,
@@ -355,7 +355,7 @@ int character_d_3x7[21] = {
   1, 0, 0
 };
 
-int character_e_3x7[21] = {
+const int8_t character_e_3x7[21] = {
   1, 1, 1,
   1, 0, 0,
   1, 0, 0,
@@ -365,7 +365,7 @@ int character_e_3x7[21] = {
   1, 1, 1
 };
 
-int character_f_3x7[21] = {
+const int8_t character_f_3x7[21] = {
   1, 1, 1,
   1, 0, 0,
   1, 0, 0,
@@ -375,7 +375,7 @@ int character_f_3x7[21] = {
   1, 0, 0
 };
 
-int character_g_3x7[21] = {
+const int8_t character_g_3x7[21] = {
   1, 1, 1,
   1, 0, 0,
   1, 0, 0,
@@ -385,7 +385,7 @@ int character_g_3x7[21] = {
   1, 1, 1
 };
 
-int character_h_3x7[21] = {
+const int8_t character_h_3x7[21] = {
   1, 0, 1,
   1, 0, 1,
   1, 0, 1,
@@ -395,7 +395,7 @@ int character_h_3x7[21] = {
   1, 0, 1
 };
 
-int character_i_3x7[21] = {
+const int8_t character_i_3x7[21] = {
   1, 1, 1,
   0, 1, 0,
   0, 1, 0,
@@ -405,7 +405,7 @@ int character_i_3x7[21] = {
   1, 1, 1
 };
 
-int character_j_3x7[21] = {
+const int8_t character_j_3x7[21] = {
   0, 0, 1,
   0, 0, 1,
   0, 0, 1,
@@ -415,7 +415,7 @@ int character_j_3x7[21] = {
   1, 1, 1
 };
 
-int character_k_3x7[21] = {
+const int8_t character_k_3x7[21] = {
   1, 0, 1,
   1, 0, 1,
   1, 0, 1,
@@ -425,7 +425,7 @@ int character_k_3x7[21] = {
   1, 0, 1
 };
 
-int character_l_3x7[21] = {
+const int8_t character_l_3x7[21] = {
   1, 0, 0,
   1, 0, 0,
   1, 0, 0,
@@ -435,7 +435,7 @@ int character_l_3x7[21] = {
   1, 1, 1
 };
 
-int character_m_3x7[21] = {
+const int8_t character_m_3x7[21] = {
   1, 0, 1,
   1, 0, 1,
   1, 1, 1,
@@ -445,7 +445,7 @@ int character_m_3x7[21] = {
   1, 0, 1
 };
 
-int character_n_3x7[21] = {
+const int8_t character_n_3x7[21] = {
   1, 1, 0,
   1, 0, 1,
   1, 0, 1,
@@ -455,7 +455,7 @@ int character_n_3x7[21] = {
   1, 0, 1
 };
 
-int character_o_3x7[21] = {
+const int8_t character_o_3x7[21] = {
   0, 1, 0,
   1, 0, 1,
   1, 0, 1,
@@ -465,7 +465,7 @@ int character_o_3x7[21] = {
   0, 1, 0
 };
 
-int character_p_3x7[21] = {
+const int8_t character_p_3x7[21] = {
   1, 1, 1,
   1, 0, 1,
   1, 0, 1,
@@ -475,7 +475,7 @@ int character_p_3x7[21] = {
   1, 0, 0
 };
 
-int character_q_3x7[21] = {
+const int8_t character_q_3x7[21] = {
   1, 1, 1,
   1, 0, 1,
   1, 0, 1,
@@ -485,7 +485,7 @@ int character_q_3x7[21] = {
   0, 0, 1
 };
 
-int character_r_3x7[21] = {
+const int8_t character_r_3x7[21] = {
   1, 1, 1,
   1, 0, 1,
   1, 0, 1,
@@ -495,7 +495,7 @@ int character_r_3x7[21] = {
   1, 0, 1
 };
 
-int character_s_3x7[21] = {
+const int8_t character_s_3x7[21] = {
   1, 1, 1,
   1, 0, 0,
   1, 0, 0,
@@ -505,7 +505,7 @@ int character_s_3x7[21] = {
   1, 1, 1
 };
 
-int character_t_3x7[21] = {
+const int8_t character_t_3x7[21] = {
   1, 1, 1,
   0, 1, 0,
   0, 1, 0,
@@ -515,7 +515,7 @@ int character_t_3x7[21] = {
   0, 1, 0
 };
 
-int character_u_3x7[21] = {
+const int8_t character_u_3x7[21] = {
   1, 0, 1,
   1, 0, 1,
   1, 0, 1,
@@ -525,7 +525,7 @@ int character_u_3x7[21] = {
   1, 1, 1
 };
 
-int character_v_3x7[21] = {
+const int8_t character_v_3x7[21] = {
   1, 0, 1,
   1, 0, 1,
   1, 0, 1,
@@ -535,7 +535,7 @@ int character_v_3x7[21] = {
   0, 1, 0
 };
 
-int character_w_3x7[21] = {
+const int8_t character_w_3x7[21] = {
   1, 0, 1,
   1, 0, 1,
   1, 0, 1,
@@ -545,7 +545,7 @@ int character_w_3x7[21] = {
   1, 0, 1
 };
 
-int character_x_3x7[21] = {
+const int8_t character_x_3x7[21] = {
   1, 0, 1,
   1, 0, 1,
   1, 0, 1,
@@ -555,7 +555,7 @@ int character_x_3x7[21] = {
   1, 0, 1
 };
 
-int character_y_3x7[21] = {
+const int8_t character_y_3x7[21] = {
   1, 0, 1,
   1, 0, 1,
   1, 0, 1,
@@ -565,7 +565,7 @@ int character_y_3x7[21] = {
   0, 1, 0
 };
 
-int character_z_3x7[21] = {
+const int8_t character_z_3x7[21] = {
   1, 1, 1,
   0, 0, 1,
   0, 0, 1,
@@ -575,8 +575,7 @@ int character_z_3x7[21] = {
   1, 1, 1
 };
 
-
-int character_0_3x7[21] = {
+const int8_t character_0_3x7[21] = {
   1, 1, 1,
   1, 0, 1,
   1, 0, 1,
@@ -586,7 +585,7 @@ int character_0_3x7[21] = {
   1, 1, 1
 };
 
-int character_1_3x7[21] = {
+const int8_t character_1_3x7[21] = {
   0, 1, 0,
   1, 1, 0,
   0, 1, 0,
@@ -596,7 +595,7 @@ int character_1_3x7[21] = {
   1, 1, 1
 };
 
-int character_2_3x7[21] = {
+const int8_t character_2_3x7[21] = {
   1, 1, 1,
   0, 0, 1,
   0, 0, 1,
@@ -606,7 +605,7 @@ int character_2_3x7[21] = {
   1, 1, 1
 };
 
-int character_3_3x7[21] = {
+const int8_t character_3_3x7[21] = {
   1, 1, 1,
   0, 0, 1,
   0, 0, 1,
@@ -616,7 +615,7 @@ int character_3_3x7[21] = {
   1, 1, 1
 };
 
-int character_4_3x7[21] = {
+const int8_t character_4_3x7[21] = {
   1, 0, 1,
   1, 0, 1,
   1, 0, 1,
@@ -626,7 +625,7 @@ int character_4_3x7[21] = {
   0, 0, 1
 };
 
-int character_5_3x7[21] = {
+const int8_t character_5_3x7[21] = {
   1, 1, 1,
   1, 0, 0,
   1, 0, 0,
@@ -636,7 +635,7 @@ int character_5_3x7[21] = {
   1, 1, 1
 };
 
-int character_6_3x7[21] = {
+const int8_t character_6_3x7[21] = {
   1, 1, 1,
   1, 0, 0,
   1, 0, 0,
@@ -646,7 +645,7 @@ int character_6_3x7[21] = {
   1, 1, 1
 };
 
-int character_7_3x7[21] = {
+const int8_t character_7_3x7[21] = {
   1, 1, 1,
   0, 0, 1,
   0, 1, 0,
@@ -656,7 +655,7 @@ int character_7_3x7[21] = {
   1, 0, 0
 };
 
-int character_8_3x7[21] = {
+const int8_t character_8_3x7[21] = {
   1, 1, 1,
   1, 0, 1,
   1, 0, 1,
@@ -666,7 +665,7 @@ int character_8_3x7[21] = {
   1, 1, 1
 };
 
-int character_9_3x7[21] = {
+const int8_t character_9_3x7[21] = {
   1, 1, 1,
   1, 0, 1,
   1, 0, 1,
@@ -675,16 +674,11 @@ int character_9_3x7[21] = {
   0, 0, 1,
   0, 0, 1
 };
-
-
-
-
-
 #pragma endregion -- 3 x 7
 
 // 4 wide
 #pragma region -- 4 wide
-int character_space_4[28] = {
+const int8_t character_space_4[28] = {
 	0, 0, 0, 0,
 	0, 0, 0, 0,
 	0, 0, 0, 0,
@@ -693,7 +687,7 @@ int character_space_4[28] = {
 	0, 0, 0, 0,
 	0, 0, 0, 0 };
 
-int character_a_4[28] = {
+const int8_t character_a_4[28] = {
 	0, 1, 1, 0,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
@@ -702,7 +696,7 @@ int character_a_4[28] = {
 	1, 0, 0, 1,
 	1, 0, 0, 1 };
 
-int character_b_4[28] = {
+const int8_t character_b_4[28] = {
 	1, 1, 1, 0,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
@@ -711,7 +705,7 @@ int character_b_4[28] = {
 	1, 0, 0, 1,
 	1, 1, 1, 0 };
 
-int character_c_4[28] = {
+const int8_t character_c_4[28] = {
 	1, 1, 1, 1,
 	1, 0, 0, 0,
 	1, 0, 0, 0,
@@ -720,7 +714,7 @@ int character_c_4[28] = {
 	1, 0, 0, 0,
 	1, 1, 1, 1 };
 
-int character_d_4[28] = {
+const int8_t character_d_4[28] = {
 	1, 1, 1, 0,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
@@ -729,7 +723,7 @@ int character_d_4[28] = {
 	1, 0, 0, 1,
 	1, 1, 1, 0 };
 
-int character_e_4[28] = {
+const int8_t character_e_4[28] = {
 	1, 1, 1, 1,
 	1, 0, 0, 0,
 	1, 0, 0, 0,
@@ -738,7 +732,7 @@ int character_e_4[28] = {
 	1, 0, 0, 0,
 	1, 1, 1, 1 };
 
-int character_f_4[28] = {
+const int8_t character_f_4[28] = {
 	1, 1, 1, 1,
 	1, 0, 0, 0,
 	1, 0, 0, 0,
@@ -747,7 +741,7 @@ int character_f_4[28] = {
 	1, 0, 0, 0,
 	1, 0, 0, 0 };
 
-int character_g_4[28] = {
+const int8_t character_g_4[28] = {
 	1, 1, 1, 1,
 	1, 0, 0, 0,
 	1, 0, 0, 0,
@@ -756,7 +750,7 @@ int character_g_4[28] = {
 	1, 0, 0, 1,
 	1, 1, 1, 1 };
 
-int character_h_4[28] = {
+const int8_t character_h_4[28] = {
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
@@ -765,7 +759,7 @@ int character_h_4[28] = {
 	1, 0, 0, 1,
 	1, 0, 0, 1 };
 
-int character_i_4[28] = {
+const int8_t character_i_4[28] = {
 	0, 1, 1, 1,
 	0, 0, 1, 0,
 	0, 0, 1, 0,
@@ -774,7 +768,7 @@ int character_i_4[28] = {
 	0, 0, 1, 0,
 	0, 1, 1, 1 };
 
-int character_j_4[28] = {
+const int8_t character_j_4[28] = {
 	0, 0, 0, 1,
 	0, 0, 0, 1,
 	0, 0, 0, 1,
@@ -783,7 +777,7 @@ int character_j_4[28] = {
 	1, 0, 0, 1,
 	1, 1, 1, 1 };
 
-int character_k_4[28] = {
+const int8_t character_k_4[28] = {
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 0, 1, 0,
@@ -792,7 +786,7 @@ int character_k_4[28] = {
 	1, 0, 0, 1,
 	1, 0, 0, 1 };
 
-int character_l_4[28] = {
+const int8_t character_l_4[28] = {
 	1, 0, 0, 0,
 	1, 0, 0, 0,
 	1, 0, 0, 0,
@@ -801,7 +795,7 @@ int character_l_4[28] = {
 	1, 0, 0, 0,
 	1, 1, 1, 1 };
 
-int character_m_4[28] = {
+const int8_t character_m_4[28] = {
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 1, 1, 1,
@@ -810,7 +804,7 @@ int character_m_4[28] = {
 	1, 0, 0, 1,
 	1, 0, 0, 1 };
 
-int character_n_4[28] = {
+const int8_t character_n_4[28] = {
 	1, 0, 0, 1,
 	1, 1, 0, 1,
 	1, 1, 0, 1,
@@ -819,7 +813,7 @@ int character_n_4[28] = {
 	1, 0, 0, 1,
 	1, 0, 0, 1 };
 
-int character_o_4[28] = {
+const int8_t character_o_4[28] = {
 	0, 1, 1, 0,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
@@ -828,7 +822,7 @@ int character_o_4[28] = {
 	1, 0, 0, 1,
 	0, 1, 1, 0 };
 
-int character_p_4[28] = {
+const int8_t character_p_4[28] = {
 	1, 1, 1, 0,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
@@ -837,7 +831,7 @@ int character_p_4[28] = {
 	1, 0, 0, 0,
 	1, 0, 0, 0 };
 
-int character_q_4[28] = {
+const int8_t character_q_4[28] = {
 	1, 1, 1, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
@@ -846,7 +840,7 @@ int character_q_4[28] = {
 	1, 0, 1, 0,
 	1, 1, 1, 1 };
 
-int character_r_4[28] = {
+const int8_t character_r_4[28] = {
 	1, 1, 1, 0,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
@@ -855,7 +849,7 @@ int character_r_4[28] = {
 	1, 0, 0, 1,
 	1, 0, 0, 1 };
 
-int character_s_4[28] = {
+const int8_t character_s_4[28] = {
 	0, 1, 1, 0,
 	1, 0, 0, 1,
 	1, 0, 0, 0,
@@ -864,7 +858,7 @@ int character_s_4[28] = {
 	1, 0, 0, 1,
 	0, 1, 1, 0 };
 
-int character_t_4[28] = {
+const int8_t character_t_4[28] = {
 	0, 1, 1, 1,
 	0, 0, 1, 0,
 	0, 0, 1, 0,
@@ -873,7 +867,7 @@ int character_t_4[28] = {
 	0, 0, 1, 0,
 	0, 0, 1, 0 };
 
-int character_u_4[28] = {
+const int8_t character_u_4[28] = {
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
@@ -882,7 +876,7 @@ int character_u_4[28] = {
 	1, 0, 0, 1,
 	0, 1, 1, 0 };
 
-int character_v_4[28] = {
+const int8_t character_v_4[28] = {
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
@@ -891,7 +885,7 @@ int character_v_4[28] = {
 	0, 1, 1, 0,
 	0, 1, 1, 0 };
 
-int character_w_4[28] = {
+const int8_t character_w_4[28] = {
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
@@ -900,7 +894,7 @@ int character_w_4[28] = {
 	1, 0, 0, 1,
 	1, 0, 0, 1 };
 
-int character_x_4[28] = {
+const int8_t character_x_4[28] = {
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
@@ -909,7 +903,7 @@ int character_x_4[28] = {
 	1, 0, 0, 1,
 	1, 0, 0, 1 };
 
-int character_y_4[28] = {
+const int8_t character_y_4[28] = {
 	1, 0, 0, 1,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
@@ -918,7 +912,7 @@ int character_y_4[28] = {
 	0, 0, 0, 1,
 	0, 1, 1, 1 };
 
-int character_z_4[28] = {
+const int8_t character_z_4[28] = {
 	1, 1, 1, 1,
 	0, 0, 0, 1,
 	0, 0, 0, 1,
@@ -927,7 +921,7 @@ int character_z_4[28] = {
 	1, 0, 0, 0,
 	1, 1, 1, 1 };
 
-int character_0_4[28] = {
+const int8_t character_0_4[28] = {
 	0, 1, 1, 0,
 	1, 0, 0, 1,
 	1, 0, 1, 1,
@@ -936,7 +930,7 @@ int character_0_4[28] = {
 	1, 0, 0, 0,
 	0, 1, 1, 0 };
 
-int character_1_4[28] = {
+const int8_t character_1_4[28] = {
 	0, 0, 1, 0,
 	0, 1, 1, 0,
 	0, 0, 1, 0,
@@ -945,7 +939,7 @@ int character_1_4[28] = {
 	0, 0, 0, 0,
 	0, 1, 1, 1 };
 
-int character_2_4[28] = {
+const int8_t character_2_4[28] = {
 	0, 1, 1, 0,
 	1, 0, 0, 1,
 	0, 0, 0, 1,
@@ -954,7 +948,7 @@ int character_2_4[28] = {
 	1, 0, 0, 0,
 	1, 1, 1, 1 };
 
-int character_3_4[28] = {
+const int8_t character_3_4[28] = {
 	1, 1, 1, 1,
 	0, 0, 0, 1,
 	0, 0, 1, 0,
@@ -963,7 +957,7 @@ int character_3_4[28] = {
 	0, 0, 0, 1,
 	1, 1, 1, 0 };
 
-int character_4_4[28] = {
+const int8_t character_4_4[28] = {
 	0, 0, 1, 0,
 	0, 1, 1, 0,
 	1, 0, 1, 0,
@@ -972,7 +966,7 @@ int character_4_4[28] = {
 	0, 0, 1, 0,
 	0, 0, 1, 0 };
 
-int character_5_4[28] = {
+const int8_t character_5_4[28] = {
 	1, 1, 1, 1,
 	1, 0, 0, 0,
 	1, 0, 0, 0,
@@ -981,7 +975,7 @@ int character_5_4[28] = {
 	0, 0, 0, 1,
 	1, 1, 1, 0 };
 
-int character_6_4[28] = {
+const int8_t character_6_4[28] = {
 	0, 1, 1, 1,
 	1, 0, 0, 0,
 	1, 0, 0, 0,
@@ -990,7 +984,7 @@ int character_6_4[28] = {
 	1, 0, 0, 1,
 	0, 1, 1, 0 };
 
-int character_7_4[28] = {
+const int8_t character_7_4[28] = {
 	1, 1, 1, 1,
 	0, 0, 0, 1,
 	0, 0, 0, 1,
@@ -999,7 +993,7 @@ int character_7_4[28] = {
 	0, 1, 0, 0,
 	0, 1, 0, 0 };
 
-int character_8_4[28] = {
+const int8_t character_8_4[28] = {
 	0, 1, 1, 0,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
@@ -1008,7 +1002,7 @@ int character_8_4[28] = {
 	1, 0, 0, 1,
 	0, 1, 1, 0 };
 
-int character_9_4[28] = {
+const int8_t character_9_4[28] = {
 	0, 1, 1, 0,
 	1, 0, 0, 1,
 	1, 0, 0, 1,
@@ -1019,10 +1013,9 @@ int character_9_4[28] = {
 
 #pragma endregion -- 4 wide
 
-
 // 5 wide
 #pragma region -- 5 wide
-int character_space_5[45] = {
+const int8_t character_space_5[45] = {
 	0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0,
@@ -1033,7 +1026,7 @@ int character_space_5[45] = {
 	0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0 };
 
-int character_a_5[45] = {
+const int8_t character_a_5[45] = {
 	0, 0, 1, 0, 0,
 	0, 1, 0, 1, 0,
 	1, 0, 0, 0, 1,
@@ -1044,7 +1037,7 @@ int character_a_5[45] = {
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 1 };
 
-int character_b_5[45] = {
+const int8_t character_b_5[45] = {
 	1, 1, 1, 1, 0,
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 1,
@@ -1055,7 +1048,7 @@ int character_b_5[45] = {
 	1, 0, 0, 0, 1,
 	1, 1, 1, 1, 0 };
 
-int character_c_5[45] = {
+const int8_t character_c_5[45] = {
 	0, 1, 1, 1, 0,
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 0,
@@ -1066,7 +1059,7 @@ int character_c_5[45] = {
 	1, 0, 0, 0, 1,
 	0, 1, 1, 1, 0 };
 
-int character_d_5[45] = {
+const int8_t character_d_5[45] = {
 	1, 1, 1, 0, 0,
 	1, 0, 0, 1, 0,
 	1, 0, 0, 0, 1,
@@ -1077,7 +1070,7 @@ int character_d_5[45] = {
 	1, 0, 0, 1, 0,
 	1, 1, 1, 0, 0 };
 
-int character_e_5[45] = {
+const int8_t character_e_5[45] = {
 	1, 1, 1, 1, 1,
 	1, 0, 0, 0, 0,
 	1, 0, 0, 0, 0,
@@ -1088,7 +1081,7 @@ int character_e_5[45] = {
 	1, 0, 0, 0, 0,
 	1, 1, 1, 1, 1 };
 
-int character_f_5[45] = {
+const int8_t character_f_5[45] = {
 	1, 1, 1, 1, 1,
 	1, 0, 0, 0, 0,
 	1, 0, 0, 0, 0,
@@ -1099,7 +1092,7 @@ int character_f_5[45] = {
 	1, 0, 0, 0, 0,
 	1, 0, 0, 0, 0 };
 
-int character_g_5[45] = {
+const int8_t character_g_5[45] = {
 	0, 1, 1, 1, 0,
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 0,
@@ -1110,7 +1103,7 @@ int character_g_5[45] = {
 	1, 0, 0, 0, 1,
 	0, 1, 1, 1, 1 };
 
-int character_h_5[45] = {
+const int8_t character_h_5[45] = {
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 1,
@@ -1121,7 +1114,7 @@ int character_h_5[45] = {
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 1 };
 
-int character_i_5[45] = {
+const int8_t character_i_5[45] = {
 	1, 1, 1, 1, 1,
 	0, 0, 1, 0, 0,
 	0, 0, 1, 0, 0,
@@ -1132,7 +1125,7 @@ int character_i_5[45] = {
 	0, 0, 1, 0, 0,
 	1, 1, 1, 1, 1 };
 
-int character_j_5[45] = {
+const int8_t character_j_5[45] = {
 	0, 0, 0, 1, 0,
 	0, 0, 0, 1, 0,
 	0, 0, 0, 1, 0,
@@ -1143,7 +1136,7 @@ int character_j_5[45] = {
 	1, 0, 0, 1, 0,
 	0, 1, 1, 0, 0 };
 
-int character_k_5[45] = {
+const int8_t character_k_5[45] = {
 	1, 0, 0, 0, 1,
 	1, 0, 0, 1, 1,
 	1, 0, 1, 1, 0,
@@ -1154,7 +1147,7 @@ int character_k_5[45] = {
 	1, 0, 0, 1, 1,
 	1, 0, 0, 0, 1 };
 
-int character_l_5[45] = {
+const int8_t character_l_5[45] = {
 	1, 0, 0, 0, 0,
 	1, 0, 0, 0, 0,
 	1, 0, 0, 0, 0,
@@ -1165,7 +1158,7 @@ int character_l_5[45] = {
 	1, 0, 0, 0, 0,
 	1, 1, 1, 1, 1 };
 
-int character_m_5[45] = {
+const int8_t character_m_5[45] = {
 	1, 0, 0, 0, 1,
 	1, 1, 0, 1, 1,
 	1, 1, 0, 1, 1,
@@ -1176,7 +1169,7 @@ int character_m_5[45] = {
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 1 };
 
-int character_n_5[45] = {
+const int8_t character_n_5[45] = {
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 1,
 	1, 1, 0, 0, 1,
@@ -1187,7 +1180,7 @@ int character_n_5[45] = {
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 1 };
 
-int character_o_5[45] = {
+const int8_t character_o_5[45] = {
 	0, 1, 1, 1, 0,
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 1,
@@ -1198,7 +1191,7 @@ int character_o_5[45] = {
 	1, 0, 0, 0, 1,
 	0, 1, 1, 1, 0 };
 
-int character_p_5[45] = {
+const int8_t character_p_5[45] = {
 	1, 1, 1, 1, 0,
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 1,
@@ -1209,7 +1202,7 @@ int character_p_5[45] = {
 	1, 0, 0, 0, 0,
 	1, 0, 0, 0, 0 };
 
-int character_q_5[45] = {
+const int8_t character_q_5[45] = {
 	0, 1, 1, 1, 0,
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 1,
@@ -1219,7 +1212,7 @@ int character_q_5[45] = {
 	0, 1, 1, 1, 0,
 	0, 0, 0, 0, 1 };
 
-int character_r_5[45] = {
+const int8_t character_r_5[45] = {
 	1, 1, 1, 1, 0,
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 1,
@@ -1230,7 +1223,7 @@ int character_r_5[45] = {
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 1 };
 
-int character_s_5[45] = {
+const int8_t character_s_5[45] = {
 	0, 1, 1, 1, 0,
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 0,
@@ -1241,7 +1234,7 @@ int character_s_5[45] = {
 	1, 0, 0, 0, 1,
 	0, 1, 1, 1, 0 };
 
-int character_t_5[45] = {
+const int8_t character_t_5[45] = {
 	1, 1, 1, 1, 1,
 	0, 0, 1, 0, 0,
 	0, 0, 1, 0, 0,
@@ -1252,7 +1245,7 @@ int character_t_5[45] = {
 	0, 0, 1, 0, 0,
 	0, 0, 1, 0, 0 };
 
-int character_u_5[45] = {
+const int8_t character_u_5[45] = {
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 1,
@@ -1263,7 +1256,7 @@ int character_u_5[45] = {
 	1, 0, 0, 0, 1,
 	0, 1, 1, 1, 0 };
 
-int character_v_5[45] = {
+const int8_t character_v_5[45] = {
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 1,
@@ -1274,7 +1267,7 @@ int character_v_5[45] = {
 	0, 0, 1, 0, 0,
 	0, 0, 1, 0, 0 };
 
-int character_w_5[45] = {
+const int8_t character_w_5[45] = {
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 1,
@@ -1285,7 +1278,7 @@ int character_w_5[45] = {
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 1 };
 
-int character_x_5[45] = {
+const int8_t character_x_5[45] = {
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 1,
 	0, 1, 0, 1, 0,
@@ -1296,7 +1289,7 @@ int character_x_5[45] = {
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 1 };
 
-int character_y_5[45] = {
+const int8_t character_y_5[45] = {
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 1,
@@ -1307,7 +1300,7 @@ int character_y_5[45] = {
 	0, 0, 1, 0, 0,
 	0, 0, 1, 0, 0 };
 
-int character_z_5[45] = {
+const int8_t character_z_5[45] = {
 	1, 1, 1, 1, 1,
 	0, 0, 0, 0, 1,
 	0, 0, 0, 0, 1,
@@ -1318,7 +1311,7 @@ int character_z_5[45] = {
 	1, 0, 0, 0, 0,
 	1, 1, 1, 1, 1 };
 
-int character_0_5[45] = {
+const int8_t character_0_5[45] = {
 	0, 1, 1, 1, 0,
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 1,
@@ -1329,7 +1322,7 @@ int character_0_5[45] = {
 	1, 0, 0, 0, 1,
 	0, 1, 1, 1, 0 };
 
-int character_1_5[45] = {
+const int8_t character_1_5[45] = {
 	0, 0, 1, 0, 0,
 	0, 1, 1, 0, 0,
 	0, 0, 1, 0, 0,
@@ -1340,7 +1333,7 @@ int character_1_5[45] = {
 	0, 0, 1, 0, 0,
 	0, 1, 1, 1, 0 };
 
-int character_2_5[45] = {
+const int8_t character_2_5[45] = {
 	0, 1, 1, 1, 0,
 	1, 0, 0, 0, 1,
 	0, 0, 0, 0, 1,
@@ -1350,7 +1343,7 @@ int character_2_5[45] = {
 	1, 0, 0, 0, 0,
 	1, 1, 1, 1, 1 };
 
-int character_3_5[45] = {
+const int8_t character_3_5[45] = {
 	0, 1, 1, 1, 0,
 	1, 0, 0, 0, 1,
 	0, 0, 0, 0, 1,
@@ -1361,7 +1354,7 @@ int character_3_5[45] = {
 	1, 0, 0, 0, 1,
 	0, 1, 1, 1, 0 };
 
-int character_4_5[45] = {
+const int8_t character_4_5[45] = {
 	1, 0, 0, 1, 0,
 	1, 0, 0, 1, 0,
 	1, 0, 0, 1, 0,
@@ -1372,7 +1365,7 @@ int character_4_5[45] = {
 	0, 0, 0, 1, 0,
 	0, 0, 0, 1, 0 };
 
-int character_5_5[45] = {
+const int8_t character_5_5[45] = {
 	1, 1, 1, 1, 1,
 	1, 0, 0, 0, 0,
 	1, 0, 0, 0, 0,
@@ -1383,7 +1376,7 @@ int character_5_5[45] = {
 	1, 0, 0, 0, 1,
 	0, 1, 1, 1, 0 };
 
-int character_6_5[45] = {
+const int8_t character_6_5[45] = {
 	0, 1, 1, 1, 0,
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 0,
@@ -1394,7 +1387,7 @@ int character_6_5[45] = {
 	1, 0, 0, 0, 1,
 	0, 1, 1, 1, 0 };
 
-int character_7_5[45] = {
+const int8_t character_7_5[45] = {
 	1, 1, 1, 1, 1,
 	0, 0, 0, 0, 1,
 	0, 0, 0, 1, 0,
@@ -1405,7 +1398,7 @@ int character_7_5[45] = {
 	0, 0, 1, 0, 0,
 	0, 0, 1, 0, 0 };
 
-int character_8_5[45] = {
+const int8_t character_8_5[45] = {
 	0, 1, 1, 1, 0,
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 1,
@@ -1416,7 +1409,7 @@ int character_8_5[45] = {
 	1, 0, 0, 0, 1,
 	0, 1, 1, 1, 0 };
 
-int character_9_5[45] = {
+const int8_t character_9_5[45] = {
 	0, 1, 1, 1, 0,
 	1, 0, 0, 0, 1,
 	1, 0, 0, 0, 1,
@@ -1430,13 +1423,12 @@ int character_9_5[45] = {
 #pragma endregion -- 5 wide
 
 
-
 /* Get character array
  * @param character - character to get array for
  * @param width - width of character
  * @return pointer to character array
  */
-int* TextCharacter::getCharacterArray(char character, int width) {
+const int8_t* TextCharacter::getCharacterArray(char character, int width) {
 	switch (width) {
 		case 3:
 			switch (character) {
@@ -1756,10 +1748,6 @@ int* TextCharacter::getCharacterArray(char character, int width) {
 	}
 }
 
-
-// int characterArray[28] = {};
-
-
 /* Get character
  * @param character - character to get array for
  * @param width - width of character
@@ -1768,7 +1756,7 @@ int* TextCharacter::getCharacterArray(char character, int width) {
 const TextCharacter::TextCharacterInfo TextCharacter::getCharacter(char character, int width)
 {
 	TextCharacterInfo returnCharacter;
-	int* pCharacterArray = getCharacterArray(character, width);
+	const int8_t* pCharacterArray = getCharacterArray(character, width);
 	returnCharacter.characterArray = pCharacterArray;
 	int characterTotalPixels;
 
