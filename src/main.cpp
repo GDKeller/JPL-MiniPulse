@@ -2415,7 +2415,7 @@ void parseData(const char* payload)
 								if (SpacecraftData::checkBlacklist(target) == true) {
 									if (FileUtils::config.debugUtils.showSerial == true)
 										Serial.print(String(dev.termColor("red")) + "Blacklisted target, skipping..." + String(dev.termColor("reset")) + "\n");	
-									vTaskDelay(pdMS_TO_TICKS(200)); // Delay to allow JSON file to be closed so the next load doesn't look in cache
+									vTaskDelay(pdMS_TO_TICKS(500)); // Delay to allow JSON file to be closed so the next load doesn't look in cache
 									t++;
 									continue;
 								}
