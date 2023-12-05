@@ -2,6 +2,7 @@ const char* currentFirmwareVersion = "0.9.6"; // Current firmware version
 
 #pragma region -- LIBRARIES
 #include <Arduino.h>		// Arduino core
+#include <esp_task_wdt.h>	// ESP32 task watchdog
 #include "soc/timer_group_struct.h" // Timer group struct
 #include "soc/timer_group_reg.h"  // Timer group register
 #include <FS.h>				// File system
@@ -443,12 +444,12 @@ void setupOtaUpdate() {
 
 const char* getRemoteFirmwareVersion() {
 	static char buffer[16];
-	
+
 	HTTPClient httpFirmware;
 	httpFirmware.begin("http://develop.kellerdigital.com/minipulse/latest_version.txt");
 	int httpCode = httpFirmware.GET();
 	Serial.println("HTTP code: " + String(httpCode));
-	
+
 	if (httpCode == HTTP_CODE_OK) {
 		String latestVersion = httpFirmware.getString();
 		Serial.println("Remote version: " + latestVersion);
@@ -462,15 +463,15 @@ const char* getRemoteFirmwareVersion() {
 	return buffer;
 }
 
-bool checkFirmwareUpdateAvailable() { 
+bool checkFirmwareUpdateAvailable() {
 	// char buffer[2048];
 	// int offset = 0;
-	
+
 	const char* latestVersion = getRemoteFirmwareVersion();
-	
+
 	// offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Remote version: %s\n", latestVersion);
 
-	if (strcmp(latestVersion, "" ) == 0) {
+	if (strcmp(latestVersion, "") == 0) {
 		// offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Unable to fetch latest version from remote server\n");
 		// Serial.print(buffer);
 		return false;
@@ -490,7 +491,7 @@ bool checkFirmwareUpdateAvailable() {
 
 void updateFirmwareOta() {
 	if (!checkFirmwareUpdateAvailable()) return;
-	
+
 	char buffer[2048];
 	int offset = 0;
 	offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n--------\nAttempting to update firmware from remote server...\n");
@@ -513,12 +514,12 @@ void updateFirmwareOta() {
 		case HTTP_UPDATE_OK:
 			offset += snprintf(buffer + offset, sizeof(buffer) - offset, ">> HTTP_UPDATE_OK");
 			break;
-		
+
 		default:
 			offset += snprintf(buffer + offset, sizeof(buffer) - offset, ">> HTTP_UPDATE Unknown error");
 			break;
 	}
-	
+
 	offset += snprintf(buffer + offset, sizeof(buffer) - offset, "OTA update complete\n--------\n\n");
 	Serial.print(buffer);
 }
@@ -551,9 +552,17 @@ bool animateFirstCycleUp = true;
 #pragma region -- DEV UTILITIES
 
 void feedWatchdog() {
-	TIMERG0.wdt_wprotect = TIMG_WDT_WKEY_VALUE;
-	TIMERG0.wdt_feed = 1;
-	TIMERG0.wdt_wprotect = 0;
+	// // Timer Group 0 reset
+	// TIMERG0.wdt_wprotect = TIMG_WDT_WKEY_VALUE;
+	// TIMERG0.wdt_feed = 1;
+	// TIMERG0.wdt_wprotect = 0;
+
+	// // Timer Group 1 reset
+	// TIMERG1.wdt_wprotect = TIMG_WDT_WKEY_VALUE;
+	// TIMERG1.wdt_feed = 1;
+	// TIMERG1.wdt_wprotect = 0;
+
+	esp_task_wdt_reset();
 }
 
 
@@ -739,19 +748,6 @@ void configPortalCallback() {
 	portalRunning = true;
 }
 
-// const char* generateShowSerialHTML() {
-// 	static char buffer[128];
-// 	const char* paramValue = field_show_serial.getValue();
-// 	const char* checkedAttribute = (paramValue && strcmp(paramValue, "1") == 0) ? " checked" : "";
-// 	snprintf(buffer, sizeof(buffer),
-// 		"<br/><label for='show_serial'>Show Serial</label><br/><input type='checkbox' name='show_serial'%s/>",
-// 		checkedAttribute);
-// 	return buffer;
-// }
-
-
-
-
 void webServerCallback() {
 	Serial.print("\n" + String(dev.termColor("green")) + "[CALLBACK] webServerCallback fired" + dev.termColor("reset") + "\n\n");
 	portalRunning = true;
@@ -761,7 +757,7 @@ void webServerCallback() {
 		String response = "Remote Version: " + String(remoteFirmwareVersion);
 
 		wm.server->send(200, "text/plain", response);
-	});
+		});
 
 	wm.server->on("/get-latest-version-number", HTTP_GET, []() {
 		const char* remoteFirmwareVersion = getRemoteFirmwareVersion();
@@ -771,7 +767,7 @@ void webServerCallback() {
 
 		wm.server->send(200, "text/plain", response);
 
-	});
+		});
 
 	wm.server->on("/trigger-firmware-update", HTTP_GET, []() {
 		bool updateAvailable = checkFirmwareUpdateAvailable();
@@ -781,7 +777,7 @@ void webServerCallback() {
 		} else {
 			wm.server->send(200, "text/plain", "Firmware is up to date");
 		}
-	});
+		});
 }
 
 void setColorTheme(uint8_t colorTheme)
@@ -2037,7 +2033,7 @@ struct FoundSignals {
 
 FoundSignals findSignals(XMLElement* xmlDish, CraftQueueItem* tempNewCraft) {
 	bool showSerial = FileUtils::config.debugUtils.showSerial;
-	
+
 	FoundSignals foundSignals = { 0, 0 };
 
 	if (FileUtils::config.debugUtils.showSerial == true)
@@ -2045,6 +2041,7 @@ FoundSignals findSignals(XMLElement* xmlDish, CraftQueueItem* tempNewCraft) {
 
 	// Loop through XML signal elements and find the one that matches the target
 	for (XMLElement* xmlSignal = xmlDish->FirstChildElement(); xmlSignal != NULL; xmlSignal = xmlSignal->NextSiblingElement()) {
+		feedWatchdog();
 		if (xmlDish == nullptr) continue; // Error finding next element
 
 		const char* elValue = xmlSignal->Value();
@@ -2244,6 +2241,7 @@ bool isValidCraftQueueItem(CraftQueueItem* item) {
 
 void parseData(const char* payload)
 {
+	feedWatchdog();
 
 	/* XML Parsing */
 	XMLDocument xmlDocument; // Create variable for XML document
@@ -2284,6 +2282,7 @@ void parseData(const char* payload)
 
 	/* Loop through freeListMutex and print out the callsigns */
 	if (xSemaphoreTake(freeListMutex, 100) == pdTRUE) {
+
 		printSemaphoreList();
 		if (freeListTop > 0) {
 
@@ -2291,9 +2290,12 @@ void parseData(const char* payload)
 
 			bool breakParseLoop = false;
 
+
 			/* Loop through all XML elements */
 			// 10 is an arbitrary number to prevent an infinite loop
 			for (int i = 0; i < 10; i++) {
+				// Serial.println("Parsing loop: " + String(i));
+				feedWatchdog();
 				if (FileUtils::config.debugUtils.showSerial == true) {
 					Serial.print("\n───────────────────────────────────────────────────────────────────\n");
 					Serial.print("  Parse Counters -- Station: " + String(stationCount) + " | Dish: " + String(dishCount) + " | Target: " + String(targetCount) + " | Signal: " + String(signalCount));
@@ -2302,10 +2304,11 @@ void parseData(const char* payload)
 				try {
 					int s = 0; // Create station elements counter
 					for (XMLElement* xmlStation = root->FirstChildElement("station"); true; xmlStation = xmlStation->NextSiblingElement("station")) {
+						feedWatchdog();
 						vTaskDelay(pdMS_TO_TICKS(100)); // Slow the station loop
-						
+
 						if (FileUtils::config.debugUtils.showSerial == true)
-							Serial.print("== stationCount: " + String(stationCount) + " | s: " + String(s) + "\n");
+							Serial.print("── stationCount: " + String(stationCount) + " | s: " + String(s) + "\n");
 
 						if (xmlStation == NULL) {
 							if (FileUtils::config.debugUtils.showSerial == true)
@@ -2335,10 +2338,11 @@ void parseData(const char* payload)
 						bool goToNextStation = false;
 						int d = 0; // Create dish elements counter
 						for (XMLElement* xmlDish = xmlStation->NextSiblingElement(); xmlDish != NULL; xmlDish = xmlDish->NextSiblingElement()) {
+							feedWatchdog();
 							vTaskDelay(pdMS_TO_TICKS(100)); // Slow the dish loop
-							
+
 							if (FileUtils::config.debugUtils.showSerial == true)
-								Serial.print("==== dishCount: " + String(dishCount) + " | d: " + String(d) + "\n");
+								Serial.print("   └── dishCount: " + String(dishCount) + " | d: " + String(d) + "\n");
 
 							if (d > 9) {
 								stationCount++;
@@ -2363,10 +2367,11 @@ void parseData(const char* payload)
 							int t = 0; // Create target elements counter
 
 							for (XMLElement* xmlTarget = xmlDish->FirstChildElement("target"); true; xmlTarget = xmlTarget->NextSiblingElement("target")) {
+								feedWatchdog();
 								vTaskDelay(pdMS_TO_TICKS(100)); // Slow the target loop
 
 								if (FileUtils::config.debugUtils.showSerial == true)
-									Serial.print("====== targetCount: " + String(targetCount) + " | t: " + String(t) + "\n");
+									Serial.print("      └── targetCount: " + String(targetCount) + " | t: " + String(t) + "\n");
 
 								if (xmlTarget == NULL) {
 									// if (FileUtils::config.debugUtils.showSerial == true)
@@ -2389,7 +2394,13 @@ void parseData(const char* payload)
 								}
 
 								if (FileUtils::config.debugUtils.showSerial == true)
-									Serial.print(">>>   Finding craft....\n");
+									Serial.print(
+										"\n" +
+										DevUtils::termColor("bg_bright_black") +
+										">>>   Finding craft...." +
+										DevUtils::termColor("reset") +
+										"\n"
+									);
 
 
 								const char* target = xmlTarget->Attribute("name"); // Get target name
@@ -2414,7 +2425,7 @@ void parseData(const char* payload)
 
 								if (SpacecraftData::checkBlacklist(target) == true) {
 									if (FileUtils::config.debugUtils.showSerial == true)
-										Serial.print(String(dev.termColor("red")) + "Blacklisted target, skipping..." + String(dev.termColor("reset")) + "\n");	
+										Serial.print(String(dev.termColor("red")) + "Blacklisted target, skipping..." + String(dev.termColor("reset")) + "\n");
 									vTaskDelay(pdMS_TO_TICKS(500)); // Delay to allow JSON file to be closed so the next load doesn't look in cache
 									t++;
 									continue;
@@ -2437,7 +2448,7 @@ void parseData(const char* payload)
 								}
 								tempNewCraft.callsign = tempNewCraft.callsignArray; // Set the callsign
 
-
+								feedWatchdog();
 								const char* name = SpacecraftData::callsignToName(target);
 
 								if (name == nullptr) {
@@ -2482,6 +2493,7 @@ void parseData(const char* payload)
 
 
 								/* Look for craft signals */
+								feedWatchdog();
 								FoundSignals foundSignals = findSignals(xmlDish, &tempNewCraft);
 
 								// No signals found
@@ -2514,6 +2526,7 @@ void parseData(const char* payload)
 								if (FileUtils::config.debugUtils.showSerial == true)
 									Serial.println("assign values to craft semaphore");
 
+								feedWatchdog();
 								CraftQueueItem* newCraft = assignValuesToCraftSemaphore(&tempNewCraft);
 
 								if (FileUtils::config.debugUtils.showSerial == true)
@@ -2529,6 +2542,7 @@ void parseData(const char* payload)
 
 									// Serial.println("free semaphore in target loop");
 									xSemaphoreGive(freeListMutex);
+									feedWatchdog();
 
 									break;
 								} else {
@@ -2538,7 +2552,7 @@ void parseData(const char* payload)
 									continue;
 								}
 
-
+								feedWatchdog();
 								break; // If somehow we got here, break out of the target loop
 							} // End target loop
 
@@ -2593,6 +2607,7 @@ void parseData(const char* payload)
 			// Serial.println("increment counters");
 			incrementDataParseCounter();
 			xSemaphoreGive(freeListMutex); // The semaphore must be freed when this function is retured
+			feedWatchdog();
 			return;
 		} else {
 			// There are no free items in the queue item pool
@@ -2605,9 +2620,11 @@ void parseData(const char* payload)
 
 		parseCounter++;
 		xSemaphoreGive(freeListMutex);
+		feedWatchdog();
 		return;
 	}
 	// Serial.println("fetch done");
+	feedWatchdog();
 }
 
 void logOutput(const char* color, const String& message) {
@@ -2688,9 +2705,11 @@ bool attemptHTTPConnection(const String& url) {
 		logOutput("red", "Failed to connect to server");
 		return false;
 	}
-	http.setTimeout(5000);
+	feedWatchdog();
+	http.setTimeout(3000);
 	http.addHeader("Content-Type", "text/xml");
 	int httpResponseCode = http.GET();
+	feedWatchdog();
 	return handleHttpResponse(httpResponseCode);
 }
 
@@ -2737,6 +2756,7 @@ bool fetchHTTPData(const String& url) {
 
 
 void fetchData() {
+	feedWatchdog();
 
 	if (FileUtils::config.debugUtils.testCores == true) {
 		Serial.print("fetchData() running on core " + String(xPortGetCoreID()) + "\n\n");
@@ -2773,6 +2793,7 @@ void fetchData() {
 	static char xmlDataBuffer[20480];  // 20KB buffer
 
 	if (dataFetched) {
+		feedWatchdog();
 		xmlFile = LittleFS.open("/temp.xml", "r");
 		if (!xmlFile) {
 			if (FileUtils::config.debugUtils.showSerial == true)
@@ -2793,6 +2814,8 @@ void fetchData() {
 			return;
 		}
 
+		feedWatchdog();
+
 		// Read the entire file into the buffer
 		xmlFile.readBytes(xmlDataBuffer, xmlFileSize);
 		xmlDataBuffer[xmlFileSize] = '\0'; // Null-terminate the string
@@ -2802,6 +2825,8 @@ void fetchData() {
 
 		if (FileUtils::config.debugUtils.showSerial == true)
 			Serial.println("[fetchData] XML file read and parsed.");
+
+		feedWatchdog();
 
 		// Now you can pass the XML data to the parseData function
 		parseData(xmlDataBuffer);
@@ -2813,13 +2838,28 @@ void fetchData() {
 		parseData(dummyXmlData); // Assuming dummyXmlData is a char array
 	}
 
-
 	if (!dataStarted) {
 		dataStarted = true;  // Set dataStarted to true after first data fetch
 	}
 
 	if (FileUtils::config.debugUtils.showSerial == true)
 		Serial.println("[fetchData] Finished.");
+
+	feedWatchdog();
+
+	if (!isWiFiConnected && wm.getWiFiIsSaved() == true) {
+		Serial.print("Trying to reconnect to WiFi \"" + String(wm.getWiFiSSID()) + "\"\n");
+
+		bool res = wm.autoConnect(FileUtils::config.wifiNetwork.apSSID, FileUtils::config.wifiNetwork.apPass);
+
+		if (!res) { // Wifi connection failed
+			Serial.print(String(dev.termColor("red")) + "Failed to reconnect to WiFi" + String(dev.termColor("reset")));
+		} else { // Wifi connection successful
+			char successStringBuffer[256];
+			snprintf(successStringBuffer, sizeof(successStringBuffer), "%sConnected to WiFi '%s' successfully%s\n", dev.termColor("green"), wm.getWiFiSSID(), dev.termColor("reset"));
+			Serial.print(successStringBuffer);
+		}
+	}
 
 	return;
 }
@@ -2833,8 +2873,11 @@ void getData(void* parameter) {
 	// Serial.print("high_water_mark:"); Serial.print(uxHighWaterMark); Serial.print("\n");
 
 	for (;;) {
+		feedWatchdog();
 		try {
-			// Send an HTTP POST request every 5 seconds
+			// Send an HTTP POST request every so many seconds
+			// Serial.println(String(millis()) + " - " + String(lastTime) + " - " + String(timerDelay));
+			// Serial.println("= " + String(millis() - lastTime));
 			if ((millis() - lastTime) > timerDelay) {
 				// Serial.println("getData() running");
 				if (uxQueueSpacesAvailable(queue) > 0) {
@@ -2843,16 +2886,20 @@ void getData(void* parameter) {
 					vTaskDelay(pdMS_TO_TICKS(100)); // Delay to allow other tasks to run
 
 					fetchData();
-					lastTime = millis(); // Sync reference variable for timer
+				} else {
+					// Serial.println("getData() queue is full");
+					vTaskDelay(pdMS_TO_TICKS(1000)); // Delay to allow other tasks to run
 				}
+
+				lastTime = millis(); // Sync reference variable for timer
 			}
 		}
 		catch (...) {
 			Serial.println("Error: getData() failed");
 			dev.handleException();
 		}
-	
-		vTaskDelay(pdMS_TO_TICKS(100)); // delay for 10 milliseconds to allow other tasks to run
+
+		vTaskDelay(pdMS_TO_TICKS(100)); // delay for 100 milliseconds to allow other tasks to run
 	}
 }
 
@@ -2868,6 +2915,8 @@ void getData(void* parameter) {
 * Runs once at startup */
 void setup()
 {
+	esp_task_wdt_init(60, true); // Enable watchdog timer with 60 second timeout
+
 	Serial.begin(115200); // Begin serial communications, ESP32 uses 115200 rate
 
 	DevUtils::SerialBanners::printBootSplashBanner(); // Display fancy splash ASCII graphics
@@ -2914,11 +2963,12 @@ void setup()
 
 	// Reset settings - wipe stored credentials for testing
 	// wm.resetSettings();
+	wm.setDebugOutput(true);
 
-	if (FileUtils::config.debugUtils.showSerial == false) {
-		Serial.setDebugOutput(false);
-		wm.setDebugOutput(false);
-	}
+	// if (FileUtils::config.debugUtils.showSerial == false) {
+	// 	Serial.setDebugOutput(false);
+	// 	wm.setDebugOutput(false);
+	// }
 
 	if (FileUtils::config.debugUtils.testCores == true) {
 		Serial.print("setup() running on core " + String(xPortGetCoreID()) + "\n\n");

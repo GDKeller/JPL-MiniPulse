@@ -20,7 +20,7 @@ void SpacecraftData::loadJson() {
     delay(100);
 };
 
-
+// Create and write spacecraft names file
 void SpacecraftData::createAndWriteNamesFile() {
     if (LittleFS.exists("/spacecraft_data/names.json")) {
         Serial.println("names.json already exists");
@@ -142,7 +142,6 @@ void SpacecraftData::createAndWriteNamesFile() {
     }
 }
 
-
 // Load spacecraft Names
 void SpacecraftData::loadSpacecraftNamesFile()
 {
@@ -182,180 +181,6 @@ void SpacecraftData::loadSpacecraftNamesFile()
     Serial.print("\n\n");
 
 }
-
-// void SpacecraftData::loadSpacecraftNamesProgmem()
-// {
-//     /* Memory warning!
-//      * The values cannot be longer than 100 characters, or there will be a fatal error.
-//      * The memory for this variable for animation function is statically allocated
-//      */
-
-//     static const char spacecraftNamesJsonRaw[] = PROGMEM R"RAW-NAMES(
-//         {
-//             "ACE": "Advanced Composition Explorer",
-//             "PLC": "Akatsuki",
-//             "ARGO": "ArgoMoon",
-//             "BIOS": "BioSentinel",
-//             "CHDR": "Chandra Xray Observatory",
-//             "CH2": "Chandrayaan 2",
-//             "CUE3": "CU Earth Escape Explorer",
-//             "CuSP": "CubeSat-Observation of Solar Particles",
-//             "DART": "DART",
-//             "unknown10": "Dragonfly",
-//             "DSCO": "Deep Space Climate Observatory",
-//             "EMM": "Emirates Mars Mission",
-//             "EQUL": "EQUilibriUm Lunar-Earth Spacecraft",
-//             "EURC": "Europa Clipper",
-//             "RSP": "ExoMars Rover",
-//             "GAIA": "Gaia",
-//             "GTL": "Geotail",
-//             "HYB2": "Hayabusa 2",
-//             "EM1": "Artemis 1",
-//             "EM2": "Artemis 2",
-//             "EM3": "Artemis 3",
-//             "NSYT": "InSight",
-//             "JWST": "James Webb Space Telescope",
-//             "JNO": "Juno",
-//             "KPLO": "Korea Pathfinder Lunar Orbiter",
-//             "LICI": "LICIA Cube",
-//             "LND1": "Lunar Node 1",
-//             "LUCY": "Lucy",
-//             "LFL": "Lunar Flashlight",
-//             "HMAP": "Lunar Hydrogen Mapper",
-//             "LRO": "Lunar Reconnaissance Orbiter",
-//             "MMS1": "Magnetospheric MultiScale Formation Flyer 1",
-//             "MMS2": "Magnetospheric MultiScale Formation Flyer 2",
-//             "MMS3": "Magnetospheric MultiScale Formation Flyer 3",
-//             "MMS4": "Magnetospheric MultiScale Formation Flyer 4",
-//             "M01O": "Mars Odyssey",
-//             "M20": "Mars 2020",
-//             "MVN": "MAVEN",
-//             "MEX": "Mars Express",
-//             "MOM": "Mars Orbiter",
-//             "MRO": "Mars Reconnaissance Orbiter",
-//             "MSL": "Curiosity",
-//             "MLI": "Morehead Lunar Ice Cube",
-//             "NEAS": "Near Earth Asteroid Scout",
-//             "NHPC": "New Horizons",
-//             "ORX": "OSIRIS REx",
-//             "OMOT": "OMOTENASHI",
-//             "PSYC": "Psyche",
-//             "SOHO": "Solar and Heliospheric Observatory",
-//             "SPP": "Parker Solar Probe",
-//             "STA": "STEREO A",
-//             "TESS": "Transiting Exoplanet Survey Satellite",
-//             "TGO": "ExoMars Trace Gas Orbiter",
-//             "THB": "THEMIS B",
-//             "THC": "THEMIS C",
-//             "TM": "TeamMiles",
-//             "VGR1": "Voyager 1",
-//             "VGR2": "Voyager 2",
-//             "WIND": "Wind",
-//             "XMM": "XMM Newton",
-//             "ATOT": "Advanced Tracking and Observational Techniques",
-//             "EGS": "EVN and Global Sevices",
-//             "GBRA": "Ground Based Radio Astronomy",
-//             "GSSR": "Goldstone Solar System Radar",
-//             "GVRT": "Goldstone Apple Valley Radio Telescope",
-//             "SGP": "Space Geodesy Program",
-//             "TDR6": "Tracking and Data Relay Satellites (TDRS)",
-//             "TDR7": "Tracking and Data Relay Satellites (TDRS)",
-//             "TDR8": "Tracking and Data Relay Satellites (TDRS)",
-//             "TDR9": "Tracking and Data Relay Satellites (TDRS)",
-//             "TD10": "Tracking and Data Relay Satellites (TDRS)",
-//             "TD11": "Tracking and Data Relay Satellites (TDRS)",
-//             "TD12": "Tracking and Data Relay Satellites (TDRS)",
-//             "TD13": "Tracking and Data Relay Satellites (TDRS)",
-//             "Rate1": "Test Rate 1",
-//             "Rate2": "Test Rate 2",
-//             "Rate3": "Test Rate 3",
-//             "Rate4": "Test Rate 4",
-//             "Rate5": "Test Rate 5",
-//             "Rate6": "Test Rate 6"
-//         }
-//     )RAW-NAMES";
-
-
-//     // Check if JSON is too large
-//     if (strlen_P(spacecraftNamesJsonRaw) > 5120) {
-//         Serial.print(DevUtils::termColor("red") + "Raw names JSON is too large" + DevUtils::termColor("reset") + "\n");
-//         return;
-//     }
-
-//     // Make sure there is enough heap memory to load names
-//     if (ESP.getFreeHeap() < 5120) {
-//         Serial.print(DevUtils::termColor("red") + "Not enough heap memory to load names" + DevUtils::termColor("reset") + "\n");
-//         return;
-//     }
-
-//     // Initialize buffer
-//     char buffer[5120];
-//     if (!buffer) {
-//         Serial.print(DevUtils::termColor("red") + "Failed to allocate memory for buffer" + DevUtils::termColor("reset") + "\n");
-//         return;
-//     }
-
-//     // Copy raw JSON to buffer
-//     strncpy_P(buffer, spacecraftNamesJsonRaw, 5119);
-//     buffer[5119] = '\0';
-
-
-//     DeserializationError error = deserializeJson(spacecraftNamesJson, buffer);
-
-//     if (error) {
-//         Serial.print(DevUtils::termColor("red") + "Failed trying to deserialize names raw JSON with error: " + error.c_str() + DevUtils::termColor("reset") + "\n");
-//         return;
-//     }
-//     Serial.print(DevUtils::termColor("green") + "Spacecraft callsigns loaded" + DevUtils::termColor("reset") + "\n");
-//     Serial.println("Rate1: " + spacecraftNamesJson["Rate1"].as<String>());
-//     Serial.print("\n\n");
-// }
-
-
-// Load spacecraft blacklist
-// void SpacecraftData::loadSpacecraftBlacklistProgmem() {
-//     static const char spacecraftBlacklistJsonRaw[] = PROGMEM R"RAW-BLACKLIST(
-//         {
-//             "TEST": true,
-//             "DSN": true,
-//             "RFC(VLBI)": true
-//         }
-//     )RAW-BLACKLIST";
-
-//     // Check if JSON is too large
-//     if (strlen_P(spacecraftBlacklistJsonRaw) > 1024) {
-//         Serial.print(DevUtils::termColor("red") + "Raw blacklist JSON is too large" + DevUtils::termColor("reset") + "\n");
-//         return;
-//     }
-
-//     // Make sure there is enough heap memory to load blacklist
-//     if (ESP.getFreeHeap() < 1024) {
-//         Serial.print(DevUtils::termColor("red") + "Not enough heap memory to load blacklist" + DevUtils::termColor("reset") + "\n");
-//         return;
-//     }
-
-//     // Initialize buffer
-//     char buffer[1024];
-//     if (!buffer) {
-//         Serial.print(DevUtils::termColor("red") + "Failed to allocate memory for buffer" + DevUtils::termColor("reset") + "\n");
-//         return;
-//     }
-
-//     // Copy raw JSON to buffer
-//     strncpy_P(buffer, spacecraftBlacklistJsonRaw, 1023);
-//     buffer[1023] = '\0';
-
-
-//     DeserializationError error = deserializeJson(spacecraftBlacklistJson, buffer);
-
-//     if (error) {
-//         if (FileUtils::config.debugUtils.showSerial)
-//             Serial.print(DevUtils::termColor("red") + "Failed trying to deserialize blacklist raw JSON with error: " + error.c_str() + DevUtils::termColor("reset") + "\n");
-
-//         return;
-//     }
-//     Serial.print(DevUtils::termColor("green") + "Spacecraft blacklist loaded" + DevUtils::termColor("reset") + "\n");
-// }
 
 void SpacecraftData::createAndWriteBlacklistFile() {
     if (LittleFS.exists("/spacecraft_data/blacklist.json")) {
@@ -725,22 +550,23 @@ const char* SpacecraftData::callsignToName(const char* key) {
     bool showSerial = FileUtils::config.debugUtils.showSerial;
 
     if (showSerial) {
-        Serial.print("\n\n---------------------\n");
-        Serial.print("-- Spacecraft Names --\n");
+        Serial.print("\n\n------------------------------\n");
+        Serial.print("*  Spacecraft Names  *\n");
+        Serial.print("------------------------------\n");
     }
     
-    File jsonFile = LittleFS.open("/spacecraft_data/names.json", "r");
+    // File jsonFile = LittleFS.open("/spacecraft_data/names.json", "r");
 
-    if (jsonFile) {
-        if (showSerial)
-            Serial.println("File \"names.json\" opened");
-    } else {
-        if (showSerial)
-            Serial.println(DevUtils::termColor("red") + "Failed to open names.json" + DevUtils::termColor("reset") + "\n");
-    }
+    // if (jsonFile) {
+    //     if (showSerial)
+    //         Serial.println("File \"names.json\" opened");
+    // } else {
+    //     if (showSerial)
+    //         Serial.println(DevUtils::termColor("red") + "Failed to open names.json" + DevUtils::termColor("reset") + "\n");
+    // }
     
-    DeserializationError error = deserializeJson(spacecraftNamesJson, jsonFile);
-    jsonFile.close();
+    // DeserializationError error = deserializeJson(spacecraftNamesJson, jsonFile);
+    // jsonFile.close();
 
     // print every key in spacecraftNamesJson
     // for (JsonPair kv : spacecraftNamesJson.as<JsonObject>()) {
@@ -749,21 +575,25 @@ const char* SpacecraftData::callsignToName(const char* key) {
     // }
 
     if (showSerial) {
-        Serial.print("-----\n\n");
-        Serial.println("Checking names lookup for " + String(key) + "...");
+        Serial.print(
+            DevUtils::termColor("bg_bright_black") +
+            ">>> Checking names lookup for " +
+            String(key) +
+            "..." +
+            DevUtils::termColor("reset") +
+            "\n"
+        );
     }
 
     if (spacecraftNamesJson.containsKey(key)) {
         if (showSerial)
-            Serial.println("Found spacecraft name for " + String(key));
-
+            Serial.print(DevUtils::termColor("green") + "Found spacecraft name for " + String(key) + DevUtils::termColor("reset") + "\n");
         const char* spacecraftName = spacecraftNamesJson[key];
         return spacecraftName;
     }
 
     if (showSerial) {
-        Serial.println("Spacecraft name not found for " + String(key));
-        Serial.print("\n\n");
+        Serial.print(DevUtils::termColor("red") + "Spacecraft name not found for " + String(key) + DevUtils::termColor("reset") + "\n");
     }
 
     // Spacecraft name not found, return the callsign
@@ -776,31 +606,40 @@ bool SpacecraftData::checkBlacklist(const char* key) {
     bool showSerial = FileUtils::config.debugUtils.showSerial;
 
     if (showSerial) {
-        Serial.print("\n\n---------------------\n");
-        Serial.print("-- Spacecraft Blacklist --\n");
+        Serial.print("\n\n------------------------------\n");
+        Serial.print("*  Spacecraft Blacklist  *\n");
+        Serial.print("------------------------------\n");
     }
 
-    File jsonFile = LittleFS.open("/spacecraft_data/blacklist.json", "r");
+    // File jsonFile = LittleFS.open("/spacecraft_data/blacklist.json", "r");
 
-    if (jsonFile) {
-        if (showSerial)
-            Serial.println("File \"blacklist.json\" opened");
-    } else {
-        if (showSerial)
-            Serial.println(DevUtils::termColor("red") + "Failed to open blacklist.json" + DevUtils::termColor("reset") + "\n");
-    }
+    // if (jsonFile) {
+    //     if (showSerial)
+    //         Serial.println("File \"blacklist.json\" opened");
+    // } else {
+    //     if (showSerial)
+    //         Serial.println(DevUtils::termColor("red") + "Failed to open blacklist.json" + DevUtils::termColor("reset") + "\n");
+    // }
     
-    // put jsonFile into jsonBuffer
-    DeserializationError error = deserializeJson(spacecraftBlacklistJson, jsonFile);
-    jsonFile.close();
+    // // put jsonFile into jsonBuffer
+    // DeserializationError error = deserializeJson(spacecraftBlacklistJson, jsonFile);
+    // jsonFile.close();
 
-    if (showSerial)
-        Serial.print("-----\n\n");
+    // if (showSerial)
+        // Serial.print("-----\n");
 
     bool isBlacklisted = spacecraftBlacklistJson[key] != nullptr ? true : false; // If the key is not null, it is blacklisted
 
     if (showSerial)
-        Serial.println(DevUtils::termColor("bg_bright_black") + ">>> Checking blacklist for " + String(key) + ": " + (isBlacklisted ? "true" : "false") + DevUtils::termColor("reset") + "\n");
+        Serial.print(
+            DevUtils::termColor("bg_bright_black") +
+            ">>> Checking blacklist for " +
+            String(key) +
+            ": " + 
+            isBlacklisted ? "true" : "false" +
+            DevUtils::termColor("reset") +
+            "\n"
+        );
 
     vTaskDelay(pdMS_TO_TICKS(500)); // Delay to allow JSON file to be closed so the next load doesn't look in cache
     return spacecraftBlacklistJson[key] != nullptr ? true : false;
@@ -809,28 +648,29 @@ bool SpacecraftData::checkBlacklist(const char* key) {
 
 /* Get placeholder rate */
 const char* SpacecraftData::getPlaceholderRate(const char* key) {
+
     bool showSerial = FileUtils::config.debugUtils.showSerial;
 
     // Look for key in JSON
-    File jsonFile = LittleFS.open("/spacecraft_data/placeholder_rates.json", "r");
+    // File jsonFile = LittleFS.open("/spacecraft_data/placeholder_rates.json", "r");
 
-    if (showSerial) {
-        if (jsonFile) {
-            Serial.println("File \"placeholder_rates.json\" opened");
-        } else {
-            Serial.println(DevUtils::termColor("red") + "Failed to open placeholder_rates.json" + DevUtils::termColor("reset") + "\n");
-        }
-    }
+    // if (showSerial) {
+    //     if (jsonFile) {
+    //         Serial.println("File \"placeholder_rates.json\" opened");
+    //     } else {
+    //         Serial.println(DevUtils::termColor("red") + "Failed to open placeholder_rates.json" + DevUtils::termColor("reset") + "\n");
+    //     }
+    // }
 
-    // put jsonFile into jsonBuffer
-    DeserializationError error = deserializeJson(spacecraftPlaceholderRatesJson, jsonFile);
-    jsonFile.close();
+    // // put jsonFile into jsonBuffer
+    // DeserializationError error = deserializeJson(spacecraftPlaceholderRatesJson, jsonFile);
+    // // jsonFile.close();
 
-    if (error) {
-        if (showSerial)
-            Serial.print(DevUtils::termColor("red") + "Failed trying to deserialize placeholder_rates.json with error: " + error.c_str() + DevUtils::termColor("reset") + "\n");
-        return "1.000e+03";
-    }
+    // if (error) {
+    //     if (showSerial)
+    //         Serial.print(DevUtils::termColor("red") + "Failed trying to deserialize placeholder_rates.json with error: " + error.c_str() + DevUtils::termColor("reset") + "\n");
+    //     return "1.000e+03";
+    // }
 
     // print all keys in jsonBuffer
     // Serial.println("Printing all keys in jsonBuffer...");
@@ -842,30 +682,35 @@ const char* SpacecraftData::getPlaceholderRate(const char* key) {
     
     if (spacecraftPlaceholderRatesJson.containsKey(key)) {
         if (showSerial)
-            Serial.println("Found spacecraft rate for " + String(key));
+            Serial.println(DevUtils::termColor("green") +  "Found spacecraft rate for " + String(key) + DevUtils::termColor("reset") + "\n\n");
         
         // Get JsonVariant at key
         JsonVariant variant = spacecraftPlaceholderRatesJson[key];
 
         // Check if the JsonVariant is an array
         if (variant.is<JsonArray>()) {
-            if (showSerial)
-                Serial.println("It's an array");
             JsonArray arr = variant.as<JsonArray>();
 
             // Generate a random index within the bounds of the array using random8
             int randomIndex = random8(arr.size());
 
-            if (showSerial)
-                Serial.println("Random index: " + String(randomIndex));
-
-            // print all items in array
             if (showSerial) {
+                Serial.println("Choosing placeholder rate...");
+                // Serial.println("Random index: " + String(randomIndex));
+                // Serial.println("Array size: " + String(arr.size()));
+
+                // print all items in array
+                uint8_t placeholderCounter = 0;
                 for (JsonVariant v : arr) {
+                    if (placeholderCounter == randomIndex) {
+                        Serial.print("> ");
+                    } else {
+                        Serial.print("  ");
+                    }
                     Serial.println(v.as<String>());
+                    placeholderCounter++;
                 }
                 Serial.print("\n\n");
-                Serial.println("Array size: " + String(arr.size()));
             }
 
             // Get the rate at the random index
@@ -885,8 +730,187 @@ const char* SpacecraftData::getPlaceholderRate(const char* key) {
     }
 
     if (showSerial)
-        Serial.println("Spacecraft rate not found for " + String(key));
+        Serial.println(DevUtils::termColor("red") + "Spacecraft rate not found for " + String(key) + DevUtils::termColor("reset") + "\n\n");
 
     // Spacecraft rate not found, return the default rate
     return "1.000e+03";
 }
+
+
+
+
+
+
+// void SpacecraftData::loadSpacecraftNamesProgmem()
+// {
+//     /* Memory warning!
+//      * The values cannot be longer than 100 characters, or there will be a fatal error.
+//      * The memory for this variable for animation function is statically allocated
+//      */
+
+//     static const char spacecraftNamesJsonRaw[] = PROGMEM R"RAW-NAMES(
+//         {
+//             "ACE": "Advanced Composition Explorer",
+//             "PLC": "Akatsuki",
+//             "ARGO": "ArgoMoon",
+//             "BIOS": "BioSentinel",
+//             "CHDR": "Chandra Xray Observatory",
+//             "CH2": "Chandrayaan 2",
+//             "CUE3": "CU Earth Escape Explorer",
+//             "CuSP": "CubeSat-Observation of Solar Particles",
+//             "DART": "DART",
+//             "unknown10": "Dragonfly",
+//             "DSCO": "Deep Space Climate Observatory",
+//             "EMM": "Emirates Mars Mission",
+//             "EQUL": "EQUilibriUm Lunar-Earth Spacecraft",
+//             "EURC": "Europa Clipper",
+//             "RSP": "ExoMars Rover",
+//             "GAIA": "Gaia",
+//             "GTL": "Geotail",
+//             "HYB2": "Hayabusa 2",
+//             "EM1": "Artemis 1",
+//             "EM2": "Artemis 2",
+//             "EM3": "Artemis 3",
+//             "NSYT": "InSight",
+//             "JWST": "James Webb Space Telescope",
+//             "JNO": "Juno",
+//             "KPLO": "Korea Pathfinder Lunar Orbiter",
+//             "LICI": "LICIA Cube",
+//             "LND1": "Lunar Node 1",
+//             "LUCY": "Lucy",
+//             "LFL": "Lunar Flashlight",
+//             "HMAP": "Lunar Hydrogen Mapper",
+//             "LRO": "Lunar Reconnaissance Orbiter",
+//             "MMS1": "Magnetospheric MultiScale Formation Flyer 1",
+//             "MMS2": "Magnetospheric MultiScale Formation Flyer 2",
+//             "MMS3": "Magnetospheric MultiScale Formation Flyer 3",
+//             "MMS4": "Magnetospheric MultiScale Formation Flyer 4",
+//             "M01O": "Mars Odyssey",
+//             "M20": "Mars 2020",
+//             "MVN": "MAVEN",
+//             "MEX": "Mars Express",
+//             "MOM": "Mars Orbiter",
+//             "MRO": "Mars Reconnaissance Orbiter",
+//             "MSL": "Curiosity",
+//             "MLI": "Morehead Lunar Ice Cube",
+//             "NEAS": "Near Earth Asteroid Scout",
+//             "NHPC": "New Horizons",
+//             "ORX": "OSIRIS REx",
+//             "OMOT": "OMOTENASHI",
+//             "PSYC": "Psyche",
+//             "SOHO": "Solar and Heliospheric Observatory",
+//             "SPP": "Parker Solar Probe",
+//             "STA": "STEREO A",
+//             "TESS": "Transiting Exoplanet Survey Satellite",
+//             "TGO": "ExoMars Trace Gas Orbiter",
+//             "THB": "THEMIS B",
+//             "THC": "THEMIS C",
+//             "TM": "TeamMiles",
+//             "VGR1": "Voyager 1",
+//             "VGR2": "Voyager 2",
+//             "WIND": "Wind",
+//             "XMM": "XMM Newton",
+//             "ATOT": "Advanced Tracking and Observational Techniques",
+//             "EGS": "EVN and Global Sevices",
+//             "GBRA": "Ground Based Radio Astronomy",
+//             "GSSR": "Goldstone Solar System Radar",
+//             "GVRT": "Goldstone Apple Valley Radio Telescope",
+//             "SGP": "Space Geodesy Program",
+//             "TDR6": "Tracking and Data Relay Satellites (TDRS)",
+//             "TDR7": "Tracking and Data Relay Satellites (TDRS)",
+//             "TDR8": "Tracking and Data Relay Satellites (TDRS)",
+//             "TDR9": "Tracking and Data Relay Satellites (TDRS)",
+//             "TD10": "Tracking and Data Relay Satellites (TDRS)",
+//             "TD11": "Tracking and Data Relay Satellites (TDRS)",
+//             "TD12": "Tracking and Data Relay Satellites (TDRS)",
+//             "TD13": "Tracking and Data Relay Satellites (TDRS)",
+//             "Rate1": "Test Rate 1",
+//             "Rate2": "Test Rate 2",
+//             "Rate3": "Test Rate 3",
+//             "Rate4": "Test Rate 4",
+//             "Rate5": "Test Rate 5",
+//             "Rate6": "Test Rate 6"
+//         }
+//     )RAW-NAMES";
+
+
+//     // Check if JSON is too large
+//     if (strlen_P(spacecraftNamesJsonRaw) > 5120) {
+//         Serial.print(DevUtils::termColor("red") + "Raw names JSON is too large" + DevUtils::termColor("reset") + "\n");
+//         return;
+//     }
+
+//     // Make sure there is enough heap memory to load names
+//     if (ESP.getFreeHeap() < 5120) {
+//         Serial.print(DevUtils::termColor("red") + "Not enough heap memory to load names" + DevUtils::termColor("reset") + "\n");
+//         return;
+//     }
+
+//     // Initialize buffer
+//     char buffer[5120];
+//     if (!buffer) {
+//         Serial.print(DevUtils::termColor("red") + "Failed to allocate memory for buffer" + DevUtils::termColor("reset") + "\n");
+//         return;
+//     }
+
+//     // Copy raw JSON to buffer
+//     strncpy_P(buffer, spacecraftNamesJsonRaw, 5119);
+//     buffer[5119] = '\0';
+
+
+//     DeserializationError error = deserializeJson(spacecraftNamesJson, buffer);
+
+//     if (error) {
+//         Serial.print(DevUtils::termColor("red") + "Failed trying to deserialize names raw JSON with error: " + error.c_str() + DevUtils::termColor("reset") + "\n");
+//         return;
+//     }
+//     Serial.print(DevUtils::termColor("green") + "Spacecraft callsigns loaded" + DevUtils::termColor("reset") + "\n");
+//     Serial.println("Rate1: " + spacecraftNamesJson["Rate1"].as<String>());
+//     Serial.print("\n\n");
+// }
+
+
+// Load spacecraft blacklist
+// void SpacecraftData::loadSpacecraftBlacklistProgmem() {
+//     static const char spacecraftBlacklistJsonRaw[] = PROGMEM R"RAW-BLACKLIST(
+//         {
+//             "TEST": true,
+//             "DSN": true,
+//             "RFC(VLBI)": true
+//         }
+//     )RAW-BLACKLIST";
+
+//     // Check if JSON is too large
+//     if (strlen_P(spacecraftBlacklistJsonRaw) > 1024) {
+//         Serial.print(DevUtils::termColor("red") + "Raw blacklist JSON is too large" + DevUtils::termColor("reset") + "\n");
+//         return;
+//     }
+
+//     // Make sure there is enough heap memory to load blacklist
+//     if (ESP.getFreeHeap() < 1024) {
+//         Serial.print(DevUtils::termColor("red") + "Not enough heap memory to load blacklist" + DevUtils::termColor("reset") + "\n");
+//         return;
+//     }
+
+//     // Initialize buffer
+//     char buffer[1024];
+//     if (!buffer) {
+//         Serial.print(DevUtils::termColor("red") + "Failed to allocate memory for buffer" + DevUtils::termColor("reset") + "\n");
+//         return;
+//     }
+
+//     // Copy raw JSON to buffer
+//     strncpy_P(buffer, spacecraftBlacklistJsonRaw, 1023);
+//     buffer[1023] = '\0';
+
+
+//     DeserializationError error = deserializeJson(spacecraftBlacklistJson, buffer);
+
+//     if (error) {
+//         if (FileUtils::config.debugUtils.showSerial)
+//             Serial.print(DevUtils::termColor("red") + "Failed trying to deserialize blacklist raw JSON with error: " + error.c_str() + DevUtils::termColor("reset") + "\n");
+
+//         return;
+//     }
+//     Serial.print(DevUtils::termColor("green") + "Spacecraft blacklist loaded" + DevUtils::termColor("reset") + "\n");
+// }
