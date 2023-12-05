@@ -283,6 +283,7 @@ WiFiManagerParameter param_brightness;		   // global param ( for non blocking w 
 // WiFiManagerParameter field_meteor_tail_decay;  // global param ( for non blocking w params )
 // WiFiManagerParameter field_meteor_tail_random; // global param ( for non blocking w params )
 // WiFiManagerParameter field_global_fps;
+WiFiManagerParameter param_force_dummy_data;
 WiFiManagerParameter param_show_serial;
 WiFiManagerParameter param_show_diagnostics;
 WiFiManagerParameter param_force_animation_type;
@@ -855,82 +856,10 @@ String getParam(String name)
 	return value;
 }
 
-// void saveParamsCallback()
-// {
-// 	try {
-// 		String colorTheme = getParam("customfieldid");
-// 		String inputXmlData = getParam("xml_data_radio");
-// 		String inputGlobalBrightness = getParam("global_brightness");
-// 		String inputShowSerial = getParam("show_serial");
-// 		String inputScrollLettersDelay = getParam("scroll_letters_delay");
-// 		// String inputMeteorTailDecay = getParam("meteorDecay");
-// 		// String inputMeteorTailRandom = getParam("meteorRandom");
-// 		// String inputGlobalFps = getParam("globalFps");
-// 		const int colorThemeId = atoi(colorTheme.c_str());
-// 		const int inputXmlDataValue = atoi(inputXmlData.c_str());
-// 		const int inputGlobalBrightnessValue = atoi(inputGlobalBrightness.c_str());
-// 		const int inputShowSerialValue = strcmp(inputShowSerial.c_str(), "on") == 0 ? 1 : 0;
-// 		const int inputScrollLettersDelayValue = atoi(inputScrollLettersDelay.c_str());
-
-// 		const int inputMeteorTailDecayValue = strcmp(inputMeteorTailDecay.c_str(), "on") == 0 ? 1 : 0;
-// 		// const int inputMeteorTailRandomValue = strcmp(inputMeteorTailRandom.c_str(), "on") == 0 ? 1 : 0;
-// 		// const int inputGlobalFpsValue = atoi(inputGlobalFps.c_str());
-
-// 		Serial.println("[CALLBACK] saveParamsCallback fired");
-// 		Serial.print("PARAM customfieldid = ");
-// 		Serial.println(colorTheme);
-// 		Serial.print("PARAM xml_data_radio = ");
-// 		Serial.println(inputXmlData);
-// 		Serial.print("PARAM global_brightness = ");
-// 		Serial.println(inputGlobalBrightness);
-// 		Serial.print("PARAM show_serial = ");
-// 		Serial.println(inputShowSerial);
-// 		Serial.print("PARAM scroll_letters_delay = ");
-// 		Serial.println(inputScrollLettersDelay);
-// 		// Serial.print("PARAM meteorDecay = ");
-// 		// Serial.println(inputMeteorTailDecay);
-// 		// Serial.print("PARAM meteorDecay = ");
-// 		// Serial.println(inputMeteorTailDecayValue);
-// 		// Serial.print("PARAM meteorDecay = ");
-// 		// Serial.println(inputMeteorTailRandom);
-// 		// Serial.print("PARAM meteorRandom = ");
-// 		// Serial.println(inputMeteorTailRandomValue);
-// 		// Serial.print("PARAM globalFps = ");
-// 		// Serial.println(inputGlobalFpsValue);
-
-// 		setColorTheme(colorThemeId);
-// 		setXmlData(inputXmlDataValue);
-// 		setGlobalBrightness(inputGlobalBrightnessValue);
-// 		FileUtils::config.debugUtils.showSerial = inputShowSerialValue;
-
-// 		setAnimationParams(inputGlobalFpsValue, inputMeteorTailDecayValue, inputMeteorTailRandomValue);
-
-// 		DynamicJsonDocument doc(1024);
-// 		doc["value"] = colorThemeId;
-// 		JsonVariant colorThemeVariant = doc["value"];
-
-// 		doc["value"] = inputGlobalBrightnessValue;
-// 		JsonVariant brightnessVariant = doc["value"];
-
-// 		doc["value"] = inputShowSerialValue;
-// 		JsonVariant showSerialVariant = doc["value"];
-
-// 		std::vector<std::pair<String, JsonVariant>> updates = {
-// 			{"colorTheme", colorThemeVariant},
-// 			{"brightness", brightnessVariant},
-// 			{"showSerial", showSerialVariant},
-// 		};
-// 		// FileUtils::saveUserConfig(updates);
-// 	}
-// 	catch (...) {
-// 		dev.handleException();
-// 	}
-// }
-
 void saveParamsCallback() {
 	Serial.print("\n\n<--------- PORTAL FORM SUBMITTED --------->\n\n");
 
-	/* Set serial show config key from input */
+	/* SHOW SERIAL - Set serial show config key from input */
 	// Get input value
 	String showSerialValue = getParam("show_serial");
 	Serial.print("---\nshow_serial input: " + showSerialValue + "\n");
@@ -950,7 +879,7 @@ void saveParamsCallback() {
 	Serial.println();
 
 
-	/* Set show diagnostics config key from input */
+	/* SHOW DIAGNOSTICS - Set show diagnostics config key from input */
 	// Get input value
 	String showDiagnosticsValue = getParam("show_diagnostics");
 	Serial.print("---\nshow_diagnostics input: " + showDiagnosticsValue + "\n");
@@ -970,7 +899,7 @@ void saveParamsCallback() {
 	Serial.println();
 
 
-	/* Set forced animaiton type from input */
+	/* FORCE ANIMATION TYPE - Set forced animaiton type from input */
 	// Get input value
 	String forcedAnimationTypeValue = getParam("force_animation_type");
 	Serial.print("---\nforced_animation_type input: " + forcedAnimationTypeValue + "\n");
@@ -981,8 +910,7 @@ void saveParamsCallback() {
 	Serial.println("New forcedAnimationType: " + String(animate.forcedAnimationType));
 
 
-	/* Set brightness config key from input */
-
+	/* BRIGHTNESS - Set brightness config key from input */
 	// Get input value
 	String brightnessValue = getParam("brightness");
 	Serial.print("---\nbrightness input: " + brightnessValue + "\n");
@@ -1005,6 +933,28 @@ void saveParamsCallback() {
 
 	// Set LEDs brightness	
 	setGlobalBrightness(FileUtils::config.displayLED.brightness);
+
+
+	/* FORCE DUMMY DATA - Set forceDummyData config key from input */
+	// Get input value
+	String forceDummyDataInputValue = getParam("force_dummy_data");
+	Serial.print("---\nforceDummyData input: " + forceDummyDataInputValue + "\n");
+
+	// Convert to int
+	int forceDummyDataInt = atoi(forceDummyDataInputValue.c_str());
+
+	// Set program config
+	Serial.print("Previous config forceDummyData: " + String(FileUtils::config.wifiNetwork.forceDummyData) + "\n");
+	FileUtils::config.wifiNetwork.forceDummyData = forceDummyDataInt;
+	Serial.print("New config forceDummyData: " + String(FileUtils::config.wifiNetwork.forceDummyData) + "\n");
+
+	// Set file config
+	FileUtils::writeConfigFileBool("forceDummyData", FileUtils::config.wifiNetwork.forceDummyData);
+	FileUtils::readFile("/config.json");
+	Serial.println();
+
+	// Set forceDummyData
+	forceDummyData = FileUtils::config.wifiNetwork.forceDummyData;
 
 
 	Serial.print("\n<--------- END PORTAL FORM CALLBACK --------->\n\n");
@@ -2629,8 +2579,8 @@ void parseData(const char* payload)
 
 void logOutput(const char* color, const String& message) {
 	if (FileUtils::config.debugUtils.showSerial == true) {
-		String resetColorString = dev.termColor("reset");
-		String coloredMessageString = dev.termColor(color);
+		String resetColorString = DevUtils::termColor("reset");
+		String coloredMessageString = DevUtils::termColor(color);
 
 		const char* resetColor = resetColorString.c_str();
 		const char* coloredMessage = coloredMessageString.c_str();
@@ -2652,10 +2602,10 @@ void logOutput(const char* color, const String& message) {
 
 bool isWiFiConnected() {
 	if (WiFi.status() == WL_CONNECTED) {
-		logOutput("", "WiFi Connected");
+		logOutput("green", "WiFi Connected");
 		return true;
 	} else {
-		logOutput("", "WiFi Disconnected");
+		logOutput("red", "WiFi Disconnected");
 		return false;
 	}
 }
@@ -2702,7 +2652,7 @@ bool handleHttpResponse(uint16_t httpResponseCode) {
 
 bool attemptHTTPConnection(const String& url) {
 	if (!http.begin(url.c_str())) {
-		logOutput("red", "Failed to connect to server");
+		logOutput("red", "[!] Failed to connect to server");
 		return false;
 	}
 	feedWatchdog();
@@ -2808,7 +2758,7 @@ void fetchData() {
 
 		if (xmlFileSize > sizeof(xmlDataBuffer) - 1) {
 			if (FileUtils::config.debugUtils.showSerial == true)
-				Serial.println("[fetchData] XML file is too large for buffer.");
+				Serial.println(DevUtils::termColor("red") + "[fetchData] XML file is too large for buffer." + DevUtils::termColor("reset"));
 
 			xmlFile.close();
 			return;
@@ -2833,7 +2783,7 @@ void fetchData() {
 	} else {
 		// If no data was fetched, use dummy data
 		if (FileUtils::config.debugUtils.showSerial == true)
-			Serial.println("[fetchData] Using dummy data.");
+			Serial.println(DevUtils::termColor("blue") + "[fetchData] Using dummy data." + DevUtils::termColor("reset"));
 
 		parseData(dummyXmlData); // Assuming dummyXmlData is a char array
 	}
@@ -3050,12 +3000,20 @@ void setup()
 	new (&param_brightness) WiFiManagerParameter("brightness", "Brightness", String(FileUtils::config.displayLED.brightness).c_str(), 3, "type='range' min='8' max='160' step='1'");
 	wm.addParameter(&param_brightness);
 
+	new (&param_force_dummy_data) WiFiManagerParameter("force-dummy-data", "Force placeholder data", String(FileUtils::config.displayLED.brightness).c_str(), 3, "type='range' min='8' max='160' step='1'");
+	wm.addParameter(&param_force_dummy_data);
+
 	/* Developer Settings */
+	// Brightness
 	new (&param_show_serial) WiFiManagerParameter("show_serial", "Show Serial", FileUtils::config.debugUtils.showSerial ? "1" : "0", 1, "type='number' min='0' max='1' step='1'");
-	new (&param_show_diagnostics) WiFiManagerParameter("show_diagnostics", "Show Diagnostics", FileUtils::config.debugUtils.diagMeasure ? "1" : "0", 1, "type='number' min='0' max='1' step='1'");
-	new (&param_force_animation_type) WiFiManagerParameter("force_animation_type", "Force Animation Type", String(animate.forcedAnimationType).c_str(), 1, "type='number' min='0' max='5' step='1'");
 	wm.addParameter(&param_show_serial);
+
+	// Show graphing diagnostics
+	new (&param_show_diagnostics) WiFiManagerParameter("show_diagnostics", "Show Diagnostics", FileUtils::config.debugUtils.diagMeasure ? "1" : "0", 1, "type='number' min='0' max='1' step='1'");
 	wm.addParameter(&param_show_diagnostics);
+
+	// Force override animation type
+	new (&param_force_animation_type) WiFiManagerParameter("force_animation_type", "Force Animation Type", String(animate.forcedAnimationType).c_str(), 1, "type='number' min='0' max='5' step='1'");
 	wm.addParameter(&param_force_animation_type);
 
 	/* Custom */
@@ -3093,7 +3051,7 @@ void setup()
 		</script>
 	)---";
 
-	wm.setCustomHeadElement(update_button_html);
+	wm.setCustomHeadElement(update_button_html); // Add "Update Firmware" button to WiFi portal <head>
 
 
 
