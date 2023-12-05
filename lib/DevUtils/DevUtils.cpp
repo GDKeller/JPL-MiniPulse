@@ -23,14 +23,14 @@ String DevUtils::termColor(const char* color) {
         {"bright_white", "\e[0;97m"},
         
         // Background colors
-        {"bg_black", "\e[0;40m"},
-        {"bg_red", "\e[0;41m"},
-        {"bg_green", "\e[0;42m"},
-        {"bg_yellow", "\e[0;43m"},
-        {"bg_blue", "\e[0;44m"},
-        {"bg_purple", "\e[0;45m"},
-        {"bg_cyan", "\e[0;46m"},
-        {"bg_white", "\e[0;47m"},
+        {"bg_black", "\e[40m"},
+        {"bg_red", "\e[41m"},
+        {"bg_green", "\e[42m"},
+        {"bg_yellow", "\e[43m"},
+        {"bg_blue", "\e[44m"},
+        {"bg_purple", "\e[45m"},
+        {"bg_cyan", "\e[46m"},
+        {"bg_white", "\e[47m"},
         
         // Bright background colors
         {"bg_bright_black", "\e[0;100m"},
@@ -114,22 +114,25 @@ String DevUtils::repeatString(String input, int count) {
 }
 
 void DevUtils::SerialBanners::printBootSplashBanner() {
-    Serial.print("\n\n::::::::: ::::::::::: ::::::::::: ::::::::::: ::::::::::: ::::::::::: :::::::::\n\n");
-    Serial.println("  .  ..__. __..__.     ..__ .");
-    Serial.println("  |\\ |[__](__ [__]     |[__)|");
-    Serial.println("  | \\||  |.__)|  |  \\__||   |___");
-    Serial.print("\n");
-    Serial.println("   /$$      /$$ /$$           /$$ /$$$$$$$            /$$");
-    Serial.println("  | $$$    /$$$|__/          |__/| $$__  $$          | $$");
-    Serial.println("  | $$$$  /$$$$ /$$ /$$$$$$$  /$$| $$  \\ $$ /$$   /$$| $$  /$$$$$$$  /$$$$$$");
-    Serial.println("  | $$ $$/$$ $$| $$| $$__  $$| $$| $$$$$$$/| $$  | $$| $$ /$$_____/ /$$__  $$");
-    Serial.println("  | $$  $$$| $$| $$| $$  \\ $$| $$| $$____/ | $$  | $$| $$|  $$$$$$ | $$$$$$$$");
-    Serial.println("  | $$\\  $ | $$| $$| $$  | $$| $$| $$      | $$  | $$| $$ \\____  $$| $$_____/");
-    Serial.println("  | $$ \\/  | $$| $$| $$  | $$| $$| $$      |  $$$$$$/| $$ /$$$$$$$/|  $$$$$$$");
-    Serial.println("  |__/     |__/|__/|__/  |__/|__/|__/       \\______/ |__/|_______/  \\_______/");
-    Serial.print("\n");
-    Serial.print("::::::::: ::::::::::: ::::::::::: ::::::::::: ::::::::::: ::::::::::: :::::::::\n\n");
+    String output;
+
+    output += "\n\n::::::::: ::::::::::: ::::::::::: ::::::::::: ::::::::::: ::::::::::: :::::::::\n\n";
+    output += "  .  ..__. __..__.     ..__ .\n";
+    output += "  |\\ |[__](__ [__]     |[__)|\n";
+    output += "  | \\||  |.__)|  |  \\__||   |___\n\n";
+    output += "   /$$      /$$ /$$           /$$ /$$$$$$$            /$$\n";
+    output += "  | $$$    /$$$|__/          |__/| $$__  $$          | $$\n";
+    output += "  | $$$$  /$$$$ /$$ /$$$$$$$  /$$| $$  \\ $$ /$$   /$$| $$  /$$$$$$$  /$$$$$$\n";
+    output += "  | $$ $$/$$ $$| $$| $$__  $$| $$| $$$$$$$/| $$  | $$| $$ /$$_____/ /$$__  $$\n";
+    output += "  | $$  $$$| $$| $$| $$  \\ $$| $$| $$____/ | $$  | $$| $$|  $$$$$$ | $$$$$$$$\n";
+    output += "  | $$\\  $ | $$| $$| $$  | $$| $$| $$      | $$  | $$| $$ \\____  $$| $$_____/\n";
+    output += "  | $$ \\/  | $$| $$| $$  | $$| $$| $$      |  $$$$$$/| $$ /$$$$$$$/|  $$$$$$$\n";
+    output += "  |__/     |__/|__/|__/  |__/|__/|__/       \\______/ |__/|_______/  \\_______/\n\n";
+    output += "::::::::: ::::::::::: ::::::::::: ::::::::::: ::::::::::: ::::::::::: :::::::::\n\n";
+
+    Serial.print(output);
 }
+
 
 /* Display Config WiFi info in visually pleasing format */
 void DevUtils::SerialBanners::printWiFiConfigBanner(const char* apPassword, WiFiManager& wifiManager) {
