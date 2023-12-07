@@ -23,14 +23,14 @@ String DevUtils::termColor(const char* color) {
         {"bright_white", "\e[0;97m"},
         
         // Background colors
-        {"bg_black", "\e[40m"},
-        {"bg_red", "\e[41m"},
-        {"bg_green", "\e[42m"},
-        {"bg_yellow", "\e[43m"},
-        {"bg_blue", "\e[44m"},
-        {"bg_purple", "\e[45m"},
-        {"bg_cyan", "\e[46m"},
-        {"bg_white", "\e[47m"},
+        {"bg_black", "\e[0;40m"},
+        {"bg_red", "\e[0;41m"},
+        {"bg_green", "\e[0;42m"},
+        {"bg_yellow", "\e[0;43m"},
+        {"bg_blue", "\e[0;44m"},
+        {"bg_purple", "\e[0;45m"},
+        {"bg_cyan", "\e[0;46m"},
+        {"bg_white", "\e[0;47m"},
         
         // Bright background colors
         {"bg_bright_black", "\e[0;100m"},
@@ -63,46 +63,48 @@ String DevUtils::getFreeHeap() {
 void DevUtils::printFreeHeap() {
     String printString;
 
-    // printString += "\n";
-    // printString += termColor("blue");
     printString += "MEM_Free_Heap:";
     printString += ESP.getFreeHeap() * 0.001; // Value being divided for visualization on plotter
     // printString += ESP.getFreeHeap();	// This is the actual value
     printString += "\n";
-    // printString += termColor("reset");
-    // printString += "\n";
 
     Serial.print(printString);
 }
 
 void DevUtils::handleException() {
-    Serial.print(termColor("red"));
-    Serial.println("EXCEPTION CAUGHT:");
-    try {
-        throw;
-    }
-    catch (const std::exception& e) {
-        Serial.println(e.what());
+    Serial.print(
+        DevUtils::termColor("red") +
+        "[!] EXCEPTION CAUGHT - The error is not being printed for runtime safety " +
+        DevUtils::termColor("reset") +
+        "\n"
+    );
 
-    }
-    catch (const int i) {
-        Serial.println(i);
-    }
-    catch (const long l) {
-        Serial.println(l);
-    }
-    catch (const char* p) {
-        if (p == nullptr) {
-            Serial.println("Exception is null");
-            return;
-        } else {
-            Serial.println(p);
-        }
-    }
-    catch (...) {
-        Serial.println("Exception unknown");
-    }
-    Serial.println(termColor("reset"));
+
+    // try {
+    //     throw;
+    // }
+    // catch (const std::exception& e) {
+    //     Serial.println(e.what());
+
+    // }
+    // catch (const int i) {
+    //     Serial.println(i);
+    // }
+    // catch (const long l) {
+    //     Serial.println(l);
+    // }
+    // catch (const char* p) {
+    //     if (p == nullptr) {
+    //         Serial.println("Exception is null");
+    //         return;
+    //     } else {
+    //         Serial.println(p);
+    //     }
+    // }
+    // catch (...) {
+    //     Serial.println("Exception unknown");
+    // }
+    // Serial.print(termColor("reset") + "\n");
 }
 
 String DevUtils::repeatString(String input, int count) {
@@ -115,7 +117,8 @@ String DevUtils::repeatString(String input, int count) {
 
 void DevUtils::SerialBanners::printBootSplashBanner() {
     String output;
-
+    // output += DevUtils::termColor("bg_white");
+    // output += DevUtils::termColor("black");
     output += "\n\n::::::::: ::::::::::: ::::::::::: ::::::::::: ::::::::::: ::::::::::: :::::::::\n\n";
     output += "  .  ..__. __..__.     ..__ .\n";
     output += "  |\\ |[__](__ [__]     |[__)|\n";
@@ -129,7 +132,7 @@ void DevUtils::SerialBanners::printBootSplashBanner() {
     output += "  | $$ \\/  | $$| $$| $$  | $$| $$| $$      |  $$$$$$/| $$ /$$$$$$$/|  $$$$$$$\n";
     output += "  |__/     |__/|__/|__/  |__/|__/|__/       \\______/ |__/|_______/  \\_______/\n\n";
     output += "::::::::: ::::::::::: ::::::::::: ::::::::::: ::::::::::: ::::::::::: :::::::::\n\n";
-
+    // output += DevUtils::termColor("reset");
     Serial.print(output);
 }
 

@@ -1,4 +1,4 @@
-const char* currentFirmwareVersion = "0.9.6"; // Current firmware version
+const char* currentFirmwareVersion = "0.9.7"; // Current firmware version
 
 #pragma region -- LIBRARIES
 #include <Arduino.h>		// Arduino core
@@ -233,7 +233,7 @@ const char* dummyXmlData = data_Sept6;
 */
 
 #pragma region -- DATA FETCHING STATE VARS
-
+bool otaUpdateTriggered = false; // Flag to indicate OTA update has been triggered
 bool usingDummyData = false; // If true, use dummy data instead of actual data
 bool forceDummyData = false;
 uint8_t noTargetFoundCounter = 0;  // Keeps track of how many times target is not found
@@ -261,7 +261,7 @@ static CraftQueueItem currentCraftBuffer;
 const int MAX_ITEMS = 5; // Max number of queue items
 CraftQueueItem itemPool[MAX_ITEMS];
 static CraftQueueItem* freeList[MAX_ITEMS];
-static int freeListTop = MAX_ITEMS; // Points to the top of the free list
+static int freeListTop = MAX_ITEMS - 1; // Points to the top of the free list
 SemaphoreHandle_t freeListMutex;	// Mutex to protect the free list
 
 #pragma endregion -- END DATA CURRENT CRAFT
@@ -444,16 +444,17 @@ void setupOtaUpdate() {
 }
 
 const char* getRemoteFirmwareVersion() {
-	static char buffer[16];
+	bool showSerial = FileUtils::config.debugUtils.showSerial;
 
+	static char buffer[16];
 	HTTPClient httpFirmware;
 	httpFirmware.begin("http://develop.kellerdigital.com/minipulse/latest_version.txt");
 	int httpCode = httpFirmware.GET();
-	Serial.println("HTTP code: " + String(httpCode));
+	if (showSerial) Serial.print("HTTP code: " + String(httpCode) + "\n");
 
 	if (httpCode == HTTP_CODE_OK) {
 		String latestVersion = httpFirmware.getString();
-		Serial.println("Remote version: " + latestVersion);
+		if (showSerial) Serial.println("Remote version: " + latestVersion);
 		strncpy(buffer, latestVersion.c_str(), sizeof(buffer) - 1);
 	} else {
 		Serial.println("Failed to fetch remote version");
@@ -575,20 +576,20 @@ void printMeteorArray()
 	for (int i = 0; i < animate.ActiveMeteorArraySize; i++) {
 		if (animate.ActiveMeteors[i] == nullptr) {
 			printString += "[";
-			printString += dev.termColor("red");
+			printString += DevUtils::termColor("red");
 			printString += i;
 			printString += " = nul";
 			printString += "]";
 		} else {
 			printString += "[";
-			printString += dev.termColor("green");
+			printString += DevUtils::termColor("green");
 			printString += i;
 			printString += " = ";
 			// printString += animate.ActiveMeteors[i]->firstPixel;
 			printString += animate.ActiveMeteors[i]->animationType;
 			printString += "]";
 		}
-		printString += dev.termColor("reset");
+		printString += DevUtils::termColor("reset");
 
 		if (i != 0 && i % 10 == 0) {
 			printString += "\n";
@@ -602,112 +603,211 @@ void printMeteorArray()
 
 void printCraftInfo(uint listPosition, const char* callsign, const char* name, uint nameLength, uint downSignal, uint upSignal)
 {
-	String formattedString;
-	formattedString = "ITEM #" + String(listPosition) + ": (" + String(callsign) + ") " + String(name) + " [" + String(nameLength) + "]";
-	formattedString += " [↓ Sig Dn: " + String(downSignal) + "] [↑ Sig Up: " + String(upSignal) + "]";
-	Serial.print(String(formattedString + "\n"));
+	if (!callsign || !name) {
+		char buffer[256];
+		snprintf(
+			buffer,
+			sizeof(buffer),
+			"ITEM #%u: Invalid\n",
+			listPosition
+		);
+		return;
+    }
+
+	char buffer[256];
+	int16_t written = snprintf(
+		buffer,
+		sizeof(buffer),
+		"ITEM #%u: (%s) %s [%u] [↓ Sig Dn: %u] [↑ Sig Up: %u]\n",
+		listPosition,
+		callsign,
+		name,
+		nameLength,
+		downSignal,
+		upSignal
+	);
+	if (written > 0 && written < sizeof(buffer)) {
+		Serial.print(buffer);
+	} else {
+		Serial.print("ITEM #E: Invalid\n");
+	}
+
 }
 
 String returnCraftInfo(uint listPosition, const char* callsign, const char* name, uint nameLength, uint downSignal, uint upSignal)
 {
 	char buffer[256];
-	snprintf(buffer, sizeof(buffer), "ITEM #%u: (%s) %s [%u] [↓ Sig Dn: %u] [↑ Sig Up: %u]\n",
-		listPosition, callsign, name, nameLength, downSignal, upSignal);
-	return String(buffer);
-}
+	if (callsign == nullptr || name == nullptr) {
+		snprintf(
+			buffer,
+			sizeof(buffer),
+			"ITEM #%u: Invalid\n",
+			listPosition
+		);
+		return String(buffer);
+	}
 
-
-
-void printCurrentQueue(QueueHandle_t queue) {
-	char buffer[1024]; // Create a buffer to hold the serial output
 	snprintf(
 		buffer,
 		sizeof(buffer),
-		"\n%s========= QUEUE %d/%d ==========%s\n",
-		dev.termColor("purple"),
-		uxQueueMessagesWaiting(queue),
-		MAX_ITEMS,
-		dev.termColor("reset")
+		"ITEM #%u: (%s) %s [%u] [↓ Sig Dn: %u] [↑ Sig Up: %u]\n",
+		listPosition,
+		callsign,
+		name,
+		nameLength,
+		downSignal,
+		upSignal
 	);
+	return String(buffer);
+}
 
-	if (uxQueueMessagesWaiting(queue) > 0) {
-		QueueHandle_t tempQueue = xQueueCreate(5, sizeof(CraftQueueItem)); // Create a temporary queue to hold the items
-		if (tempQueue == NULL) {
-			Serial.println("Error: Could not create temporary queue.");
-			return;
-		}
-		CraftQueueItem theTempBuffer;
-		CraftQueueItem* tempBuffer = &theTempBuffer;
+void printCurrentQueue(QueueHandle_t queue) {
+    const size_t bufferSize = 1024;
+    char buffer[bufferSize] = {0}; // Initialize buffer to all zeros
 
-		int queueCount = uxQueueMessagesWaiting(queue);
-		for (int i = 0; i < queueCount; i++) {
-			if (xQueueReceive(queue, &tempBuffer, (TickType_t)10)) {
-				String craftInfo = returnCraftInfo(i, tempBuffer->callsign, tempBuffer->name, tempBuffer->nameLength, tempBuffer->downSignal, tempBuffer->upSignal);
-				strncat(buffer, craftInfo.c_str(), sizeof(buffer) - strlen(buffer) - 1);
+    int written = snprintf(
+        buffer,
+        bufferSize,
+        "%s────────── QUEUE %d/%d ──────────%s\n",
+        DevUtils::termColor("purple"),
+        uxQueueMessagesWaiting(queue),
+        MAX_ITEMS,
+        DevUtils::termColor("reset")
+    );
 
-				if (!xQueueSend(tempQueue, &tempBuffer, (TickType_t)10)) {
-					Serial.println("Error: Could not send data to the temporary queue.");
-					// Handle error as necessary, maybe break out of the loop
-				}
-			} else {
-				Serial.println("Error: Could not receive data from the main queue.");
-				// Handle error as necessary, maybe break out of the loop
-			}
-		}
+    if (written < 0 || written >= bufferSize) {
+        Serial.println("Error: Buffer overflow or encoding error in initial snprintf.");
+        return;
+    }
 
-		for (int i = 0; i < queueCount; i++) {
-			if (xQueueReceive(tempQueue, &tempBuffer, (TickType_t)10)) {
-				if (!xQueueSend(queue, &tempBuffer, (TickType_t)10)) {
+    size_t currentSize = written; // Track the current size of data in buffer
+
+    if (uxQueueMessagesWaiting(queue) > 0) {
+        QueueHandle_t tempQueue = xQueueCreate(5, sizeof(CraftQueueItem));
+        if (tempQueue == NULL) {
+            Serial.print("Error: Could not create temporary queue.\n");
+            return;
+        }
+
+        CraftQueueItem theTempBuffer;
+        int queueCount = uxQueueMessagesWaiting(queue);
+
+        for (int i = 0; i < queueCount; i++) {
+            if (xQueueReceive(queue, &theTempBuffer, (TickType_t)10)) {
+                String craftInfo = returnCraftInfo(i, theTempBuffer.callsign, theTempBuffer.name, theTempBuffer.nameLength, theTempBuffer.downSignal, theTempBuffer.upSignal);
+                written = snprintf(buffer + currentSize, bufferSize - currentSize, "%s", craftInfo.c_str());
+
+                if (written < 0 || written >= (bufferSize - currentSize)) {
+                    Serial.println("Error: Buffer overflow or encoding error in craftInfo snprintf.");
+                    break;
+                }
+                currentSize += written;
+
+                if (!xQueueSend(tempQueue, &theTempBuffer, (TickType_t)10)) {
+                    Serial.println("Error: Could not send data to the temporary queue.");
+                    break;
+                }
+            } else {
+                Serial.println("Error: Could not receive data from the main queue.");
+                break;
+            }
+        }
+
+
+        while (uxQueueMessagesWaiting(tempQueue) > 0) {
+			if (xQueueReceive(tempQueue, &theTempBuffer, (TickType_t)10)) {
+				if (!xQueueSend(queue, &theTempBuffer, (TickType_t)10)) {
 					Serial.println("Error: Could not send data back to the main queue.");
-					// Handle error as necessary, maybe break out of the loop
+					break;
 				}
 			} else {
 				Serial.println("Error: Could not receive data from the temporary queue.");
-				// Handle error as necessary, maybe break out of the loop
+				break;
 			}
 		}
 
-		vQueueDelete(tempQueue); // Delete the temporary queue
-	} else {
-		strncat(buffer, "Queue is empty.\n", sizeof(buffer) - strlen(buffer) - 1);
-	}
+		vQueueDelete(tempQueue);
 
-	snprintf(buffer, sizeof(buffer), "%s%s===============================%s\n\n", buffer, dev.termColor("purple"), dev.termColor("reset"));
-	Serial.print(buffer);
+    } else {
+        written = snprintf(buffer + currentSize, bufferSize - currentSize, "Queue is empty.\n");
+        if (written < 0 || written >= (bufferSize - currentSize)) {
+            Serial.println("Error: Buffer overflow or encoding error in queue empty snprintf.");
+            return;
+        }
+    }
+
+    // Final output
+    Serial.print(buffer);
+	Serial.print("\n───────────────────────────────\n\n");
 }
 
 void printCurrentCraftBuffer() {
-	Serial.print(String(dev.termColor("blue")) + "============= CURRENT DATA BUFFER =============" + String(dev.termColor("reset")) + String("\n"));
+	Serial.print(
+		DevUtils::termColor("blue") +
+		"============= CURRENT DATA BUFFER =============" + DevUtils::termColor("reset") +
+		"\n");
 	printCraftInfo(0, currentCraftBuffer.callsign, currentCraftBuffer.name, currentCraftBuffer.nameLength, currentCraftBuffer.downSignal, currentCraftBuffer.upSignal);
-	Serial.print(String(dev.termColor("blue")) + "===============================================" + String(dev.termColor("reset")) + "\n\n");
+	Serial.print(
+		DevUtils::termColor("blue") + "===============================================" + DevUtils::termColor("reset") + "\n\n");
 }
 
 void printSemaphoreList() {
 	// This function must be used inside a mutex lock
-	if (FileUtils::config.debugUtils.showSerial == true) {
-		Serial.print("\n=== freeListMutex ===\n");
+	if (FileUtils::config.debugUtils.showSerial) {
+		Serial.print(
+			"\n=== freeListMutex [" +
+			String(freeListTop + 1) +
+			"/" +
+			String(MAX_ITEMS) +
+			"] ===\n");
+
 		for (int i = 0; i < MAX_ITEMS; i++) {
 			if (freeList[i] == nullptr) continue; // Skip null items
 
-			String marker = (freeListTop - 1 == i) ? ">" : " "; // Marker for top of freeList
-			Serial.print(marker + "[" + String(i) + "] " + String(freeList[i]->callsignArray) + "\n");
+			String marker = (i == freeListTop) ? ">" : " "; // Marker for top of freeList
+			Serial.print(
+				marker +
+				"[" +
+				String(i) +
+				"] " +
+				String(freeList[i]->callsignArray) +
+				"\n");
 		}
 	}
 }
 
 void freeSemaphoreItem(CraftQueueItem* infoBuffer) {
-	xSemaphoreTake(freeListMutex, portMAX_DELAY);
-	// if (FileUtils::config.debugUtils.diagMeasure == true)
-	// 	Serial.print("freeListTop: " + String(freeListTop) + "\n");
-	if (freeListTop == MAX_ITEMS) {
-		if (FileUtils::config.debugUtils.showSerial == true)
-			Serial.print("\n\n" + String(dev.termColor("red")) + "Free list overflow" + String(dev.termColor("reset")) + "\n\n");
-	} else {
-		// if (FileUtils::config.debugUtils.showSerial == true)
-		// 	Serial.print("\n>>>   Freeing semaphore item\n\n");
-		freeList[freeListTop++] = infoBuffer;
+	feedWatchdog();
+	if (xSemaphoreTake(freeListMutex, pdMS_TO_TICKS(500)) == pdTRUE) {
+
+		if (freeListTop < 0) {
+			Serial.println("Error: freeListTop is " + String(freeListTop) + "\n");
+			freeListTop = 0;
+		}
+
+		if (freeListTop > MAX_ITEMS - 1) {
+			Serial.println("Error: freeListTop is greater than MAX_ITEMS");
+			freeListTop = MAX_ITEMS - 1;
+		}
+
+		freeList[freeListTop] = infoBuffer;
+		freeListTop++;
+
+
+		char semaphoreStatusMessage[128];
+		snprintf(
+			semaphoreStatusMessage,
+			sizeof(semaphoreStatusMessage),
+			"%sSemaphore freed: %s [%d/%d]%s\n",
+			DevUtils::termColor("green"),
+			String(infoBuffer->callsignArray),
+			freeListTop,
+			MAX_ITEMS,
+			DevUtils::termColor("reset")
+		);
+		infoBuffer = nullptr;
+		xSemaphoreGive(freeListMutex);
 	}
-	xSemaphoreGive(freeListMutex);
 }
 
 #pragma endregion -- DEV UTILITIES
@@ -717,9 +817,17 @@ void freeSemaphoreItem(CraftQueueItem* infoBuffer) {
 void doWiFiManager()
 {
 	try {
+		bool portalActive = wm.getConfigPortalActive();
 		// Process Wifi Manager portal
-		if (portalRunning)
+		if (portalActive) {
 			wm.process(); // do processing
+		} else {
+			Serial.print("\n\n----------STARTING CONFIG PORTAL\n\n");
+			wm.setConfigPortalBlocking(false);
+			wm.startConfigPortal(FileUtils::config.wifiNetwork.apSSID, FileUtils::config.wifiNetwork.apPass);
+			portalRunning = true;
+		}
+
 
 		// Force Wifi portal when WiFi reset button is pressed
 		if (digitalRead(WIFI_RST) == LOW) {
@@ -745,12 +853,16 @@ void doWiFiManager()
 }
 
 void configPortalCallback() {
-	Serial.print("\n" + String(dev.termColor("green")) + "[CALLBACK] configPortalCallback fired" + dev.termColor("reset") + "\n\n");
+	Serial.print(
+		"\n" +
+		DevUtils::termColor("green") +
+		"[CALLBACK] configPortalCallback fired" +
+		DevUtils::termColor("reset") + "\n\n");
 	portalRunning = true;
 }
 
 void webServerCallback() {
-	Serial.print("\n" + String(dev.termColor("green")) + "[CALLBACK] webServerCallback fired" + dev.termColor("reset") + "\n\n");
+	Serial.print("\n" + DevUtils::termColor("blue") + "Web server started" + DevUtils::termColor("reset") + "\n\n");
 	portalRunning = true;
 
 	wm.server->on("/get-remote-version-number", HTTP_GET, []() {
@@ -873,6 +985,8 @@ void saveParamsCallback() {
 	FileUtils::config.debugUtils.showSerial = showSerialValueBool;
 	Serial.print("New config showSerial: " + String(FileUtils::config.debugUtils.showSerial) + "\n");
 
+	// wm.setDebugOutput(showSerialValueBool); // Turn on/off WiFiManager debug output
+
 	// Set file config
 	FileUtils::writeConfigFileBool("showSerial", FileUtils::config.debugUtils.showSerial);
 	FileUtils::readFile("/config.json");
@@ -929,7 +1043,7 @@ void saveParamsCallback() {
 	// Set file conf                                                                                                                         ConfigFileInt("brightness", FileUtils::config.displayLED.brightness);
 	FileUtils::writeConfigFileInt("brightness", FileUtils::config.displayLED.brightness);
 	FileUtils::readFile("/config.json");
-	Serial.println();
+	Serial.print("\n");
 
 	// Set LEDs brightness	
 	setGlobalBrightness(FileUtils::config.displayLED.brightness);
@@ -1066,7 +1180,7 @@ void doLetterRegions(char theLetter, int regionStart, int startingPixel)
 			if (drawPreviousPixel >= 0 && drawPreviousPixel < inner_leds_size) {
 				inner_leds[drawPreviousPixel] = mpColors.off.value;
 			} else {
-				// Serial.print(String(dev.termColor("red")) + "drawPreviousPixel out of bounds" + String(dev.termColor("reset")) + "\n");
+				// Serial.print(DevUtils::termColor("red")) + "drawPreviousPixel out of bounds" + DevUtils::termColor("reset")) + "\n");
 			}
 		}
 
@@ -1074,7 +1188,7 @@ void doLetterRegions(char theLetter, int regionStart, int startingPixel)
 			if (drawPixel >= 0 && drawPixel < inner_leds_size) {
 				inner_leds[drawPixel] = ledCharacter.characterArray[i] == 1 ? currentColors.letter : mpColors.off.value;
 			} else {
-				// Serial.print(String(dev.termColor("red")) + "drawPixel out of bounds" + String(dev.termColor("reset")) + "\n");
+				// Serial.print(DevUtils::termColor("red")) + "drawPixel out of bounds" + DevUtils::termColor("reset")) + "\n");
 			}
 		}
 
@@ -1599,10 +1713,20 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 		randomTypeAny = animate.forcedAnimationType - 1;
 
 	// Debug log
-	if (showSerial == true) {
-		const char* direction = isDown ? "Down" : "Up";
-		char buffer[256];
-		snprintf(buffer, sizeof(buffer), "%s | Rate Class: %d | Offset: %d | Type: %d | Adjust Type: %d\n", direction, rateClass, offset, type, randomTypeAny);
+	if (showSerial) {
+		const char* direction = isDown ? "(↓)" : "(↑)";
+		char buffer[256];	
+
+		snprintf(
+			buffer,
+			sizeof(buffer),
+			"%s·.·.·.·.·.·★ %s Rate Class: %d | Type: %d\n",
+			DevUtils::termColor("cyan"),
+			direction,
+			rateClass,
+			randomTypeAny,
+			DevUtils::termColor("reset")
+		);
 		Serial.print(buffer);
 	}
 
@@ -1818,6 +1942,7 @@ void updateMeteors()
  */
 void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int downSignalRate, int upSignalRate)
 {
+	feedWatchdog();
 	const bool showDiagnostics = FileUtils::config.debugUtils.diagMeasure;
 
 	if (showDiagnostics == true) {
@@ -1859,15 +1984,6 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 		animationTypeSetDown = true;
 	}
 
-	// Serial.println("After animation roll in main update loop");
-	// Serial.print("displayDurationTimer: "); Serial.println(displayDurationTimer);
-	// Serial.print("displayMinDuration: "); Serial.println(displayMinDuration);
-	// Serial.print("diff: "); Serial.println(currentMillis - animationTimer);
-	// Serial.print("textMeteorGap: "); Serial.println(textMeteorGap);
-
-	// if (millis() - displayDurationTimer > displayMinDuration) {
-	// Fire meteors
-
 	if (showDiagnostics)
 		Serial.print(
 			"displayDurationTimer:" + String(displayDurationTimer) +
@@ -1906,11 +2022,18 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 			if (downSignalRate > 0 || upSignalRate > 0) {
 
 				if (FileUtils::config.debugUtils.showSerial == true) {
-					char buffer[256];
-					snprintf(buffer, sizeof(buffer), "%s>>> Fire Meteors: %s | %d | %d%s\n", dev.termColor("bg_blue"), spacecraftName, downSignalRate, upSignalRate, dev.termColor("reset"));
-					Serial.print(buffer);
-					Serial.print("\n\n-----------------------------\n");
-					Serial.print("Fire Meteors: " + String(spacecraftName) + " | " + String(downSignalRate) + " | " + String(upSignalRate) + "\n");
+					char animateStatusBuffer[256];
+					snprintf(
+						animateStatusBuffer,
+						sizeof(animateStatusBuffer),
+						"%s ★★★ ANIMATE: [%s] (↓) %d | (↑) %d%s \n",
+						DevUtils::termColor("bg_blue"),
+						spacecraftName,
+						downSignalRate,
+						upSignalRate,
+						DevUtils::termColor("reset")
+					);
+					Serial.print(animateStatusBuffer);
 				}
 
 				if (downSignalRate > 0)
@@ -1926,20 +2049,12 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 	}
 
 	drawMeteors(); // Assign new pixels for meteors
-	EVERY_N_MILLISECONDS(100) {
-		updateBottomPixels();
-	}
-
-	// FastLED.delay(1000 / fpsRate);
-	// EVERY_N_MILLISECONDS(16) {
-	FastLED.show();
-	// }
-
+	EVERY_N_MILLISECONDS(100) updateBottomPixels();
+	FastLED.show(); // Update LEDs
 	updateMeteors(); // Update first pixel location for all active Meteors in array
 
 	if (showDiagnostics)
 		FastLED.countFPS();
-	// updateSpeedCounters();
 }
 
 #pragma endregion -- ANIMATION FUNCTIONS
@@ -1986,8 +2101,11 @@ FoundSignals findSignals(XMLElement* xmlDish, CraftQueueItem* tempNewCraft) {
 
 	FoundSignals foundSignals = { 0, 0 };
 
-	if (FileUtils::config.debugUtils.showSerial == true)
-		Serial.print(">> Finding signals for " + String(tempNewCraft->callsign) + "\n");
+	if (FileUtils::config.debugUtils.showSerial == true) {
+		char buffer[256];
+		snprintf(buffer, sizeof(buffer), "%s>>> Finding signals for %s%s\n", DevUtils::termColor("yellow"), tempNewCraft->callsign, DevUtils::termColor("reset"));
+		Serial.print(buffer);
+	}
 
 	// Loop through XML signal elements and find the one that matches the target
 	for (XMLElement* xmlSignal = xmlDish->FirstChildElement(); xmlSignal != NULL; xmlSignal = xmlSignal->NextSiblingElement()) {
@@ -2017,6 +2135,7 @@ FoundSignals findSignals(XMLElement* xmlDish, CraftQueueItem* tempNewCraft) {
 
 		if (isDown != true && isDown != false) continue;
 
+		feedWatchdog();
 
 		const char* spacecraft = xmlSignal->Attribute("spacecraft");
 		if (spacecraft == nullptr) continue;
@@ -2035,7 +2154,6 @@ FoundSignals findSignals(XMLElement* xmlDish, CraftQueueItem* tempNewCraft) {
 
 		const char* rate = xmlSignal->Attribute("dataRate");
 		if (rate == nullptr) continue;
-		// Serial.println("rate: " + String(rate));
 
 		double rateDouble = stod(rate);
 		unsigned long rateLong = static_cast<unsigned long>(rateDouble);
@@ -2043,12 +2161,12 @@ FoundSignals findSignals(XMLElement* xmlDish, CraftQueueItem* tempNewCraft) {
 		// if (rateLong == 0) continue;
 		if (rateLong == 0) {
 			if (isDown) {
-				if (showSerial)
-					Serial.println("Downsignal rate is 0, skipping");
+				// if (showSerial)
+				// 	Serial.println("Downsignal rate is 0, skipping");
 				continue;
 			} else {
-				if (showSerial)
-					Serial.println("Upsignal rate is 0 - using placeholder");
+				// if (showSerial)
+				// 	Serial.println("Upsignal rate is 0 - using placeholder");
 
 				const char* placeholderRate = SpacecraftData::getPlaceholderRate(tempNewCraft->callsign);
 				rateDouble = stod(placeholderRate);
@@ -2056,17 +2174,7 @@ FoundSignals findSignals(XMLElement* xmlDish, CraftQueueItem* tempNewCraft) {
 			}
 		}
 
-
-
-
-		// Serial.println("rateLong: " + String(rateLong));
-
 		unsigned int rateClass = rateLongToRateClass(rateLong);
-		// Serial.println("rateClass: " + String(rateClass));
-
-		// Serial.println("------");
-		// Serial.println("parsed: " + String(tempNewCraft->callsign) + " | long: " + String(rateLong) + " | rateClass: " + String(rateClass));
-		// Serial.println("------");
 
 		if (rateClass == 0) continue;
 
@@ -2088,7 +2196,12 @@ FoundSignals findSignals(XMLElement* xmlDish, CraftQueueItem* tempNewCraft) {
 
 	if (tempNewCraft->downSignal == 0 && tempNewCraft->upSignal == 0) {
 		if (FileUtils::config.debugUtils.showSerial == true)
-			Serial.print(String(dev.termColor("red")) + "No signals found for " + String(tempNewCraft->callsign) + String(dev.termColor("reset")) + "\n");
+			Serial.print(
+				DevUtils::termColor("red") +
+				"No signals found for " +
+				String(tempNewCraft->callsign) +
+				DevUtils::termColor("reset") +
+				"\n");
 	}
 
 	return foundSignals;
@@ -2099,23 +2212,42 @@ void sendCrafToQueue(CraftQueueItem* newCraft) {
 	if (strlen(newCraft->name) != 0 && (newCraft->downSignal != 0 || newCraft->upSignal != 0)) {
 
 		if (FileUtils::config.debugUtils.showSerial == true) {
-			Serial.print("\n" + String(dev.termColor("yellow")) + ">>--------=> Sending to queue >>--------=>" + String(dev.termColor("reset") + "\n"));
+			Serial.print(
+				"\n" +
+				DevUtils::termColor("yellow") +
+				">>--------=> Sending to queue >>--------=>" + DevUtils::termColor("reset") +
+				"\n");
 			printCraftInfo(0, newCraft->callsign, newCraft->name, newCraft->nameLength, newCraft->downSignal, newCraft->upSignal);
-			Serial.print(String(dev.termColor("yellow")) + "----------------------------------------" + String(dev.termColor("reset")) + "\n");
+			Serial.print(
+				DevUtils::termColor("yellow") + "----------------------------------------" + DevUtils::termColor("reset") +
+				"\n");
 		}
 
 		if (newCraft != nullptr) {
 			// Add data to queue, to be passed to another task
 			if (xQueueSend(queue, &newCraft, 100) == pdPASS) {
 				if (FileUtils::config.debugUtils.showSerial == true) {
-					Serial.print(String(dev.termColor("green")) + "[+] " + String(newCraft->callsign) + " added to queue" + String(dev.termColor("reset") + "\n\n"));
+					Serial.print(
+						DevUtils::termColor("green") +
+						"[+] " +
+						String(newCraft->callsign) +
+						" added to queue" +
+						DevUtils::termColor("reset") +
+						"\n\n");
 				}
 			} else {
-				// if (FileUtils::config.debugUtils.showSerial == true) {
-				Serial.println(dev.termColor("red"));
-				Serial.print("Failed to add to queue");
-				Serial.println(dev.termColor("reset"));
-				// }
+				if (FileUtils::config.debugUtils.showSerial == true) {
+					char failedAddingQueueBuffer[256];
+					snprintf(
+						failedAddingQueueBuffer,
+						sizeof(failedAddingQueueBuffer),
+						"%s[-] %s Failed to add to queue%s\n\n",
+						DevUtils::termColor("red"),
+						newCraft->callsign,
+						DevUtils::termColor("reset")
+					);
+					Serial.print(failedAddingQueueBuffer);
+				}
 			}
 		}
 	}
@@ -2145,25 +2277,39 @@ CraftQueueItem* assignValuesToCraftSemaphore(CraftQueueItem* tempNewCraft) {
 	CraftQueueItem* newCraft;
 
 	// Get a free item from the freeList
-	newCraft = freeList[--freeListTop];
+	// Serial.println("freeListTop: " + String(freeListTop));
+	
+	if (freeListTop < 0) freeListTop = 0;
+	if (freeListTop >= MAX_ITEMS) freeListTop = MAX_ITEMS - 1;
 
-	// Copy callsign
-	strlcpy(newCraft->callsignArray, tempNewCraft->callsignArray, sizeof(newCraft->callsignArray));
-	newCraft->callsign = newCraft->callsignArray;  // Point to the new data
+	for (uint8_t i = MAX_ITEMS - 1; i > 0; i--) {
+		if (freeList[i] != nullptr) {
+			// Serial.print("is not nullptr");
+		
+			newCraft = freeList[freeListTop];
 
-	// Copy name
-	strlcpy(newCraft->nameArray, tempNewCraft->nameArray, sizeof(newCraft->nameArray));
-	newCraft->name = newCraft->nameArray;  // Point to the new data
+			// Copy callsign
+			strlcpy(newCraft->callsignArray, tempNewCraft->callsignArray, sizeof(newCraft->callsignArray));
+			newCraft->callsign = newCraft->callsignArray;  // Point to the new data
 
-	// Copy name length
-	newCraft->nameLength = tempNewCraft->nameLength;
+			// Copy name
+			strlcpy(newCraft->nameArray, tempNewCraft->nameArray, sizeof(newCraft->nameArray));
+			newCraft->name = newCraft->nameArray;  // Point to the new data
 
-	// Copy down signal
-	newCraft->downSignal = tempNewCraft->downSignal;
+			// Copy name length
+			newCraft->nameLength = tempNewCraft->nameLength;
 
-	// Copy up signal
-	newCraft->upSignal = tempNewCraft->upSignal;
+			// Copy down signal
+			newCraft->downSignal = tempNewCraft->downSignal;
 
+			// Copy up signal
+			newCraft->upSignal = tempNewCraft->upSignal;
+		}else {
+			Serial.print("freeList[" + String(i) + "] is nullptr\n");
+		}
+	}
+
+	if (freeListTop > 0) freeListTop--;
 
 	return newCraft;
 }
@@ -2191,6 +2337,7 @@ bool isValidCraftQueueItem(CraftQueueItem* item) {
 
 void parseData(const char* payload)
 {
+	bool showSerial = FileUtils::config.debugUtils.showSerial;
 	feedWatchdog();
 
 	/* XML Parsing */
@@ -2200,27 +2347,57 @@ void parseData(const char* payload)
 	/* Handle XML parsing error */
 	try {
 		if (xmlDocument.Parse(charPayload) == XML_SUCCESS) {
-			if (FileUtils::config.debugUtils.showSerial == true)
-				Serial.print("\n" + String(dev.termColor("green")) + "XML Parsed Succcessfully" + String(dev.termColor("reset")) + "\n");
+			if (showSerial == true)
+				Serial.print(
+					"\n" +
+					DevUtils::termColor("green") +
+					"XML Parsed Succcessfully" +
+					DevUtils::termColor("reset") +
+					"\n");
 		} else {
-			Serial.print(dev.termColor("red"));
-			Serial.println("Unable to parse XML");
-			Serial.println(dev.termColor("reset"));
+			if (showSerial) {
+				char unableToParseBuffer[256];
+				snprintf(
+					unableToParseBuffer,
+					sizeof(unableToParseBuffer),
+					"%sUnable to parse XML%s\n",
+					DevUtils::termColor("red"),
+					DevUtils::termColor("reset")
+				);
+				Serial.print(unableToParseBuffer);
+			}
+
 			return;
 		}
 	}
 	catch (XMLError error) {
-		Serial.print(dev.termColor("red"));
-		Serial.print("Problem parsing payload:");
-		Serial.println(dev.termColor("reset"));
-		Serial.print("XML Error: ");
-		Serial.println(error);
+		if (showSerial) {
+			char xmlErrorBuffer[256];
+			snprintf(
+				xmlErrorBuffer,
+				sizeof(xmlErrorBuffer),
+				"%sXML Error: %d%s\n",
+				DevUtils::termColor("red"),
+				error,
+				DevUtils::termColor("reset")
+			);
+			Serial.print(xmlErrorBuffer);
+		}	
+
 		return;
 	}
 	catch (...) {
-		Serial.print(dev.termColor("red"));
-		Serial.print("Problem parsing payload:");
-		Serial.println(dev.termColor("reset"));
+		if (showSerial) {
+			char xmlErrorBuffer[256];
+			snprintf(
+				xmlErrorBuffer,
+				sizeof(xmlErrorBuffer),
+				"%sProblem parsing payload%s\n",
+				DevUtils::termColor("red"),
+				DevUtils::termColor("reset")
+			);
+			Serial.print(xmlErrorBuffer);
+		}
 		dev.handleException();
 		return;
 	}
@@ -2230,39 +2407,35 @@ void parseData(const char* payload)
 	XMLElement* timestamp = root->FirstChildElement("timestamp"); // Find XML timestamp element
 
 
-	/* Loop through freeListMutex and print out the callsigns */
-	if (xSemaphoreTake(freeListMutex, 100) == pdTRUE) {
-
+	/* Parse the XML file */
+	if (xSemaphoreTake(freeListMutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
 		printSemaphoreList();
-		if (freeListTop > 0) {
-
+		if (freeListTop >= 0) {
 			CraftQueueItem tempNewCraft = {};
-
 			bool breakParseLoop = false;
-
 
 			/* Loop through all XML elements */
 			// 10 is an arbitrary number to prevent an infinite loop
 			for (int i = 0; i < 10; i++) {
 				// Serial.println("Parsing loop: " + String(i));
 				feedWatchdog();
-				if (FileUtils::config.debugUtils.showSerial == true) {
-					Serial.print("\n───────────────────────────────────────────────────────────────────\n");
-					Serial.print("  Parse Counters -- Station: " + String(stationCount) + " | Dish: " + String(dishCount) + " | Target: " + String(targetCount) + " | Signal: " + String(signalCount));
-					Serial.print("\n───────────────────────────────────────────────────────────────────\n\n");
-				}
+				// if (showSerial == true) {
+				// 	Serial.print("\n───────────────────────────────────────────────────────────────────\n");
+				// 	Serial.print("  Parse Counters -- Station: " + String(stationCount) + " | Dish: " + String(dishCount) + " | Target: " + String(targetCount) + " | Signal: " + String(signalCount));
+				// 	Serial.print("\n───────────────────────────────────────────────────────────────────\n\n");
+				// }
 				try {
 					int s = 0; // Create station elements counter
 					for (XMLElement* xmlStation = root->FirstChildElement("station"); true; xmlStation = xmlStation->NextSiblingElement("station")) {
 						feedWatchdog();
 						vTaskDelay(pdMS_TO_TICKS(100)); // Slow the station loop
 
-						if (FileUtils::config.debugUtils.showSerial == true)
-							Serial.print("── stationCount: " + String(stationCount) + " | s: " + String(s) + "\n");
+						// if (showSerial == true)
+						// 	Serial.print("── stationCount: " + String(stationCount) + " | s: " + String(s) + "\n");
 
 						if (xmlStation == NULL) {
-							if (FileUtils::config.debugUtils.showSerial == true)
-								Serial.print("xmlStation == NULL\n");
+							// if (showSerial == true)
+							// 	Serial.print("xmlStation == NULL\n");
 							stationCount = 0;
 							dishCount = 0;
 							targetCount = 0;
@@ -2291,8 +2464,8 @@ void parseData(const char* payload)
 							feedWatchdog();
 							vTaskDelay(pdMS_TO_TICKS(100)); // Slow the dish loop
 
-							if (FileUtils::config.debugUtils.showSerial == true)
-								Serial.print("   └── dishCount: " + String(dishCount) + " | d: " + String(d) + "\n");
+							// if (showSerial == true)
+							// 	Serial.print("   └── dishCount: " + String(dishCount) + " | d: " + String(d) + "\n");
 
 							if (d > 9) {
 								stationCount++;
@@ -2320,37 +2493,36 @@ void parseData(const char* payload)
 								feedWatchdog();
 								vTaskDelay(pdMS_TO_TICKS(100)); // Slow the target loop
 
-								if (FileUtils::config.debugUtils.showSerial == true)
-									Serial.print("      └── targetCount: " + String(targetCount) + " | t: " + String(t) + "\n");
+								// if (showSerial == true)
+								// 	Serial.print("      └── targetCount: " + String(targetCount) + " | t: " + String(t) + "\n");
 
 								if (xmlTarget == NULL) {
-									// if (FileUtils::config.debugUtils.showSerial == true)
+									// if (showSerial == true)
 									// 	Serial.print("                xmlTarget == NULL\n");
 									goToNextDish = true;
 									break;
 								}
 
 								if (t > 9 || t > targetCount) {
-									if (FileUtils::config.debugUtils.showSerial == true)
-										Serial.print("                t > 9\n");
+									// if (showSerial == true)
+									// 	Serial.print("                t > 9\n");
 									goToNextDish = true;
 									break;
 								}
 								if (t != targetCount) {
-									// if (FileUtils::config.debugUtils.showSerial == true)
+									// if (showSerial == true)
 									// 	Serial.print("                t != targetCount\n");
 									t++;
 									continue;
 								}
 
-								if (FileUtils::config.debugUtils.showSerial == true)
-									Serial.print(
-										"\n" +
-										DevUtils::termColor("bg_bright_black") +
-										">>>   Finding craft...." +
-										DevUtils::termColor("reset") +
-										"\n"
-									);
+								// if (showSerial == true)
+								// 	Serial.print(
+								// 		DevUtils::termColor("yellow") +
+								// 		">>> Finding craft...." +
+								// 		DevUtils::termColor("reset") +
+								// 		"\n"
+								// 	);
 
 
 								const char* target = xmlTarget->Attribute("name"); // Get target name
@@ -2363,35 +2535,34 @@ void parseData(const char* payload)
 
 								size_t targetLength = strlen(target);
 								if (targetLength >= sizeof(tempNewCraft.callsignArray)) {
-									if (FileUtils::config.debugUtils.showSerial == true) {
-										Serial.print(dev.termColor("red"));
+									if (showSerial == true) {
+										Serial.print(DevUtils::termColor("red"));
 										Serial.println("Error: target length exceeds buffer size");
-										Serial.println(dev.termColor("reset"));
+										Serial.println(DevUtils::termColor("reset"));
 									}
 									t++;
 									continue;
 								}
 
-
+								/* Check Blacklist */
+								feedWatchdog();
 								if (SpacecraftData::checkBlacklist(target) == true) {
-									if (FileUtils::config.debugUtils.showSerial == true)
-										Serial.print(String(dev.termColor("red")) + "Blacklisted target, skipping..." + String(dev.termColor("reset")) + "\n");
-									vTaskDelay(pdMS_TO_TICKS(500)); // Delay to allow JSON file to be closed so the next load doesn't look in cache
+									// if (showSerial == true)
+									// 	Serial.print(DevUtils::termColor("red") + "Blacklisted target, skipping..." + DevUtils::termColor("reset") + "\n");
+									vTaskDelay(pdMS_TO_TICKS(100)); // Delay to allow other tasks to run
 									t++;
 									continue;
 								}
 
-
-								int callsignArrayLength = sizeof(CraftQueueItem::callsignArray);
-
 								/* Get the craft name to compare in finding signal */
+								int callsignArrayLength = sizeof(CraftQueueItem::callsignArray);
 								size_t result = strlcpy(tempNewCraft.callsignArray, target, callsignArrayLength);
 
 								if (result >= callsignArrayLength) {
-									if (FileUtils::config.debugUtils.showSerial == true) {
-										Serial.print(dev.termColor("red"));
-										Serial.println("Problem copying callsign to tempNewCraft.callsignArray: truncated copy");
-										Serial.println(dev.termColor("reset"));
+									if (showSerial == true) {
+										Serial.print(DevUtils::termColor("red"));
+										Serial.print("Problem copying callsign to tempNewCraft.callsignArray: truncated copy");
+										Serial.print(DevUtils::termColor("reset") + "\n");
 									}
 									t++;
 									continue;
@@ -2402,18 +2573,22 @@ void parseData(const char* payload)
 								const char* name = SpacecraftData::callsignToName(target);
 
 								if (name == nullptr) {
-									if (FileUtils::config.debugUtils.showSerial == true)
-										Serial.print(String(dev.termColor("red")) + "Error: name is null" + String(dev.termColor("reset")) + "\n");
+									if (showSerial == true)
+										Serial.print(
+											DevUtils::termColor("red") +
+											"Error: name is null" +
+											DevUtils::termColor("reset") +
+											"\n");
 									t++;
 									continue;
 								}
 
 								size_t nameLength = strlen(name);
 								if (nameLength >= sizeof(tempNewCraft.nameArray)) {
-									if (FileUtils::config.debugUtils.showSerial == true) {
-										Serial.print(dev.termColor("red"));
+									if (showSerial == true) {
+										Serial.print(DevUtils::termColor("red"));
 										Serial.println("Error: name length exceeds buffer size");
-										Serial.println(dev.termColor("reset"));
+										Serial.println(DevUtils::termColor("reset"));
 									}
 									t++;
 									continue;
@@ -2422,10 +2597,10 @@ void parseData(const char* payload)
 								result = strlcpy(tempNewCraft.nameArray, name, 100);
 
 								if (result >= 100) {
-									if (FileUtils::config.debugUtils.showSerial == true) {
-										Serial.print(dev.termColor("red"));
+									if (showSerial == true) {
+										Serial.print(DevUtils::termColor("red"));
 										Serial.println("Problem copying name to newCraft->nameArray: truncated copy");
-										Serial.println(dev.termColor("reset"));
+										Serial.println(DevUtils::termColor("reset"));
 									}
 									t++;
 									continue;
@@ -2436,8 +2611,15 @@ void parseData(const char* payload)
 
 
 
-								if (FileUtils::config.debugUtils.showSerial == true) {
-									Serial.print("\n" + dev.termColor("yellow") + "PARSED: (" + tempNewCraft.callsign + ") " + String(name) + dev.termColor("reset") + "\n");
+								if (showSerial == true) {
+									char validatedBuffer [256];
+									snprintf(
+										validatedBuffer,
+										sizeof(validatedBuffer),
+										"%sValidated: (%s) %s%s\n", DevUtils::termColor("green"), tempNewCraft.callsign,
+										name, DevUtils::termColor("reset")
+									);
+									Serial.print(validatedBuffer);
 								}
 
 
@@ -2448,8 +2630,13 @@ void parseData(const char* payload)
 
 								// No signals found
 								if (foundSignals.downSignal == 0 && foundSignals.upSignal == 0) {
-									if (FileUtils::config.debugUtils.showSerial == true)
-										Serial.print(String(dev.termColor("red")) + "No signals found for " + String(tempNewCraft.callsign) + String(dev.termColor("reset")) + "\n");
+									if (showSerial == true)
+										Serial.print(
+											DevUtils::termColor("red") +
+											"No signals found for " +
+											String(tempNewCraft.callsign) +
+											DevUtils::termColor("reset") +
+											"\n");
 									t++;
 									continue;
 								} else {
@@ -2461,29 +2648,37 @@ void parseData(const char* payload)
 								/** TARGET HAS BEEN FULLY VALIDATED
 								 * We hav all of the info needed for this new craft
 								 * **/
-								if (FileUtils::config.debugUtils.showSerial == true) {
-									Serial.print("======== TEMP NEW CRAFT ========\n");
-									Serial.print("callsign: " + String(tempNewCraft.callsign) + "\n");
-									Serial.print("name: " + String(tempNewCraft.name) + "\n");
-									Serial.print("nameLength: " + String(tempNewCraft.nameLength) + "\n");
-									Serial.print("downSignal: " + String(tempNewCraft.downSignal) + "\n");
-									Serial.print("upSignal: " + String(tempNewCraft.upSignal) + "\n");
-									Serial.print("================================\n");
+								// if (showSerial == true) {
+								// 	Serial.print("======== TEMP NEW CRAFT ========\n");
+								// 	Serial.print("callsign: " + String(tempNewCraft.callsign) + "\n");
+								// 	Serial.print("name: " + String(tempNewCraft.name) + "\n");
+								// 	Serial.print("nameLength: " + String(tempNewCraft.nameLength) + "\n");
+								// 	Serial.print("downSignal: " + String(tempNewCraft.downSignal) + "\n");
+								// 	Serial.print("upSignal: " + String(tempNewCraft.upSignal) + "\n");
+								// 	Serial.print("================================\n");
+								// }
+
+								if (showSerial) {
+									Serial.println();
 								}
 
+								char validatedBuffer [256];
+									snprintf(
+										validatedBuffer,
+										sizeof(validatedBuffer),
+										"%sValidated: (%s) %s%s\n", DevUtils::termColor("green"), tempNewCraft.callsign, name, DevUtils::termColor("reset"));
+									Serial.print(validatedBuffer);
 
-								// A target has been found and validated
-								if (FileUtils::config.debugUtils.showSerial == true)
-									Serial.println("assign values to craft semaphore");
 
 								feedWatchdog();
 								CraftQueueItem* newCraft = assignValuesToCraftSemaphore(&tempNewCraft);
 
-								if (FileUtils::config.debugUtils.showSerial == true)
-									Serial.print("craft item is valid");
 
 								if (isValidCraftQueueItem(newCraft)) {
 									sendCrafToQueue(newCraft);
+
+								// if (showSerial == true)
+								// 	Serial.print("craft item is valid\n");
 
 									breakParseLoop = true; // Break out of all loops
 									targetCount = t; // Set the global target counter to the current target number
@@ -2496,8 +2691,12 @@ void parseData(const char* payload)
 
 									break;
 								} else {
-									if (FileUtils::config.debugUtils.showSerial == true)
-										Serial.print(String(dev.termColor("red")) + "Invalid craft queue item" + String(dev.termColor("reset")) + "\n");
+									if (showSerial == true)
+										Serial.print(
+											DevUtils::termColor("red") +
+											"Invalid craft queue item" +
+											DevUtils::termColor("reset") +
+											"\n");
 									t++;
 									continue;
 								}
@@ -2511,7 +2710,7 @@ void parseData(const char* payload)
 								targetCount = 0;
 								dishCount++;
 								d++;
-								// if (FileUtils::config.debugUtils.showSerial == true)
+								// if (showSerial == true)
 								// 	Serial.println("go to next dish!");
 								continue;
 							}
@@ -2542,34 +2741,37 @@ void parseData(const char* payload)
 
 				catch (...) {
 					if (FileUtils::config.debugUtils.showSerial == true) {
-						Serial.print(dev.termColor("red"));
+						Serial.print(DevUtils::termColor("red"));
 						Serial.println("Problem parsing payload:");
-						Serial.println(dev.termColor("reset"));
+						Serial.println(DevUtils::termColor("reset"));
 					}
 					dev.handleException();
 					parseCounter++;
+					xSemaphoreGive(freeListMutex);
 					return;
 				}
 
 				if (breakParseLoop == true) break;
 			} // End arbitary loop
 
-			// Serial.println("increment counters");
 			incrementDataParseCounter();
-			xSemaphoreGive(freeListMutex); // The semaphore must be freed when this function is retured
+			xSemaphoreGive(freeListMutex); //Line 2753 throwing error
 			feedWatchdog();
 			return;
 		} else {
 			// There are no free items in the queue item pool
 			Serial.println("No free items in queue item pool");
+			xSemaphoreGive(freeListMutex);
 			return;
 		}
 
-		if (FileUtils::config.debugUtils.showSerial == true)
-			Serial.println("increment parse counter");
 
-		parseCounter++;
 		xSemaphoreGive(freeListMutex);
+
+		if (FileUtils::config.debugUtils.showSerial == true)
+			Serial.print("XML Parse attempts: " + String(parseCounter) + "\n");
+		parseCounter++;
+
 		feedWatchdog();
 		return;
 	}
@@ -2578,7 +2780,8 @@ void parseData(const char* payload)
 }
 
 void logOutput(const char* color, const String& message) {
-	if (FileUtils::config.debugUtils.showSerial == true) {
+	const bool showSerial = FileUtils::config.debugUtils.showSerial;
+	if (showSerial == true) {
 		String resetColorString = DevUtils::termColor("reset");
 		String coloredMessageString = DevUtils::termColor(color);
 
@@ -2586,15 +2789,24 @@ void logOutput(const char* color, const String& message) {
 		const char* coloredMessage = coloredMessageString.c_str();
 
 		int bufferSize = strlen(coloredMessage) + message.length() + strlen(resetColor) + 2; // +1 for newline, +1 for null terminator
+		
+		const char* messageCharPtr = message.c_str();
 
 		char* buffer = (char*)malloc(bufferSize);
 		if (buffer) {
-			snprintf(buffer, bufferSize, "%s%s%s\n", coloredMessage, message.c_str(), resetColor);
-			Serial.println(buffer);
+			snprintf(
+				buffer,
+				bufferSize,
+				"%s%s%s\n",
+				coloredMessage,
+				messageCharPtr,
+				resetColor
+			);
+			Serial.print(buffer);
 			free(buffer);
 		} else {
 			// handle memory allocation failure
-			if (FileUtils::config.debugUtils.showSerial == true)
+			if (showSerial == true)
 				Serial.print("Memory allocation failed\n");
 		}
 	}
@@ -2666,10 +2878,9 @@ bool attemptHTTPConnection(const String& url) {
 bool fetchHTTPData(const String& url) {
 	const int maxHttpRetries = 3;
 	for (int retry = 0; retry < maxHttpRetries; retry++) {
+		feedWatchdog(); // HTTP connection can sometimes be slow
 		try {
 			if (attemptHTTPConnection(url)) {
-				feedWatchdog(); // HTTP connection can sometimes be slow
-
 				String res = http.getString();
 				feedWatchdog(); // The response may be large, just in case
 
@@ -2708,11 +2919,13 @@ bool fetchHTTPData(const String& url) {
 void fetchData() {
 	feedWatchdog();
 
+	const bool showSerial = FileUtils::config.debugUtils.showSerial;
+
 	if (FileUtils::config.debugUtils.testCores == true) {
 		Serial.print("fetchData() running on core " + String(xPortGetCoreID()) + "\n\n");
 	}
 
-	if (FileUtils::config.debugUtils.showSerial == true) {
+	if (showSerial) {
 		Serial.print("\n\n");
 		Serial.print("   ┌─────────────────────────────┐\n");
 		Serial.print("───│          FETCH DATA         │───\n");
@@ -2729,13 +2942,48 @@ void fetchData() {
 
 	if (!forceDummyData && isWiFiConnected()) {
 		String url = generateFetchUrl();
-		if (FileUtils::config.debugUtils.showSerial == true)
-			Serial.println("[fetchData] Generated URL: " + url);
+		if (showSerial) {
+			char deviceIPBuffer[128];
+			String deviceIP = WiFi.localIP().toString();
+			String connectedNetwork = WiFi.SSID();
+			snprintf(
+				deviceIPBuffer,
+				sizeof(deviceIPBuffer),
+				"%s on %s\n",
+				deviceIP,
+				connectedNetwork
+			);
+			Serial.print(deviceIPBuffer);
+			
+			char urlBuffer[256];
+			snprintf(
+				urlBuffer,
+				sizeof(urlBuffer),
+				"Generated URL: %s\n",
+				url.c_str()
+			);
+			Serial.print(urlBuffer);
+		}
 
 		dataFetched = fetchHTTPData(url);
 
-		if (FileUtils::config.debugUtils.showSerial == true)
-			Serial.println(dataFetched ? "[fetchData] Data fetched successfully." : "[fetchData] Failed to fetch data.");
+		if (showSerial) {
+			const char* dataFetchedStatusString = dataFetched ? "Success" : "Failure";
+			const char* dataStatusColor = dataFetched ? "green" : "red";
+
+			char dataStatusBuffer[128];
+			snprintf(
+				dataStatusBuffer,
+				sizeof(dataStatusBuffer),
+				"%sData Fetch: %s %s\n",
+				DevUtils::termColor(dataStatusColor),
+				dataFetchedStatusString,
+				DevUtils::termColor("reset")
+			);
+
+			// Print the data status buffer
+			Serial.print(dataStatusBuffer);
+		}
 	}
 
 	File xmlFile;
@@ -2744,20 +2992,34 @@ void fetchData() {
 
 	if (dataFetched) {
 		feedWatchdog();
+
+		if (showSerial || true) {
+			char dataStatusBuffer[128]; 
+			snprintf(
+				dataStatusBuffer,
+				sizeof(dataStatusBuffer),
+				"%s %s %s\n",
+				DevUtils::termColor("bg_blue"),
+				"Using live data",
+				DevUtils::termColor("reset")
+			);
+			Serial.print(dataStatusBuffer);
+		}
+
 		xmlFile = LittleFS.open("/temp.xml", "r");
 		if (!xmlFile) {
-			if (FileUtils::config.debugUtils.showSerial == true)
+			if (showSerial)
 				Serial.println("[fetchData] Failed to open XML file for reading.");
 
 			return;
 		}
 		size_t xmlFileSize = xmlFile.size();
 
-		if (FileUtils::config.debugUtils.showSerial == true)
+		if (showSerial)
 			Serial.println("[fetchData] XML file size: " + String(xmlFileSize));
 
 		if (xmlFileSize > sizeof(xmlDataBuffer) - 1) {
-			if (FileUtils::config.debugUtils.showSerial == true)
+			if (showSerial)
 				Serial.println(DevUtils::termColor("red") + "[fetchData] XML file is too large for buffer." + DevUtils::termColor("reset"));
 
 			xmlFile.close();
@@ -2773,27 +3035,35 @@ void fetchData() {
 		xmlFile.close();
 		LittleFS.remove("/temp.xml"); // Optionally delete the file after reading
 
-		if (FileUtils::config.debugUtils.showSerial == true)
-			Serial.println("[fetchData] XML file read and parsed.");
+		if (showSerial)
+			Serial.println("[fetchData] XML file read");
 
 		feedWatchdog();
-
-		// Now you can pass the XML data to the parseData function
-		parseData(xmlDataBuffer);
+		parseData(xmlDataBuffer); // Parse live data
 	} else {
 		// If no data was fetched, use dummy data
-		if (FileUtils::config.debugUtils.showSerial == true)
-			Serial.println(DevUtils::termColor("blue") + "[fetchData] Using dummy data." + DevUtils::termColor("reset"));
+		if (showSerial || true) {
+			char dataStatusBuffer[128];
+			snprintf(
+				dataStatusBuffer,
+				sizeof(dataStatusBuffer),
+				"%s %s %s\n",
+				DevUtils::termColor("bg_purple"),
+				"Using dummy data",
+				DevUtils::termColor("reset")
+			);
+			Serial.print(dataStatusBuffer);
+		}
 
-		parseData(dummyXmlData); // Assuming dummyXmlData is a char array
+		parseData(dummyXmlData); // Parse dummy data
 	}
 
 	if (!dataStarted) {
 		dataStarted = true;  // Set dataStarted to true after first data fetch
 	}
 
-	if (FileUtils::config.debugUtils.showSerial == true)
-		Serial.println("[fetchData] Finished.");
+	if (showSerial)
+		Serial.print("(* END fetchData *)\n\n");
 
 	feedWatchdog();
 
@@ -2803,10 +3073,22 @@ void fetchData() {
 		bool res = wm.autoConnect(FileUtils::config.wifiNetwork.apSSID, FileUtils::config.wifiNetwork.apPass);
 
 		if (!res) { // Wifi connection failed
-			Serial.print(String(dev.termColor("red")) + "Failed to reconnect to WiFi" + String(dev.termColor("reset")));
+			Serial.print(
+				DevUtils::termColor("red") +
+				"Failed to reconnect to WiFi" +
+				DevUtils::termColor("reset"));
 		} else { // Wifi connection successful
+			String deviceIP = WiFi.localIP().toString();
+			String connectedNetwork = WiFi.SSID();
 			char successStringBuffer[256];
-			snprintf(successStringBuffer, sizeof(successStringBuffer), "%sConnected to WiFi '%s' successfully%s\n", dev.termColor("green"), wm.getWiFiSSID(), dev.termColor("reset"));
+			snprintf(
+				successStringBuffer,
+				sizeof(successStringBuffer),
+				"%sConnected to WiFi '%s' successfully%s\n",
+				DevUtils::termColor("green"),
+				connectedNetwork != nullptr ? connectedNetwork : "NULL",
+				DevUtils::termColor("reset")
+			);
 			Serial.print(successStringBuffer);
 		}
 	}
@@ -2824,6 +3106,10 @@ void getData(void* parameter) {
 
 	for (;;) {
 		feedWatchdog();
+		if (otaUpdateTriggered) {
+			vTaskDelay(pdMS_TO_TICKS(1000)); // Delay to allow other tasks to run
+			continue;
+		}
 		try {
 			// Send an HTTP POST request every so many seconds
 			// Serial.println(String(millis()) + " - " + String(lastTime) + " - " + String(timerDelay));
@@ -2834,10 +3120,11 @@ void getData(void* parameter) {
 					// Serial.println("getData() queue space available");
 
 					vTaskDelay(pdMS_TO_TICKS(100)); // Delay to allow other tasks to run
-
+					
 					fetchData();
 				} else {
-					// Serial.println("getData() queue is full");
+					if (FileUtils::config.debugUtils.showSerial == true)
+						Serial.print("Craft Queue is full, waiting...\n");
 					vTaskDelay(pdMS_TO_TICKS(1000)); // Delay to allow other tasks to run
 				}
 
@@ -2913,12 +3200,14 @@ void setup()
 
 	// Reset settings - wipe stored credentials for testing
 	// wm.resetSettings();
-	wm.setDebugOutput(true);
+	// wm.setDebugOutput(true);
 
 	// if (FileUtils::config.debugUtils.showSerial == false) {
 	// 	Serial.setDebugOutput(false);
 	// 	wm.setDebugOutput(false);
 	// }
+	wm.setDebugOutput(false);
+	Serial.setDebugOutput(false);
 
 	if (FileUtils::config.debugUtils.testCores == true) {
 		Serial.print("setup() running on core " + String(xPortGetCoreID()) + "\n\n");
@@ -2974,13 +3263,13 @@ void setup()
 	wm.setCountry("US");	  // setting wifi country seems to improve OSX soft ap connectivity
 	wm.setConfigPortalBlocking(false);
 	wm.setCleanConnect(true);
-	wm.setConnectRetries(5);
-	wm.setConnectTimeout(10); // connect attempt fails after n seconds	
+	wm.setConnectRetries(1);
+	wm.setConnectTimeout(5); // connect attempt fails after n seconds	
 	// wm.setAPStaticIPConfig(IPAddress(192, 168, 0, 1), IPAddress(192, 168, 0, 1), IPAddress(255, 255, 255, 0)); // set static ip
 	wm.setHostname("JPL_MiniPulse");
 	// wm.setEnableConfigPortal(false); // Disable auto AP, it will be started manually
-	// wm.setDisableConfigPortal(false); // Diable auto-closing config portal
-	wm.setCaptivePortalEnable(true);
+	// wm.setDisableConfigPortal(true); // Disable auto-closing config portal
+	wm.setCaptivePortalEnable(false);
 	wm.setWebServerCallback(webServerCallback);
 	wm.setTitle("JPL MiniPulse");
 
@@ -3054,26 +3343,52 @@ void setup()
 	wm.setCustomHeadElement(update_button_html); // Add "Update Firmware" button to WiFi portal <head>
 
 
+	char existingWifiBuffer[128];
+	snprintf(
+		existingWifiBuffer,
+		sizeof(existingWifiBuffer),
+		"Existing WiFi credentials: %s\n",
+		wm.getWiFiIsSaved() ? "TRUE" : "FALSE"
+	);
+	Serial.print(existingWifiBuffer);
 
-	Serial.print("Existing WiFi credentials: ");
 	if (wm.getWiFiIsSaved() == true) {
-		Serial.print("True\nConnecting to WiFi \"" + String(wm.getWiFiSSID()) + "\"\n");
+		char ssidBuffer[256];
+		snprintf(
+			ssidBuffer,
+			sizeof(ssidBuffer),
+			"Connecting to WiFi network %s...\n",
+			wm.getWiFiSSID().c_str()
+		);
+		Serial.print(ssidBuffer);
 
 		bool res;
 		res = wm.autoConnect(FileUtils::config.wifiNetwork.apSSID, FileUtils::config.wifiNetwork.apPass);
 
 		if (!res) // Wifi connection failed
 		{
-			Serial.print(String(dev.termColor("red")) + "Failed to connect to WiFi" + String(dev.termColor("reset")));
+			char failureStringBuffer[256];
+			snprintf(failureStringBuffer, sizeof(failureStringBuffer), "%sFailed to connect to WiFi%s\n", DevUtils::termColor("red"), DevUtils::termColor("reset"));
+			Serial.print(failureStringBuffer);
 		} else // Wifi connection successful
 		{
+			String deviceIP = WiFi.localIP().toString();
+			String deviceLocalWifi = WiFi.SSID();
 			char successStringBuffer[256];
-			snprintf(successStringBuffer, sizeof(successStringBuffer), "%sConnected to WiFi successfully%s\n", dev.termColor("green"), dev.termColor("reset"));
+			snprintf(
+				successStringBuffer,
+				sizeof(successStringBuffer),
+				"%sConnected to WiFi successfully%s\n%s on %s\n\n",
+				DevUtils::termColor("green"),
+				DevUtils::termColor("reset"),
+				deviceIP != nullptr ? deviceIP : "NULL",
+				deviceLocalWifi != nullptr ? deviceLocalWifi : "NULL"
+			);
 			Serial.print(successStringBuffer);
 		}
 
 	} else {
-		Serial.print("False\nUse the WiFi access portal for configuration\n");
+		Serial.print("Use the WiFi access portal for configuration\n\n");
 	}
 	Serial.print("WiFi Status: " + wm.getWLStatusString() + "\n\n");
 
@@ -3094,6 +3409,7 @@ void setup()
 		wm.startConfigPortal();
 	}
 
+	feedWatchdog();
 	delay(1000); // Small delay to allow WiFi to connect
 
 	const char* apPassword = FileUtils::config.wifiNetwork.apPass;
@@ -3119,7 +3435,7 @@ void setup()
 	setColorTheme(colorTheme); // Set color theme
 	// drawBottomPixels();		   // Draw initial bottom pixels
 	delay(100);				   // Small delay to allow bottom pixels to draw
-
+	feedWatchdog();
 
 	/* DATA TASK SETUP */
 	// Initialize the queue item pool
@@ -3146,14 +3462,19 @@ void setup()
 
 	// Check that queue was created successfully
 	if (queue == NULL) {
-		if (FileUtils::config.debugUtils.showSerial == true) {
-			Serial.print(String(dev.termColor("red")) + "Error creating the queue" + dev.termColor("reset"));
+		if (FileUtils::config.debugUtils.showSerial) {
+			Serial.print(
+				DevUtils::termColor("red") +
+				"Error creating the queue" +
+				DevUtils::termColor("reset") +
+				"\n");
 			delay(3000);
 		}
 		ESP.restart();
 	}
 
 	// updateFirmwareOta(); // Check for OTA update
+	feedWatchdog();
 	delay(1000);
 
 }
@@ -3163,7 +3484,7 @@ void setup()
  * Runs repeatedly as long as board is on
  */
 void loop() {
-
+	feedWatchdog();
 	uint32_t currentMillis = millis(); // Store the current time
 
 	bool showSerial = FileUtils::config.debugUtils.showSerial;
@@ -3190,12 +3511,19 @@ void loop() {
 
 			if (queue && infoBuffer && xQueueReceive(queue, &infoBuffer, 1) == pdPASS) {
 				if (showSerial) {
-					Serial.println("\n\n   ┌────────────────────────────────┐");
-					Serial.println("───│          RETRIEVE QUEUE        │───");
-					Serial.println("   └────────────────────────────────┘");
+					char retrieveQueueBuffer[256];
+					snprintf(
+						retrieveQueueBuffer,
+						sizeof(retrieveQueueBuffer),
+						"\n\n%s%s%s",
+						"   ┌────────────────────────────────┐   \n",
+						"───│          RETRIEVE QUEUE        │───\n",
+						"   └────────────────────────────────┘   \n"
+					);
 					printCurrentQueue(queue);
-					printCraftInfo(0, infoBuffer->callsign, infoBuffer->name, infoBuffer->nameLength, infoBuffer->downSignal, infoBuffer->upSignal);
-					Serial.println("--------------------------------------------\n\n");
+
+					// printCraftInfo(0, infoBuffer->callsign, infoBuffer->name, infoBuffer->nameLength, infoBuffer->downSignal, infoBuffer->upSignal);
+					// Serial.println("--------------------------------------------\n\n");
 				}
 
 				// Copy data from queue to buffer
@@ -3231,7 +3559,7 @@ void loop() {
 		}
 	}
 	catch (...) {
-		Serial.println("Error: loop() getting new data failed");
+		Serial.print("Error: loop() getting new data failed\n");
 		dev.handleException();
 	}
 
@@ -3241,7 +3569,7 @@ void loop() {
 	}
 	catch (...) {
 		if (showSerial) {
-			Serial.println("Error: updateAnimation() failed");
+			Serial.print("Error: updateAnimation() failed\n");
 		}
 		dev.handleException();
 	}
