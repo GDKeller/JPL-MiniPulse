@@ -1,4 +1,4 @@
-const char* currentFirmwareVersion = "0.9.7"; // Current firmware version
+const char* currentFirmwareVersion = "1.0.2"; // Current firmware version
 
 #pragma region -- LIBRARIES
 #include <Arduino.h>		// Arduino core
@@ -603,8 +603,9 @@ void printMeteorArray()
 
 void printCraftInfo(uint listPosition, const char* callsign, const char* name, uint nameLength, uint downSignal, uint upSignal)
 {
-	if (!callsign || !name) {
-		char buffer[256];
+	char buffer[256];
+	// Serial.print()
+	if ( callsign == nullptr || name == nullptr) {
 		snprintf(
 			buffer,
 			sizeof(buffer),
@@ -614,8 +615,7 @@ void printCraftInfo(uint listPosition, const char* callsign, const char* name, u
 		return;
     }
 
-	char buffer[256];
-	int16_t written = snprintf(
+	int written = snprintf(
 		buffer,
 		sizeof(buffer),
 		"ITEM #%u: (%s) %s [%u] [↓ Sig Dn: %u] [↑ Sig Up: %u]\n",
@@ -631,114 +631,82 @@ void printCraftInfo(uint listPosition, const char* callsign, const char* name, u
 	} else {
 		Serial.print("ITEM #E: Invalid\n");
 	}
-
 }
 
 String returnCraftInfo(uint listPosition, const char* callsign, const char* name, uint nameLength, uint downSignal, uint upSignal)
 {
-	char buffer[256];
-	if (callsign == nullptr || name == nullptr) {
-		snprintf(
-			buffer,
-			sizeof(buffer),
-			"ITEM #%u: Invalid\n",
-			listPosition
-		);
-		return String(buffer);
+	if (callsign == nullptr) {
+		callsign = "NULL";
+	}
+	if (name == nullptr) {
+		name = "NULL";
 	}
 
-	snprintf(
-		buffer,
-		sizeof(buffer),
-		"ITEM #%u: (%s) %s [%u] [↓ Sig Dn: %u] [↑ Sig Up: %u]\n",
-		listPosition,
-		callsign,
-		name,
-		nameLength,
-		downSignal,
-		upSignal
-	);
+	char buffer[256];
+	snprintf(buffer, sizeof(buffer), "ITEM #%u: (%s) %s [%u] [↓ Sig Dn: %u] [↑ Sig Up: %u]\n",
+		listPosition, callsign, name, nameLength, downSignal, upSignal);
 	return String(buffer);
 }
 
 void printCurrentQueue(QueueHandle_t queue) {
-    const size_t bufferSize = 1024;
-    char buffer[bufferSize] = {0}; // Initialize buffer to all zeros
+	char buffer[1024]; // Create a buffer to hold the serial output
+	snprintf(
+		buffer,
+		sizeof(buffer),
+		"\n%s========= QUEUE %d/%d ==========%s\n",
+		dev.termColor("purple"),
+		uxQueueMessagesWaiting(queue),
+		MAX_ITEMS,
+		dev.termColor("reset")
+	);
 
-    int written = snprintf(
-        buffer,
-        bufferSize,
-        "%s────────── QUEUE %d/%d ──────────%s\n",
-        DevUtils::termColor("purple"),
-        uxQueueMessagesWaiting(queue),
-        MAX_ITEMS,
-        DevUtils::termColor("reset")
-    );
-
-    if (written < 0 || written >= bufferSize) {
-        Serial.println("Error: Buffer overflow or encoding error in initial snprintf.");
-        return;
-    }
-
-    size_t currentSize = written; // Track the current size of data in buffer
-
-    if (uxQueueMessagesWaiting(queue) > 0) {
-        QueueHandle_t tempQueue = xQueueCreate(5, sizeof(CraftQueueItem));
-        if (tempQueue == NULL) {
-            Serial.print("Error: Could not create temporary queue.\n");
-            return;
-        }
-
-        CraftQueueItem theTempBuffer;
-        int queueCount = uxQueueMessagesWaiting(queue);
-
-        for (int i = 0; i < queueCount; i++) {
-            if (xQueueReceive(queue, &theTempBuffer, (TickType_t)10)) {
-                String craftInfo = returnCraftInfo(i, theTempBuffer.callsign, theTempBuffer.name, theTempBuffer.nameLength, theTempBuffer.downSignal, theTempBuffer.upSignal);
-                written = snprintf(buffer + currentSize, bufferSize - currentSize, "%s", craftInfo.c_str());
-
-                if (written < 0 || written >= (bufferSize - currentSize)) {
-                    Serial.println("Error: Buffer overflow or encoding error in craftInfo snprintf.");
-                    break;
-                }
-                currentSize += written;
-
-                if (!xQueueSend(tempQueue, &theTempBuffer, (TickType_t)10)) {
-                    Serial.println("Error: Could not send data to the temporary queue.");
-                    break;
-                }
-            } else {
-                Serial.println("Error: Could not receive data from the main queue.");
-                break;
-            }
-        }
+	if (uxQueueMessagesWaiting(queue) > 0) {
+		QueueHandle_t tempQueue = xQueueCreate(5, sizeof(CraftQueueItem)); // Create a temporary queue to hold the items
+		if (tempQueue == NULL) {
+			Serial.println("Error: Could not create temporary queue.");
+			return;
+		}
 
 
-        while (uxQueueMessagesWaiting(tempQueue) > 0) {
-			if (xQueueReceive(tempQueue, &theTempBuffer, (TickType_t)10)) {
-				if (!xQueueSend(queue, &theTempBuffer, (TickType_t)10)) {
-					Serial.println("Error: Could not send data back to the main queue.");
-					break;
+
+		CraftQueueItem theTempBuffer;
+		CraftQueueItem* tempBuffer = &theTempBuffer;
+
+		int queueCount = uxQueueMessagesWaiting(queue);
+		for (int i = 0; i < queueCount; i++) {
+			if (xQueueReceive(queue, &tempBuffer, (TickType_t)10)) {
+				String craftInfo = returnCraftInfo(i, tempBuffer->callsign, tempBuffer->name, tempBuffer->nameLength, tempBuffer->downSignal, tempBuffer->upSignal);
+				strncat(buffer, craftInfo.c_str(), sizeof(buffer) - strlen(buffer) - 1);
+
+				if (!xQueueSend(tempQueue, &tempBuffer, (TickType_t)10)) {
+					Serial.println("Error: Could not send data to the temporary queue.");
+					// Handle error as necessary, maybe break out of the loop
 				}
 			} else {
-				Serial.println("Error: Could not receive data from the temporary queue.");
+				Serial.println("Error: Could not receive data from the main queue.");
 				break;
 			}
 		}
 
-		vQueueDelete(tempQueue);
+		for (int i = 0; i < queueCount; i++) {
+			if (xQueueReceive(tempQueue, &tempBuffer, (TickType_t)10)) {
+				if (!xQueueSend(queue, &tempBuffer, (TickType_t)10)) {
+					Serial.println("Error: Could not send data back to the main queue.");
+					// Handle error as necessary, maybe break out of the loop
+				}
+			} else {
+				Serial.println("Error: Could not receive data from the temporary queue.");
+				// Handle error as necessary, maybe break out of the loop
+			}
+		}
 
-    } else {
-        written = snprintf(buffer + currentSize, bufferSize - currentSize, "Queue is empty.\n");
-        if (written < 0 || written >= (bufferSize - currentSize)) {
-            Serial.println("Error: Buffer overflow or encoding error in queue empty snprintf.");
-            return;
-        }
-    }
+		vQueueDelete(tempQueue); // Delete the temporary queue
+	} else {
+		strncat(buffer, "Queue is empty.\n", sizeof(buffer) - strlen(buffer) - 1);
+	}
 
-    // Final output
-    Serial.print(buffer);
-	Serial.print("\n───────────────────────────────\n\n");
+	snprintf(buffer, sizeof(buffer), "%s%s===============================%s\n\n", buffer, dev.termColor("purple"), dev.termColor("reset"));
+	Serial.print(buffer);
 }
 
 void printCurrentCraftBuffer() {
@@ -773,6 +741,7 @@ void printSemaphoreList() {
 				String(freeList[i]->callsignArray) +
 				"\n");
 		}
+		Serial.print("\n");
 	}
 }
 
@@ -2630,13 +2599,13 @@ void parseData(const char* payload)
 
 								// No signals found
 								if (foundSignals.downSignal == 0 && foundSignals.upSignal == 0) {
-									if (showSerial == true)
-										Serial.print(
-											DevUtils::termColor("red") +
-											"No signals found for " +
-											String(tempNewCraft.callsign) +
-											DevUtils::termColor("reset") +
-											"\n");
+									// if (showSerial == true)
+									// 	Serial.print(
+									// 		DevUtils::termColor("red") +
+									// 		"No signals found for " +
+									// 		String(tempNewCraft.callsign) +
+									// 		DevUtils::termColor("reset") +
+									// 		"\n");
 									t++;
 									continue;
 								} else {
@@ -2659,15 +2628,14 @@ void parseData(const char* payload)
 								// }
 
 								if (showSerial) {
-									Serial.println();
-								}
-
-								char validatedBuffer [256];
+									char validatedBuffer [256];
 									snprintf(
 										validatedBuffer,
 										sizeof(validatedBuffer),
-										"%sValidated: (%s) %s%s\n", DevUtils::termColor("green"), tempNewCraft.callsign, name, DevUtils::termColor("reset"));
-									Serial.print(validatedBuffer);
+										"%sValidated: (%s) %s%s\n", DevUtils::termColor("green"), tempNewCraft.callsign, name, DevUtils::termColor("reset")
+									);
+									Serial.print(validatedBuffer);			
+								}
 
 
 								feedWatchdog();
@@ -2850,7 +2818,7 @@ bool handleHttpResponse(uint16_t httpResponseCode) {
 		try {
 			// String res = http.getString();
 			// const char* charRes = res.c_str();
-			logOutput("green", "HTTP response received");
+			logOutput("green", "HTTP response received:" + String(httpResponseCode));
 			usingDummyData = false;
 			return true;
 		}
@@ -2868,7 +2836,7 @@ bool attemptHTTPConnection(const String& url) {
 		return false;
 	}
 	feedWatchdog();
-	http.setTimeout(3000);
+	http.setTimeout(5000);
 	http.addHeader("Content-Type", "text/xml");
 	int httpResponseCode = http.GET();
 	feedWatchdog();
@@ -2876,39 +2844,80 @@ bool attemptHTTPConnection(const String& url) {
 }
 
 bool fetchHTTPData(const String& url) {
+	bool showSerial = FileUtils::config.debugUtils.showSerial;
+
 	const int maxHttpRetries = 3;
 	for (int retry = 0; retry < maxHttpRetries; retry++) {
 		feedWatchdog(); // HTTP connection can sometimes be slow
-		try {
-			if (attemptHTTPConnection(url)) {
-				String res = http.getString();
-				feedWatchdog(); // The response may be large, just in case
+		
+		char conectionAttemptBuffer[128];
+		snprintf(
+			conectionAttemptBuffer,
+			sizeof(conectionAttemptBuffer),
+			"%sHTTP connection attempt %d of %d%s\n",
+			DevUtils::termColor("yellow"),
+			retry + 1,
+			maxHttpRetries,
+			DevUtils::termColor("reset")
+		);
 
-				File xmlFile = LittleFS.open("/temp.xml", "w");
-				if (!xmlFile) {
-					logOutput("red", "Failed to open XML file for writing");
-					http.end();
-					return false;
+		try {
+			if (attemptHTTPConnection(url) == true) {
+				if (showSerial) {
+					Serial.print("Getting string from API response...\n");
 				}
 
-				size_t bytesWritten = xmlFile.print(res);
-				xmlFile.close();
-				feedWatchdog(); // Just in case writing to the file is slow
+				try {
+					String res = http.getString();
+
+					if (res.length() == 0) {
+						Serial.println("Response timeout");
+						http.end();
+						return false;
+					}
+
+					if (res == nullptr or res == "") {
+						Serial.print("Error: API response is empty\n");
+						http.end();
+						return false;
+					}
+
+					feedWatchdog(); // The response may be large, just in case
+					
+					if (showSerial) {
+						Serial.print("Writing XML data to file...\n");
+					}
+
+					File xmlFile = LittleFS.open("/temp.xml", "w");
+					if (!xmlFile) {
+						logOutput("red", "Failed to open XML file for writing");
+						http.end();
+						return false;
+					}
+
+					size_t bytesWritten = xmlFile.print(res);
+					xmlFile.close();
+					feedWatchdog(); // Just in case writing to the file is slow
+				}
+				catch (...) {
+					Serial.print("Error getting string from API response\n");
+				}
 
 				http.end();
 				return true; // XML data saved to LittleFS
 			} else {
+				http.end();
 				if (FileUtils::config.debugUtils.showSerial == true)
 					Serial.println("[fetchHTTPData] Failed to fetch data");
 			}
 
-			vTaskDelay(pdMS_TO_TICKS(500)); // Wait to allow other tasks to run
+			// vTaskDelay(pdMS_TO_TICKS(100)); // Wait to allow other tasks to run
 		}
 		catch (...) {
 			Serial.println("Error: fetchHTTPData() failed");
 			dev.handleException();
 			http.end();  // Close connection in case of an exception
-			vTaskDelay(pdMS_TO_TICKS(1000)); // Replace delay with vTaskDelay
+			vTaskDelay(pdMS_TO_TICKS(100)); // Replace delay with vTaskDelay
 		}
 	}
 	http.end();  // Ensure connection is closed even if no successful fetch
@@ -2942,6 +2951,7 @@ void fetchData() {
 
 	if (!forceDummyData && isWiFiConnected()) {
 		String url = generateFetchUrl();
+		
 		if (showSerial) {
 			char deviceIPBuffer[128];
 			String deviceIP = WiFi.localIP().toString();
@@ -2954,15 +2964,17 @@ void fetchData() {
 				connectedNetwork
 			);
 			Serial.print(deviceIPBuffer);
-			
-			char urlBuffer[256];
-			snprintf(
-				urlBuffer,
-				sizeof(urlBuffer),
-				"Generated URL: %s\n",
-				url.c_str()
-			);
-			Serial.print(urlBuffer);
+
+			Serial.print("URL: " + url + "\n");			
+
+			// char urlBuffer[512];
+			// snprintf(
+			// 	urlBuffer,
+			// 	sizeof(urlBuffer),
+			// 	"Generated URL: %s\n",
+			// 	url
+			// );
+			// Serial.print(urlBuffer);
 		}
 
 		dataFetched = fetchHTTPData(url);
@@ -2993,7 +3005,7 @@ void fetchData() {
 	if (dataFetched) {
 		feedWatchdog();
 
-		if (showSerial || true) {
+		if (showSerial) {
 			char dataStatusBuffer[128]; 
 			snprintf(
 				dataStatusBuffer,
@@ -3042,7 +3054,7 @@ void fetchData() {
 		parseData(xmlDataBuffer); // Parse live data
 	} else {
 		// If no data was fetched, use dummy data
-		if (showSerial || true) {
+		if (showSerial) {
 			char dataStatusBuffer[128];
 			snprintf(
 				dataStatusBuffer,
@@ -3182,17 +3194,12 @@ void setup()
 		Serial.print("Config loaded\n\n");
 		FileUtils::printAllConfigFileKeys();
 
-		Serial.print("\n\nCONFIG... \n");
-		Serial.print("showSerial: " + String(FileUtils::config.debugUtils.showSerial) + "\n");
-		Serial.print("diagMeasure: " + String(FileUtils::config.debugUtils.diagMeasure) + "\n");
-		Serial.print("brightness: " + String(FileUtils::config.displayLED.brightness) + "\n\n");
-		// Serial.print("ssid: " + String(FileUtils::config.wifiNetwork.apSSID) + "\n");
 		// if (FileUtils::config.wifiNetwork.apPass != nullptr) {
 		// 	Serial.print("password: " + String(FileUtils::config.wifiNetwork.apPass) + "\n");
 		// } else {
 		// 	Serial.print("password: NULL\n");
 		// }
-		Serial.print("serverName: " + String(FileUtils::config.wifiNetwork.serverName) + "\n");
+		Serial.print("serverName: " + String(FileUtils::config.wifiNetwork.serverName) + "\n\n");
 	} else {
 		Serial.println("An Error has occurred while mounting LittleFS filesystem");
 		Serial.println("Using default config, settings will not be saved");
@@ -3263,8 +3270,8 @@ void setup()
 	wm.setCountry("US");	  // setting wifi country seems to improve OSX soft ap connectivity
 	wm.setConfigPortalBlocking(false);
 	wm.setCleanConnect(true);
-	wm.setConnectRetries(1);
-	wm.setConnectTimeout(5); // connect attempt fails after n seconds	
+	wm.setConnectRetries(3);
+	wm.setConnectTimeout(10); // connect attempt fails after n seconds	
 	// wm.setAPStaticIPConfig(IPAddress(192, 168, 0, 1), IPAddress(192, 168, 0, 1), IPAddress(255, 255, 255, 0)); // set static ip
 	wm.setHostname("JPL_MiniPulse");
 	// wm.setEnableConfigPortal(false); // Disable auto AP, it will be started manually
