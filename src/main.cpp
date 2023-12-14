@@ -368,6 +368,7 @@ unsigned long animationCleanupTimer = 0;
 const uint16_t animationCleanupDelay = 8000;
 const uint8_t meteorOffset = 32;
 const uint8_t offsetHalf = meteorOffset * 0.5;
+unsigned long dataFetchTimerMilliseconds = 0;
 
 #pragma endregion -- END TIMERS
 
@@ -605,7 +606,7 @@ void printCraftInfo(uint listPosition, const char* callsign, const char* name, u
 {
 	char buffer[256];
 	// Serial.print()
-	if ( callsign == nullptr || name == nullptr) {
+	if (callsign == nullptr || name == nullptr) {
 		snprintf(
 			buffer,
 			sizeof(buffer),
@@ -613,7 +614,7 @@ void printCraftInfo(uint listPosition, const char* callsign, const char* name, u
 			listPosition
 		);
 		return;
-    }
+	}
 
 	int written = snprintf(
 		buffer,
@@ -769,13 +770,16 @@ void freeSemaphoreItem(CraftQueueItem* infoBuffer) {
 			sizeof(semaphoreStatusMessage),
 			"%sSemaphore freed: %s [%d/%d]%s\n",
 			DevUtils::termColor("green"),
-			String(infoBuffer->callsignArray),
+			String(infoBuffer->callsignArray).c_str(),
 			freeListTop,
 			MAX_ITEMS,
 			DevUtils::termColor("reset")
 		);
 		infoBuffer = nullptr;
-		xSemaphoreGive(freeListMutex);
+
+		if (freeListMutex != nullptr) {
+			xSemaphoreGive(freeListMutex);
+		}
 	}
 }
 
@@ -1684,7 +1688,7 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 	// Debug log
 	if (showSerial) {
 		const char* direction = isDown ? "(↓)" : "(↑)";
-		char buffer[256];	
+		char buffer[256];
 
 		snprintf(
 			buffer,
@@ -2247,14 +2251,14 @@ CraftQueueItem* assignValuesToCraftSemaphore(CraftQueueItem* tempNewCraft) {
 
 	// Get a free item from the freeList
 	// Serial.println("freeListTop: " + String(freeListTop));
-	
+
 	if (freeListTop < 0) freeListTop = 0;
 	if (freeListTop >= MAX_ITEMS) freeListTop = MAX_ITEMS - 1;
 
 	for (uint8_t i = MAX_ITEMS - 1; i > 0; i--) {
 		if (freeList[i] != nullptr) {
 			// Serial.print("is not nullptr");
-		
+
 			newCraft = freeList[freeListTop];
 
 			// Copy callsign
@@ -2273,7 +2277,7 @@ CraftQueueItem* assignValuesToCraftSemaphore(CraftQueueItem* tempNewCraft) {
 
 			// Copy up signal
 			newCraft->upSignal = tempNewCraft->upSignal;
-		}else {
+		} else {
 			Serial.print("freeList[" + String(i) + "] is nullptr\n");
 		}
 	}
@@ -2308,6 +2312,8 @@ void parseData(const char* payload)
 {
 	bool showSerial = FileUtils::config.debugUtils.showSerial;
 	feedWatchdog();
+	static bool semaphoreTaken = false;
+
 
 	/* XML Parsing */
 	XMLDocument xmlDocument; // Create variable for XML document
@@ -2351,7 +2357,7 @@ void parseData(const char* payload)
 				DevUtils::termColor("reset")
 			);
 			Serial.print(xmlErrorBuffer);
-		}	
+		}
 
 		return;
 	}
@@ -2378,6 +2384,7 @@ void parseData(const char* payload)
 
 	/* Parse the XML file */
 	if (xSemaphoreTake(freeListMutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
+		semaphoreTaken = true;
 		printSemaphoreList();
 		if (freeListTop >= 0) {
 			CraftQueueItem tempNewCraft = {};
@@ -2581,7 +2588,7 @@ void parseData(const char* payload)
 
 
 								if (showSerial == true) {
-									char validatedBuffer [256];
+									char validatedBuffer[256];
 									snprintf(
 										validatedBuffer,
 										sizeof(validatedBuffer),
@@ -2617,24 +2624,24 @@ void parseData(const char* payload)
 								/** TARGET HAS BEEN FULLY VALIDATED
 								 * We hav all of the info needed for this new craft
 								 * **/
-								// if (showSerial == true) {
-								// 	Serial.print("======== TEMP NEW CRAFT ========\n");
-								// 	Serial.print("callsign: " + String(tempNewCraft.callsign) + "\n");
-								// 	Serial.print("name: " + String(tempNewCraft.name) + "\n");
-								// 	Serial.print("nameLength: " + String(tempNewCraft.nameLength) + "\n");
-								// 	Serial.print("downSignal: " + String(tempNewCraft.downSignal) + "\n");
-								// 	Serial.print("upSignal: " + String(tempNewCraft.upSignal) + "\n");
-								// 	Serial.print("================================\n");
-								// }
+								 // if (showSerial == true) {
+								 // 	Serial.print("======== TEMP NEW CRAFT ========\n");
+								 // 	Serial.print("callsign: " + String(tempNewCraft.callsign) + "\n");
+								 // 	Serial.print("name: " + String(tempNewCraft.name) + "\n");
+								 // 	Serial.print("nameLength: " + String(tempNewCraft.nameLength) + "\n");
+								 // 	Serial.print("downSignal: " + String(tempNewCraft.downSignal) + "\n");
+								 // 	Serial.print("upSignal: " + String(tempNewCraft.upSignal) + "\n");
+								 // 	Serial.print("================================\n");
+								 // }
 
 								if (showSerial) {
-									char validatedBuffer [256];
+									char validatedBuffer[256];
 									snprintf(
 										validatedBuffer,
 										sizeof(validatedBuffer),
 										"%sValidated: (%s) %s%s\n", DevUtils::termColor("green"), tempNewCraft.callsign, name, DevUtils::termColor("reset")
 									);
-									Serial.print(validatedBuffer);			
+									Serial.print(validatedBuffer);
 								}
 
 
@@ -2645,8 +2652,8 @@ void parseData(const char* payload)
 								if (isValidCraftQueueItem(newCraft)) {
 									sendCrafToQueue(newCraft);
 
-								// if (showSerial == true)
-								// 	Serial.print("craft item is valid\n");
+									// if (showSerial == true)
+									// 	Serial.print("craft item is valid\n");
 
 									breakParseLoop = true; // Break out of all loops
 									targetCount = t; // Set the global target counter to the current target number
@@ -2654,7 +2661,6 @@ void parseData(const char* payload)
 									stationCount = s; // Set the global station counter to the current station number
 
 									// Serial.println("free semaphore in target loop");
-									xSemaphoreGive(freeListMutex);
 									feedWatchdog();
 
 									break;
@@ -2715,7 +2721,10 @@ void parseData(const char* payload)
 					}
 					dev.handleException();
 					parseCounter++;
-					xSemaphoreGive(freeListMutex);
+					if (semaphoreTaken == true && freeListMutex != nullptr) {
+						xSemaphoreGive(freeListMutex);
+						semaphoreTaken = false;
+					}
 					return;
 				}
 
@@ -2723,18 +2732,30 @@ void parseData(const char* payload)
 			} // End arbitary loop
 
 			incrementDataParseCounter();
-			xSemaphoreGive(freeListMutex); //Line 2753 throwing error
+			if (semaphoreTaken == true && freeListMutex != nullptr) {
+				xSemaphoreGive(freeListMutex);
+				semaphoreTaken == false;
+			}
+
 			feedWatchdog();
 			return;
+
 		} else {
 			// There are no free items in the queue item pool
 			Serial.println("No free items in queue item pool");
-			xSemaphoreGive(freeListMutex);
+			if (semaphoreTaken == true && freeListMutex != nullptr) {
+				xSemaphoreGive(freeListMutex);
+				semaphoreTaken = false;
+			}
+
 			return;
 		}
 
 
-		xSemaphoreGive(freeListMutex);
+		if (semaphoreTaken == true && freeListMutex != nullptr) {
+			xSemaphoreGive(freeListMutex);
+			semaphoreTaken == false;
+		}
 
 		if (FileUtils::config.debugUtils.showSerial == true)
 			Serial.print("XML Parse attempts: " + String(parseCounter) + "\n");
@@ -2757,7 +2778,7 @@ void logOutput(const char* color, const String& message) {
 		const char* coloredMessage = coloredMessageString.c_str();
 
 		int bufferSize = strlen(coloredMessage) + message.length() + strlen(resetColor) + 2; // +1 for newline, +1 for null terminator
-		
+
 		const char* messageCharPtr = message.c_str();
 
 		char* buffer = (char*)malloc(bufferSize);
@@ -2811,13 +2832,15 @@ char* generateFetchUrl() {
 
 
 bool handleHttpResponse(uint16_t httpResponseCode) {
+	/* MANUAL DEBUG */
+	// Serial.print("HTTP Response: " + String(httpResponseCode) + " - " + http.errorToString(httpResponseCode) + "\n");
+	
+	
 	if (httpResponseCode != 200) {
-		Serial.print("HTTP Response: " + String(httpResponseCode) + " - " + http.errorToString(httpResponseCode) + "\n");
+		logOutput("red", "HTTP Response: " + String(httpResponseCode) + " - " + http.errorToString(httpResponseCode) + "\n");
 		return false;
 	} else {
 		try {
-			// String res = http.getString();
-			// const char* charRes = res.c_str();
 			logOutput("green", "HTTP response received:" + String(httpResponseCode));
 			usingDummyData = false;
 			return true;
@@ -2849,7 +2872,7 @@ bool fetchHTTPData(const String& url) {
 	const int maxHttpRetries = 3;
 	for (int retry = 0; retry < maxHttpRetries; retry++) {
 		feedWatchdog(); // HTTP connection can sometimes be slow
-		
+
 		char conectionAttemptBuffer[128];
 		snprintf(
 			conectionAttemptBuffer,
@@ -2870,20 +2893,14 @@ bool fetchHTTPData(const String& url) {
 				try {
 					String res = http.getString();
 
-					if (res.length() == 0) {
-						Serial.println("Response timeout");
-						http.end();
-						return false;
-					}
-
-					if (res == nullptr or res == "") {
+					if (res == nullptr or res.length() == 0 or res == "") {
 						Serial.print("Error: API response is empty\n");
 						http.end();
 						return false;
 					}
 
 					feedWatchdog(); // The response may be large, just in case
-					
+
 					if (showSerial) {
 						Serial.print("Writing XML data to file...\n");
 					}
@@ -2951,7 +2968,7 @@ void fetchData() {
 
 	if (!forceDummyData && isWiFiConnected()) {
 		String url = generateFetchUrl();
-		
+
 		if (showSerial) {
 			char deviceIPBuffer[128];
 			String deviceIP = WiFi.localIP().toString();
@@ -2965,7 +2982,7 @@ void fetchData() {
 			);
 			Serial.print(deviceIPBuffer);
 
-			Serial.print("URL: " + url + "\n");			
+			Serial.print("URL: " + url + "\n");
 
 			// char urlBuffer[512];
 			// snprintf(
@@ -3002,16 +3019,21 @@ void fetchData() {
 
 	static char xmlDataBuffer[20480];  // 20KB buffer
 
+	const unsigned long currentMillis = millis();
+	const unsigned long dataFetchDurationSeconds = (currentMillis - dataFetchTimerMilliseconds) / 1000;
+	dataFetchTimerMilliseconds = currentMillis;
+
 	if (dataFetched) {
 		feedWatchdog();
 
 		if (showSerial) {
-			char dataStatusBuffer[128]; 
+			char dataStatusBuffer[128];
 			snprintf(
 				dataStatusBuffer,
 				sizeof(dataStatusBuffer),
-				"%s %s %s\n",
+				"%s + %ds --- %s %s\n",
 				DevUtils::termColor("bg_blue"),
+				dataFetchDurationSeconds,
 				"Using live data",
 				DevUtils::termColor("reset")
 			);
@@ -3059,8 +3081,9 @@ void fetchData() {
 			snprintf(
 				dataStatusBuffer,
 				sizeof(dataStatusBuffer),
-				"%s %s %s\n",
+				"%s + %d --- %s %s\n",
 				DevUtils::termColor("bg_purple"),
+				dataFetchDurationSeconds,
 				"Using dummy data",
 				DevUtils::termColor("reset")
 			);
@@ -3132,7 +3155,7 @@ void getData(void* parameter) {
 					// Serial.println("getData() queue space available");
 
 					vTaskDelay(pdMS_TO_TICKS(100)); // Delay to allow other tasks to run
-					
+
 					fetchData();
 				} else {
 					if (FileUtils::config.debugUtils.showSerial == true)
@@ -3164,8 +3187,6 @@ void getData(void* parameter) {
 * Runs once at startup */
 void setup()
 {
-	esp_task_wdt_init(60, true); // Enable watchdog timer with 60 second timeout
-
 	Serial.begin(115200); // Begin serial communications, ESP32 uses 115200 rate
 
 	DevUtils::SerialBanners::printBootSplashBanner(); // Display fancy splash ASCII graphics
@@ -3480,6 +3501,7 @@ void setup()
 		ESP.restart();
 	}
 
+	esp_task_wdt_init(60, true); // Enable watchdog timer with 60 second timeout
 	// updateFirmwareOta(); // Check for OTA update
 	feedWatchdog();
 	delay(1000);
