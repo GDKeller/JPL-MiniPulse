@@ -23,8 +23,7 @@ void SpacecraftData::loadJson() {
 // Create and write spacecraft names file
 void SpacecraftData::createAndWriteNamesFile() {
     if (LittleFS.exists("/spacecraft_data/names.json")) {
-        Serial.println("names.json already exists");
-        // return;
+        Serial.println("names.json already exists, overwriting...");
     }
 
     // Open file for writing
@@ -194,8 +193,7 @@ void SpacecraftData::loadSpacecraftNamesFile()
 
 void SpacecraftData::createAndWriteBlacklistFile() {
     if (LittleFS.exists("/spacecraft_data/blacklist.json")) {
-        Serial.println("blacklist.json already exists");
-        return;
+        Serial.println("blacklist.json already exists, overwriting...");
     }
 
     // Open file for writing
@@ -289,11 +287,10 @@ void SpacecraftData::createAndWritePlaceholderRatesFile() {
     Serial.println("Looking for placeholder_rates.json...");
     FileUtils::listFilesystem("/", 0);
 
-    try {        
+    try {
         bool fileExists = LittleFS.exists("/spacecraft_data/placeholder_rates.json");
         if (fileExists) {
-            Serial.println("/spacecraft_data/placeholder_rates.json already exists");
-            return;
+            Serial.println("/spacecraft_data/placeholder_rates.json already exists, overwriting...");
         }
     } catch (const std::exception& e) {
         Serial.println("Error: " + String(e.what()));
