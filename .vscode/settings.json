@@ -12,5 +12,6 @@
         "type_traits": "cpp",
         "utility": "cpp",
         "new": "cpp"
-    }
+    },
+    "cmake.configureOnOpen": false
 }
