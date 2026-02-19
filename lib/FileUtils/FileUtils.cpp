@@ -364,11 +364,11 @@ void FileUtils::updateDebugUtilsField(const char* key, const JsonVariant& value)
 
 void FileUtils::updateWifiNetworkField(const char* key, const JsonVariant& value) {
 	if (strcmp(key, "apSSID") == 0) {
-		strncpy(config.wifiNetwork.apSSID, value, sizeof(config.wifiNetwork.apSSID));
+		strlcpy(config.wifiNetwork.apSSID, value, sizeof(config.wifiNetwork.apSSID));
 	} else if (strcmp(key, "apPass") == 0) {
-		strncpy(config.wifiNetwork.apPass, value, sizeof(config.wifiNetwork.apPass));
+		strlcpy(config.wifiNetwork.apPass, value, sizeof(config.wifiNetwork.apPass));
 	} else if (strcmp(key, "serverName") == 0) {
-		strncpy(config.wifiNetwork.serverName, value, sizeof(config.wifiNetwork.serverName));
+		strlcpy(config.wifiNetwork.serverName, value, sizeof(config.wifiNetwork.serverName));
 	} else if (strcmp(key, "forceDummyData") == 0) {
 		config.wifiNetwork.forceDummyData = value;
 	} else if (strcmp(key, "retryDataFetchLimit") == 0) {

@@ -745,7 +745,7 @@ void printSemaphoreList() {
 	}
 }
 
-void freeSemaphoreItem(CraftQueueItem* infoBuffer) {
+void freeSemaphoreItem(CraftQueueItem*& infoBuffer) {
 	feedWatchdog();
 	if (xSemaphoreTake(freeListMutex, pdMS_TO_TICKS(500)) == pdTRUE) {
 
@@ -1662,7 +1662,7 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 
 	// Determine animation type
 	// uint8_t randomTypeAny = (rateClass <= 2) ? 0 : random8(0, 5);
-	uint8_t randomTypeAny;
+	uint8_t randomTypeAny = 0;
 	// Serial.println("random roll: " + String(randomTypeAny));
 
 	if ((isDown && animateFirstCycleDown) || (!isDown && animateFirstCycleUp)) {
@@ -3482,7 +3482,7 @@ void setup()
 	/* Assign config to global state variables */
 	characterWidth = FileUtils::config.textTypography.characterWidth;
 
-	setColorTheme(colorTheme); // Set color theme
+	setColorTheme(FileUtils::config.miscellaneous.colorTheme); // Set color theme
 	// drawBottomPixels();		   // Draw initial bottom pixels
 	delay(100);				   // Small delay to allow bottom pixels to draw
 	feedWatchdog();
@@ -3603,9 +3603,8 @@ void loop() {
 
 				freeSemaphoreItem(infoBuffer);
 
-				if (!firstStartupAnimation) {
+				if (firstStartupAnimation) {
 					firstStartupAnimation = false;
-				} else {
 					displayDurationTimer = currentMillis;
 				}
 			}
