@@ -132,7 +132,7 @@ void DevUtils::SerialBanners::printBootSplashBanner() {
     output += "  | $$ \\/  | $$| $$| $$  | $$| $$| $$      |  $$$$$$/| $$ /$$$$$$$/|  $$$$$$$\n";
     output += "  |__/     |__/|__/|__/  |__/|__/|__/       \\______/ |__/|_______/  \\_______/\n\n";
     output += "::::::::: ::::::::::: ::::::::::: ::::::::::: ::::::::::: ::::::::::: :::::::::\n\n";
-    // output += DevUtils::termColor("reset");
+    output += DevUtils::termColor("reset");
     Serial.print(output);
 }
 
