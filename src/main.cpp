@@ -3593,9 +3593,9 @@ void loop() {
 
 				freeSemaphoreItem(infoBuffer);
 
+				displayDurationTimer = currentMillis;
 				if (firstStartupAnimation) {
 					firstStartupAnimation = false;
-					displayDurationTimer = currentMillis;
 				}
 			}
 		}
