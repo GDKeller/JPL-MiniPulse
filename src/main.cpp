@@ -1,4 +1,4 @@
-const char* currentFirmwareVersion = "1.0.4"; // Current firmware version
+const char* currentFirmwareVersion = "1.1.0-1"; // Current firmware version
 
 #pragma region -- LIBRARIES
 #include <Arduino.h>		// Arduino core
