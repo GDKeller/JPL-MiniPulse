@@ -2246,7 +2246,7 @@ void incrementDataParseCounter() {
 }
 
 CraftQueueItem* assignValuesToCraftSemaphore(CraftQueueItem* tempNewCraft) {
-	CraftQueueItem* newCraft;
+	CraftQueueItem* newCraft = nullptr;
 
 	// Get a free item from the freeList
 	// Serial.println("freeListTop: " + String(freeListTop));
@@ -2650,6 +2650,13 @@ void parseData(const char* payload)
 								CraftQueueItem* newCraft = assignValuesToCraftSemaphore(&tempNewCraft);
 
 
+								if (newCraft == nullptr) {
+									if (showSerial == true)
+										Serial.print("assignValuesToCraftSemaphore returned nullptr\n");
+									t++;
+									continue;
+								}
+
 								if (isValidCraftQueueItem(newCraft)) {
 									// SUCCESS - craft validated and sent to the queue
 									// The data fetching process is complete
@@ -2743,7 +2750,7 @@ void parseData(const char* payload)
 			incrementDataParseCounter();
 			if (semaphoreTaken == true && freeListMutex != nullptr) {
 				xSemaphoreGive(freeListMutex);
-				semaphoreTaken == false;
+				semaphoreTaken = false;
 			}
 
 			feedWatchdog();
@@ -2764,7 +2771,7 @@ void parseData(const char* payload)
 
 		if (semaphoreTaken == true && freeListMutex != nullptr) {
 			xSemaphoreGive(freeListMutex);
-			semaphoreTaken == false;
+			semaphoreTaken = false;
 		}
 
 		if (FileUtils::config.debugUtils.showSerial == true)
@@ -3117,7 +3124,7 @@ void fetchData() {
 
 	feedWatchdog();
 
-	if (!isWiFiConnected && wm.getWiFiIsSaved() == true) {
+	if (!isWiFiConnected() && wm.getWiFiIsSaved() == true) {
 		Serial.print("Trying to reconnect to WiFi \"" + String(wm.getWiFiSSID()) + "\"\n");
 
 		bool res = wm.autoConnect(FileUtils::config.wifiNetwork.apSSID, FileUtils::config.wifiNetwork.apPass);
@@ -3491,17 +3498,7 @@ void setup()
 	freeList[4] = &itemPool[4];
 	xSemaphoreGive(freeListMutex); // Give the mutex back when done accessing shared data
 
-	/* Initialize the data task on the second core */
-	xTaskCreatePinnedToCore(
-		getData,	  /* Function to implement the task */
-		"getData",	  /* Name of the task */
-		6144,		  /* Stack size in byts */
-		NULL,		  /* Task input parameter */
-		0,			  /* Priority of the task */
-		&xHandleData, /* Task handle. */
-		0);			  /* Core where the task should run */
-
-	queue = xQueueCreate(5, sizeof(CraftQueueItem)); // Create queue to pass data between tasks on separate cores
+	queue = xQueueCreate(5, sizeof(CraftQueueItem*)); // Create queue to pass data between tasks on separate cores
 
 	// Check that queue was created successfully
 	if (queue == NULL) {
@@ -3515,6 +3512,16 @@ void setup()
 		}
 		ESP.restart();
 	}
+
+	/* Initialize the data task on the second core */
+	xTaskCreatePinnedToCore(
+		getData,	  /* Function to implement the task */
+		"getData",	  /* Name of the task */
+		6144,		  /* Stack size in byts */
+		NULL,		  /* Task input parameter */
+		0,			  /* Priority of the task */
+		&xHandleData, /* Task handle. */
+		0);			  /* Core where the task should run */
 
 	esp_task_wdt_init(60, true); // Enable watchdog timer with 60 second timeout
 	// updateFirmwareOta(); // Check for OTA update
