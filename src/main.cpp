@@ -349,7 +349,7 @@ bool portalRunning = false;
 
 #pragma region -- TIMERS
 /* Time is measured in milliseconds, so long is used */
-uint8_t fpsRate = 60;
+uint8_t fpsRate = 30;
 unsigned long fpsTimer = 0;
 unsigned long perfTimer = 0;
 unsigned long perfDiff = 0;
@@ -2015,13 +2015,30 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 		}
 	}
 
-	drawMeteors(); // Assign new pixels for meteors
-	EVERY_N_MILLISECONDS(100) updateBottomPixels();
-	FastLED.show(); // Update LEDs
-	updateMeteors(); // Update first pixel location for all active Meteors in array
+	// Gate render + update to achievable frame rate (~30 FPS)
+	if (currentMillis - fpsTimer >= fpsInMs) {
+		fpsTimer = currentMillis;
 
-	if (showDiagnostics)
-		FastLED.countFPS();
+		unsigned long frameStart = millis();
+		drawMeteors(); // Assign new pixels for meteors
+		EVERY_N_MILLISECONDS(100) updateBottomPixels();
+		FastLED.show(); // Update LEDs
+		updateMeteors(); // Advance meteor positions for next frame
+		unsigned long frameTime = millis() - frameStart;
+
+		if (showDiagnostics) {
+			FastLED.countFPS();
+			Serial.print("frameMs:");
+			Serial.print(frameTime);
+			Serial.print(",heap:");
+			Serial.print(ESP.getFreeHeap() / 1024);
+			Serial.print(",heapFrag:");
+			Serial.print((ESP.getMaxAllocHeap() * 100) / ESP.getFreeHeap());
+			Serial.print(",");
+		}
+	} else {
+		vTaskDelay(1); // Yield to FreeRTOS scheduler when not rendering
+	}
 }
 
 #pragma endregion -- ANIMATION FUNCTIONS
