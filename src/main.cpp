@@ -1,4 +1,4 @@
-const char* currentFirmwareVersion = "1.1.0-2"; // Current firmware version
+const char* currentFirmwareVersion = "1.1.0-3"; // Current firmware version
 
 #pragma region -- LIBRARIES
 #include <Arduino.h>		// Arduino core
@@ -2889,7 +2889,9 @@ bool attemptHTTPConnection(const String& url) {
 	return handleHttpResponse(httpResponseCode);
 }
 
-bool fetchHTTPData(const String& url) {
+static char xmlDataBuffer[20480];  // 20KB buffer for XML data from HTTP response
+
+bool fetchHTTPData(const String& url, char* buffer, size_t bufferSize) {
 	bool showSerial = FileUtils::config.debugUtils.showSerial;
 
 	const int maxHttpRetries = 3;
@@ -2924,44 +2926,42 @@ bool fetchHTTPData(const String& url) {
 
 					feedWatchdog(); // The response may be large, just in case
 
-					if (showSerial) {
-						Serial.print("Writing XML data to file...\n");
-					}
-
-					File xmlFile = LittleFS.open("/temp.xml", "w");
-					if (!xmlFile) {
-						logOutput("red", "Failed to open XML file for writing");
+					if (res.length() >= bufferSize) {
+						if (showSerial)
+							Serial.println("[fetchHTTPData] Response too large for buffer");
 						http.end();
 						return false;
 					}
 
-					size_t bytesWritten = xmlFile.print(res);
-					xmlFile.close();
-					feedWatchdog(); // Just in case writing to the file is slow
+					memcpy(buffer, res.c_str(), res.length());
+					buffer[res.length()] = '\0';
+
+					if (showSerial)
+						Serial.println("[fetchHTTPData] XML data copied to buffer (" + String(res.length()) + " bytes)");
 				}
 				catch (...) {
 					Serial.print("Error getting string from API response\n");
+					http.end();
+					return false;
 				}
 
 				http.end();
-				return true; // XML data saved to LittleFS
+				return true;
 			} else {
 				http.end();
 				if (FileUtils::config.debugUtils.showSerial == true)
 					Serial.println("[fetchHTTPData] Failed to fetch data");
 			}
-
-			// vTaskDelay(pdMS_TO_TICKS(100)); // Wait to allow other tasks to run
 		}
 		catch (...) {
 			Serial.println("Error: fetchHTTPData() failed");
 			dev.handleException();
-			http.end();  // Close connection in case of an exception
-			vTaskDelay(pdMS_TO_TICKS(100)); // Replace delay with vTaskDelay
+			http.end();
+			vTaskDelay(pdMS_TO_TICKS(100));
 		}
 	}
-	http.end();  // Ensure connection is closed even if no successful fetch
-	return false;  // No data fetched
+	http.end();
+	return false;
 }
 
 
@@ -3019,7 +3019,7 @@ void fetchData() {
 			// Serial.print(urlBuffer);
 		}
 
-		dataFetched = fetchHTTPData(url);
+		dataFetched = fetchHTTPData(url, xmlDataBuffer, sizeof(xmlDataBuffer));
 
 		if (showSerial) {
 			const char* dataFetchedStatusString = dataFetched ? "Success" : "Failure";
@@ -3040,16 +3040,12 @@ void fetchData() {
 		}
 	}
 
-	File xmlFile;
-
-	static char xmlDataBuffer[20480];  // 20KB buffer
-
 	const unsigned long currentMillis = millis();
 	const unsigned long dataFetchDurationSeconds = (currentMillis - dataFetchTimerMilliseconds) / 1000;
 	dataFetchTimerMilliseconds = currentMillis;
 
 	if (dataFetched) {
-		// Data was fetched, use live data
+		// Data was fetched directly into xmlDataBuffer, use live data
 		feedWatchdog();
 		usingDummyData = false;
 
@@ -3066,38 +3062,6 @@ void fetchData() {
 			);
 			Serial.print(dataStatusBuffer);
 		}
-
-		xmlFile = LittleFS.open("/temp.xml", "r");
-		if (!xmlFile) {
-			if (showSerial)
-				Serial.println("[fetchData] Failed to open XML file for reading.");
-
-			return;
-		}
-		size_t xmlFileSize = xmlFile.size();
-
-		if (showSerial)
-			Serial.println("[fetchData] XML file size: " + String(xmlFileSize));
-
-		if (xmlFileSize > sizeof(xmlDataBuffer) - 1) {
-			if (showSerial)
-				Serial.println(DevUtils::termColor("red") + "[fetchData] XML file is too large for buffer." + DevUtils::termColor("reset"));
-
-			xmlFile.close();
-			return;
-		}
-
-		feedWatchdog();
-
-		// Read the entire file into the buffer
-		xmlFile.readBytes(xmlDataBuffer, xmlFileSize);
-		xmlDataBuffer[xmlFileSize] = '\0'; // Null-terminate the string
-
-		xmlFile.close();
-		LittleFS.remove("/temp.xml"); // Optionally delete the file after reading
-
-		if (showSerial)
-			Serial.println("[fetchData] XML file read");
 
 		feedWatchdog();
 		parseData(xmlDataBuffer); // Parse live data
