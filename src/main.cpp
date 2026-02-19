@@ -1,4 +1,4 @@
-const char* currentFirmwareVersion = "1.0.3"; // Current firmware version
+const char* currentFirmwareVersion = "1.0.4"; // Current firmware version
 
 #pragma region -- LIBRARIES
 #include <Arduino.h>		// Arduino core
@@ -237,7 +237,6 @@ bool otaUpdateTriggered = false; // Flag to indicate OTA update has been trigger
 bool usingDummyData = false; // If true, use dummy data instead of actual data
 bool forceDummyData = false;
 uint8_t noTargetFoundCounter = 0;  // Keeps track of how many times target is not found
-uint8_t noTargetLimit = 3;		   // After target is not found this many times, switch to dummy XML data
 uint8_t retryDataFetchCounter = 0; // Keeps track of how many times data fetch failed
 uint8_t retryDataFetchLimit = 3;  // After dummy data is used this many times, try to get actual data again
 bool dataStarted = false;
@@ -2313,7 +2312,9 @@ void parseData(const char* payload)
 	bool showSerial = FileUtils::config.debugUtils.showSerial;
 	feedWatchdog();
 	static bool semaphoreTaken = false;
-
+	
+	if (showSerial)
+		Serial.print("Data Parse attempts: " + String(parseCounter) + "\n");
 
 	/* XML Parsing */
 	XMLDocument xmlDocument; // Create variable for XML document
@@ -2391,15 +2392,15 @@ void parseData(const char* payload)
 			bool breakParseLoop = false;
 
 			/* Loop through all XML elements */
-			// 10 is an arbitrary number to prevent an infinite loop
-			for (int i = 0; i < 10; i++) {
+			// 2 attempts at loop
+			for (int i = 0; i < 2; i++) {
 				// Serial.println("Parsing loop: " + String(i));
 				feedWatchdog();
-				// if (showSerial == true) {
-				// 	Serial.print("\n───────────────────────────────────────────────────────────────────\n");
-				// 	Serial.print("  Parse Counters -- Station: " + String(stationCount) + " | Dish: " + String(dishCount) + " | Target: " + String(targetCount) + " | Signal: " + String(signalCount));
-				// 	Serial.print("\n───────────────────────────────────────────────────────────────────\n\n");
-				// }
+				if (showSerial == true) {
+					Serial.print("\n───────────────────────────────────────────────────────────────────\n");
+					Serial.print("  Parse Counters -- Station: " + String(stationCount) + " | Dish: " + String(dishCount) + " | Target: " + String(targetCount) + " | Signal: " + String(signalCount));
+					Serial.print("\n───────────────────────────────────────────────────────────────────\n\n");
+				}
 				try {
 					int s = 0; // Create station elements counter
 					for (XMLElement* xmlStation = root->FirstChildElement("station"); true; xmlStation = xmlStation->NextSiblingElement("station")) {
@@ -2650,17 +2651,25 @@ void parseData(const char* payload)
 
 
 								if (isValidCraftQueueItem(newCraft)) {
+									// SUCCESS - craft validated and sent to the queue
+									// The data fetching process is complete
 									sendCrafToQueue(newCraft);
-
-									// if (showSerial == true)
-									// 	Serial.print("craft item is valid\n");
-
-									breakParseLoop = true; // Break out of all loops
-									targetCount = t; // Set the global target counter to the current target number
-									dishCount = d; // Set the global dish counter to the current dish number
-									stationCount = s; // Set the global station counter to the current station number
-
-									// Serial.println("free semaphore in target loop");
+									
+									if (usingDummyData == true) {
+										if (parseCounter >= retryDataFetchLimit) {
+											parseCounter = 0;
+											breakParseLoop = true; // Break out of all loops
+											targetCount = 0; // Reset the global target counter
+											dishCount = 0; // Reset the global dish counter
+											stationCount = 0; // Reset the global station counter
+										}
+									} else {
+										parseCounter = 0;		
+										breakParseLoop = true; // Break out of all loops
+										targetCount = t; // Set the global target counter to the current target number
+										dishCount = d; // Set the global dish counter to the current dish number
+										stationCount = s; // Set the global station counter to the current station number
+									}
 									feedWatchdog();
 
 									break;
@@ -2738,6 +2747,7 @@ void parseData(const char* payload)
 			}
 
 			feedWatchdog();
+			parseCounter++;
 			return;
 
 		} else {
@@ -2758,7 +2768,7 @@ void parseData(const char* payload)
 		}
 
 		if (FileUtils::config.debugUtils.showSerial == true)
-			Serial.print("XML Parse attempts: " + String(parseCounter) + "\n");
+			Serial.print("Reached the end of logic for parse attempt: " + String(parseCounter) + "\n");
 		parseCounter++;
 
 		feedWatchdog();
@@ -2842,7 +2852,6 @@ bool handleHttpResponse(uint16_t httpResponseCode) {
 	} else {
 		try {
 			logOutput("green", "HTTP response received:" + String(httpResponseCode));
-			usingDummyData = false;
 			return true;
 		}
 		catch (...) {
@@ -2966,6 +2975,8 @@ void fetchData() {
 
 	bool dataFetched = false;
 
+	bool parseLimitReached = parseCounter >= retryDataFetchLimit;
+
 	if (!forceDummyData && isWiFiConnected()) {
 		String url = generateFetchUrl();
 
@@ -3024,7 +3035,9 @@ void fetchData() {
 	dataFetchTimerMilliseconds = currentMillis;
 
 	if (dataFetched) {
+		// Data was fetched, use live data
 		feedWatchdog();
+		usingDummyData = false;
 
 		if (showSerial) {
 			char dataStatusBuffer[128];
@@ -3076,6 +3089,8 @@ void fetchData() {
 		parseData(xmlDataBuffer); // Parse live data
 	} else {
 		// If no data was fetched, use dummy data
+		usingDummyData = true;
+		
 		if (showSerial) {
 			char dataStatusBuffer[128];
 			snprintf(
@@ -3513,7 +3528,6 @@ void setup()
  * Runs repeatedly as long as board is on
  */
 void loop() {
-	feedWatchdog();
 	uint32_t currentMillis = millis(); // Store the current time
 
 	bool showSerial = FileUtils::config.debugUtils.showSerial;
@@ -3534,6 +3548,9 @@ void loop() {
 			if (diagMeasureEnabled) {
 				// Serial.printf("Queue: %u\n", uxQueueMessagesWaiting(queue));
 			}
+
+			if (showSerial)
+				Serial.print("Getting new data...\n");
 
 			CraftQueueItem theInfoBuffer; // Buffer to hold data from queue
 			CraftQueueItem* infoBuffer = &theInfoBuffer;

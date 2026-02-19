@@ -47,7 +47,6 @@ class FileUtils {
         char apPass[32];
         char serverName[128]; // DSN XML server URL
         bool forceDummyData;
-        int noTargetLimit;
         int retryDataFetchLimit;
     };
 

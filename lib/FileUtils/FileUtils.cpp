@@ -14,9 +14,7 @@ FileUtils::Config FileUtils::config = {
 		"JPL MiniPulse", // apSSID
 		"",              // apPass
 		"https://eyes.nasa.gov/dsn/data/dsn.xml?r=", // serverName
-		false, // forceDummyData
-		3,     // noTargetLimit
-		10     // retryDataFetchLimit
+		false // forceDummyData
 	},
 	{ // pinsHardware
 		17, // outerPin
@@ -373,8 +371,6 @@ void FileUtils::updateWifiNetworkField(const char* key, const JsonVariant& value
 		strncpy(config.wifiNetwork.serverName, value, sizeof(config.wifiNetwork.serverName));
 	} else if (strcmp(key, "forceDummyData") == 0) {
 		config.wifiNetwork.forceDummyData = value;
-	} else if (strcmp(key, "noTargetLimit") == 0) {
-		config.wifiNetwork.noTargetLimit = value;
 	} else if (strcmp(key, "retryDataFetchLimit") == 0) {
 		config.wifiNetwork.retryDataFetchLimit = value;
 	} else {
