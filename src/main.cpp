@@ -1,4 +1,4 @@
-const char* currentFirmwareVersion = "1.1.0-1"; // Current firmware version
+const char* currentFirmwareVersion = "1.1.0-2"; // Current firmware version
 
 #pragma region -- LIBRARIES
 #include <Arduino.h>		// Arduino core
@@ -749,19 +749,14 @@ void freeSemaphoreItem(CraftQueueItem*& infoBuffer) {
 	feedWatchdog();
 	if (xSemaphoreTake(freeListMutex, pdMS_TO_TICKS(500)) == pdTRUE) {
 
-		if (freeListTop < 0) {
-			Serial.println("Error: freeListTop is " + String(freeListTop) + "\n");
-			freeListTop = 0;
+		if (freeListTop + 1 >= MAX_ITEMS) {
+			Serial.println("Error: free list is full, cannot return item");
+			xSemaphoreGive(freeListMutex);
+			return;
 		}
 
-		if (freeListTop > MAX_ITEMS - 1) {
-			Serial.println("Error: freeListTop is greater than MAX_ITEMS");
-			freeListTop = MAX_ITEMS - 1;
-		}
-
-		freeList[freeListTop] = infoBuffer;
 		freeListTop++;
-
+		freeList[freeListTop] = infoBuffer;
 
 		char semaphoreStatusMessage[128];
 		snprintf(
@@ -770,7 +765,7 @@ void freeSemaphoreItem(CraftQueueItem*& infoBuffer) {
 			"%sSemaphore freed: %s [%d/%d]%s\n",
 			DevUtils::termColor("green"),
 			String(infoBuffer->callsignArray).c_str(),
-			freeListTop,
+			freeListTop + 1,
 			MAX_ITEMS,
 			DevUtils::termColor("reset")
 		);
@@ -2251,37 +2246,32 @@ CraftQueueItem* assignValuesToCraftSemaphore(CraftQueueItem* tempNewCraft) {
 	// Get a free item from the freeList
 	// Serial.println("freeListTop: " + String(freeListTop));
 
-	if (freeListTop < 0) freeListTop = 0;
-	if (freeListTop >= MAX_ITEMS) freeListTop = MAX_ITEMS - 1;
-
-	for (uint8_t i = MAX_ITEMS - 1; i > 0; i--) {
-		if (freeList[i] != nullptr) {
-			// Serial.print("is not nullptr");
-
-			newCraft = freeList[freeListTop];
-
-			// Copy callsign
-			strlcpy(newCraft->callsignArray, tempNewCraft->callsignArray, sizeof(newCraft->callsignArray));
-			newCraft->callsign = newCraft->callsignArray;  // Point to the new data
-
-			// Copy name
-			strlcpy(newCraft->nameArray, tempNewCraft->nameArray, sizeof(newCraft->nameArray));
-			newCraft->name = newCraft->nameArray;  // Point to the new data
-
-			// Copy name length
-			newCraft->nameLength = tempNewCraft->nameLength;
-
-			// Copy down signal
-			newCraft->downSignal = tempNewCraft->downSignal;
-
-			// Copy up signal
-			newCraft->upSignal = tempNewCraft->upSignal;
-		} else {
-			Serial.print("freeList[" + String(i) + "] is nullptr\n");
-		}
+	if (freeListTop < 0 || freeListTop >= MAX_ITEMS) {
+		return newCraft; // Pool empty or invalid state
 	}
 
-	if (freeListTop > 0) freeListTop--;
+	if (freeList[freeListTop] != nullptr) {
+		newCraft = freeList[freeListTop];
+		freeList[freeListTop] = nullptr;
+		freeListTop--;
+
+		// Copy callsign
+		strlcpy(newCraft->callsignArray, tempNewCraft->callsignArray, sizeof(newCraft->callsignArray));
+		newCraft->callsign = newCraft->callsignArray;
+
+		// Copy name
+		strlcpy(newCraft->nameArray, tempNewCraft->nameArray, sizeof(newCraft->nameArray));
+		newCraft->name = newCraft->nameArray;
+
+		// Copy name length
+		newCraft->nameLength = tempNewCraft->nameLength;
+
+		// Copy down signal
+		newCraft->downSignal = tempNewCraft->downSignal;
+
+		// Copy up signal
+		newCraft->upSignal = tempNewCraft->upSignal;
+	}
 
 	return newCraft;
 }
