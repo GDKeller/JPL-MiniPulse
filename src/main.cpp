@@ -843,7 +843,7 @@ void webServerCallback() {
 		const char* remoteFirmwareVersion = getRemoteFirmwareVersion();
 		bool updateAvailable = checkFirmwareUpdateAvailable();
 		const char* updateAvailableText = updateAvailable ? "true" : "false";
-		String response = "Current version: " + String(currentFirmwareVersion) + "<br>Remote Version: " + String(remoteFirmwareVersion) + "<br>Update available: " + String(updateAvailableText);
+		String response = "Current version: " + String(currentFirmwareVersion) + "\nRemote Version: " + String(remoteFirmwareVersion) + "\nUpdate available: " + String(updateAvailableText);
 
 		wm.server->send(200, "text/plain", response);
 
@@ -987,7 +987,8 @@ void saveParamsCallback() {
 
 	// Set program variable
 	Serial.println("Previous forcedAnimationType: " + String(animate.forcedAnimationType));
-	animate.forcedAnimationType = atoi(forcedAnimationTypeValue.c_str());
+	long rawAnimType = strtol(forcedAnimationTypeValue.c_str(), nullptr, 10);
+	animate.forcedAnimationType = (rawAnimType < 0) ? 0 : (rawAnimType > 5) ? 5 : (int)rawAnimType;
 	Serial.println("New forcedAnimationType: " + String(animate.forcedAnimationType));
 
 
@@ -996,23 +997,24 @@ void saveParamsCallback() {
 	String brightnessValue = getParam("brightness");
 	Serial.print("---\nbrightness input: " + brightnessValue + "\n");
 
-	// Convert to int
-	int brightnessInt = atoi(brightnessValue.c_str());
+	// Convert to int and clamp to 0-100% range
+	long rawBrightness = strtol(brightnessValue.c_str(), nullptr, 10);
+	int brightnessInt = (rawBrightness < 0) ? 0 : (rawBrightness > 100) ? 100 : (int)rawBrightness;
 
-	// Map brightness
+	// Map 0-100% to hardware range 8-160
 	int brightnessMapped = MathHelpers::map(brightnessInt, 0, 100, 8, 160);
 
-	// Set program config
+	// Set program config (store hardware value)
 	Serial.print("Previous config brightness: " + String(FileUtils::config.displayLED.brightness) + "\n");
-	FileUtils::config.displayLED.brightness = brightnessInt;
+	FileUtils::config.displayLED.brightness = brightnessMapped;
 	Serial.print("New config brightness: " + String(FileUtils::config.displayLED.brightness) + "\n");
 
-	// Set file conf                                                                                                                         ConfigFileInt("brightness", FileUtils::config.displayLED.brightness);
+	// Set file config
 	FileUtils::writeConfigFileInt("brightness", FileUtils::config.displayLED.brightness);
 	FileUtils::readFile("/config.json");
 	Serial.print("\n");
 
-	// Set LEDs brightness	
+	// Apply to LEDs
 	setGlobalBrightness(FileUtils::config.displayLED.brightness);
 
 
@@ -1022,7 +1024,8 @@ void saveParamsCallback() {
 	Serial.print("---\nforceDummyData input: " + forceDummyDataInputValue + "\n");
 
 	// Convert to int
-	int forceDummyDataInt = atoi(forceDummyDataInputValue.c_str());
+	long rawDummyData = strtol(forceDummyDataInputValue.c_str(), nullptr, 10);
+	int forceDummyDataInt = (rawDummyData < 0) ? 0 : (rawDummyData > 1) ? 1 : (int)rawDummyData;
 
 	// Set program config
 	Serial.print("Previous config forceDummyData: " + String(FileUtils::config.wifiNetwork.forceDummyData) + "\n");
@@ -3303,14 +3306,13 @@ void setup()
 	// set dark theme
 	wm.setClass("invert");
 
-	int brightnessMapped = MathHelpers::map(FileUtils::config.displayLED.brightness, 8, 160, 0, 100);
-
+	int brightnessPercent = MathHelpers::map(FileUtils::config.displayLED.brightness, 8, 160, 0, 100);
 
 	/* User Settings */
-	new (&param_brightness) WiFiManagerParameter("brightness", "Brightness", String(FileUtils::config.displayLED.brightness).c_str(), 3, "type='range' min='8' max='160' step='1'");
+	new (&param_brightness) WiFiManagerParameter("brightness", "Brightness", String(brightnessPercent).c_str(), 3, "type='range' min='0' max='100' step='1'");
 	wm.addParameter(&param_brightness);
 
-	new (&param_force_dummy_data) WiFiManagerParameter("force-dummy-data", "Force placeholder data", String(FileUtils::config.displayLED.brightness).c_str(), 3, "type='range' min='8' max='160' step='1'");
+	new (&param_force_dummy_data) WiFiManagerParameter("force_dummy_data", "Force placeholder data", String(FileUtils::config.wifiNetwork.forceDummyData).c_str(), 1, "type='checkbox' value='1'");
 	wm.addParameter(&param_force_dummy_data);
 
 	/* Developer Settings */
@@ -3330,7 +3332,7 @@ void setup()
 	const char* update_button_html = R"---(
 		<div>
 			<div style="display: inline-block; border: 1px solid gray;padding:5px 20px;">
-				<p id="firmwareStatus" style="margin-top:0;></p>
+				<p id="firmwareStatus" style="margin-top:0; white-space:pre-line;"></p>
 				<p id="updateResponse"></p>
 				<button id="updateButton">Update Firmware</button>
 			</div>
@@ -3341,7 +3343,7 @@ void setup()
 				return response.text();
 			}).
 			then(function (text) {
-				document.getElementById("firmwareStatus").innerHTML = text;
+				document.getElementById("firmwareStatus").textContent = text;
 				console.log(text);
 			})
 
@@ -3351,7 +3353,7 @@ void setup()
 					return response.text();
 				})
 				.then(function (text) {
-					document.getElementById("updateResponse").innerHTML = text;
+					document.getElementById("updateResponse").textContent = text;
 					console.log("response:", text);
 				})
 				.catch(function (error) {
