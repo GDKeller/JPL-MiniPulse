@@ -1,4 +1,4 @@
-const char* currentFirmwareVersion = "1.1.0-3"; // Current firmware version
+const char* currentFirmwareVersion = "1.1.0-5"; // Current firmware version
 
 #pragma region -- LIBRARIES
 #include <Arduino.h>		// Arduino core
@@ -1039,6 +1039,18 @@ void saveParamsCallback() {
 	// Set forceDummyData
 	forceDummyData = FileUtils::config.wifiNetwork.forceDummyData;
 
+
+	// Re-initialize checkbox params so subsequent portal loads render correctly.
+	// WiFiManager's doParamSave overwrites _value with "" for unchecked boxes,
+	// which breaks the next submission. Reconstructing restores value="1" and
+	// updates the checked attribute to reflect the new config state.
+	// Destructor frees the old _value buffer before placement new allocates a new one.
+	param_force_dummy_data.~WiFiManagerParameter();
+	new (&param_force_dummy_data) WiFiManagerParameter("force_dummy_data", "Force placeholder data", "1", 1, FileUtils::config.wifiNetwork.forceDummyData ? "type='checkbox' checked" : "type='checkbox'");
+	param_show_serial.~WiFiManagerParameter();
+	new (&param_show_serial) WiFiManagerParameter("show_serial", "Show Serial", "1", 1, FileUtils::config.debugUtils.showSerial ? "type='checkbox' checked" : "type='checkbox'");
+	param_show_diagnostics.~WiFiManagerParameter();
+	new (&param_show_diagnostics) WiFiManagerParameter("show_diagnostics", "Show Diagnostics", "1", 1, FileUtils::config.debugUtils.diagMeasure ? "type='checkbox' checked" : "type='checkbox'");
 
 	Serial.print("\n<--------- END PORTAL FORM CALLBACK --------->\n\n");
 }
@@ -3311,16 +3323,15 @@ void setup()
 	new (&param_brightness) WiFiManagerParameter("brightness", "Brightness", String(brightnessPercent).c_str(), 3, "type='range' min='0' max='100' step='1'");
 	wm.addParameter(&param_brightness);
 
-	new (&param_force_dummy_data) WiFiManagerParameter("force_dummy_data", "Force placeholder data", String(FileUtils::config.wifiNetwork.forceDummyData).c_str(), 3, "type='checkbox' value='1'");
+	new (&param_force_dummy_data) WiFiManagerParameter("force_dummy_data", "Force placeholder data", "1", 1, FileUtils::config.wifiNetwork.forceDummyData ? "type='checkbox' checked" : "type='checkbox'");
 	wm.addParameter(&param_force_dummy_data);
 
 	/* Developer Settings */
-	// Brightness
-	new (&param_show_serial) WiFiManagerParameter("show_serial", "Show Serial", FileUtils::config.debugUtils.showSerial ? "1" : "0", 1, "type='number' min='0' max='1' step='1'");
+	new (&param_show_serial) WiFiManagerParameter("show_serial", "Show Serial", "1", 1, FileUtils::config.debugUtils.showSerial ? "type='checkbox' checked" : "type='checkbox'");
 	wm.addParameter(&param_show_serial);
 
 	// Show graphing diagnostics
-	new (&param_show_diagnostics) WiFiManagerParameter("show_diagnostics", "Show Diagnostics", FileUtils::config.debugUtils.diagMeasure ? "1" : "0", 1, "type='number' min='0' max='1' step='1'");
+	new (&param_show_diagnostics) WiFiManagerParameter("show_diagnostics", "Show Diagnostics", "1", 1, FileUtils::config.debugUtils.diagMeasure ? "type='checkbox' checked" : "type='checkbox'");
 	wm.addParameter(&param_show_diagnostics);
 
 	// Force override animation type
