@@ -1023,9 +1023,8 @@ void saveParamsCallback() {
 	String forceDummyDataInputValue = getParam("force_dummy_data");
 	Serial.print("---\nforceDummyData input: " + forceDummyDataInputValue + "\n");
 
-	// Convert to int
-	long rawDummyData = strtol(forceDummyDataInputValue.c_str(), nullptr, 10);
-	int forceDummyDataInt = (rawDummyData < 0) ? 0 : (rawDummyData > 1) ? 1 : (int)rawDummyData;
+	// Treat any non-empty, non-"0" value as true (handles "1", "on", etc.)
+	int forceDummyDataInt = (forceDummyDataInputValue.length() > 0 && forceDummyDataInputValue != "0") ? 1 : 0;
 
 	// Set program config
 	Serial.print("Previous config forceDummyData: " + String(FileUtils::config.wifiNetwork.forceDummyData) + "\n");
@@ -3306,13 +3305,13 @@ void setup()
 	// set dark theme
 	wm.setClass("invert");
 
-	int brightnessPercent = MathHelpers::map(FileUtils::config.displayLED.brightness, 8, 160, 0, 100);
+	int brightnessPercent = constrain(MathHelpers::map(FileUtils::config.displayLED.brightness, 8, 160, 0, 100), 0, 100);
 
 	/* User Settings */
 	new (&param_brightness) WiFiManagerParameter("brightness", "Brightness", String(brightnessPercent).c_str(), 3, "type='range' min='0' max='100' step='1'");
 	wm.addParameter(&param_brightness);
 
-	new (&param_force_dummy_data) WiFiManagerParameter("force_dummy_data", "Force placeholder data", String(FileUtils::config.wifiNetwork.forceDummyData).c_str(), 1, "type='checkbox' value='1'");
+	new (&param_force_dummy_data) WiFiManagerParameter("force_dummy_data", "Force placeholder data", String(FileUtils::config.wifiNetwork.forceDummyData).c_str(), 3, "type='checkbox' value='1'");
 	wm.addParameter(&param_force_dummy_data);
 
 	/* Developer Settings */
