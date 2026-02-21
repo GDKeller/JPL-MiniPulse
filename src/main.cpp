@@ -946,8 +946,8 @@ void saveParamsCallback() {
 	String showSerialValue = getParam("show_serial");
 	Serial.print("---\nshow_serial input: " + showSerialValue + "\n");
 
-	// Convert to bool
-	bool showSerialValueBool = strcmp(showSerialValue.c_str(), "1") == 0 ? true : false;
+	// Treat any non-empty, non-"0" value as true (handles "1", "on", etc.)
+	bool showSerialValueBool = (showSerialValue.length() > 0 && showSerialValue != "0");
 	Serial.print("show serial bool: " + String(showSerialValueBool) + "\n");
 
 	// Set program config
@@ -968,8 +968,8 @@ void saveParamsCallback() {
 	String showDiagnosticsValue = getParam("show_diagnostics");
 	Serial.print("---\nshow_diagnostics input: " + showDiagnosticsValue + "\n");
 
-	// Convert to bool
-	bool showDiagnosticsValueBool = strcmp(showDiagnosticsValue.c_str(), "1") == 0 ? true : false;
+	// Treat any non-empty, non-"0" value as true (handles "1", "on", etc.)
+	bool showDiagnosticsValueBool = (showDiagnosticsValue.length() > 0 && showDiagnosticsValue != "0");
 	Serial.print("show diagnostics bool: " + String(showDiagnosticsValueBool) + "\n");
 
 	// Set program config
@@ -994,8 +994,13 @@ void saveParamsCallback() {
 	String forcedAnimationTypeValue = getParam("force_animation_type");
 	Serial.print("force_animation_type input: " + forcedAnimationTypeValue + "\n");
 	Serial.println("Previous forcedAnimationType: " + String(animate.forcedAnimationType));
-	long rawAnimType = strtol(forcedAnimationTypeValue.c_str(), nullptr, 10);
-	animate.forcedAnimationType = (rawAnimType < 1) ? 1 : (rawAnimType > 5) ? 5 : (int)rawAnimType;
+	char* endPtr;
+	long rawAnimType = strtol(forcedAnimationTypeValue.c_str(), &endPtr, 10);
+	if (*endPtr != '\0') {
+		Serial.println("WARNING: force_animation_type parse failed, keeping previous value");
+	} else {
+		animate.forcedAnimationType = (rawAnimType < 1) ? 1 : (rawAnimType > 5) ? 5 : (int)rawAnimType;
+	}
 	Serial.println("New forcedAnimationType: " + String(animate.forcedAnimationType));
 
 
@@ -1005,7 +1010,12 @@ void saveParamsCallback() {
 	Serial.print("---\nbrightness input: " + brightnessValue + "\n");
 
 	// Convert to int and clamp to 0-100% range
-	long rawBrightness = strtol(brightnessValue.c_str(), nullptr, 10);
+	char* brightnessEndPtr;
+	long rawBrightness = strtol(brightnessValue.c_str(), &brightnessEndPtr, 10);
+	if (*brightnessEndPtr != '\0') {
+		Serial.println("WARNING: brightness parse failed, defaulting to 50%");
+		rawBrightness = 50;
+	}
 	int brightnessInt = (rawBrightness < 0) ? 0 : (rawBrightness > 100) ? 100 : (int)rawBrightness;
 
 	// Map 0-100% to hardware range 8-160
@@ -2057,7 +2067,12 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 			Serial.print(",heap:");
 			Serial.print(ESP.getFreeHeap() / 1024);
 			Serial.print(",heapFrag:");
-			Serial.print((ESP.getMaxAllocHeap() * 100) / ESP.getFreeHeap());
+			uint32_t freeHeap = ESP.getFreeHeap();
+			if (freeHeap > 0) {
+				Serial.print((ESP.getMaxAllocHeap() * 100) / freeHeap);
+			} else {
+				Serial.print("ERR");
+			}
 			Serial.print(",");
 		}
 	} else {
