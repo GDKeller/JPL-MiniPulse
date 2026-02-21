@@ -1,4 +1,4 @@
-const char* currentFirmwareVersion = "1.1.0-5"; // Current firmware version
+const char* currentFirmwareVersion = "1.1.0-6"; // Current firmware version
 
 #pragma region -- LIBRARIES
 #include <Arduino.h>		// Arduino core
@@ -236,6 +236,7 @@ const char* dummyXmlData = data_Sept6;
 bool otaUpdateTriggered = false; // Flag to indicate OTA update has been triggered
 bool usingDummyData = false; // If true, use dummy data instead of actual data
 bool forceDummyData = false;
+bool forceAnimationType = false;
 uint8_t noTargetFoundCounter = 0;  // Keeps track of how many times target is not found
 uint8_t retryDataFetchCounter = 0; // Keeps track of how many times data fetch failed
 uint8_t retryDataFetchLimit = 3;  // After dummy data is used this many times, try to get actual data again
@@ -285,6 +286,7 @@ WiFiManagerParameter param_brightness;		   // global param ( for non blocking w 
 WiFiManagerParameter param_force_dummy_data;
 WiFiManagerParameter param_show_serial;
 WiFiManagerParameter param_show_diagnostics;
+WiFiManagerParameter param_force_animation_enabled;
 WiFiManagerParameter param_force_animation_type;
 // WiFiManagerParameter param_update_firmware;
 // WiFiManagerParameter field_scroll_letters_delay;
@@ -980,15 +982,19 @@ void saveParamsCallback() {
 	Serial.println();
 
 
-	/* FORCE ANIMATION TYPE - Set forced animaiton type from input */
-	// Get input value
-	String forcedAnimationTypeValue = getParam("force_animation_type");
-	Serial.print("---\nforced_animation_type input: " + forcedAnimationTypeValue + "\n");
+	/* FORCE ANIMATION TYPE - Set enabled flag and animation type from input */
+	// Get checkbox value
+	String forceAnimationEnabledValue = getParam("force_animation_enabled");
+	Serial.print("---\nforce_animation_enabled input: " + forceAnimationEnabledValue + "\n");
+	forceAnimationType = (forceAnimationEnabledValue.length() > 0 && forceAnimationEnabledValue != "0");
+	Serial.println("forceAnimationType enabled: " + String(forceAnimationType));
 
-	// Set program variable
+	// Get number value
+	String forcedAnimationTypeValue = getParam("force_animation_type");
+	Serial.print("force_animation_type input: " + forcedAnimationTypeValue + "\n");
 	Serial.println("Previous forcedAnimationType: " + String(animate.forcedAnimationType));
 	long rawAnimType = strtol(forcedAnimationTypeValue.c_str(), nullptr, 10);
-	animate.forcedAnimationType = (rawAnimType < 0) ? 0 : (rawAnimType > 5) ? 5 : (int)rawAnimType;
+	animate.forcedAnimationType = (rawAnimType < 1) ? 1 : (rawAnimType > 5) ? 5 : (int)rawAnimType;
 	Serial.println("New forcedAnimationType: " + String(animate.forcedAnimationType));
 
 
@@ -1046,11 +1052,15 @@ void saveParamsCallback() {
 	// updates the checked attribute to reflect the new config state.
 	// Destructor frees the old _value buffer before placement new allocates a new one.
 	param_force_dummy_data.~WiFiManagerParameter();
-	new (&param_force_dummy_data) WiFiManagerParameter("force_dummy_data", "Force placeholder data", "1", 1, FileUtils::config.wifiNetwork.forceDummyData ? "type='checkbox' checked" : "type='checkbox'");
+	new (&param_force_dummy_data) WiFiManagerParameter("force_dummy_data", "Force placeholder data", "1", 1, FileUtils::config.wifiNetwork.forceDummyData ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
 	param_show_serial.~WiFiManagerParameter();
-	new (&param_show_serial) WiFiManagerParameter("show_serial", "Show Serial", "1", 1, FileUtils::config.debugUtils.showSerial ? "type='checkbox' checked" : "type='checkbox'");
+	new (&param_show_serial) WiFiManagerParameter("show_serial", "Show Serial", "1", 1, FileUtils::config.debugUtils.showSerial ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
 	param_show_diagnostics.~WiFiManagerParameter();
-	new (&param_show_diagnostics) WiFiManagerParameter("show_diagnostics", "Show Diagnostics", "1", 1, FileUtils::config.debugUtils.diagMeasure ? "type='checkbox' checked" : "type='checkbox'");
+	new (&param_show_diagnostics) WiFiManagerParameter("show_diagnostics", "Show Diagnostics", "1", 1, FileUtils::config.debugUtils.diagMeasure ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
+	param_force_animation_enabled.~WiFiManagerParameter();
+	new (&param_force_animation_enabled) WiFiManagerParameter("force_animation_enabled", "Force Animation Type", "1", 1, forceAnimationType ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
+	param_force_animation_type.~WiFiManagerParameter();
+	new (&param_force_animation_type) WiFiManagerParameter("force_animation_type", "Animation Type (1-5)", String(animate.forcedAnimationType).c_str(), 1, "type='number' min='1' max='5' step='1'");
 
 	Serial.print("\n<--------- END PORTAL FORM CALLBACK --------->\n\n");
 }
@@ -1690,7 +1700,7 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 		randomTypeAny = 0;
 	}
 
-	if (animate.forcedAnimationType > 0)
+	if (forceAnimationType)
 		randomTypeAny = animate.forcedAnimationType - 1;
 
 	// Debug log
@@ -3323,19 +3333,21 @@ void setup()
 	new (&param_brightness) WiFiManagerParameter("brightness", "Brightness", String(brightnessPercent).c_str(), 3, "type='range' min='0' max='100' step='1'");
 	wm.addParameter(&param_brightness);
 
-	new (&param_force_dummy_data) WiFiManagerParameter("force_dummy_data", "Force placeholder data", "1", 1, FileUtils::config.wifiNetwork.forceDummyData ? "type='checkbox' checked" : "type='checkbox'");
+	new (&param_force_dummy_data) WiFiManagerParameter("force_dummy_data", "Force placeholder data", "1", 1, FileUtils::config.wifiNetwork.forceDummyData ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
 	wm.addParameter(&param_force_dummy_data);
 
 	/* Developer Settings */
-	new (&param_show_serial) WiFiManagerParameter("show_serial", "Show Serial", "1", 1, FileUtils::config.debugUtils.showSerial ? "type='checkbox' checked" : "type='checkbox'");
+	new (&param_show_serial) WiFiManagerParameter("show_serial", "Show Serial", "1", 1, FileUtils::config.debugUtils.showSerial ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
 	wm.addParameter(&param_show_serial);
 
 	// Show graphing diagnostics
-	new (&param_show_diagnostics) WiFiManagerParameter("show_diagnostics", "Show Diagnostics", "1", 1, FileUtils::config.debugUtils.diagMeasure ? "type='checkbox' checked" : "type='checkbox'");
+	new (&param_show_diagnostics) WiFiManagerParameter("show_diagnostics", "Show Diagnostics", "1", 1, FileUtils::config.debugUtils.diagMeasure ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
 	wm.addParameter(&param_show_diagnostics);
 
-	// Force override animation type
-	new (&param_force_animation_type) WiFiManagerParameter("force_animation_type", "Force Animation Type", String(animate.forcedAnimationType).c_str(), 1, "type='number' min='0' max='5' step='1'");
+	// Force override animation type (checkbox + number)
+	new (&param_force_animation_enabled) WiFiManagerParameter("force_animation_enabled", "Force Animation Type", "1", 1, "type='checkbox' style='margin-top:-1.2em; float:right;'");
+	wm.addParameter(&param_force_animation_enabled);
+	new (&param_force_animation_type) WiFiManagerParameter("force_animation_type", "Animation Type (1-5)", "1", 1, "type='number' min='1' max='5' step='1'");
 	wm.addParameter(&param_force_animation_type);
 
 	/* Custom */
