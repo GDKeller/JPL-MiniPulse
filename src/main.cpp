@@ -1,4 +1,4 @@
-const char* currentFirmwareVersion = "1.1.0-6"; // Current firmware version
+const char* currentFirmwareVersion = "1.1.0-8"; // Current firmware version
 
 #pragma region -- LIBRARIES
 #include <Arduino.h>		// Arduino core
@@ -283,6 +283,7 @@ WiFiManagerParameter param_brightness;		   // global param ( for non blocking w 
 // WiFiManagerParameter field_meteor_tail_decay;  // global param ( for non blocking w params )
 // WiFiManagerParameter field_meteor_tail_random; // global param ( for non blocking w params )
 // WiFiManagerParameter field_global_fps;
+WiFiManagerParameter param_separator;
 WiFiManagerParameter param_force_dummy_data;
 WiFiManagerParameter param_show_serial;
 WiFiManagerParameter param_show_diagnostics;
@@ -1948,13 +1949,6 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 	if (showDiagnostics)
 		Serial.print("animationCleanup:" + String(displayMinDuration + animationCleanupDelay) + ",");
 
-	/* Update Scrolling letters animation */
-	if (nameScrollDone == false && currentDisplayDuration < displayMinDuration + animationCleanupDelay) {
-		// Serial.println("-------- scroll letters: " + String(spacecraftName));
-		scrollLetters(spacecraftName, spacecraftNameSize);
-	}
-
-
 	if (animationTypeSetDown == false) {
 		// Serial.println("---");
 		// Serial.println("animationTypeSetDown == false");
@@ -2044,6 +2038,12 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 		fpsTimer = currentMillis;
 
 		unsigned long frameStart = millis();
+
+		/* Update Scrolling letters animation */
+		if (nameScrollDone == false && currentDisplayDuration < displayMinDuration + animationCleanupDelay) {
+			scrollLetters(spacecraftName, spacecraftNameSize);
+		}
+
 		drawMeteors(); // Assign new pixels for meteors
 		EVERY_N_MILLISECONDS(100) updateBottomPixels();
 		FastLED.show(); // Update LEDs
@@ -3333,8 +3333,8 @@ void setup()
 	new (&param_brightness) WiFiManagerParameter("brightness", "Brightness", String(brightnessPercent).c_str(), 3, "type='range' min='0' max='100' step='1'");
 	wm.addParameter(&param_brightness);
 
-	new (&param_force_dummy_data) WiFiManagerParameter("force_dummy_data", "Force placeholder data", "1", 1, FileUtils::config.wifiNetwork.forceDummyData ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
-	wm.addParameter(&param_force_dummy_data);
+	new (&param_separator) WiFiManagerParameter("<hr style='margin-bottom:1em;'>");
+	wm.addParameter(&param_separator);
 
 	/* Developer Settings */
 	new (&param_show_serial) WiFiManagerParameter("show_serial", "Show Serial", "1", 1, FileUtils::config.debugUtils.showSerial ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
@@ -3350,8 +3350,18 @@ void setup()
 	new (&param_force_animation_type) WiFiManagerParameter("force_animation_type", "Animation Type (1-5)", "1", 1, "type='number' min='1' max='5' step='1'");
 	wm.addParameter(&param_force_animation_type);
 
+	new (&param_force_dummy_data) WiFiManagerParameter("force_dummy_data", "Force placeholder data", "1", 1, FileUtils::config.wifiNetwork.forceDummyData ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
+	wm.addParameter(&param_force_dummy_data);
+
 	/* Custom */
 	const char* update_button_html = R"---(
+		<style>
+			.param-group { display:flex; align-items:center; justify-content:space-between; margin-bottom:0.5em; }
+			.param-group input[type='checkbox'] { float:none !important; margin:0 !important; }
+			.param-group input[type='number'] { width:min-content; }
+			.param-group-stacked { display:flex; flex-direction:column; align-items:stretch; margin-bottom:0.5em; }
+			.param-group-stacked input[type='range'] { margin-top:0.3em; }
+		</style>
 		<div>
 			<div style="display: inline-block; border: 1px solid gray;padding:5px 20px;">
 				<p id="firmwareStatus" style="margin-top:0; white-space:pre-line;"></p>
@@ -3360,16 +3370,38 @@ void setup()
 			</div>
 		</div>
 		<script>
-			fetch('/get-latest-version-number')
-			.then(function (response) {
-				return response.text();
-			}).
-			then(function (text) {
-				document.getElementById("firmwareStatus").textContent = text;
-				console.log(text);
-			})
+			document.addEventListener('DOMContentLoaded', function() {
+				fetch('/get-latest-version-number')
+				.then(function (response) {
+					return response.text();
+				}).
+				then(function (text) {
+					document.getElementById("firmwareStatus").textContent = text;
+					console.log(text);
+				})
 
-			document.getElementById("updateButton").addEventListener('click', function() {
+				// Rename "Setup" button to "Options" on portal home
+				document.querySelectorAll('form[action="/param"] button').forEach(function(b) { b.textContent = 'Options'; });
+
+				// Wrap each label+input pair in a flex container
+				document.querySelectorAll('form label[for]').forEach(function(label) {
+					var input = document.getElementById(label.getAttribute('for'));
+					if (!input) return;
+					var wrapper = document.createElement('div');
+					wrapper.className = (input.type === 'range') ? 'param-group-stacked' : 'param-group';
+					label.parentNode.insertBefore(wrapper, label);
+					// Remove <br/> nodes between label position and input
+					var node = wrapper.nextSibling;
+					while (node && node !== input) {
+						var next = node.nextSibling;
+						if (node.nodeName === 'BR') node.remove();
+						node = next;
+					}
+					wrapper.appendChild(label);
+					wrapper.appendChild(input);
+				});
+
+				document.getElementById("updateButton").addEventListener('click', function() {
 				fetch('/trigger-firmware-update')
 				.then(function (response) {
 					return response.text();
@@ -3382,6 +3414,7 @@ void setup()
 					console.error(error);
 				});
 			});
+			}); // DOMContentLoaded
 		</script>
 	)---";
 
