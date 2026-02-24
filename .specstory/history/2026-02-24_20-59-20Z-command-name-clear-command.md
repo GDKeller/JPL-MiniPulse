@@ -9245,3 +9245,474 @@ f53a46a feat(portal): split force animation type into checkbox + number field
 Based on the above changes, create a single git commit.
 
 You have the capability to call multiple tools in a single response. Stage and create the commit using a single message. Do not use any other tools or do anything else. Do not send any other text or messages besides these tool calls.
+
+
+---
+
+_**Agent (claude-opus-4-6 2026-02-24 21:50:08Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Stage and commit hoisted constants
+
+```bash
+git add src/main.cpp .specstory/history/2026-02-24_20-59-20Z-command-name-clear-command.md && git commit -m "$(cat <<'EOF'
+refactor: hoist inline constants to file scope for clarity and stack savings
+EOF
+)"
+```
+
+```text
+[feature/binary-upsignal 9ff391a] refactor: hoist inline constants to file scope for clarity and stack savings
+ 2 files changed, 5330 insertions(+), 128 deletions(-)
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:50:10Z)**_
+
+Committed as `9ff391a`.
+
+---
+
+_**User (2026-02-24 21:50:28Z)**_
+
+you mentioned EVERY_N_MILLISECONDS macro expansion pattern being a performance bottleneck? explain
+
+---
+
+_**Agent (claude-opus-4-6 2026-02-24 21:50:32Z)**_
+
+<think><details><summary>Thought Process</summary>
+The user is asking me to explain what I mentioned about `EVERY_N_MILLISECONDS` being a potential performance target. Let me re-read that section of the code to give an accurate explanation rather than speculating.
+</details></think>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:50:33Z)**_
+
+I should clarify — I said it would be a "bigger target" for optimization, not necessarily that it's a bottleneck. Let me look at how it's actually used before making claims.
+
+_**Agent (claude-opus-4-6 2026-02-24 21:50:34Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+  1840→
+  1841→	/* Assign animation types */
+  1842→	if (currentRateSettings) {
+  1843→		const RateClassSettings& settings = currentRateSettings[randomTypeAny];
+  1844→
+  1845→		if (rateClass == 1) {
+  1846→			// Only one meteor for down and one for up
+  1847→			animationMeteorPulseRegion(stripId, random8(0, 11), isDown, 0, settings.pulseCount, settings.offset, settings.randomizeOffset, settings.meteorSize, settings.hasTail, settings.meteorTailDecayValue, rateClass, randomTypeAny);
+  1848→		} else {
+  1849→			switch (randomTypeAny) {
+  1850→				case 0:
+  1851→				case 1:
+  1852→					animationMeteorPulseRing(stripId, isDown, settings.pulseCount, settings.offset, settings.randomizeOffset, settings.meteorSize, settings.hasTail, settings.meteorTailDecayValue, rateClass, randomTypeAny);
+  1853→					break;
+  1854→				case 2:
+  1855→					animationSpiralPulseRing(stripId, isDown, settings.height, settings.pulseCount, settings.offset, settings.spiralMultiplier, settings.repeats, settings.hasTail, settings.meteorTailDecayValue, rateClass, randomTypeAny);
+  1856→					break;
+  1857→				case 3:
+  1858→					waveAnimation(stripId, isDown, settings.numberOfWaves, settings.offset, settings.waveSize, settings.interval, settings.hasTail, settings.meteorTailDecayValue, rateClass, randomTypeAny);
+  1859→					break;
+  1860→				case 4:
+  1861→					zigzagAnimation(stripId, isDown, settings.pulseCount, settings.zigzagSize, settings.offset, settings.height, settings.interval, settings.hasTail, settings.meteorTailDecayValue, rateClass, randomTypeAny);
+  1862→					break;
+  1863→			}
+  1864→		}
+  1865→	}
+  1866→
+  1867→
+  1868→	const InnerCoreMeteorSettings& ics = innerCoreSettings[rateClass - 1];
+  1869→
+  1870→	// Inner Core meteors
+  1871→	if (isDown) {
+  1872→		// doInnerCoreMeteors(true, ics.pulseCount, ics.offset, ics.meteorCount, ics.meteorTailDecayValue, rateClass);
+  1873→
+  1874→		// Inlined doCoreMeteors() here for performance		
+  1875→		for (uint8_t i = 0; i < ics.meteorCount; i++) {
+  1876→			animationMeteorPulseRegion(0, random8(4, 9), isDown, 0, ics.pulseCount, offset, true, 1, true, ics.meteorTailDecayValue, rateClass);
+  1877→		}
+  1878→
+  1879→		animateFirstCycleDown = false;
+  1880→	} else {
+  1881→		animateFirstCycleUp = false;
+  1882→	}
+  1883→}
+  1884→
+  1885→
+  1886→void drawMeteors()
+  1887→{
+  1888→	// Update meteor animations
+  1889→	for (uint16_t i = 0; i < animate.ActiveMeteorArraySize; i++) {
+  1890→		if (animate.ActiveMeteors[i] != nullptr)
+  1891→			animate.animateMeteor(animate.ActiveMeteors[i]);
+  1892→	}
+  1893→}
+  1894→
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:50:37Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+  1918→	// Rate class update timing uses file-scoped meteorTimingTable[] and animationTypeCanSpiralTable[]
+  1919→
+  1920→	bool updateTable[6] = { false };
+  1921→	bool spiralUpdateTable[6] = { false };
+  1922→
+  1923→
+  1924→	/* Update rate classes at different intervals */
+  1925→	EVERY_N_MILLISECONDS(meteorTimingTable[0]) {
+  1926→		updateTable[0] = true; // Rate class 1
+  1927→	}
+  1928→	EVERY_N_MILLISECONDS(meteorTimingTable[1]) {
+  1929→		updateTable[1] = true; // Rate class 2
+  1930→	}
+  1931→	EVERY_N_MILLISECONDS(meteorTimingTable[2]) {
+  1932→		updateTable[2] = true; // Rate class 3
+  1933→	}
+  1934→	EVERY_N_MILLISECONDS(meteorTimingTable[3]) {
+  1935→		updateTable[3] = true; // Rate class 4
+  1936→	}
+  1937→	EVERY_N_MILLISECONDS(meteorTimingTable[4]) {
+  1938→		updateTable[4] = true; // Rate class 5
+  1939→	}
+  1940→	updateTable[5] = true; // Rate 6 is not slowed, it runs as fast as possible
+  1941→
+  1942→
+  1943→	EVERY_N_MILLISECONDS(meteorTimingTable[0] * 4) {
+  1944→		spiralUpdateTable[0] = true;
+  1945→	}
+  1946→	EVERY_N_MILLISECONDS(meteorTimingTable[1] * 4) {
+  1947→		spiralUpdateTable[1] = true;
+  1948→	}
+  1949→	EVERY_N_MILLISECONDS(meteorTimingTable[2] * 4) {
+  1950→		spiralUpdateTable[2] = true;
+  1951→	}
+  1952→	EVERY_N_MILLISECONDS(meteorTimingTable[3] * 4) {
+  1953→		spiralUpdateTable[3] = true;
+  1954→	}
+  1955→	EVERY_N_MILLISECONDS(meteorTimingTable[4] * 4) {
+  1956→		spiralUpdateTable[4] = true;
+  1957→	}
+  1958→	EVERY_N_MILLISECONDS(meteorTimingTable[5] * 4) {
+  1959→		spiralUpdateTable[5] = true;
+  1960→	}
+  1961→
+  1962→
+  1963→
+  1964→
+  1965→	// // Print the updateTable array
+  1966→	// Serial.print("updateTable: ");
+  1967→	// for (int i = 0; i < 6; i++) {
+  1968→	// 	Serial.print("[" + String(updateTable[i]) + "]");
+  1969→	// }
+  1970→	// Serial.print("\n");
+  1971→
+  1972→
+  1973→	// Update first pixel location for all active Meteors in array
+  1974→	uint16_t activeMeteors = 0;
+  1975→
+  1976→	for (int i = 0; i < animate.ActiveMeteorArraySize; i++) {
+  1977→		if (animate.ActiveMeteors[i] != nullptr) {
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:50:46Z)**_
+
+OK, having read the actual code, let me walk back what I said. `EVERY_N_MILLISECONDS` is a FastLED macro that expands to a static timer check — essentially:
+
+```cpp
+static CEveryNMilliseconds timer(N);
+if (timer) { ... }
+```
+
+Each invocation creates one `static` timer variable (allocated once, not per frame) and does a single `millis()` comparison. That's extremely cheap — a subtraction and a comparison per call. There are 11 of them here, so that's 11 integer comparisons per frame. On ESP32 at 240MHz, that's essentially nothing.
+
+I shouldn't have lumped it in as a "bigger target." It's fine as-is. The real work in `updateMeteors()` is the meteor array iteration loop at line 1976 that processes every active meteor — that's where actual per-frame computation happens, and it's already about as lean as it can be.
+
+Sorry for the misleading comment earlier.
+
+---
+
+_**User (2026-02-24 21:52:10Z)**_
+
+you think updateMeteors is as lean as it can be already? no real optimization opportunity? is that the "meteor pool allocator" referenced in BACKLOG #17?
+
+---
+
+_**Agent (claude-opus-4-6 2026-02-24 21:52:14Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+  1976→	for (int i = 0; i < animate.ActiveMeteorArraySize; i++) {
+  1977→		if (animate.ActiveMeteors[i] != nullptr) {
+  1978→			Meteor* thisMeteor = animate.ActiveMeteors[i];
+  1979→			const int rateClass = thisMeteor->rateClass;
+  1980→			const uint8_t animationType = thisMeteor->animationType;
+  1981→			const int region = thisMeteor->region;
+  1982→			const bool directionDown = thisMeteor->directionDown;
+  1983→
+  1984→			if (debugMeasure) {
+  1985→				// Count the active meteors for diagnostic output
+  1986→				activeMeteors++;
+  1987→			}
+  1988→
+  1989→
+  1990→			/* Handline horizontal region changes */
+  1991→			bool doSpiral = spiralUpdateTable[rateClass - 1];
+  1992→			bool shouldSpiral = animationTypeCanSpiralTable[animationType];
+  1993→
+  1994→			if (shouldSpiral == true && doSpiral == true) {
+  1995→				int8_t newRegion = region;
+  1996→				directionDown == true ? newRegion -= 1 : newRegion += 1; // Move meteor region based on direction
+  1997→				newRegion = regionWrap(newRegion, directionDown); // Check for wrap around 
+  1998→				thisMeteor->region = newRegion; // Update region in meteor object
+  1999→			}
+  2000→
+  2001→			// Not ready to update meteor location, skip
+  2002→			if (updateTable[rateClass - 1] == false) {
+  2003→				continue;
+  2004→			}
+  2005→
+  2006→
+  2007→			// Update meteor location
+  2008→			thisMeteor->firstPixel += 2; // Move meteor 2 pixels (visually moves by 1 due to back/front LED pairs)
+  2009→
+  2010→
+  2011→			// When meteor reaches the end of the region, animate corresponding bottom pixel
+  2012→			if (thisMeteor->firstPixel == thisMeteor->regionLength + 2 && thisMeteor->region % 2 == 1) {
+  2013→				int bottomPixel = ((thisMeteor->region - 1) / 2) % 5;
+  2014→				setBottomPixelToMax(bottomPixel);
+  2015→			}
+  2016→
+  2017→			// If meteor is beyond the display region, unallocate memory and remove array item
+  2018→			if (thisMeteor->firstPixel > thisMeteor->regionLength * 2) {
+  2019→				delete thisMeteor;
+  2020→				animate.ActiveMeteors[i] = nullptr;
+  2021→			}
+  2022→		}
+  2023→	}
+  2024→
+  2025→	if (debugMeasure)
+  2026→		Serial.print("Active_Meteors:" + String(activeMeteors) + ",");
+  2027→}
+  2028→
+  2029→/** Main Animation update function
+  2030→ * Gets called every loop();
+  2031→ */
+  2032→void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int downSignalRate, int upSignalRate)
+  2033→{
+  2034→	feedWatchdog();
+  2035→	const bool showDiagnostics = FileUtils::config.debugUtils.diagMeasure;
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:52:16Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Grep"><details>
+<summary>Tool use: **Grep**</summary>
+ path `./board` pattern `pool allocator|meteor pool|#17`
+
+```text
+board/codebase-analysis.md:446:**Fix:** Implement a fixed-size Meteor pool allocator.
+board/codebase-analysis.md:505:| 4 | Pool allocator reads wrong index | CQ4 | Change `freeList[freeListTop]` to `freeList[i]` |
+board/codebase-analysis.md:523:| 17 | Meteor pool allocator | P1 | Replace `new`/`delete` with fixed-size pool |
+board/BACKLOG.md:26:| 17 | Meteor pool allocator | P1 | HIGH | OPT |
+board/ROADMAP-1.1.0.md:19:| 4 | Pool allocator reads wrong index | CQ4 | MED | FIX | DONE — `dd8c388`, `f097b40` |
+board/ROADMAP-1.1.0.md:74:| 1.1.0-2 | 2026-02-19 | Fixed 5 short-term code quality issues (CQ6–CQ11). Rewrote pool allocator to fix duplicates/leaks. Fixed display timer reset. Added boot banner color reset. |
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:52:20Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Grep"><details>
+<summary>Tool use: **Grep**</summary>
+ path `./board/codebase-analysis.md` pattern `Meteor pool allocator|P1`
+
+```text
+437-
+438-This gives a hard ceiling of **~34 FPS maximum**. The target of 60 FPS (`fpsRate = 60` at line 352) is unachievable. The `fpsInMs = 1000 / fpsRate` value computed at line 531 is **never used as a frame limiter** — `FastLED.show()` is called unconditionally on every loop iteration.
+439-
+440-### Critical Performance Issues
+441-
+442:#### P1. Meteor Heap Fragmentation — HIGH
+443-
+444-Each animation cycle creates multiple `Meteor` objects via `new` (`main.cpp:1241`) and deletes them via `delete` (`main.cpp:1903`). With up to 500 slots and animations repeating every ~3 seconds, this creates continuous heap fragmentation. Over hours/days of runtime, this can lead to allocation failures.
+445-
+446:**Fix:** Implement a fixed-size Meteor pool allocator.
+447-
+448-#### P2. LittleFS Double Write-Read Per Data Cycle — HIGH
+449-
+450-In `fetchHTTPData()`, the HTTP response is written to `/temp.xml` on LittleFS, then immediately read back into `xmlDataBuffer` in `fetchData()`. The `String res` already holds the data in RAM. This doubles I/O per cycle and accumulates flash wear (~8,640 write/delete cycles per day).
+451-
+--
+485-
+486-#### P9. XML Parse Traversal Overhead — MEDIUM
+487-
+488-The counter-based position tracking system (`stationCount`, `dishCount`, `targetCount`) requires iterating through the full DOM to reach the desired position on each parse cycle. The outer loop at line 2396 (`for (int i = 0; i < 2; i++)`) runs the entire parse logic twice as a retry, doubling parse time.
+489-
+490:#### P10. `logOutput()` Uses `malloc` Per Call — LOW
+491-
+492-The debug function allocates a dynamic buffer via `malloc` on every invocation. A fixed-size stack buffer would eliminate heap allocation in the logging path.
+493-
+494----
+495-
+--
+518-| 12 | `firstStartupAnimation` logic | CQ10 | Fix branch logic and set flag to false |
+519-| 13 | `strncpy` null-termination | CQ11 | Switch to `strlcpy` |
+520-| 14 | Pin dependency versions | S7 | Pin to specific commits/tags in `platformio.ini` |
+521-| 15 | Portal input validation | S5 | Add server-side range clamping |
+522-| 16 | `innerHTML` to `textContent` | S10 | Replace in portal JavaScript |
+523:| 17 | Meteor pool allocator | P1 | Replace `new`/`delete` with fixed-size pool |
+524-| 18 | Eliminate LittleFS round-trip | P2 | Pass HTTP response directly to parser |
+525-| 19 | Add frame rate limiter | P3 | Gate `FastLED.show()` to ~30 FPS |
+526-| 20 | Replace `std::map` in `termColor()` | P4 | Use switch statement returning `const char*` |
+527-
+528-### Medium-Term — Next Month (2-4 Weeks)
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:52:24Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Grep"><details>
+<summary>Tool use: **Grep**</summary>
+ path `./src/main.cpp` pattern `new Meteor|delete.*Meteor|ActiveMeteor`
+
+```text
+663:	for (int i = 0; i < animate.ActiveMeteorArraySize; i++) {
+664:		if (animate.ActiveMeteors[i] == nullptr) {
+675:			// printString += animate.ActiveMeteors[i]->firstPixel;
+676:			printString += animate.ActiveMeteors[i]->animationType;
+1355:	for (int i = 0; i < animate.ActiveMeteorArraySize; i++) {
+1356:		if (animate.ActiveMeteors[i] == nullptr) {
+1357:			animate.ActiveMeteors[i] = new Meteor{
+1889:	for (uint16_t i = 0; i < animate.ActiveMeteorArraySize; i++) {
+1890:		if (animate.ActiveMeteors[i] != nullptr)
+1891:			animate.animateMeteor(animate.ActiveMeteors[i]);
+1976:	for (int i = 0; i < animate.ActiveMeteorArraySize; i++) {
+1977:		if (animate.ActiveMeteors[i] != nullptr) {
+1978:			Meteor* thisMeteor = animate.ActiveMeteors[i];
+2019:				delete thisMeteor;
+2020:				animate.ActiveMeteors[i] = nullptr;
+
+[Showing results with pagination = limit: 15, offset: 0]
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:52:36Z)**_
+
+Good catch — backlog #17 is definitely related but it's not about `updateMeteors()` loop efficiency. It's about **how meteors are allocated and freed**. Here's the actual issue:
+
+**Line 1357**: `new Meteor{...}` — heap allocation every time an animation creates a meteor
+**Line 2019**: `delete thisMeteor` — heap free when a meteor finishes
+
+Each animation cycle creates multiple meteors, and they get deleted when they scroll off screen. With animations repeating every few seconds, that's continuous `new`/`delete` churn. The analysis doc (P1) calls this out:
+
+> With up to 500 slots and animations repeating every ~3 seconds, this creates continuous heap fragmentation. Over hours/days of runtime, this can lead to allocation failures.
+
+The fix in backlog #17 is to replace `new`/`delete` with a **fixed-size pool** — pre-allocate an array of `Meteor` objects at startup, then "allocate" by grabbing from the pool and "free" by returning to it. Zero heap fragmentation, zero allocation overhead.
+
+As for `updateMeteors()` loop itself — it's iterating a fixed-size array, doing a couple table lookups and integer comparisons per meteor, and a pixel increment. That part *is* pretty lean. The optimization opportunity isn't in the loop logic, it's in eliminating the heap allocation pattern that feeds it.
+
+That said, #17 is marked HIGH risk in the backlog for a reason — it touches the allocation path, the creation sites, and the cleanup. Want to tackle it on this branch or save it for a dedicated one?
+
+---
+
+_**User (2026-02-24 21:56:01Z)**_
+
+save it for a dedicated branch. commit and merge into develop/1.1.0
+
+---
+
+_**Agent (claude-opus-4-6 2026-02-24 21:56:05Z)**_
+
+<think><details><summary>Thought Process</summary>
+The user wants me to:
+1. Commit the current changes (the inline constants hoisting that we already committed - wait, let me check if there are unstaged changes)
+2. Merge the feature/binary-upsignal branch into develop/1.1.0
+
+Let me check if there are any uncommitted changes first.
+</details></think>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:56:06Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Check for uncommitted changes
+
+`git status --short`
+
+```text
+ M .specstory/history/2026-02-24_20-59-20Z-command-name-clear-command.md
+ M src/main.cpp
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:56:12Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Check what's uncommitted in main.cpp
+
+`git diff src/main.cpp`
+
+```text
+diff --git a/src/main.cpp b/src/main.cpp
+index a4751a3..4430e64 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -1,4 +1,4 @@
+-const char* currentFirmwareVersion = "1.1.0-10"; // Current firmware version
++const char* currentFirmwareVersion = "1.1.0-11"; // Current firmware version
+ 
+ #pragma region -- LIBRARIES
+ #include <Arduino.h>		// Arduino core
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:56:14Z)**_
+
+Just the version bump and specstory. Let me check the branch log to see what we're merging.
+
+_**Agent (claude-opus-4-6 2026-02-24 21:56:16Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Show commits on this branch since develop/1.1.0
+
+`git log develop/1.1.0..HEAD --oneline`
+
+```text
+9ff391a refactor: hoist inline constants to file scope for clarity and stack savings
+fe3f7fc fix(signals): simplify up signal to binary detection, drop placeholder rates
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:56:19Z)**_
+
+Two commits plus an uncommitted version bump and specstory update. I'll commit those, then merge into `develop/1.1.0`.
+
+_**Agent (claude-opus-4-6 2026-02-24 21:56:20Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Commit version bump
+
+```bash
+git add src/main.cpp .specstory/history/2026-02-24_20-59-20Z-command-name-clear-command.md && git commit -m "$(cat <<'EOF'
+chore: bump version to 1.1.0-11
+EOF
+)"
+```
+</details></tool-use>
