@@ -1,4 +1,4 @@
-const char* currentFirmwareVersion = "1.1.0-8"; // Current firmware version
+const char* currentFirmwareVersion = "1.1.0-9"; // Current firmware version
 
 #pragma region -- LIBRARIES
 #include <Arduino.h>		// Arduino core
@@ -16,6 +16,7 @@ const char* currentFirmwareVersion = "1.1.0-8"; // Current firmware version
 #include <ArduinoJson.h>	// JSON parser
 #include <algorithm>		// C++ algorithms
 #include <WiFiManager.h>	// WiFi manager lib
+#include <ESPmDNS.h>		// mDNS responder (minipulse.local)
 
 /* Custom libs */
 #include <DevUtils.h>		// Custom dev utils lib
@@ -66,6 +67,7 @@ QueueHandle_t queue;			 // Queue to pass data between tasks
 // Networking
 WiFiManager wm;	 // Used for connecting to WiFi
 HTTPClient http; // Used for fetching data
+char mdnsHostname[20]; // mDNS hostname (e.g. "minipulse-a3f2")
 #pragma endregion
 
 #define FORMAT_LITTLEFS_IF_FAILED true
@@ -860,6 +862,10 @@ void webServerCallback() {
 		} else {
 			wm.server->send(200, "text/plain", "Firmware is up to date");
 		}
+		});
+
+	wm.server->on("/hostname", HTTP_GET, []() {
+		wm.server->send(200, "text/plain", String(mdnsHostname) + ".local");
 		});
 }
 
@@ -3157,6 +3163,7 @@ void fetchData() {
 				DevUtils::termColor("reset")
 			);
 			Serial.print(successStringBuffer);
+			MDNS.begin(mdnsHostname); // Restart mDNS after reconnect
 		}
 	}
 
@@ -3320,13 +3327,19 @@ void setup()
 
 	/* WIFI MANAGER SETUP */
 	WiFi.mode(WIFI_AP_STA);  // explicitly set mode, esp defaults to STA+AP
+
+	// Generate unique hostname from last 2 bytes of MAC address
+	uint8_t mac[6];
+	WiFi.macAddress(mac);
+	snprintf(mdnsHostname, sizeof(mdnsHostname), "minipulse-%02x%02x", mac[4], mac[5]);
+
 	wm.setCountry("US");	  // setting wifi country seems to improve OSX soft ap connectivity
 	wm.setConfigPortalBlocking(false);
 	wm.setCleanConnect(true);
 	wm.setConnectRetries(3);
-	wm.setConnectTimeout(10); // connect attempt fails after n seconds	
+	wm.setConnectTimeout(10); // connect attempt fails after n seconds
 	// wm.setAPStaticIPConfig(IPAddress(192, 168, 0, 1), IPAddress(192, 168, 0, 1), IPAddress(255, 255, 255, 0)); // set static ip
-	wm.setHostname("JPL_MiniPulse");
+	wm.setHostname(mdnsHostname);
 	// wm.setEnableConfigPortal(false); // Disable auto AP, it will be started manually
 	// wm.setDisableConfigPortal(true); // Disable auto-closing config portal
 	wm.setCaptivePortalEnable(false);
@@ -3394,6 +3407,21 @@ void setup()
 					document.getElementById("firmwareStatus").textContent = text;
 					console.log(text);
 				})
+
+				// Display device hostname at top of every page
+				fetch('/hostname')
+				.then(function(r) { return r.text(); })
+				.then(function(hostname) {
+					var banner = document.createElement('div');
+					banner.style.cssText = 'text-align:center;padding:6px 0;opacity:0.7;font-size:0.85em;';
+					var label = document.createTextNode('Device address: ');
+					var strong = document.createElement('strong');
+					strong.textContent = 'http://' + hostname;
+					banner.appendChild(label);
+					banner.appendChild(strong);
+					var container = document.querySelector('.wrap');
+					if (container) container.insertBefore(banner, container.firstChild);
+				});
 
 				// Rename "Setup" button to "Options" on portal home
 				document.querySelectorAll('form[action="/param"] button').forEach(function(b) { b.textContent = 'Options'; });
@@ -3484,6 +3512,13 @@ void setup()
 		Serial.print("Use the WiFi access portal for configuration\n\n");
 	}
 	Serial.print("WiFi Status: " + wm.getWLStatusString() + "\n\n");
+
+	// Start mDNS responder so device is reachable at <hostname>.local
+	if (MDNS.begin(mdnsHostname)) {
+		Serial.printf("mDNS responder started: http://%s.local\n", mdnsHostname);
+	} else {
+		Serial.println("WARNING: mDNS responder failed to start");
+	}
 
 	// Start the web portal anyways for settings
 	Serial.print("Starting local WiFi access point for configuration...\n");

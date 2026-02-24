@@ -10,6 +10,4 @@ venv/
 scripts/
 
 .claude/
-.specstory/
 .serena/
-docs/
