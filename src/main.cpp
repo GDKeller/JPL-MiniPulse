@@ -1,4 +1,4 @@
-const char* currentFirmwareVersion = "1.1.0-9"; // Current firmware version
+const char* currentFirmwareVersion = "1.1.0-11"; // Current firmware version
 
 #pragma region -- LIBRARIES
 #include <Arduino.h>		// Arduino core
@@ -242,6 +242,7 @@ bool forceAnimationType = false;
 uint8_t noTargetFoundCounter = 0;  // Keeps track of how many times target is not found
 uint8_t retryDataFetchCounter = 0; // Keeps track of how many times data fetch failed
 uint8_t retryDataFetchLimit = 3;  // After dummy data is used this many times, try to get actual data again
+const int maxHttpRetries = 3;
 bool dataStarted = false;
 // char fetchUrl[64];	// Fixed memory for DSN XML fetch URL - random number is appended when used to prevent caching
 
@@ -350,6 +351,85 @@ bool portalRunning = false;
 
 
 
+const char* portalHeadHtml = R"---(
+		<style>
+			.param-group { display:flex; align-items:center; justify-content:space-between; margin-bottom:0.5em; }
+			.param-group input[type='checkbox'] { float:none !important; margin:0 !important; }
+			.param-group input[type='number'] { width:min-content; }
+			.param-group-stacked { display:flex; flex-direction:column; align-items:stretch; margin-bottom:0.5em; }
+			.param-group-stacked input[type='range'] { margin-top:0.3em; }
+		</style>
+		<div>
+			<div style="display: inline-block; border: 1px solid gray;padding:5px 20px;">
+				<p id="firmwareStatus" style="margin-top:0; white-space:pre-line;"></p>
+				<p id="updateResponse"></p>
+				<button id="updateButton">Update Firmware</button>
+			</div>
+		</div>
+		<script>
+			document.addEventListener('DOMContentLoaded', function() {
+				fetch('/get-latest-version-number')
+				.then(function (response) {
+					return response.text();
+				}).
+				then(function (text) {
+					document.getElementById("firmwareStatus").textContent = text;
+					console.log(text);
+				})
+
+				// Display device hostname at top of every page
+				fetch('/hostname')
+				.then(function(r) { return r.text(); })
+				.then(function(hostname) {
+					var banner = document.createElement('div');
+					banner.style.cssText = 'text-align:center;padding:6px 0;opacity:0.7;font-size:0.85em;';
+					var label = document.createTextNode('Device address: ');
+					var strong = document.createElement('strong');
+					strong.textContent = 'http://' + hostname;
+					banner.appendChild(label);
+					banner.appendChild(strong);
+					var container = document.querySelector('.wrap');
+					if (container) container.insertBefore(banner, container.firstChild);
+				});
+
+				// Rename "Setup" button to "Options" on portal home
+				document.querySelectorAll('form[action="/param"] button').forEach(function(b) { b.textContent = 'Options'; });
+
+				// Wrap each label+input pair in a flex container
+				document.querySelectorAll('form label[for]').forEach(function(label) {
+					var input = document.getElementById(label.getAttribute('for'));
+					if (!input) return;
+					var wrapper = document.createElement('div');
+					wrapper.className = (input.type === 'range') ? 'param-group-stacked' : 'param-group';
+					label.parentNode.insertBefore(wrapper, label);
+					// Remove <br/> nodes between label position and input
+					var node = wrapper.nextSibling;
+					while (node && node !== input) {
+						var next = node.nextSibling;
+						if (node.nodeName === 'BR') node.remove();
+						node = next;
+					}
+					wrapper.appendChild(label);
+					wrapper.appendChild(input);
+				});
+
+				document.getElementById("updateButton").addEventListener('click', function() {
+				fetch('/trigger-firmware-update')
+				.then(function (response) {
+					return response.text();
+				})
+				.then(function (text) {
+					document.getElementById("updateResponse").textContent = text;
+					console.log("response:", text);
+				})
+				.catch(function (error) {
+					console.error(error);
+				});
+			});
+			}); // DOMContentLoaded
+		</script>
+	)---";
+
 #pragma endregion -- END WIFIMANAGER PORTAL
 
 #pragma region -- TIMERS
@@ -375,6 +455,8 @@ const uint8_t offsetHalf = meteorOffset * 0.5;
 unsigned long dataFetchTimerMilliseconds = 0;
 
 #pragma endregion -- END TIMERS
+
+const unsigned int UP_SIGNAL_RATE_CLASS = 3; // Binary up signal: medium animation
 
 #pragma region -- LED HARDWARE CONFIG
 // Totaly number of pixels (diodes) in each strip
@@ -1160,8 +1242,6 @@ void doLetterRegions(char theLetter, int regionStart, int startingPixel)
 	int16_t pixel = startingPixel + regionOffset;
 	const int16_t previousPixel = pixel - letterSpacing;
 
-	const size_t inner_leds_size = sizeof(inner_leds) / sizeof(inner_leds[0]);
-
 	for (int i = 0; i < ledCharacter.characterTotalPixels; i++) {
 		int j = i + 1;
 		// Serial.print("j: " + String(j) + "\n");
@@ -1185,7 +1265,7 @@ void doLetterRegions(char theLetter, int regionStart, int startingPixel)
 
 
 		if (drawPrevPixelInRegion) {
-			if (drawPreviousPixel >= 0 && drawPreviousPixel < inner_leds_size) {
+			if (drawPreviousPixel >= 0 && drawPreviousPixel < innerPixelsTotal) {
 				inner_leds[drawPreviousPixel] = mpColors.off.value;
 			} else {
 				// Serial.print(DevUtils::termColor("red")) + "drawPreviousPixel out of bounds" + DevUtils::termColor("reset")) + "\n");
@@ -1193,7 +1273,7 @@ void doLetterRegions(char theLetter, int regionStart, int startingPixel)
 		}
 
 		if (drawPixelInRegion) {
-			if (drawPixel >= 0 && drawPixel < inner_leds_size) {
+			if (drawPixel >= 0 && drawPixel < innerPixelsTotal) {
 				inner_leds[drawPixel] = ledCharacter.characterArray[i] == 1 ? currentColors.letter : mpColors.off.value;
 			} else {
 				// Serial.print(DevUtils::termColor("red")) + "drawPixel out of bounds" + DevUtils::termColor("reset")) + "\n");
@@ -1685,6 +1765,23 @@ const RateClassSettings* rateClassSettings[] = {
 	rateClass6Settings
 };
 
+const int8_t meteorTimingTable[6] = {
+	60, // Rate class 1
+	50, // Rate class 2
+	40, // Rate class 3
+	35, // Rate class 4
+	20, // Rate class 5
+	10  // Rate class 6
+};
+
+const bool animationTypeCanSpiralTable[5] = {
+	false,
+	false,
+	false,
+	true,
+	false,
+};
+
 
 void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_t type) {
 	if (rateClass < 1 || rateClass > 6) return; // Invalid rate class
@@ -1818,63 +1915,47 @@ void updateMeteors()
 {
 	bool debugMeasure = FileUtils::config.debugUtils.diagMeasure;
 
-	// Rate class update timing
-	int8_t timingTable[6] = {
-		60, // Rate class 1
-		50, // Rate class 2
-		40, // Rate class 3
-		35, // Rate class 4
-		20, // Rate class 5
-		10  // Rate class 6
-	};
-
-	bool animationTypeCanSpiralTable[5] = {
-		false,
-		false,
-		false,
-		true,
-		false,
-	};
+	// Rate class update timing uses file-scoped meteorTimingTable[] and animationTypeCanSpiralTable[]
 
 	bool updateTable[6] = { false };
 	bool spiralUpdateTable[6] = { false };
 
 
 	/* Update rate classes at different intervals */
-	EVERY_N_MILLISECONDS(timingTable[0]) {
+	EVERY_N_MILLISECONDS(meteorTimingTable[0]) {
 		updateTable[0] = true; // Rate class 1
 	}
-	EVERY_N_MILLISECONDS(timingTable[1]) {
+	EVERY_N_MILLISECONDS(meteorTimingTable[1]) {
 		updateTable[1] = true; // Rate class 2
 	}
-	EVERY_N_MILLISECONDS(timingTable[2]) {
+	EVERY_N_MILLISECONDS(meteorTimingTable[2]) {
 		updateTable[2] = true; // Rate class 3
 	}
-	EVERY_N_MILLISECONDS(timingTable[3]) {
+	EVERY_N_MILLISECONDS(meteorTimingTable[3]) {
 		updateTable[3] = true; // Rate class 4
 	}
-	EVERY_N_MILLISECONDS(timingTable[4]) {
+	EVERY_N_MILLISECONDS(meteorTimingTable[4]) {
 		updateTable[4] = true; // Rate class 5
 	}
 	updateTable[5] = true; // Rate 6 is not slowed, it runs as fast as possible
 
 
-	EVERY_N_MILLISECONDS(timingTable[0] * 4) {
+	EVERY_N_MILLISECONDS(meteorTimingTable[0] * 4) {
 		spiralUpdateTable[0] = true;
 	}
-	EVERY_N_MILLISECONDS(timingTable[1] * 4) {
+	EVERY_N_MILLISECONDS(meteorTimingTable[1] * 4) {
 		spiralUpdateTable[1] = true;
 	}
-	EVERY_N_MILLISECONDS(timingTable[2] * 4) {
+	EVERY_N_MILLISECONDS(meteorTimingTable[2] * 4) {
 		spiralUpdateTable[2] = true;
 	}
-	EVERY_N_MILLISECONDS(timingTable[3] * 4) {
+	EVERY_N_MILLISECONDS(meteorTimingTable[3] * 4) {
 		spiralUpdateTable[3] = true;
 	}
-	EVERY_N_MILLISECONDS(timingTable[4] * 4) {
+	EVERY_N_MILLISECONDS(meteorTimingTable[4] * 4) {
 		spiralUpdateTable[4] = true;
 	}
-	EVERY_N_MILLISECONDS(timingTable[5] * 4) {
+	EVERY_N_MILLISECONDS(meteorTimingTable[5] * 4) {
 		spiralUpdateTable[5] = true;
 	}
 
@@ -1969,19 +2050,8 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 		// Serial.println("---");
 		// Serial.println("animationTypeSetDown == false");
 		// Serial.println("---");
-		// const uint8_t animationId = random8(0,2);
-		// const uint8_t animationId = random8(1, 4);
-		const uint8_t animationId = 1;
-		// Serial.print("roll animation: "); Serial.println(animationId);
-
-		/**
-		 * 0 = Meteor/Rain (default)
-		 * 1 = Pulse
-		 * 2 = Spiral
-		 */
-
-		animationTypeDown = animationId;
-		animationTypeUp = animationId;
+		animationTypeDown = 1; // Pulse
+		animationTypeUp = 1;
 		animationTypeSetDown = true;
 	}
 
@@ -2181,39 +2251,28 @@ FoundSignals findSignals(XMLElement* xmlDish, CraftQueueItem* tempNewCraft) {
 		if (strcmp(spacecraft, tempNewCraft->callsign) != 0) continue;
 
 
+		// For up signals: binary detection (medium animation if data type found)
+		if (!isDown) {
+			tempNewCraft->upSignal = UP_SIGNAL_RATE_CLASS;
+			foundSignals.upSignal = UP_SIGNAL_RATE_CLASS;
+			continue;
+		}
+
+		// For down signals: keep existing rate-based logic
 		const char* rate = xmlSignal->Attribute("dataRate");
 		if (rate == nullptr) continue;
 
 		double rateDouble = stod(rate);
 		unsigned long rateLong = static_cast<unsigned long>(rateDouble);
 
-		// if (rateLong == 0) continue;
-		if (rateLong == 0) {
-			if (isDown) {
-				// if (showSerial)
-				// 	Serial.println("Downsignal rate is 0, skipping");
-				continue;
-			} else {
-				// if (showSerial)
-				// 	Serial.println("Upsignal rate is 0 - using placeholder");
-
-				const char* placeholderRate = SpacecraftData::getPlaceholderRate(tempNewCraft->callsign);
-				rateDouble = stod(placeholderRate);
-				rateLong = static_cast<unsigned long>(rateDouble);
-			}
-		}
+		if (rateLong == 0) continue;
 
 		unsigned int rateClass = rateLongToRateClass(rateLong);
 
 		if (rateClass == 0) continue;
 
-		if (isDown == true) {
-			tempNewCraft->downSignal = rateClass;
-			foundSignals.downSignal = rateClass;
-		} else if (isDown == false) {
-			tempNewCraft->upSignal = rateClass;
-			foundSignals.upSignal = rateClass;
-		}
+		tempNewCraft->downSignal = rateClass;
+		foundSignals.downSignal = rateClass;
 
 		if (tempNewCraft->downSignal != 0 && tempNewCraft->upSignal != 0) {
 			break;
@@ -2939,7 +2998,6 @@ static char xmlDataBuffer[20480];  // 20KB buffer for XML data from HTTP respons
 bool fetchHTTPData(const String& url, char* buffer, size_t bufferSize) {
 	bool showSerial = FileUtils::config.debugUtils.showSerial;
 
-	const int maxHttpRetries = 3;
 	for (int retry = 0; retry < maxHttpRetries; retry++) {
 		feedWatchdog(); // HTTP connection can sometimes be slow
 
@@ -3381,87 +3439,7 @@ void setup()
 	new (&param_force_dummy_data) WiFiManagerParameter("force_dummy_data", "Force placeholder data", "1", 1, FileUtils::config.wifiNetwork.forceDummyData ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
 	wm.addParameter(&param_force_dummy_data);
 
-	/* Custom */
-	const char* update_button_html = R"---(
-		<style>
-			.param-group { display:flex; align-items:center; justify-content:space-between; margin-bottom:0.5em; }
-			.param-group input[type='checkbox'] { float:none !important; margin:0 !important; }
-			.param-group input[type='number'] { width:min-content; }
-			.param-group-stacked { display:flex; flex-direction:column; align-items:stretch; margin-bottom:0.5em; }
-			.param-group-stacked input[type='range'] { margin-top:0.3em; }
-		</style>
-		<div>
-			<div style="display: inline-block; border: 1px solid gray;padding:5px 20px;">
-				<p id="firmwareStatus" style="margin-top:0; white-space:pre-line;"></p>
-				<p id="updateResponse"></p>
-				<button id="updateButton">Update Firmware</button>
-			</div>
-		</div>
-		<script>
-			document.addEventListener('DOMContentLoaded', function() {
-				fetch('/get-latest-version-number')
-				.then(function (response) {
-					return response.text();
-				}).
-				then(function (text) {
-					document.getElementById("firmwareStatus").textContent = text;
-					console.log(text);
-				})
-
-				// Display device hostname at top of every page
-				fetch('/hostname')
-				.then(function(r) { return r.text(); })
-				.then(function(hostname) {
-					var banner = document.createElement('div');
-					banner.style.cssText = 'text-align:center;padding:6px 0;opacity:0.7;font-size:0.85em;';
-					var label = document.createTextNode('Device address: ');
-					var strong = document.createElement('strong');
-					strong.textContent = 'http://' + hostname;
-					banner.appendChild(label);
-					banner.appendChild(strong);
-					var container = document.querySelector('.wrap');
-					if (container) container.insertBefore(banner, container.firstChild);
-				});
-
-				// Rename "Setup" button to "Options" on portal home
-				document.querySelectorAll('form[action="/param"] button').forEach(function(b) { b.textContent = 'Options'; });
-
-				// Wrap each label+input pair in a flex container
-				document.querySelectorAll('form label[for]').forEach(function(label) {
-					var input = document.getElementById(label.getAttribute('for'));
-					if (!input) return;
-					var wrapper = document.createElement('div');
-					wrapper.className = (input.type === 'range') ? 'param-group-stacked' : 'param-group';
-					label.parentNode.insertBefore(wrapper, label);
-					// Remove <br/> nodes between label position and input
-					var node = wrapper.nextSibling;
-					while (node && node !== input) {
-						var next = node.nextSibling;
-						if (node.nodeName === 'BR') node.remove();
-						node = next;
-					}
-					wrapper.appendChild(label);
-					wrapper.appendChild(input);
-				});
-
-				document.getElementById("updateButton").addEventListener('click', function() {
-				fetch('/trigger-firmware-update')
-				.then(function (response) {
-					return response.text();
-				})
-				.then(function (text) {
-					document.getElementById("updateResponse").textContent = text;
-					console.log("response:", text);
-				})
-				.catch(function (error) {
-					console.error(error);
-				});
-			});
-			}); // DOMContentLoaded
-		</script>
-	)---";
-
-	wm.setCustomHeadElement(update_button_html); // Add "Update Firmware" button to WiFi portal <head>
+	wm.setCustomHeadElement(portalHeadHtml);
 
 
 	char existingWifiBuffer[128];
