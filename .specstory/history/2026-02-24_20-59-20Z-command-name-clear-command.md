@@ -4017,7 +4017,7 @@ You have the capability to call multiple tools in a single response. Stage and c
 
 ---
 
-_**Agent (claude-opus-4-6 2026-02-24 21:35:14Z)**_
+_**Agent (claude-opus-4-6 2026-02-24 21:35:15Z)**_
 
 <tool-use data-tool-type="shell" data-tool-name="Bash"><details>
 <summary>Tool use: **Bash**</summary>
@@ -4029,4 +4029,5219 @@ fix(signals): simplify up signal to binary detection, drop placeholder rates
 EOF
 )"
 ```
+
+```text
+[feature/binary-upsignal fe3f7fc] fix(signals): simplify up signal to binary detection, drop placeholder rates
+ 4 files changed, 4062 insertions(+), 25 deletions(-)
+ create mode 100644 .specstory/history/2026-02-24_20-59-20Z-command-name-clear-command.md
+```
 </details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:35:17Z)**_
+
+Committed as `fe3f7fc`.
+
+---
+
+_**User (2026-02-24 21:35:46Z)**_
+
+look for other instances where constants are being instantiated within the program instead of at runtime like that
+
+---
+
+_**Agent (claude-opus-4-6 2026-02-24 21:35:50Z)**_
+
+<think><details><summary>Thought Process</summary>
+The user wants me to find constants that are being declared inside functions/loops instead of at file scope. Let me search for `const` declarations inside functions in main.cpp that could be hoisted to file level.
+</details></think>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:35:57Z)**_
+
+<tool-use data-tool-type="generic" data-tool-name="Task"><details>
+<summary>Tool use: **Task**</summary>
+Find inline constants in main.cpp
+
+```text
+Spawned successfully.
+agent_id: find-inline-constants@binary-upsignal
+name: find-inline-constants
+team_name: binary-upsignal
+The agent is now running and will receive instructions via mailbox.
+```
+</details></tool-use>
+
+_**Agent - sidechain (2026-02-24 21:35:57Z)**_
+
+<teammate-message teammate_id="team-lead" summary="Find inline constants in main.cpp">
+Search through /Users/grant/code/JPL-MiniPulse/src/main.cpp for constants that are being declared/instantiated inside functions or loops that should instead be declared at file scope (top level). 
+
+Look for patterns like:
+- `const int/uint/float/double/char* SOME_NAME = value;` inside function bodies
+- `const unsigned int/uint8_t/uint16_t` etc. inside functions
+- Magic numbers used repeatedly that could be named constants
+
+Focus on ACTUAL constants with fixed literal values (not values computed from function parameters or runtime state). Skip:
+- Constants that depend on function parameters or local variables
+- String literals passed directly to function calls
+- Loop variables
+- Constants that are only meaningful in their local context (like buffer sizes for a specific snprintf call)
+
+Report each finding with:
+1. Line number
+2. The constant declaration
+3. Which function it's inside
+4. Whether it's in a hot path (loop, frequently called function)
+</teammate-message>
+
+_**Agent - sidechain (claude-opus-4-6 2026-02-24 21:35:59Z)**_
+
+
+
+I'll analyze `main.cpp` for inline constants that should be elevated to file scope. Let me start by reading the file.
+
+_**Agent (claude-opus-4-6 2026-02-24 21:36:00Z)**_
+
+Searching through `main.cpp` for inline constants that should be file-scoped. I'll report back when the analysis is done.
+
+_**Agent - sidechain (claude-opus-4-6 2026-02-24 21:36:00Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+File content (50644 tokens) exceeds maximum allowed tokens (25000). Please use offset and limit parameters to read specific portions of the file, or use the GrepTool to search for specific content.
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-02-24 21:36:02Z)**_
+
+Large file. Let me read it in chunks and also search for constant patterns.
+
+_**Agent - sidechain (claude-opus-4-6 2026-02-24 21:36:04Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+     1→const char* currentFirmwareVersion = "1.1.0-10"; // Current firmware version
+     2→
+     3→#pragma region -- LIBRARIES
+     4→#include <Arduino.h>		// Arduino core
+     5→#include <esp_task_wdt.h>	// ESP32 task watchdog
+     6→#include "soc/timer_group_struct.h" // Timer group struct
+     7→#include "soc/timer_group_reg.h"  // Timer group register
+     8→#include <FS.h>				// File system
+     9→#include <LittleFS.h>		// LittleFS file system
+    10→#include <HTTPClient.h>		// HTTP client
+    11→#include <HTTPUpdate.h> 	// HTTP update
+    12→#include <FastLED.h>		// FastLED lib
+    13→#include <tinyxml2.h>		// XML parser
+    14→#include <iostream>			// C++ I/O
+    15→#include <cstring>			// C++ string
+    16→#include <ArduinoJson.h>	// JSON parser
+    17→#include <algorithm>		// C++ algorithms
+    18→#include <WiFiManager.h>	// WiFi manager lib
+    19→#include <ESPmDNS.h>		// mDNS responder (minipulse.local)
+    20→
+    21→/* Custom libs */
+    22→#include <DevUtils.h>		// Custom dev utils lib
+    23→#include <FileUtils.h>		// Custom file utilities lib
+    24→#include <MathHelpers.h>	// Custom math helpers lib
+    25→#include <TextCharacters.h> // Custom LED text lib
+    26→#include <AnimationUtils.h> // Custom animation utilities lib
+    27→#include <Animate.h>		// Custom animate lib
+    28→
+    29→#include <SpacecraftData.h> // Custom spacecraft data lib
+    30→
+    31→
+    32→#pragma endregion -- END LIBRARIES
+    33→
+    34→#pragma region -- NAMESPACES
+    35→using namespace tinyxml2; // XML parser
+    36→using namespace std;	  // C++ I/O
+    37→#pragma endregion thing
+    38→
+    39→#pragma region-- ESP32 PIN ASSIGNMENTS
+    40→#define OUTER_PIN 17		// Outer ring pin
+    41→#define MIDDLE_PIN 18		// Middle ring pin
+    42→#define INNER_PIN 19		// Inner ring pin
+    43→#define BOTTOM_PIN 16		// Bottom ring pin
+    44→#define WIFI_RST 21			// WiFi reset pin
+    45→#define OUTPUT_ENABLE 22	// Output enable pin
+    46→#define POTENTIOMETER 32	// Brightness potentiometer pin
+    47→#pragma endregion
+    48→
+    49→
+    50→#pragma region -- CLASS INSTANTIATIONS
+    51→// Utils
+    52→// FileUtils fileUtils;			  // Instantiate file utils
+    53→DevUtils dev;					  // Instantiate term color
+    54→
+    55→
+    56→// Animations
+    57→AnimationUtils au(POTENTIOMETER); // Instantiate animation utils
+    58→AnimationUtils::Colors mpColors;  // Instantiate colors
+    59→Animate animate;				  // Instantiate animate
+    60→ColorTheme currentColors;		  // Instantiate LED color theme
+    61→
+    62→// Tasks
+    63→TaskHandle_t xHandleData;		 // Task for fetching and parsing data
+    64→TaskStatus_t xHandleDataDetails; // Task details for HandleData
+    65→QueueHandle_t queue;			 // Queue to pass data between tasks
+    66→
+    67→// Networking
+    68→WiFiManager wm;	 // Used for connecting to WiFi
+    69→HTTPClient http; // Used for fetching data
+    70→char mdnsHostname[20]; // mDNS hostname (e.g. "minipulse-a3f2")
+    71→#pragma endregion
+    72→
+    73→#define FORMAT_LITTLEFS_IF_FAILED true
+    74→#define MAX_XML_SIZE 20480
+    75→
+    76→// Placeholder for XML data
+    77→// const char* dummyXmlData = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?><dsn><station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" /><dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS24" windSpeed="5.556"><downSignal dataRate="28000000" frequency="25900000000" power="-91.3965" signalType="data" spacecraft="JWST" spacecraftID="-170" /><downSignal dataRate="40000" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="JWST" spacecraftID="-170" /><upSignal dataRate="16000" frequency="2090" power="4.804" signalType="data" spacecraft="JWST" spacecraftID="-170" /><target downlegRange="1.653e+06" id="170" name="JWST" rtlt="11.03" uplegRange="1.653e+06" /></dish><dish azimuthAngle="287.7" elevationAngle="18.74" isArray="false" isDDOR="false" isMSPA="false" name="DSS26" windSpeed="5.556"><downSignal dataRate="4000000" frequency="8439000000" power="-138.1801" signalType="none" spacecraft="MRO" spacecraftID="-74" /><upSignal dataRate="2000" frequency="7183" power="0.0000" signalType="none" spacecraft="MRO" spacecraftID="-74" /><target downlegRange="8.207e+07" id="74" name="MRO" rtlt="547.5" uplegRange="8.207e+07" /></dish><station friendlyName="Madrid" name="mdscc" timeUTC="1670419133000" timeZoneOffset="3600000" /><dish azimuthAngle="103.0" elevationAngle="80.19" isArray="false" isDDOR="false" isMSPA="false" name="DSS56" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="2250000000" power="-478.1842" signalType="none" spacecraft="CHDR" spacecraftID="-151" /><target downlegRange="1.417e+05" id="151" name="CHDR" rtlt="0.9455" uplegRange="1.417e+05" /></dish><dish azimuthAngle="196.5" elevationAngle="30.71" isArray="false" isDDOR="false" isMSPA="false" name="DSS65" windSpeed="5.556"><downSignal dataRate="87650" frequency="2278000000" power="-112.7797" signalType="data" spacecraft="ACE" spacecraftID="-92" /><upSignal dataRate="1000" frequency="2098" power="0.2630" signalType="data" spacecraft="ACE" spacecraftID="-92" /><target downlegRange="1.389e+06" id="92" name="ACE" rtlt="9.266" uplegRange="1.389e+06" /></dish><dish azimuthAngle="124.5" elevationAngle="53.41" isArray="false" isDDOR="false" isMSPA="false" name="DSS53" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8436000000" power="-170.1741" signalType="none" spacecraft="LICI" spacecraftID="-210" /><target downlegRange="4.099e+06" id="210" name="LICI" rtlt="27.34" uplegRange="4.099e+06" /></dish><dish azimuthAngle="219.7" elevationAngle="22.84" isArray="false" isDDOR="false" isMSPA="false" name="DSS54" windSpeed="5.556"><upSignal dataRate="2000" frequency="2066" power="1.758" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><downSignal dataRate="245800" frequency="2245000000" power="-110.7082" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><target downlegRange="1.331e+06" id="21" name="SOHO" rtlt="8.882" uplegRange="1.331e+06" /></dish><dish azimuthAngle="120.0" elevationAngle="46.53" isArray="false" isDDOR="false" isMSPA="false" name="DSS63" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8415000000" power="-478.2658" signalType="none" spacecraft="TEST" spacecraftID="-99" /><target downlegRange="-1.000e+00" id="99" name="TEST" rtlt="-1.0000" uplegRange="-1.000e+00" /></dish><station friendlyName="Canberra" name="cdscc" timeUTC="1670419133000" timeZoneOffset="39600000" /><dish azimuthAngle="330.6" elevationAngle="37.39" isArray="false" isDDOR="false" isMSPA="false" name="DSS34" windSpeed="3.087"><upSignal dataRate="250000" frequency="2041" power="0.2421" signalType="data" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="974200" frequency="2217000000" power="-116.4022" signalType="none" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="2000000" frequency="2216000000" power="-107.4503" signalType="carrier" spacecraft="EM1" spacecraftID="-23" /><target downlegRange="3.870e+05" id="23" name="EM1" rtlt="2.581" uplegRange="3.869e+05" /></dish><dish azimuthAngle="10.27" elevationAngle="28.97" isArray="false" isDDOR="false" isMSPA="false" name="DSS35" windSpeed="3.087"><downSignal dataRate="11.63" frequency="8446000000" power="-141.8096" signalType="data" spacecraft="MVN" spacecraftID="-202" /><upSignal dataRate="7.813" frequency="7189" power="8.303" signalType="data" spacecraft="MVN" spacecraftID="-202" /><target downlegRange="8.207e+07" id="202" name="MVN" rtlt="547.5" uplegRange="8.207e+07" /></dish><dish azimuthAngle="207.0" elevationAngle="15.51" isArray="false" isDDOR="false" isMSPA="false" name="DSS43" windSpeed="3.087"><upSignal dataRate="16.00" frequency="2114" power="20.20" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><downSignal dataRate="160.0" frequency="8420000000" power="-156.2618" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><target downlegRange="1.984e+10" id="32" name="VGR2" rtlt="132300" uplegRange="1.984e+10" /></dish><dish azimuthAngle="7.205" elevationAngle="26.82" isArray="false" isDDOR="false" isMSPA="false" name="DSS36" windSpeed="3.087"><downSignal dataRate="8500000" frequency="8475000000" power="-120.3643" signalType="none" spacecraft="KPLO" spacecraftID="-155" /><downSignal dataRate="8192" frequency="2261000000" power="-104.9668" signalType="data" spacecraft="KPLO" spacecraftID="-155" /><target downlegRange="4.405e+05" id="155" name="KPLO" rtlt="2.939" uplegRange="4.405e+05" /></dish><timestamp>1670419133000</timestamp></dsn>)==--==";
+    78→// const char* dummyXmlData2 = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?><dsn><station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" /><dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS24" windSpeed="5.556"><downSignal dataRate="28000000" frequency="25900000000" power="-91.3965" signalType="data" spacecraft="JWST" spacecraftID="-170" /><downSignal dataRate="40000" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="JWST" spacecraftID="-170" /><upSignal dataRate="16000" frequency="2090" power="4.804" signalType="data" spacecraft="JWST" spacecraftID="-170" /><target downlegRange="1.653e+06" id="170" name="JWST" rtlt="11.03" uplegRange="1.653e+06" /></dish><dish azimuthAngle="287.7" elevationAngle="18.74" isArray="false" isDDOR="false" isMSPA="false" name="DSS26" windSpeed="5.556"><downSignal dataRate="4000000" frequency="8439000000" power="-138.1801" signalType="none" spacecraft="MRO" spacecraftID="-74" /><upSignal dataRate="2000" frequency="7183" power="0.0000" signalType="none" spacecraft="MRO" spacecraftID="-74" /><target downlegRange="8.207e+07" id="74" name="MRO" rtlt="547.5" uplegRange="8.207e+07" /></dish><station friendlyName="Madrid" name="mdscc" timeUTC="1670419133000" timeZoneOffset="3600000" /><dish azimuthAngle="103.0" elevationAngle="80.19" isArray="false" isDDOR="false" isMSPA="false" name="DSS56" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="2250000000" power="-478.1842" signalType="none" spacecraft="CHDR" spacecraftID="-151" /><target downlegRange="1.417e+05" id="151" name="CHDR" rtlt="0.9455" uplegRange="1.417e+05" /></dish><dish azimuthAngle="196.5" elevationAngle="30.71" isArray="false" isDDOR="false" isMSPA="false" name="DSS65" windSpeed="5.556"><downSignal dataRate="87650" frequency="2278000000" power="-112.7797" signalType="data" spacecraft="ACE" spacecraftID="-92" /><upSignal dataRate="1000" frequency="2098" power="0.2630" signalType="data" spacecraft="ACE" spacecraftID="-92" /><target downlegRange="1.389e+06" id="92" name="ACE" rtlt="9.266" uplegRange="1.389e+06" /></dish><dish azimuthAngle="124.5" elevationAngle="53.41" isArray="false" isDDOR="false" isMSPA="false" name="DSS53" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8436000000" power="-170.1741" signalType="none" spacecraft="LICI" spacecraftID="-210" /><target downlegRange="4.099e+06" id="210" name="LICI" rtlt="27.34" uplegRange="4.099e+06" /></dish><dish azimuthAngle="219.7" elevationAngle="22.84" isArray="false" isDDOR="false" isMSPA="false" name="DSS54" windSpeed="5.556"><upSignal dataRate="2000" frequency="2066" power="1.758" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><downSignal dataRate="245800" frequency="2245000000" power="-110.7082" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><target downlegRange="1.331e+06" id="21" name="SOHO" rtlt="8.882" uplegRange="1.331e+06" /></dish><dish azimuthAngle="120.0" elevationAngle="46.53" isArray="false" isDDOR="false" isMSPA="false" name="DSS63" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8415000000" power="-478.2658" signalType="none" spacecraft="TEST" spacecraftID="-99" /><target downlegRange="-1.000e+00" id="99" name="TEST" rtlt="-1.0000" uplegRange="-1.000e+00" /></dish><station friendlyName="Canberra" name="cdscc" timeUTC="1670419133000" timeZoneOffset="39600000" /><dish azimuthAngle="330.6" elevationAngle="37.39" isArray="false" isDDOR="false" isMSPA="false" name="DSS34" windSpeed="3.087"><upSignal dataRate="250000" frequency="2041" power="0.2421" signalType="data" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="974200" frequency="2217000000" power="-116.4022" signalType="none" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="2000000" frequency="2216000000" power="-107.4503" signalType="carrier" spacecraft="EM1" spacecraftID="-23" /><target downlegRange="3.870e+05" id="23" name="EM1" rtlt="2.581" uplegRange="3.869e+05" /></dish><dish azimuthAngle="10.27" elevationAngle="28.97" isArray="false" isDDOR="false" isMSPA="false" name="DSS35" windSpeed="3.087"><downSignal dataRate="11.63" frequency="8446000000" power="-141.8096" signalType="data" spacecraft="MVN" spacecraftID="-202" /><upSignal dataRate="7.813" frequency="7189" power="8.303" signalType="data" spacecraft="MVN" spacecraftID="-202" /><target downlegRange="8.207e+07" id="202" name="MVN" rtlt="547.5" uplegRange="8.207e+07" /></dish><dish azimuthAngle="207.0" elevationAngle="15.51" isArray="false" isDDOR="false" isMSPA="false" name="DSS43" windSpeed="3.087"><upSignal dataRate="16.00" frequency="2114" power="20.20" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><downSignal dataRate="160.0" frequency="8420000000" power="-156.2618" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><target downlegRange="1.984e+10" id="32" name="VGR2" rtlt="132300" uplegRange="1.984e+10" /></dish><dish azimuthAngle="7.205" elevationAngle="26.82" isArray="false" isDDOR="false" isMSPA="false" name="DSS36" windSpeed="3.087"><downSignal dataRate="8500000" frequency="8475000000" power="-120.3643" signalType="none" spacecraft="KPLO" spacecraftID="-155" /><downSignal dataRate="8192" frequency="2261000000" power="-104.9668" signalType="data" spacecraft="KPLO" spacecraftID="-155" /><target downlegRange="4.405e+05" id="155" name="KPLO" rtlt="2.939" uplegRange="4.405e+05" /></dish><timestamp>1670419133000</timestamp></dsn>)==--==";
+    79→// const char* dummyXmlData3 = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?><dsn><station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" /><dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS24" windSpeed="5.556"><downSignal dataRate="28000000" frequency="25900000000" power="-91.3965" signalType="data" spacecraft="JWST" spacecraftID="-170" /><downSignal dataRate="40000" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="JWST" spacecraftID="-170" /><upSignal dataRate="16000" frequency="2090" power="4.804" signalType="data" spacecraft="JWST" spacecraftID="-170" /><target downlegRange="1.653e+06" id="170" name="JWST" rtlt="11.03" uplegRange="1.653e+06" /></dish><dish azimuthAngle="287.7" elevationAngle="18.74" isArray="false" isDDOR="false" isMSPA="false" name="DSS26" windSpeed="5.556"><downSignal dataRate="4000000" frequency="8439000000" power="-138.1801" signalType="none" spacecraft="MRO" spacecraftID="-74" /><upSignal dataRate="2000" frequency="7183" power="0.0000" signalType="none" spacecraft="MRO" spacecraftID="-74" /><target downlegRange="8.207e+07" id="74" name="MRO" rtlt="547.5" uplegRange="8.207e+07" /></dish><station friendlyName="Madrid" name="mdscc" timeUTC="1670419133000" timeZoneOffset="3600000" /><dish azimuthAngle="103.0" elevationAngle="80.19" isArray="false" isDDOR="false" isMSPA="false" name="DSS56" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="2250000000" power="-478.1842" signalType="none" spacecraft="CHDR" spacecraftID="-151" /><target downlegRange="1.417e+05" id="151" name="CHDR" rtlt="0.9455" uplegRange="1.417e+05" /></dish><dish azimuthAngle="196.5" elevationAngle="30.71" isArray="false" isDDOR="false" isMSPA="false" name="DSS65" windSpeed="5.556"><downSignal dataRate="87650" frequency="2278000000" power="-112.7797" signalType="data" spacecraft="ACE" spacecraftID="-92" /><upSignal dataRate="1000" frequency="2098" power="0.2630" signalType="data" spacecraft="ACE" spacecraftID="-92" /><target downlegRange="1.389e+06" id="92" name="ACE" rtlt="9.266" uplegRange="1.389e+06" /></dish><dish azimuthAngle="124.5" elevationAngle="53.41" isArray="false" isDDOR="false" isMSPA="false" name="DSS53" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8436000000" power="-170.1741" signalType="none" spacecraft="LICI" spacecraftID="-210" /><target downlegRange="4.099e+06" id="210" name="LICI" rtlt="27.34" uplegRange="4.099e+06" /></dish><dish azimuthAngle="219.7" elevationAngle="22.84" isArray="false" isDDOR="false" isMSPA="false" name="DSS54" windSpeed="5.556"><upSignal dataRate="2000" frequency="2066" power="1.758" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><downSignal dataRate="245800" frequency="2245000000" power="-110.7082" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><target downlegRange="1.331e+06" id="21" name="SOHO" rtlt="8.882" uplegRange="1.331e+06" /></dish><dish azimuthAngle="120.0" elevationAngle="46.53" isArray="false" isDDOR="false" isMSPA="false" name="DSS63" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8415000000" power="-478.2658" signalType="none" spacecraft="TEST" spacecraftID="-99" /><target downlegRange="-1.000e+00" id="99" name="TEST" rtlt="-1.0000" uplegRange="-1.000e+00" /></dish><station friendlyName="Canberra" name="cdscc" timeUTC="1670419133000" timeZoneOffset="39600000" /><dish azimuthAngle="330.6" elevationAngle="37.39" isArray="false" isDDOR="false" isMSPA="false" name="DSS34" windSpeed="3.087"><upSignal dataRate="250000" frequency="2041" power="0.2421" signalType="data" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="974200" frequency="2217000000" power="-116.4022" signalType="none" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="2000000" frequency="2216000000" power="-107.4503" signalType="carrier" spacecraft="EM1" spacecraftID="-23" /><target downlegRange="3.870e+05" id="23" name="EM1" rtlt="2.581" uplegRange="3.869e+05" /></dish><dish azimuthAngle="10.27" elevationAngle="28.97" isArray="false" isDDOR="false" isMSPA="false" name="DSS35" windSpeed="3.087"><downSignal dataRate="11.63" frequency="8446000000" power="-141.8096" signalType="data" spacecraft="MVN" spacecraftID="-202" /><upSignal dataRate="7.813" frequency="7189" power="8.303" signalType="data" spacecraft="MVN" spacecraftID="-202" /><target downlegRange="8.207e+07" id="202" name="MVN" rtlt="547.5" uplegRange="8.207e+07" /></dish><dish azimuthAngle="207.0" elevationAngle="15.51" isArray="false" isDDOR="false" isMSPA="false" name="DSS43" windSpeed="3.087"><upSignal dataRate="16.00" frequency="2114" power="20.20" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><downSignal dataRate="160.0" frequency="8420000000" power="-156.2618" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><target downlegRange="1.984e+10" id="32" name="VGR2" rtlt="132300" uplegRange="1.984e+10" /></dish><dish azimuthAngle="7.205" elevationAngle="26.82" isArray="false" isDDOR="false" isMSPA="false" name="DSS36" windSpeed="3.087"><downSignal dataRate="8500000" frequency="8475000000" power="-120.3643" signalType="none" spacecraft="KPLO" spacecraftID="-155" /><downSignal dataRate="8192" frequency="2261000000" power="-104.9668" signalType="data" spacecraft="KPLO" spacecraftID="-155" /><target downlegRange="4.405e+05" id="155" name="KPLO" rtlt="2.939" uplegRange="4.405e+05" /></dish><timestamp>1670419133000</timestamp></dsn>)==--==";
+    80→
+    81→// Backup data
+    82→const char* data_Sept6 = PROGMEM R"==--==(<dsn>
+    83→<station name="gdscc" friendlyName="Goldstone" timeUTC="1694004780000" timeZoneOffset="-25200000"/>
+    84→<dish name="DSS24" azimuthAngle="157" elevationAngle="79" windSpeed="1" isMSPA="false" isArray="false" isDDOR="false">
+    85→<downSignal active="true" signalType="data" dataRate="8.500e+06" frequency="0" band="X" power="-4.7e+02" spacecraft="KPLO" spacecraftID="-155"/>
+    86→<downSignal active="false" signalType="none" dataRate="0.000e+00" frequency="0" band="S" power="-1.5e+02" spacecraft="KPLO" spacecraftID="-155"/>
+    87→<target name="KPLO" id="155" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
+    88→</dish>
+    89→<dish name="DSS25" azimuthAngle="84" elevationAngle="22" windSpeed="1" isMSPA="false" isArray="false" isDDOR="false">
+    90→<downSignal active="true" signalType="data" dataRate="3.205e+04" frequency="0" band="X" power="-1.3e+02" spacecraft="LFL" spacecraftID="-164"/>
+    91→<upSignal active="true" signalType="data" dataRate="0" frequency="0" band="X" power="1.8e+01" spacecraft="LFL" spacecraftID="-164"/>
+    92→<target name="LFL" id="164" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
+    93→</dish>
+    94→<dish name="DSS26" azimuthAngle="156" elevationAngle="79" windSpeed="1" isMSPA="false" isArray="false" isDDOR="false">
+    95→<upSignal active="true" signalType="data" dataRate="0" frequency="0" band="X" power="2.0e-01" spacecraft="KPLO" spacecraftID="-155"/>
+    96→<downSignal active="true" signalType="data" dataRate="8.192e+03" frequency="0" band="S" power="-1.1e+02" spacecraft="KPLO" spacecraftID="-155"/>
+    97→<downSignal active="false" signalType="none" dataRate="8.500e+06" frequency="0" band="X" power="-9.0e+01" spacecraft="KPLO" spacecraftID="-155"/>
+    98→<target name="KPLO" id="155" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
+    99→</dish>
+   100→<dish name="DSS14" azimuthAngle="224" elevationAngle="64" windSpeed="0" isMSPA="false" isArray="false" isDDOR="false">
+   101→<downSignal active="true" signalType="data" dataRate="2.000e+05" frequency="0" band="X" power="-1.3e+02" spacecraft="JNO" spacecraftID="-61"/>
+   102→<upSignal active="true" signalType="data" dataRate="0" frequency="0" band="X" power="1.8e+01" spacecraft="JNO" spacecraftID="-61"/>
+   103→<target name="JNO" id="61" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
+   104→</dish>
+   105→<station name="mdscc" friendlyName="Madrid" timeUTC="1694004780000" timeZoneOffset="7200000"/>
+   106→<dish name="DSS65" azimuthAngle="239" elevationAngle="51" windSpeed="9" isMSPA="false" isArray="false" isDDOR="false">
+   107→<upSignal active="true" signalType="data" dataRate="0" frequency="0" band="S" power="2.5e-01" spacecraft="WIND" spacecraftID="-8"/>
+   108→<downSignal active="true" signalType="data" dataRate="6.400e+03" frequency="0" band="S" power="-1.3e+02" spacecraft="WIND" spacecraftID="-8"/>
+   109→<downSignal active="true" signalType="data" dataRate="7.351e+04" frequency="0" band="S" power="-1.2e+02" spacecraft="WIND" spacecraftID="-8"/>
+   110→<target name="WIND" id="8" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
+   111→</dish>
+   112→<dish name="DSS53" azimuthAngle="163" elevationAngle="46" windSpeed="9" isMSPA="true" isArray="false" isDDOR="false">
+   113→<downSignal active="true" signalType="data" dataRate="1.163e+01" frequency="0" band="X" power="-1.6e+02" spacecraft="MVN" spacecraftID="-202"/>
+   114→<downSignal active="false" signalType="none" dataRate="1.422e+04" frequency="0" band="X" power="-4.8e+02" spacecraft="M01O" spacecraftID="-53"/>
+   115→<downSignal active="true" signalType="data" dataRate="1.000e+06" frequency="0" band="X" power="-1.2e+02" spacecraft="MRO" spacecraftID="-74"/>
+   116→<downSignal active="false" signalType="none" dataRate="0.000e+00" frequency="0" band="X" power="-4.8e+02" spacecraft="M20" spacecraftID="-168"/>
+   117→<target name="M01O" id="53" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
+   118→<target name="MVN" id="202" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
+   119→<target name="M20" id="168" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
+   120→<target name="MRO" id="74" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
+   121→</dish>
+   122→<dish name="DSS54" azimuthAngle="199" elevationAngle="50" windSpeed="9" isMSPA="false" isArray="false" isDDOR="false">
+   123→<downSignal active="true" signalType="data" dataRate="1.042e+03" frequency="0" band="X" power="-1.5e+02" spacecraft="SPP" spacecraftID="-96"/>
+   124→<upSignal active="true" signalType="data" dataRate="0" frequency="0" band="X" power="1.8e+01" spacecraft="SPP" spacecraftID="-96"/>
+   125→<target name="SPP" id="96" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
+   126→</dish>
+   127→<dish name="DSS55" azimuthAngle="170" elevationAngle="49" windSpeed="9" isMSPA="false" isArray="false" isDDOR="false">
+   128→<upSignal active="true" signalType="data" dataRate="0" frequency="0" band="X" power="5.0e+00" spacecraft="LUCY" spacecraftID="-49"/>
+   129→<downSignal active="true" signalType="data" dataRate="6.250e+04" frequency="0" band="X" power="-1.3e+02" spacecraft="LUCY" spacecraftID="-49"/>
+   130→<target name="LUCY" id="49" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
+   131→</dish>
+   132→<station name="cdscc" friendlyName="Canberra" timeUTC="1694004780000" timeZoneOffset="36000000"/>
+   133→<timestamp>1694004780000</timestamp>
+   134→</dsn>)==--==";
+   135→
+   136→// Test dummy data that cycles through all rate classes
+   137→const char* data_animation_test = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?>
+   138→<dsn>
+   139→    <station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" />
+   140→	<dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS24" windSpeed="5.556">
+   141→        <downSignal dataRate="1.163e+01" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="TEST" spacecraftID="-170" />
+   142→        <upSignal dataRate="0" frequency="2090" power="4.804" signalType="data" spacecraft="TEST" spacecraftID="-170" />
+   143→        <target downlegRange="1.653e+06" id="170" name="TEST" rtlt="11.03" uplegRange="1.653e+06" />
+   144→    </dish>
+   145→	<dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS24" windSpeed="5.556">
+   146→        <downSignal dataRate="1.163e+01" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="Rate1" spacecraftID="-170" />
+   147→        <upSignal dataRate="1.163e+01" frequency="2090" power="4.804" signalType="data" spacecraft="Rate1" spacecraftID="-170" />
+   148→        <target downlegRange="1.653e+06" id="170" name="Rate1" rtlt="11.03" uplegRange="1.653e+06" />
+   149→    </dish>
+   150→    <dish azimuthAngle="287.7" elevationAngle="18.74" isArray="false" isDDOR="false" isMSPA="false" name="DSS26" windSpeed="5.556">
+   151→        <downSignal dataRate="6.400e+03" frequency="8439000000" power="-138.1801" signalType="data" spacecraft="Rate2" spacecraftID="-74" />
+   152→        <upSignal dataRate="6.400e+03" frequency="7183" power="0.0000" signalType="data" spacecraft="Rate2" spacecraftID="-74" />
+   153→        <target downlegRange="8.207e+07" id="74" name="Rate2" rtlt="547.5" uplegRange="8.207e+07" />
+   154→    </dish>
+   155→    <station friendlyName="Madrid" name="mdscc" timeUTC="1670419133000" timeZoneOffset="3600000" />
+   156→    <dish azimuthAngle="103.0" elevationAngle="80.19" isArray="false" isDDOR="false" isMSPA="false" name="DSS56" windSpeed="5.556">
+   157→        <downSignal dataRate="5.000e+04" frequency="2250000000" power="-478.1842" signalType="data" spacecraft="Rate3" spacecraftID="-151" />
+   158→        <upSignal dataRate="5.000e+04" frequency="2250000000" power="-478.1842" signalType="data" spacecraft="Rate3" spacecraftID="-151" />
+   159→        <target downlegRange="1.417e+05" id="151" name="Rate3" rtlt="0.9455" uplegRange="1.417e+05" />
+   160→    </dish>
+   161→    <dish azimuthAngle="196.5" elevationAngle="30.71" isArray="false" isDDOR="false" isMSPA="false" name="DSS65" windSpeed="5.556">
+   162→        <downSignal dataRate="2.458e+05" frequency="2278000000" power="-112.7797" signalType="data" spacecraft="Rate4" spacecraftID="-92" />
+   163→        <upSignal dataRate="2.458e+05" frequency="2098" power="0.2630" signalType="data" spacecraft="Rate4" spacecraftID="-92" />
+   164→        <target downlegRange="1.389e+06" id="92" name="Rate4" rtlt="9.266" uplegRange="1.389e+06" />
+   165→    </dish>
+   166→    <station friendlyName="Canberra" name="cdscc" timeUTC="1670419133000" timeZoneOffset="39600000" />
+   167→    <dish azimuthAngle="124.5" elevationAngle="53.41" isArray="false" isDDOR="false" isMSPA="false" name="DSS53" windSpeed="5.556">
+   168→        <downSignal dataRate="1.190e+06" frequency="8436000000" power="-170.1741" signalType="data" spacecraft="Rate5" spacecraftID="-210" />
+   169→        <upSignal dataRate="1.190e+06" frequency="8436000000" power="-170.1741" signalType="data" spacecraft="Rate5" spacecraftID="-210" />
+   170→        <target downlegRange="4.099e+06" id="210" name="Rate5" rtlt="27.34" uplegRange="4.099e+06" />
+   171→    </dish>
+   172→    <dish azimuthAngle="219.7" elevationAngle="22.84" isArray="false" isDDOR="false" isMSPA="false" name="DSS54" windSpeed="5.556">
+   173→        <downSignal dataRate="2.621e+06" frequency="2245000000" power="-110.7082" signalType="data" spacecraft="Rate6" spacecraftID="-21" />
+   174→        <upSignal dataRate="2.621e+06" frequency="2066" power="1.758" signalType="data" spacecraft="Rate6" spacecraftID="-21" />
+   175→        <target downlegRange="1.331e+06" id="21" name="Rate6" rtlt="8.882" uplegRange="1.331e+06" />
+   176→    </dish>
+   177→    <timestamp>1670419133000</timestamp>
+   178→</dsn>)==--==";
+   179→
+   180→// Test dummy data that cycles through specific rate classes
+   181→const char* data_animation_test_single = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?>
+   182→<dsn>
+   183→    <station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" />
+   184→    <dish azimuthAngle="196.5" elevationAngle="30.71" isArray="false" isDDOR="false" isMSPA="false" name="DSS65" windSpeed="5.556">
+   185→        <downSignal dataRate="2.458e+05" frequency="2278000000" power="-112.7797" signalType="data" spacecraft="Rate4" spacecraftID="-92" />
+   186→        <upSignal dataRate="2.458e+05" frequency="2098" power="0.2630" signalType="data" spacecraft="Rate4" spacecraftID="-92" />
+   187→        <target downlegRange="1.389e+06" id="92" name="Rate4" rtlt="9.266" uplegRange="1.389e+06" />
+   188→    </dish>
+   189→	<dish azimuthAngle="124.5" elevationAngle="53.41" isArray="false" isDDOR="false" isMSPA="false" name="DSS53" windSpeed="5.556">
+   190→        <downSignal dataRate="1.190e+06" frequency="8436000000" power="-170.1741" signalType="data" spacecraft="Rate5" spacecraftID="-210" />
+   191→        <upSignal dataRate="1.190e+06" frequency="8436000000" power="-170.1741" signalType="data" spacecraft="Rate5" spacecraftID="-210" />
+   192→        <target downlegRange="4.099e+06" id="210" name="Rate5" rtlt="27.34" uplegRange="4.099e+06" />
+   193→    </dish>
+   194→    <dish azimuthAngle="219.7" elevationAngle="22.84" isArray="false" isDDOR="false" isMSPA="false" name="DSS54" windSpeed="5.556">
+   195→        <downSignal dataRate="2.621e+06" frequency="2245000000" power="-110.7082" signalType="data" spacecraft="Rate6" spacecraftID="-21" />
+   196→        <upSignal dataRate="2.621e+06" frequency="2066" power="1.758" signalType="data" spacecraft="Rate6" spacecraftID="-21" />
+   197→        <target downlegRange="1.331e+06" id="21" name="Rate6" rtlt="8.882" uplegRange="1.331e+06" />
+   198→    </dish>
+   199→    <timestamp>1670419133000</timestamp>
+   200→</dsn>)==--==";
+   201→
+   202→// Test font by displaying all alphanumberic characters
+   203→const char* data_font_test = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?>
+   204→<dsn>
+   205→    <station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" />
+   206→	<dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS2" windSpeed="5.556">
+   207→        <downSignal dataRate="1.163e+01" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="abcdefghijklmnopqrstuvwxyz 0123456789" spacecraftID="-170" />
+   208→        <upSignal dataRate="1.163e+01" frequency="2090" power="4.804" signalType="data" spacecraft="abcdefghijklmnopqrstuvwxyz 0123456789" spacecraftID="-170" />
+   209→        <target downlegRange="1.653e+06" id="170" name="abcdefghijklmnopqrstuvwxyz 0123456789" rtlt="11.03" uplegRange="1.653e+06" />
+   210→    </dish>
+   211→	<dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS2" windSpeed="5.556">
+   212→        <downSignal dataRate="1.163e+01" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="abcdefghijklmnopqrstuvwxyz 0123456789" spacecraftID="-170" />
+   213→        <upSignal dataRate="1.163e+01" frequency="2090" power="4.804" signalType="data" spacecraft="abcdefghijklmnopqrstuvwxyz 0123456789" spacecraftID="-170" />
+   214→        <target downlegRange="1.653e+06" id="170" name="abcdefghijklmnopqrstuvwxyz 0123456789" rtlt="11.03" uplegRange="1.653e+06" />
+   215→    </dish>
+   216→	<timestamp>1670419133000</timestamp>
+   217→</dsn>)==--==";
+   218→
+   219→// Test DSN Maintenance mode XML
+   220→const char* data_dsn_maintenance = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?>
+   221→<dsn>
+   222→	<station name="gdscc" friendlyName="Goldstone" timeUTC="1698785318000" timeZoneOffset="-25200000"/>
+   223→	<station name="mdscc" friendlyName="Madrid" timeUTC="1698785318000" timeZoneOffset="3600000"/>
+   224→	<station name="cdscc" friendlyName="Canberra" timeUTC="1698785318000" timeZoneOffset="39600000"/>
+   225→	<timestamp>1698785318000</timestamp>
+   226→</dsn>)==--==";
+   227→
+   228→
+   229→// Set the data to use
+   230→const char* dummyXmlData = data_Sept6;
+   231→
+   232→
+   233→/* STATE TRACKING
+   234→* Sets up variables to track state of the program
+   235→*/
+   236→
+   237→#pragma region -- DATA FETCHING STATE VARS
+   238→bool otaUpdateTriggered = false; // Flag to indicate OTA update has been triggered
+   239→bool usingDummyData = false; // If true, use dummy data instead of actual data
+   240→bool forceDummyData = false;
+   241→bool forceAnimationType = false;
+   242→uint8_t noTargetFoundCounter = 0;  // Keeps track of how many times target is not found
+   243→uint8_t retryDataFetchCounter = 0; // Keeps track of how many times data fetch failed
+   244→uint8_t retryDataFetchLimit = 3;  // After dummy data is used this many times, try to get actual data again
+   245→bool dataStarted = false;
+   246→// char fetchUrl[64];	// Fixed memory for DSN XML fetch URL - random number is appended when used to prevent caching
+   247→
+   248→#pragma endregion -- END DATA FETCHING STATE VARS
+   249→
+   250→#pragma region -- DATA COUNTERS
+   251→// Counters to track during XML parsing
+   252→unsigned int stationCount = 0;
+   253→unsigned int dishCount = 0;
+   254→unsigned int targetCount = 0;
+   255→unsigned int signalCount = 0;
+   256→int parseCounter = 0;
+   257→#pragma endregion DATA COUNTERS
+   258→
+   259→#pragma region -- DATA CURRENT CRAFT
+   260→
+   261→// Holds current craft to be animated
+   262→static CraftQueueItem currentCraftBuffer;
+   263→const int MAX_ITEMS = 5; // Max number of queue items
+   264→CraftQueueItem itemPool[MAX_ITEMS];
+   265→static CraftQueueItem* freeList[MAX_ITEMS];
+   266→static int freeListTop = MAX_ITEMS - 1; // Points to the top of the free list
+   267→SemaphoreHandle_t freeListMutex;	// Mutex to protect the free list
+   268→
+   269→#pragma endregion -- END DATA CURRENT CRAFT
+   270→
+   271→#pragma region -- WIFIMANAGER PORTAL
+   272→/** LED Color Themes
+   273→ * ID - Name		(Letter/Meteor/Meteor tail)
+   274→ * 0  - White		(White/white/white tint)
+   275→ * 1  - Cyber		(Teal/teal/blue tint)
+   276→ * 2  - Valentine	(pink/pink/purple tint)
+   277→ * 3  - Moonlight	(white/white/blue tint)
+   278→ */
+   279→const uint8_t colorTheme = 0;
+   280→
+   281→// WiFiManagerParameter field_color_theme;		   // global param ( for non blocking w params )
+   282→// WiFiManagerParameter field_xml_data;
+   283→WiFiManagerParameter param_brightness;		   // global param ( for non blocking w params )
+   284→// WiFiManagerParameter field_force_dummy_data;		   // global param ( for non blocking w params )
+   285→// WiFiManagerParameter field_meteor_tail_decay;  // global param ( for non blocking w params )
+   286→// WiFiManagerParameter field_meteor_tail_random; // global param ( for non blocking w params )
+   287→// WiFiManagerParameter field_global_fps;
+   288→WiFiManagerParameter param_separator;
+   289→WiFiManagerParameter param_force_dummy_data;
+   290→WiFiManagerParameter param_show_serial;
+   291→WiFiManagerParameter param_show_diagnostics;
+   292→WiFiManagerParameter param_force_animation_enabled;
+   293→WiFiManagerParameter param_force_animation_type;
+   294→// WiFiManagerParameter param_update_firmware;
+   295→// WiFiManagerParameter field_scroll_letters_delay;
+   296→// WiFiManagerParameter field_show_serial("show_serial", "Show Serial", FileUtils::config.debugUtils.showSerial, 1);
+   297→bool portalRunning = false;
+   298→// struct wmParams
+   299→// {
+   300→// 	String customfieldid;
+   301→// 	String xml_data_radio;
+   302→// 	String brightness;
+   303→// 	String show_serial;
+   304→// 	String show_diagnostics;
+   305→// 	String scroll_letters_delay;
+   306→// };
+   307→
+   308→
+   309→
+   310→
+   311→/* WIFI MANAGER CUSTOM FIELD PARAMETERS */
+   312→// const char* color_theme_str = "<br/><label for='customfieldid'>Color Theme</label><br/><input type='radio' name='customfieldid' value='0' checked> White<br><input type='radio' name='customfieldid' value='1'> Cyber<br><input type='radio' name='customfieldid' value='2'> Valentine<br><input type='radio' name='customfieldid' value='3'> Moonlight";
+   313→// const char* xml_data_radio_str = "<br/><label for='xml_data_radio'>XML Data</label><br/><input type='radio' name='xml_data_radio' value='0' checked> Live<br><input type='radio' name='xml_data_radio' value='1'> Dummy<input type='radio' name='xml_data_radio' value='2'> Animation Test";
+   314→// const char* global_brightness_str = "<br/><label for='global_brightness'>Global Brightness</label><br/><input type='number' name='global_brightness' min='1' max='160' value='160'>";
+   315→// const char* scroll_letters_delay_str = "<br/><label for='scroll_letters_delay'>Scroll Letter Delay (ms)</label><br/><input type='number' name='scroll_letters_delay' min='0' max='300' value='33'>";
+   316→
+   317→// const char* meteor_decay_checkbox_str = "<br/><label for='meteorDecay'>Meteor Decay</label><br/><input type='checkbox' name='meteorDecay'>";
+   318→// const char* meteor_random_checkbox_str = "<br/><label for='meteorRandom'>Meteor Tail</label><br/><input type='checkbox' name='meteorRandom'>";
+   319→// const char* global_fps_str = "<br/><label for='globalFps'>Global FPS</label><br/><input type='number' name='globalFps' min='10' max='120' value='30'>";
+   320→// const char* force_dummy_data_str = "<br/><p>Force Dummy Data: " + String(forceDummyData) + "</p><br/>";
+   321→
+   322→
+   323→// char show_serial_str_buffer[128];
+   324→// snprintf(show_serial_str_buffer, sizeof(show_serial_str_buffer), "<br/><label for 'show_serial'>Show Serial</label><br/><input type='checkbox' name='show_serial'%s>",
+   325→// FileUtils::config.debugUtils.showSerial ? " checked" : "");
+   326→
+   327→
+   328→// // new (&field_color_theme) WiFiManagerParameter(color_theme_str);				  // custom html input
+   329→// new (&field_xml_data) WiFiManagerParameter(xml_data_radio_str);				  	 // custom html input
+   330→// new (&field_global_brightness) WiFiManagerParameter(global_brightness_str);		 // custom html input
+   331→// new (&field_scroll_letters_delay) WiFiManagerParameter(scroll_letters_delay_str); // custom html input
+   332→// // new (&field_force_dummy_data) WiFiManagerParameter(force_dummy_data_str);		 // custom html input
+   333→// // new (&field_meteor_tail_decay) WiFiManagerParameter(meteor_decay_checkbox_str);	  // custom html input
+   334→// // new (&field_meteor_tail_random) WiFiManagerParameter(meteor_random_checkbox_str); // custom html input
+   335→// new (&field_global_fps) WiFiManagerParameter(global_fps_str);					  // custom html input
+   336→// // new (&field_show_serial) WiFiManagerParameter(show_serial_str);					 // custom html input
+   337→// new (&field_show_serial) WiFiManagerParameter(show_serial_str_buffer);
+   338→// // wm.addParameter(&show_serial_param);
+   339→
+   340→
+   341→// // wm.addParameter(&field_color_theme);
+   342→// wm.addParameter(&field_xml_data);
+   343→// wm.addParameter(&field_global_brightness);
+   344→// wm.addParameter(&field_scroll_letters_delay);
+   345→// // wm.addParameter(&field_force_dummy_data);
+   346→// // wm.addParameter(&field_meteor_tail_decay);
+   347→// // wm.addParameter(&field_meteor_tail_random);
+   348→// wm.addParameter(&field_global_fps);
+   349→// wm.addParameter(&field_show_serial);
+   350→
+   351→
+   352→
+   353→#pragma endregion -- END WIFIMANAGER PORTAL
+   354→
+   355→#pragma region -- TIMERS
+   356→/* Time is measured in milliseconds, so long is used */
+   357→uint8_t fpsRate = 30;
+   358→unsigned long fpsTimer = 0;
+   359→unsigned long perfTimer = 0;
+   360→unsigned long perfDiff = 0;
+   361→unsigned long lastTime = 0; // Init reference variable for timer
+   362→bool firstStartupAnimation = true;
+   363→const uint16_t timerDelay = 10000; // Timer for how often to fetch data
+   364→unsigned long animationTimer = 0;
+   365→unsigned long craftDelayTimer = 0;
+   366→const uint16_t craftDelay = 8000; // Wait this long after finishing for new craft to be dipslayed
+   367→const uint16_t displayMinDuration = 20000; // Minimum time to display a craft before switching to next craft
+   368→unsigned long displayDurationTimer = 20000; // Timer to keep track of how long craft has been displayed, set at minimum for no startup delay
+   369→const uint16_t textMeteorGap = 6000;
+   370→const uint16_t animationRepeatGap = 3000;
+   371→unsigned long animationCleanupTimer = 0;
+   372→const uint16_t animationCleanupDelay = 8000;
+   373→const uint8_t meteorOffset = 32;
+   374→const uint8_t offsetHalf = meteorOffset * 0.5;
+   375→unsigned long dataFetchTimerMilliseconds = 0;
+   376→
+   377→#pragma endregion -- END TIMERS
+   378→
+   379→const unsigned int UP_SIGNAL_RATE_CLASS = 3; // Binary up signal: medium animation
+   380→
+   381→#pragma region -- LED HARDWARE CONFIG
+   382→// Totaly number of pixels (diodes) in each strip
+   383→const int outerPixelsTotal = 800;
+   384→const int middlePixelsTotal = 800;
+   385→const int innerPixelsTotal = 960;
+   386→const int bottomPixelsTotal = 5;
+   387→
+   388→// Total number of LED sticks per strip
+   389→const int outerChunks = 10;
+   390→const int middleChunks = 10;
+   391→const int innerChunks = 12;
+   392→const int bottomChunks = 1;
+   393→
+   394→// Calculate lengths of each LED stick
+   395→const int innerPixelsChunkLength = innerPixelsTotal / innerChunks;
+   396→const int outerPixelsChunkLength = outerPixelsTotal / outerChunks;
+   397→
+   398→// Set up LED strips
+   399→CRGB inner_leds[innerPixelsTotal];
+   400→CRGB middle_leds[middlePixelsTotal];
+   401→CRGB outer_leds[outerPixelsTotal];
+   402→CRGB bottom_leds[bottomPixelsTotal];
+   403→CRGB* allStrips[4] = {
+   404→	inner_leds,	 // ID: Green
+   405→	middle_leds, // ID: Red
+   406→	outer_leds,	 // ID: Blue
+   407→	bottom_leds, // ID: Purple
+   408→};
+   409→CHSV bottomPixelMap[5] = { CHSV(0, 0, 0) };
+   410→
+   411→
+   412→#pragma endregion -- END LED HARDWARE CONFIG
+   413→
+   414→#pragma region -- TEXT SETTINGS
+   415→
+   416→TextCharacter textCharacter;
+   417→static int characterWidth;
+   418→static  int characterHeight = 9;
+   419→static int characterKerning = 4;
+   420→static int letterSpacing = 9;
+   421→
+   422→#pragma endregion -- END TEXT SETTINGS
+   423→
+   424→
+   425→/* FUNCTIONS
+   426→* Doing things
+   427→*/
+   428→
+   429→void update_started() {
+   430→	Serial.println("CALLBACK:  HTTP update process started");
+   431→}
+   432→
+   433→void update_finished() {
+   434→	Serial.println("CALLBACK:  HTTP update process finished");
+   435→}
+   436→
+   437→void update_progress(int cur, int total) {
+   438→	Serial.printf("CALLBACK:  HTTP update process at %d of %d bytes...\n", cur, total);
+   439→}
+   440→
+   441→void update_error(int err) {
+   442→	Serial.printf("CALLBACK:  HTTP update fatal error code %d\n", err);
+   443→}
+   444→
+   445→void setupOtaUpdate() {
+   446→	Serial.println("Setting up OTA update...");
+   447→	httpUpdate.onStart(update_started);
+   448→	httpUpdate.onEnd(update_finished);
+   449→	httpUpdate.onProgress(update_progress);
+   450→	httpUpdate.onError(update_error);
+   451→}
+   452→
+   453→const char* getRemoteFirmwareVersion() {
+   454→	bool showSerial = FileUtils::config.debugUtils.showSerial;
+   455→
+   456→	static char buffer[16];
+   457→	HTTPClient httpFirmware;
+   458→	httpFirmware.begin("http://develop.kellerdigital.com/minipulse/latest_version.txt");
+   459→	int httpCode = httpFirmware.GET();
+   460→	if (showSerial) Serial.print("HTTP code: " + String(httpCode) + "\n");
+   461→
+   462→	if (httpCode == HTTP_CODE_OK) {
+   463→		String latestVersion = httpFirmware.getString();
+   464→		if (showSerial) Serial.println("Remote version: " + latestVersion);
+   465→		strncpy(buffer, latestVersion.c_str(), sizeof(buffer) - 1);
+   466→	} else {
+   467→		Serial.println("Failed to fetch remote version");
+   468→		buffer[0] = '\0';
+   469→	}
+   470→
+   471→	httpFirmware.end();
+   472→	return buffer;
+   473→}
+   474→
+   475→bool checkFirmwareUpdateAvailable() {
+   476→	// char buffer[2048];
+   477→	// int offset = 0;
+   478→
+   479→	const char* latestVersion = getRemoteFirmwareVersion();
+   480→
+   481→	// offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Remote version: %s\n", latestVersion);
+   482→
+   483→	if (strcmp(latestVersion, "") == 0) {
+   484→		// offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Unable to fetch latest version from remote server\n");
+   485→		// Serial.print(buffer);
+   486→		return false;
+   487→	}
+   488→
+   489→	if (strcmp(latestVersion, currentFirmwareVersion) != 0) {
+   490→		// offset += snprintf(buffer + offset, sizeof(buffer) - offset, "New firmware available!\n");
+   491→		// Serial.print(buffer);
+   492→		return true;
+   493→	} else {
+   494→		// offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Firmware is up to date\n");
+   495→	}
+   496→
+   497→	// Serial.print(buffer);
+   498→	return false;
+   499→}
+   500→
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-02-24 21:36:06Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Grep"><details>
+<summary>Tool use: **Grep**</summary>
+ path `./src/main.cpp` pattern `^\s+const\s+(unsigned\s+)?(int|uint\d+_t|uint|float|double|char|long|size_t|byte)\s+\w+\s*=\s*\d`
+
+```text
+1976:		const uint8_t animationId = 1;
+2933:	const int maxHttpRetries = 3;
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-02-24 21:36:07Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Grep"><details>
+<summary>Tool use: **Grep**</summary>
+ path `./src/main.cpp` pattern `^\s+const\s+(unsigned\s+)?(int|uint\d+_t|uint|float|double|char|long|size_t|byte)\s+\w+\s*=\s*0x`
+
+```text
+No matches found
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-02-24 21:36:08Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Grep"><details>
+<summary>Tool use: **Grep**</summary>
+ path `./src/main.cpp` pattern `^\s+const\s+float\s+\w+\s*=`
+
+```text
+No matches found
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-02-24 21:36:12Z)**_
+
+Good, I found two explicit typed constants. Now let me search for more patterns including `constexpr`, `#define` inside functions, and magic numbers.
+
+_**Agent - sidechain (claude-opus-4-6 2026-02-24 21:36:13Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+   500→
+   501→void updateFirmwareOta() {
+   502→	if (!checkFirmwareUpdateAvailable()) return;
+   503→
+   504→	char buffer[2048];
+   505→	int offset = 0;
+   506→	offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n--------\nAttempting to update firmware from remote server...\n");
+   507→
+   508→
+   509→	WiFiClient client;
+   510→	t_httpUpdate_return ret = httpUpdate.update(client, "http://develop.kellerdigital.com/minipulse/firmware.bin");
+   511→	// Or:
+   512→	//t_httpUpdate_return ret = httpUpdate.update(client, "server", 80, "/file.bin");
+   513→
+   514→	switch (ret) {
+   515→		case HTTP_UPDATE_FAILED:
+   516→			offset += snprintf(buffer + offset, sizeof(buffer) - offset, ">> HTTP_UPDATE_FAILED Error (%d): %s\n", httpUpdate.getLastError(), httpUpdate.getLastErrorString().c_str());
+   517→			break;
+   518→
+   519→		case HTTP_UPDATE_NO_UPDATES:
+   520→			offset += snprintf(buffer + offset, sizeof(buffer) - offset, ">> HTTP_UPDATE_NO_UPDATES");
+   521→			break;
+   522→
+   523→		case HTTP_UPDATE_OK:
+   524→			offset += snprintf(buffer + offset, sizeof(buffer) - offset, ">> HTTP_UPDATE_OK");
+   525→			break;
+   526→
+   527→		default:
+   528→			offset += snprintf(buffer + offset, sizeof(buffer) - offset, ">> HTTP_UPDATE Unknown error");
+   529→			break;
+   530→	}
+   531→
+   532→	offset += snprintf(buffer + offset, sizeof(buffer) - offset, "OTA update complete\n--------\n\n");
+   533→	Serial.print(buffer);
+   534→}
+   535→
+   536→#pragma region -- ANIMATION UTILITIES
+   537→
+   538→uint8_t fpsInMs = 1000 / fpsRate;
+   539→bool meteorTailDecay = true;
+   540→bool meteorTailRandom = true;
+   541→
+   542→// State counters to enable fractional animation speeds
+   543→// These all start at 1 and get incremented during animation update
+   544→uint8_t counterHalfSpeed = 1;
+   545→uint8_t counterThirdSpeed = 1;
+   546→uint8_t counterQuarterSpeed = 1;
+   547→uint8_t counterEighthSpeed = 1;
+   548→
+   549→// Keeps track of current animation state
+   550→static bool nameScrollDone = true;
+   551→static bool animationInProgress = false;
+   552→static bool animationTypeSetDown = false;
+   553→static bool animationTypeSetUp = false;
+   554→static uint8_t animationTypeDown = 0;
+   555→static uint8_t animationTypeUp = 0;
+   556→bool animateFirstCycleDown = true;
+   557→bool animateFirstCycleUp = true;
+   558→
+   559→#pragma endregion -- END ANIMATION UTILITIES
+   560→
+   561→#pragma region -- DEV UTILITIES
+   562→
+   563→void feedWatchdog() {
+   564→	// // Timer Group 0 reset
+   565→	// TIMERG0.wdt_wprotect = TIMG_WDT_WKEY_VALUE;
+   566→	// TIMERG0.wdt_feed = 1;
+   567→	// TIMERG0.wdt_wprotect = 0;
+   568→
+   569→	// // Timer Group 1 reset
+   570→	// TIMERG1.wdt_wprotect = TIMG_WDT_WKEY_VALUE;
+   571→	// TIMERG1.wdt_feed = 1;
+   572→	// TIMERG1.wdt_wprotect = 0;
+   573→
+   574→	esp_task_wdt_reset();
+   575→}
+   576→
+   577→
+   578→void printMeteorArray()
+   579→{
+   580→
+   581→	String printString = "\n---------------[ METEOR ARRAY ]---------------\n";
+   582→
+   583→	for (int i = 0; i < animate.ActiveMeteorArraySize; i++) {
+   584→		if (animate.ActiveMeteors[i] == nullptr) {
+   585→			printString += "[";
+   586→			printString += DevUtils::termColor("red");
+   587→			printString += i;
+   588→			printString += " = nul";
+   589→			printString += "]";
+   590→		} else {
+   591→			printString += "[";
+   592→			printString += DevUtils::termColor("green");
+   593→			printString += i;
+   594→			printString += " = ";
+   595→			// printString += animate.ActiveMeteors[i]->firstPixel;
+   596→			printString += animate.ActiveMeteors[i]->animationType;
+   597→			printString += "]";
+   598→		}
+   599→		printString += DevUtils::termColor("reset");
+   600→
+   601→		if (i != 0 && i % 10 == 0) {
+   602→			printString += "\n";
+   603→		}
+   604→	}
+   605→
+   606→	printString += "\n------------------------------\n";
+   607→
+   608→	Serial.println(printString);
+   609→}
+   610→
+   611→void printCraftInfo(uint listPosition, const char* callsign, const char* name, uint nameLength, uint downSignal, uint upSignal)
+   612→{
+   613→	char buffer[256];
+   614→	// Serial.print()
+   615→	if (callsign == nullptr || name == nullptr) {
+   616→		snprintf(
+   617→			buffer,
+   618→			sizeof(buffer),
+   619→			"ITEM #%u: Invalid\n",
+   620→			listPosition
+   621→		);
+   622→		return;
+   623→	}
+   624→
+   625→	int written = snprintf(
+   626→		buffer,
+   627→		sizeof(buffer),
+   628→		"ITEM #%u: (%s) %s [%u] [↓ Sig Dn: %u] [↑ Sig Up: %u]\n",
+   629→		listPosition,
+   630→		callsign,
+   631→		name,
+   632→		nameLength,
+   633→		downSignal,
+   634→		upSignal
+   635→	);
+   636→	if (written > 0 && written < sizeof(buffer)) {
+   637→		Serial.print(buffer);
+   638→	} else {
+   639→		Serial.print("ITEM #E: Invalid\n");
+   640→	}
+   641→}
+   642→
+   643→String returnCraftInfo(uint listPosition, const char* callsign, const char* name, uint nameLength, uint downSignal, uint upSignal)
+   644→{
+   645→	if (callsign == nullptr) {
+   646→		callsign = "NULL";
+   647→	}
+   648→	if (name == nullptr) {
+   649→		name = "NULL";
+   650→	}
+   651→
+   652→	char buffer[256];
+   653→	snprintf(buffer, sizeof(buffer), "ITEM #%u: (%s) %s [%u] [↓ Sig Dn: %u] [↑ Sig Up: %u]\n",
+   654→		listPosition, callsign, name, nameLength, downSignal, upSignal);
+   655→	return String(buffer);
+   656→}
+   657→
+   658→void printCurrentQueue(QueueHandle_t queue) {
+   659→	char buffer[1024]; // Create a buffer to hold the serial output
+   660→	snprintf(
+   661→		buffer,
+   662→		sizeof(buffer),
+   663→		"\n%s========= QUEUE %d/%d ==========%s\n",
+   664→		dev.termColor("purple"),
+   665→		uxQueueMessagesWaiting(queue),
+   666→		MAX_ITEMS,
+   667→		dev.termColor("reset")
+   668→	);
+   669→
+   670→	if (uxQueueMessagesWaiting(queue) > 0) {
+   671→		QueueHandle_t tempQueue = xQueueCreate(5, sizeof(CraftQueueItem)); // Create a temporary queue to hold the items
+   672→		if (tempQueue == NULL) {
+   673→			Serial.println("Error: Could not create temporary queue.");
+   674→			return;
+   675→		}
+   676→
+   677→
+   678→
+   679→		CraftQueueItem theTempBuffer;
+   680→		CraftQueueItem* tempBuffer = &theTempBuffer;
+   681→
+   682→		int queueCount = uxQueueMessagesWaiting(queue);
+   683→		for (int i = 0; i < queueCount; i++) {
+   684→			if (xQueueReceive(queue, &tempBuffer, (TickType_t)10)) {
+   685→				String craftInfo = returnCraftInfo(i, tempBuffer->callsign, tempBuffer->name, tempBuffer->nameLength, tempBuffer->downSignal, tempBuffer->upSignal);
+   686→				strncat(buffer, craftInfo.c_str(), sizeof(buffer) - strlen(buffer) - 1);
+   687→
+   688→				if (!xQueueSend(tempQueue, &tempBuffer, (TickType_t)10)) {
+   689→					Serial.println("Error: Could not send data to the temporary queue.");
+   690→					// Handle error as necessary, maybe break out of the loop
+   691→				}
+   692→			} else {
+   693→				Serial.println("Error: Could not receive data from the main queue.");
+   694→				break;
+   695→			}
+   696→		}
+   697→
+   698→		for (int i = 0; i < queueCount; i++) {
+   699→			if (xQueueReceive(tempQueue, &tempBuffer, (TickType_t)10)) {
+   700→				if (!xQueueSend(queue, &tempBuffer, (TickType_t)10)) {
+   701→					Serial.println("Error: Could not send data back to the main queue.");
+   702→					// Handle error as necessary, maybe break out of the loop
+   703→				}
+   704→			} else {
+   705→				Serial.println("Error: Could not receive data from the temporary queue.");
+   706→				// Handle error as necessary, maybe break out of the loop
+   707→			}
+   708→		}
+   709→
+   710→		vQueueDelete(tempQueue); // Delete the temporary queue
+   711→	} else {
+   712→		strncat(buffer, "Queue is empty.\n", sizeof(buffer) - strlen(buffer) - 1);
+   713→	}
+   714→
+   715→	snprintf(buffer, sizeof(buffer), "%s%s===============================%s\n\n", buffer, dev.termColor("purple"), dev.termColor("reset"));
+   716→	Serial.print(buffer);
+   717→}
+   718→
+   719→void printCurrentCraftBuffer() {
+   720→	Serial.print(
+   721→		DevUtils::termColor("blue") +
+   722→		"============= CURRENT DATA BUFFER =============" + DevUtils::termColor("reset") +
+   723→		"\n");
+   724→	printCraftInfo(0, currentCraftBuffer.callsign, currentCraftBuffer.name, currentCraftBuffer.nameLength, currentCraftBuffer.downSignal, currentCraftBuffer.upSignal);
+   725→	Serial.print(
+   726→		DevUtils::termColor("blue") + "===============================================" + DevUtils::termColor("reset") + "\n\n");
+   727→}
+   728→
+   729→void printSemaphoreList() {
+   730→	// This function must be used inside a mutex lock
+   731→	if (FileUtils::config.debugUtils.showSerial) {
+   732→		Serial.print(
+   733→			"\n=== freeListMutex [" +
+   734→			String(freeListTop + 1) +
+   735→			"/" +
+   736→			String(MAX_ITEMS) +
+   737→			"] ===\n");
+   738→
+   739→		for (int i = 0; i < MAX_ITEMS; i++) {
+   740→			if (freeList[i] == nullptr) continue; // Skip null items
+   741→
+   742→			String marker = (i == freeListTop) ? ">" : " "; // Marker for top of freeList
+   743→			Serial.print(
+   744→				marker +
+   745→				"[" +
+   746→				String(i) +
+   747→				"] " +
+   748→				String(freeList[i]->callsignArray) +
+   749→				"\n");
+   750→		}
+   751→		Serial.print("\n");
+   752→	}
+   753→}
+   754→
+   755→void freeSemaphoreItem(CraftQueueItem*& infoBuffer) {
+   756→	feedWatchdog();
+   757→	if (xSemaphoreTake(freeListMutex, pdMS_TO_TICKS(500)) == pdTRUE) {
+   758→
+   759→		if (freeListTop + 1 >= MAX_ITEMS) {
+   760→			Serial.println("Error: free list is full, cannot return item");
+   761→			xSemaphoreGive(freeListMutex);
+   762→			return;
+   763→		}
+   764→
+   765→		freeListTop++;
+   766→		freeList[freeListTop] = infoBuffer;
+   767→
+   768→		char semaphoreStatusMessage[128];
+   769→		snprintf(
+   770→			semaphoreStatusMessage,
+   771→			sizeof(semaphoreStatusMessage),
+   772→			"%sSemaphore freed: %s [%d/%d]%s\n",
+   773→			DevUtils::termColor("green"),
+   774→			String(infoBuffer->callsignArray).c_str(),
+   775→			freeListTop + 1,
+   776→			MAX_ITEMS,
+   777→			DevUtils::termColor("reset")
+   778→		);
+   779→		infoBuffer = nullptr;
+   780→
+   781→		if (freeListMutex != nullptr) {
+   782→			xSemaphoreGive(freeListMutex);
+   783→		}
+   784→	}
+   785→}
+   786→
+   787→#pragma endregion -- DEV UTILITIES
+   788→
+   789→#pragma region -- WIFIMANAGER HANDLING
+   790→
+   791→void doWiFiManager()
+   792→{
+   793→	try {
+   794→		bool portalActive = wm.getConfigPortalActive();
+   795→		// Process Wifi Manager portal
+   796→		if (portalActive) {
+   797→			wm.process(); // do processing
+   798→		} else {
+   799→			Serial.print("\n\n----------STARTING CONFIG PORTAL\n\n");
+   800→			wm.setConfigPortalBlocking(false);
+   801→			wm.startConfigPortal(FileUtils::config.wifiNetwork.apSSID, FileUtils::config.wifiNetwork.apPass);
+   802→			portalRunning = true;
+   803→		}
+   804→
+   805→
+   806→		// Force Wifi portal when WiFi reset button is pressed
+   807→		if (digitalRead(WIFI_RST) == LOW) {
+   808→			if (!portalRunning) {
+   809→				Serial.println("Button Pressed: Starting Config Portal");
+   810→				wm.setConfigPortalBlocking(false);
+   811→				wm.startConfigPortal(FileUtils::config.wifiNetwork.apSSID, FileUtils::config.wifiNetwork.apPass);
+   812→				portalRunning = true;
+   813→			} else {
+   814→				char buffer[256];
+   815→				snprintf(buffer, sizeof(buffer), "Button Pressed: Config Portal already running\n"
+   816→					"Connect to the %s WiFi network\n"
+   817→					"Then go to http://%s in your web browser",
+   818→					wm.getConfigPortalSSID(),
+   819→					WiFi.softAPIP().toString());
+   820→			}
+   821→		}
+   822→	}
+   823→	catch (...) {
+   824→		Serial.println("Error: doWiFiManager() failed");
+   825→		dev.handleException();
+   826→	}
+   827→}
+   828→
+   829→void configPortalCallback() {
+   830→	Serial.print(
+   831→		"\n" +
+   832→		DevUtils::termColor("green") +
+   833→		"[CALLBACK] configPortalCallback fired" +
+   834→		DevUtils::termColor("reset") + "\n\n");
+   835→	portalRunning = true;
+   836→}
+   837→
+   838→void webServerCallback() {
+   839→	Serial.print("\n" + DevUtils::termColor("blue") + "Web server started" + DevUtils::termColor("reset") + "\n\n");
+   840→	portalRunning = true;
+   841→
+   842→	wm.server->on("/get-remote-version-number", HTTP_GET, []() {
+   843→		const char* remoteFirmwareVersion = getRemoteFirmwareVersion();
+   844→		String response = "Remote Version: " + String(remoteFirmwareVersion);
+   845→
+   846→		wm.server->send(200, "text/plain", response);
+   847→		});
+   848→
+   849→	wm.server->on("/get-latest-version-number", HTTP_GET, []() {
+   850→		const char* remoteFirmwareVersion = getRemoteFirmwareVersion();
+   851→		bool updateAvailable = checkFirmwareUpdateAvailable();
+   852→		const char* updateAvailableText = updateAvailable ? "true" : "false";
+   853→		String response = "Current version: " + String(currentFirmwareVersion) + "\nRemote Version: " + String(remoteFirmwareVersion) + "\nUpdate available: " + String(updateAvailableText);
+   854→
+   855→		wm.server->send(200, "text/plain", response);
+   856→
+   857→		});
+   858→
+   859→	wm.server->on("/trigger-firmware-update", HTTP_GET, []() {
+   860→		bool updateAvailable = checkFirmwareUpdateAvailable();
+   861→		updateFirmwareOta();
+   862→		if (updateAvailable) {
+   863→			wm.server->send(200, "text/plain", "New firmware available, updating...");
+   864→		} else {
+   865→			wm.server->send(200, "text/plain", "Firmware is up to date");
+   866→		}
+   867→		});
+   868→
+   869→	wm.server->on("/hostname", HTTP_GET, []() {
+   870→		wm.server->send(200, "text/plain", String(mdnsHostname) + ".local");
+   871→		});
+   872→}
+   873→
+   874→void setColorTheme(uint8_t colorTheme)
+   875→{
+   876→	switch (colorTheme) {
+   877→		case 0:
+   878→			currentColors.letter = mpColors.white.value;
+   879→			currentColors.meteor = mpColors.white.value;
+   880→			currentColors.tailHue = 0;
+   881→			currentColors.tailSaturation = 0;
+   882→			break;
+   883→		case 1:
+   884→			currentColors.letter = mpColors.aqua.value;
+   885→			currentColors.meteor = mpColors.aqua.value;
+   886→			currentColors.tailHue = 160;
+   887→			currentColors.tailSaturation = 255;
+   888→			break;
+   889→		case 2:
+   890→			currentColors.letter = mpColors.pink.value;
+   891→			currentColors.meteor = mpColors.pink.value;
+   892→			currentColors.tailHue = 192;
+   893→			currentColors.tailSaturation = 255;
+   894→			break;
+   895→		case 3:
+   896→			currentColors.letter = mpColors.white.value;
+   897→			currentColors.meteor = mpColors.white.value;
+   898→			currentColors.tailHue = 160;
+   899→			currentColors.tailSaturation = 127;
+   900→			break;
+   901→		default:
+   902→			currentColors.letter = mpColors.white.value;
+   903→			currentColors.meteor = mpColors.white.value;
+   904→			currentColors.tailHue = 160;
+   905→			currentColors.tailSaturation = 127;
+   906→	}
+   907→}
+   908→
+   909→void setXmlData(uint8_t selection) {
+   910→	switch (selection) {
+   911→		case 0:
+   912→			forceDummyData = false;
+   913→			break;
+   914→		case 1:
+   915→			forceDummyData = true;
+   916→			dummyXmlData = data_Sept6;
+   917→			break;
+   918→		case 2:
+   919→			forceDummyData = true;
+   920→			dummyXmlData = data_animation_test;
+   921→			break;
+   922→
+   923→	}
+   924→}
+   925→
+   926→void setGlobalBrightness(uint8_t newBrightness)
+   927→{
+   928→	FastLED.setBrightness(newBrightness);
+   929→}
+   930→
+   931→void setAnimationParams(uint8_t newGlobalFps, bool newMeteorTailDecay, bool newMeteorTailRandom)
+   932→{
+   933→	fpsRate = newGlobalFps;
+   934→	meteorTailDecay = newMeteorTailDecay;
+   935→	meteorTailRandom = newMeteorTailRandom;
+   936→}
+   937→
+   938→String getParam(String name)
+   939→{
+   940→	// read parameter from server, for customhmtl input
+   941→	if (wm.server->hasArg(name) == 0) {
+   942→		return "0";
+   943→	}
+   944→
+   945→	String value = wm.server->arg(name);
+   946→	return value;
+   947→}
+   948→
+   949→void saveParamsCallback() {
+   950→	Serial.print("\n\n<--------- PORTAL FORM SUBMITTED --------->\n\n");
+   951→
+   952→	/* SHOW SERIAL - Set serial show config key from input */
+   953→	// Get input value
+   954→	String showSerialValue = getParam("show_serial");
+   955→	Serial.print("---\nshow_serial input: " + showSerialValue + "\n");
+   956→
+   957→	// Treat any non-empty, non-"0" value as true (handles "1", "on", etc.)
+   958→	bool showSerialValueBool = (showSerialValue.length() > 0 && showSerialValue != "0");
+   959→	Serial.print("show serial bool: " + String(showSerialValueBool) + "\n");
+   960→
+   961→	// Set program config
+   962→	Serial.print("Previous config showSerial: " + String(FileUtils::config.debugUtils.showSerial) + "\n");
+   963→	FileUtils::config.debugUtils.showSerial = showSerialValueBool;
+   964→	Serial.print("New config showSerial: " + String(FileUtils::config.debugUtils.showSerial) + "\n");
+   965→
+   966→	// wm.setDebugOutput(showSerialValueBool); // Turn on/off WiFiManager debug output
+   967→
+   968→	// Set file config
+   969→	FileUtils::writeConfigFileBool("showSerial", FileUtils::config.debugUtils.showSerial);
+   970→	FileUtils::readFile("/config.json");
+   971→	Serial.println();
+   972→
+   973→
+   974→	/* SHOW DIAGNOSTICS - Set show diagnostics config key from input */
+   975→	// Get input value
+   976→	String showDiagnosticsValue = getParam("show_diagnostics");
+   977→	Serial.print("---\nshow_diagnostics input: " + showDiagnosticsValue + "\n");
+   978→
+   979→	// Treat any non-empty, non-"0" value as true (handles "1", "on", etc.)
+   980→	bool showDiagnosticsValueBool = (showDiagnosticsValue.length() > 0 && showDiagnosticsValue != "0");
+   981→	Serial.print("show diagnostics bool: " + String(showDiagnosticsValueBool) + "\n");
+   982→
+   983→	// Set program config
+   984→	Serial.print("Previous config showDiagnostics: " + String(FileUtils::config.debugUtils.diagMeasure) + "\n");
+   985→	FileUtils::config.debugUtils.diagMeasure = showDiagnosticsValueBool;
+   986→	Serial.print("New config showDiagnostics: " + String(FileUtils::config.debugUtils.diagMeasure) + "\n");
+   987→
+   988→	// Set file config
+   989→	FileUtils::writeConfigFileBool("diagMeasure", FileUtils::config.debugUtils.diagMeasure);
+   990→	FileUtils::readFile("/config.json");
+   991→	Serial.println();
+   992→
+   993→
+   994→	/* FORCE ANIMATION TYPE - Set enabled flag and animation type from input */
+   995→	// Get checkbox value
+   996→	String forceAnimationEnabledValue = getParam("force_animation_enabled");
+   997→	Serial.print("---\nforce_animation_enabled input: " + forceAnimationEnabledValue + "\n");
+   998→	forceAnimationType = (forceAnimationEnabledValue.length() > 0 && forceAnimationEnabledValue != "0");
+   999→	Serial.println("forceAnimationType enabled: " + String(forceAnimationType));
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-02-24 21:36:14Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Grep"><details>
+<summary>Tool use: **Grep**</summary>
+ path `./src/main.cpp` pattern `^\s+const\s+\w+`
+
+```text
+479:	const char* latestVersion = getRemoteFirmwareVersion();
+843:		const char* remoteFirmwareVersion = getRemoteFirmwareVersion();
+850:		const char* remoteFirmwareVersion = getRemoteFirmwareVersion();
+852:		const char* updateAvailableText = updateAvailable ? "true" : "false";
+1150:	const TextCharacter::TextCharacterInfo ledCharacter = textCharacter.getCharacter(theLetter, characterWidth);
+1160:	const uint16_t regionOffset = innerPixelsChunkLength * regionStart;
+1163:	const int16_t previousPixel = pixel - letterSpacing;
+1165:	const size_t inner_leds_size = sizeof(inner_leds) / sizeof(inner_leds[0]);
+1694:	const bool showSerial = FileUtils::config.debugUtils.showSerial;
+1695:	const uint8_t stripId = isDown ? 2 : 1;
+1727:		const char* direction = isDown ? "(↓)" : "(↑)";
+1744:	const RateClassSettings* currentRateSettings = rateClassSettings[rateClass - 1];
+1748:		const RateClassSettings& settings = currentRateSettings[randomTypeAny];
+1773:	const InnerCoreMeteorSettings& ics = innerCoreSettings[rateClass - 1];
+1900:			const int rateClass = thisMeteor->rateClass;
+1901:			const uint8_t animationType = thisMeteor->animationType;
+1902:			const int region = thisMeteor->region;
+1903:			const bool directionDown = thisMeteor->directionDown;
+1956:	const bool showDiagnostics = FileUtils::config.debugUtils.diagMeasure;
+1965:	const unsigned long currentDisplayDuration = currentMillis - displayDurationTimer;
+1976:		const uint8_t animationId = 1;
+2146:		const char* elValue = xmlSignal->Value();
+2149:		const char* signalDirection = nullptr;
+2171:		const char* spacecraft = xmlSignal->Attribute("spacecraft");
+2176:		const char* signalType = xmlSignal->Attribute("signalType");
+2194:		const char* rate = xmlSignal->Attribute("dataRate");
+2364:	const char* charPayload = payload; // Convert payload to char array
+2503:							const char* elValue = xmlDish->Value();
+2548:								const char* target = xmlTarget->Attribute("name"); // Get target name
+2593:								const char* name = SpacecraftData::callsignToName(target);
+2832:	const bool showSerial = FileUtils::config.debugUtils.showSerial;
+2837:		const char* resetColor = resetColorString.c_str();
+2838:		const char* coloredMessage = coloredMessageString.c_str();
+2842:		const char* messageCharPtr = message.c_str();
+2933:	const int maxHttpRetries = 3;
+3007:	const bool showSerial = FileUtils::config.debugUtils.showSerial;
+3061:			const char* dataFetchedStatusString = dataFetched ? "Success" : "Failure";
+3062:			const char* dataStatusColor = dataFetched ? "green" : "red";
+3079:	const unsigned long currentMillis = millis();
+3080:	const unsigned long dataFetchDurationSeconds = (currentMillis - dataFetchTimerMilliseconds) / 1000;
+3376:	const char* update_button_html = R"---(
+3534:	const char* apPassword = FileUtils::config.wifiNetwork.apPass;
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-02-24 21:36:15Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Grep"><details>
+<summary>Tool use: **Grep**</summary>
+ path `./src/main.cpp` pattern `^\s+#define\s+`
+
+```text
+No matches found
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-02-24 21:36:18Z)**_
+
+Now let me read the rest of the file in chunks to understand the function boundaries and find more constants.
+
+_**Agent - sidechain (claude-opus-4-6 2026-02-24 21:36:20Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+  1000→
+  1001→	// Get number value
+  1002→	String forcedAnimationTypeValue = getParam("force_animation_type");
+  1003→	Serial.print("force_animation_type input: " + forcedAnimationTypeValue + "\n");
+  1004→	Serial.println("Previous forcedAnimationType: " + String(animate.forcedAnimationType));
+  1005→	char* endPtr;
+  1006→	long rawAnimType = strtol(forcedAnimationTypeValue.c_str(), &endPtr, 10);
+  1007→	if (*endPtr != '\0') {
+  1008→		Serial.println("WARNING: force_animation_type parse failed, keeping previous value");
+  1009→	} else {
+  1010→		animate.forcedAnimationType = (rawAnimType < 1) ? 1 : (rawAnimType > 5) ? 5 : (int)rawAnimType;
+  1011→	}
+  1012→	Serial.println("New forcedAnimationType: " + String(animate.forcedAnimationType));
+  1013→
+  1014→
+  1015→	/* BRIGHTNESS - Set brightness config key from input */
+  1016→	// Get input value
+  1017→	String brightnessValue = getParam("brightness");
+  1018→	Serial.print("---\nbrightness input: " + brightnessValue + "\n");
+  1019→
+  1020→	// Convert to int and clamp to 0-100% range
+  1021→	char* brightnessEndPtr;
+  1022→	long rawBrightness = strtol(brightnessValue.c_str(), &brightnessEndPtr, 10);
+  1023→	if (*brightnessEndPtr != '\0') {
+  1024→		Serial.println("WARNING: brightness parse failed, defaulting to 50%");
+  1025→		rawBrightness = 50;
+  1026→	}
+  1027→	int brightnessInt = (rawBrightness < 0) ? 0 : (rawBrightness > 100) ? 100 : (int)rawBrightness;
+  1028→
+  1029→	// Map 0-100% to hardware range 8-160
+  1030→	int brightnessMapped = MathHelpers::map(brightnessInt, 0, 100, 8, 160);
+  1031→
+  1032→	// Set program config (store hardware value)
+  1033→	Serial.print("Previous config brightness: " + String(FileUtils::config.displayLED.brightness) + "\n");
+  1034→	FileUtils::config.displayLED.brightness = brightnessMapped;
+  1035→	Serial.print("New config brightness: " + String(FileUtils::config.displayLED.brightness) + "\n");
+  1036→
+  1037→	// Set file config
+  1038→	FileUtils::writeConfigFileInt("brightness", FileUtils::config.displayLED.brightness);
+  1039→	FileUtils::readFile("/config.json");
+  1040→	Serial.print("\n");
+  1041→
+  1042→	// Apply to LEDs
+  1043→	setGlobalBrightness(FileUtils::config.displayLED.brightness);
+  1044→
+  1045→
+  1046→	/* FORCE DUMMY DATA - Set forceDummyData config key from input */
+  1047→	// Get input value
+  1048→	String forceDummyDataInputValue = getParam("force_dummy_data");
+  1049→	Serial.print("---\nforceDummyData input: " + forceDummyDataInputValue + "\n");
+  1050→
+  1051→	// Treat any non-empty, non-"0" value as true (handles "1", "on", etc.)
+  1052→	int forceDummyDataInt = (forceDummyDataInputValue.length() > 0 && forceDummyDataInputValue != "0") ? 1 : 0;
+  1053→
+  1054→	// Set program config
+  1055→	Serial.print("Previous config forceDummyData: " + String(FileUtils::config.wifiNetwork.forceDummyData) + "\n");
+  1056→	FileUtils::config.wifiNetwork.forceDummyData = forceDummyDataInt;
+  1057→	Serial.print("New config forceDummyData: " + String(FileUtils::config.wifiNetwork.forceDummyData) + "\n");
+  1058→
+  1059→	// Set file config
+  1060→	FileUtils::writeConfigFileBool("forceDummyData", FileUtils::config.wifiNetwork.forceDummyData);
+  1061→	FileUtils::readFile("/config.json");
+  1062→	Serial.println();
+  1063→
+  1064→	// Set forceDummyData
+  1065→	forceDummyData = FileUtils::config.wifiNetwork.forceDummyData;
+  1066→
+  1067→
+  1068→	// Re-initialize checkbox params so subsequent portal loads render correctly.
+  1069→	// WiFiManager's doParamSave overwrites _value with "" for unchecked boxes,
+  1070→	// which breaks the next submission. Reconstructing restores value="1" and
+  1071→	// updates the checked attribute to reflect the new config state.
+  1072→	// Destructor frees the old _value buffer before placement new allocates a new one.
+  1073→	param_force_dummy_data.~WiFiManagerParameter();
+  1074→	new (&param_force_dummy_data) WiFiManagerParameter("force_dummy_data", "Force placeholder data", "1", 1, FileUtils::config.wifiNetwork.forceDummyData ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
+  1075→	param_show_serial.~WiFiManagerParameter();
+  1076→	new (&param_show_serial) WiFiManagerParameter("show_serial", "Show Serial", "1", 1, FileUtils::config.debugUtils.showSerial ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
+  1077→	param_show_diagnostics.~WiFiManagerParameter();
+  1078→	new (&param_show_diagnostics) WiFiManagerParameter("show_diagnostics", "Show Diagnostics", "1", 1, FileUtils::config.debugUtils.diagMeasure ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
+  1079→	param_force_animation_enabled.~WiFiManagerParameter();
+  1080→	new (&param_force_animation_enabled) WiFiManagerParameter("force_animation_enabled", "Force Animation Type", "1", 1, forceAnimationType ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
+  1081→	param_force_animation_type.~WiFiManagerParameter();
+  1082→	new (&param_force_animation_type) WiFiManagerParameter("force_animation_type", "Animation Type (1-5)", String(animate.forcedAnimationType).c_str(), 1, "type='number' min='1' max='5' step='1'");
+  1083→
+  1084→	Serial.print("\n<--------- END PORTAL FORM CALLBACK --------->\n\n");
+  1085→}
+  1086→
+  1087→#pragma endregion -- END WIFIMANAGER HANDLING
+  1088→
+  1089→#pragma region -- HARDWARE UTILS
+  1090→int allStripsLength = sizeof(allStrips) / sizeof(allStrips[0]);
+  1091→void allStripsShow(void)
+  1092→{
+  1093→	// for (int i = 0; i < 4; i++)
+  1094→	// {
+  1095→	// 	allStrips[i]->show();
+  1096→	// }
+  1097→
+  1098→	FastLED.show();
+  1099→}
+  1100→
+  1101→void allStripsOff(void)
+  1102→{
+  1103→	// for (int i = 0; i < allStripsLength; i++)
+  1104→	// {
+  1105→	// 	allStrips[i]->clear();
+  1106→	// 	allStripsShow();
+  1107→	// }
+  1108→
+  1109→	FastLED.clear();
+  1110→}
+  1111→
+  1112→#pragma endregion -- HARDWARE UTILS
+  1113→
+  1114→#pragma region -- ANIMATION FUNCTIONS
+  1115→
+  1116→// Logic to update speed counters
+  1117→void updateSpeedCounters()
+  1118→{
+  1119→	counterHalfSpeed == 2 ? counterHalfSpeed = 1 : counterHalfSpeed++;
+  1120→	counterThirdSpeed == 3 ? counterThirdSpeed = 1 : counterThirdSpeed++;
+  1121→	counterQuarterSpeed == 4 ? counterQuarterSpeed = 1 : counterQuarterSpeed++;
+  1122→	counterEighthSpeed == 8 ? counterEighthSpeed = 1 : counterEighthSpeed++;
+  1123→}
+  1124→
+  1125→// Utility function to reverse elements of an array
+  1126→void reverseStripsArray(void)
+  1127→{
+  1128→	reverse(allStrips, allStrips + 4);
+  1129→}
+  1130→
+  1131→// Utility to wrap meteor region if its out of bounds
+  1132→uint8_t regionWrap(int8_t region, bool isDown)
+  1133→{
+  1134→	if (isDown) {
+  1135→		if (region == outerChunks) return  0; // Wrap around to first strip, 1st pixel
+  1136→		if (region == outerChunks + 1) return  1; // Wrap around to first strip, 2nd pixel
+  1137→		if (region < 0) return outerChunks - 1; // Wrap around to last strip
+  1138→	} else {
+  1139→		if (region == middleChunks) return  0; // Wrap around to first strip, 1st pixel
+  1140→		if (region == middleChunks + 1) return  1; // Wrap around to first strip, 2nd pixel
+  1141→		if (region < 0) return middleChunks - 1; // Wrap around to last strip
+  1142→	}
+  1143→
+  1144→	return region;
+  1145→}
+  1146→
+  1147→// Display letter from array
+  1148→void doLetterRegions(char theLetter, int regionStart, int startingPixel)
+  1149→{
+  1150→	const TextCharacter::TextCharacterInfo ledCharacter = textCharacter.getCharacter(theLetter, characterWidth);
+  1151→
+  1152→	// Check if characterWidth is zero, if so, return from the function to avoid division by zero
+  1153→	if (characterWidth == 0) {
+  1154→		characterWidth = 5;
+  1155→		Serial.println("Error: characterWidth is zero - setting to 5");
+  1156→		// return;
+  1157→	}
+  1158→
+  1159→
+  1160→	const uint16_t regionOffset = innerPixelsChunkLength * regionStart;
+  1161→
+  1162→	int16_t pixel = startingPixel + regionOffset;
+  1163→	const int16_t previousPixel = pixel - letterSpacing;
+  1164→
+  1165→	const size_t inner_leds_size = sizeof(inner_leds) / sizeof(inner_leds[0]);
+  1166→
+  1167→	for (int i = 0; i < ledCharacter.characterTotalPixels; i++) {
+  1168→		int j = i + 1;
+  1169→		// Serial.print("j: " + String(j) + "\n");
+  1170→		// Serial.println("characterWidth: " + String(characterWidth) + "\n");
+  1171→
+  1172→		int regionInt = (j % characterWidth) - 1;
+  1173→		if (regionInt < 0)
+  1174→			regionInt = characterWidth - 1;
+  1175→
+  1176→		int drawPixel = (pixel + (innerPixelsChunkLength * regionInt)) % innerPixelsTotal;
+  1177→		int drawPreviousPixel = (previousPixel + (innerPixelsChunkLength * regionInt)) % innerPixelsTotal;
+  1178→
+  1179→		int regionStart = (innerPixelsChunkLength * regionInt + regionOffset) % innerPixelsTotal;
+  1180→		int regionEnd = (innerPixelsChunkLength * (regionInt + 1) + regionOffset) % innerPixelsTotal;
+  1181→
+  1182→		bool drawPixelInRegion = (regionStart <= drawPixel && drawPixel < regionEnd) ||
+  1183→			(regionStart > regionEnd && (drawPixel < regionEnd || drawPixel >= regionStart));
+  1184→
+  1185→		bool drawPrevPixelInRegion = (regionStart <= drawPreviousPixel && drawPreviousPixel < regionEnd) ||
+  1186→			(regionStart > regionEnd && (drawPreviousPixel < regionEnd || drawPreviousPixel >= regionStart));
+  1187→
+  1188→
+  1189→		if (drawPrevPixelInRegion) {
+  1190→			if (drawPreviousPixel >= 0 && drawPreviousPixel < inner_leds_size) {
+  1191→				inner_leds[drawPreviousPixel] = mpColors.off.value;
+  1192→			} else {
+  1193→				// Serial.print(DevUtils::termColor("red")) + "drawPreviousPixel out of bounds" + DevUtils::termColor("reset")) + "\n");
+  1194→			}
+  1195→		}
+  1196→
+  1197→		if (drawPixelInRegion) {
+  1198→			if (drawPixel >= 0 && drawPixel < inner_leds_size) {
+  1199→				inner_leds[drawPixel] = ledCharacter.characterArray[i] == 1 ? currentColors.letter : mpColors.off.value;
+  1200→			} else {
+  1201→				// Serial.print(DevUtils::termColor("red")) + "drawPixel out of bounds" + DevUtils::termColor("reset")) + "\n");
+  1202→			}
+  1203→		}
+  1204→
+  1205→		if (regionInt == characterWidth - 1)
+  1206→			pixel--;
+  1207→	}
+  1208→}
+  1209→
+  1210→
+  1211→// Updates scrolling letters on inner strips
+  1212→void scrollLetters(const char* spacecraftName, int wordArraySize)
+  1213→{
+  1214→	int regionStart = 4;
+  1215→	static int16_t startPixel = 0;
+  1216→	int letterPixel = startPixel;
+  1217→
+  1218→	/* Do each letter in spacecraft name */
+  1219→	for (int i = 0; i < wordArraySize; i++) {
+  1220→		char theLetter = spacecraftName[i];
+  1221→
+  1222→		if (characterWidth == 4) {
+  1223→			doLetterRegions(theLetter, (FileUtils::config.displayLED.innerChunks - 1), letterPixel);	// Start 1 strip to the left of first strip
+  1224→		} else if (characterWidth == 5) {
+  1225→			doLetterRegions(theLetter, (FileUtils::config.displayLED.innerChunks - 2), letterPixel);	// Start 2 strip to the left of first strip
+  1226→		} else {
+  1227→			doLetterRegions(theLetter, 0, letterPixel);
+  1228→			// doLetterRegions(theLetter, 7, letterPixel);
+  1229→			// doLetterRegions(theLetter, 8, letterPixel);
+  1230→		}
+  1231→
+  1232→		letterPixel = letterPixel - letterSpacing - characterKerning; // Move to next letter
+  1233→	}
+  1234→
+  1235→	int wrapPixel = innerPixelsChunkLength + (wordArraySize * (characterHeight + characterKerning)); // Calculate pixel to wrap at
+  1236→	startPixel++; // Move to next starting pixel
+  1237→
+  1238→
+  1239→	if (startPixel > wrapPixel) {
+  1240→		startPixel = 0;
+  1241→		nameScrollDone = true;
+  1242→		animationInProgress = false;
+  1243→		animationTypeSetDown = false;
+  1244→		animationTypeSetUp = false;
+  1245→		animateFirstCycleDown = true;
+  1246→		animateFirstCycleUp = true;
+  1247→		craftDelayTimer = millis();
+  1248→
+  1249→		// if (millis() - displayDurationTimer > displayMinDuration) {
+  1250→		// 	nameScrollDone = true;
+  1251→		// 	animationInProgress = false;
+  1252→		// 	animationTypeSetDown = false;
+  1253→		// 	animationTypeSetUp = false;
+  1254→		// 	animateFirstCycleDown = true;
+  1255→		// 	animateFirstCycleUp = true;
+  1256→		// 	craftDelayTimer = millis();
+  1257→		// }
+  1258→	}
+  1259→}
+  1260→
+  1261→// Create Meteor object
+  1262→void createMeteor(
+  1263→	int strip,
+  1264→	int region,
+  1265→	bool directionDown = true,
+  1266→	int startPixel = 0,
+  1267→	uint8_t meteorSize = 1,
+  1268→	bool hasTail = true,
+  1269→	float meteorTailDecayValue = 0.92,
+  1270→	int rateClass = 5,
+  1271→	uint8_t animationType = 0)
+  1272→{
+  1273→	CHSV meteorColor = currentColors.meteor;
+  1274→
+  1275→	region = regionWrap(region, directionDown);
+  1276→
+  1277→	for (int i = 0; i < animate.ActiveMeteorArraySize; i++) {
+  1278→		if (animate.ActiveMeteors[i] == nullptr) {
+  1279→			animate.ActiveMeteors[i] = new Meteor{
+  1280→				directionDown,					// directionDown
+  1281→				startPixel,						// firstPixel
+  1282→				region,							// region
+  1283→				(int)outerPixelsChunkLength,	// regionLength
+  1284→				meteorColor,					// pColor
+  1285→				meteorSize,						// meteorSize
+  1286→				hasTail,						// hasTail
+  1287→				meteorTailDecay,				// meteorTrailDecay
+  1288→				meteorTailDecayValue,			// meteorTrailDecayValue
+  1289→				meteorTailRandom,				// meteorRandomDecay
+  1290→				currentColors.tailHue,			// tailHueStart
+  1291→				false,							// tailHueAdd
+  1292→				0.75,							// tailHueExponent
+  1293→				currentColors.tailSaturation,	// tailHueSaturation
+  1294→				allStrips[strip],				// rStrip
+  1295→				rateClass,						// rateClass
+  1296→				animationType					// animationType
+  1297→			};
+  1298→			break;
+  1299→		}
+  1300→	}
+  1301→}
+  1302→
+  1303→void animationMeteorPulseRegion(
+  1304→	uint8_t strip,
+  1305→	uint8_t region,
+  1306→	bool directionDown = true,
+  1307→	int16_t startPixel = 0,
+  1308→	uint8_t pulseCount = 2,
+  1309→	int8_t offset = 10,
+  1310→	bool randomizeOffset = false,
+  1311→	uint8_t meteorSize = 1,
+  1312→	bool hasTail = true,
+  1313→	float meteorTailDecayValue = 0.93,
+  1314→	int rateClass = 5,
+  1315→	uint8_t animationType = 0
+  1316→)
+  1317→{
+  1318→	// Stagger the starting pixel
+  1319→	if (randomizeOffset == true)
+  1320→		startPixel = startPixel - ((rand() % (offset / 2) + 1) * 2);
+  1321→
+  1322→	for (int i = 0; i < pulseCount; i++) {
+  1323→		int16_t pixel = i + startPixel + (i * offset * -1);
+  1324→		if (randomizeOffset == true)
+  1325→			pixel = pixel - (random(0, 6) * 2);
+  1326→		createMeteor(
+  1327→			strip,
+  1328→			region,
+  1329→			directionDown,
+  1330→			pixel,
+  1331→			meteorSize,
+  1332→			hasTail,
+  1333→			meteorTailDecayValue,
+  1334→			rateClass,
+  1335→			animationType
+  1336→		);
+  1337→	}
+  1338→}
+  1339→
+  1340→void animationMeteorPulseRing(
+  1341→	uint8_t strip,
+  1342→	bool directionDown = true,
+  1343→	uint8_t pulseCount = 2,
+  1344→	int8_t offset = 32,
+  1345→	bool randomizeOffset = false,
+  1346→	uint8_t meteorSize = 1,
+  1347→	bool hasTail = true,
+  1348→	float meteorTailDecayValue = 0.93,
+  1349→	int rateClass = 5,
+  1350→	uint8_t animationType = 0)
+  1351→{
+  1352→	for (int i = 0; i < outerChunks; i++) {
+  1353→
+  1354→		animationMeteorPulseRegion(
+  1355→			strip,			 		// strip
+  1356→			i,				 		// region
+  1357→			directionDown,	 		// directionDown
+  1358→			0,				 		// startPixel
+  1359→			pulseCount,		 		// pulseCount
+  1360→			offset,			 		// offset
+  1361→			randomizeOffset, 		// randomizeOffset
+  1362→			meteorSize,		 		// meteorSize
+  1363→			hasTail,		 		// hasTail
+  1364→			meteorTailDecayValue, 	// meteorTailDecay
+  1365→			rateClass,		 		// rateClass
+  1366→			animationType	 		// animationType
+  1367→		);
+  1368→	}
+  1369→}
+  1370→
+  1371→void animationSpiralPulseRing(
+  1372→	uint8_t strip,
+  1373→	bool directionDown = true,
+  1374→	uint8_t height = 2,
+  1375→	uint8_t pulseCount = 2,
+  1376→	uint8_t offset = 12,
+  1377→	uint8_t spiralMultiplier = 6,
+  1378→	uint8_t repeats = 4,
+  1379→	bool hasTail = true,
+  1380→	float meteorTailDecayValue = 0.93,
+  1381→	int rateClass = 5,
+  1382→	uint8_t animationType = 0)
+  1383→{
+  1384→	for (int p = 0; p < pulseCount; p++) {
+  1385→		for (int i = 0; i < outerChunks; i++) {
+  1386→			int16_t startPixel = ((i * spiralMultiplier) + (p * offset)) * -1;
+  1387→
+  1388→			animationMeteorPulseRegion(
+  1389→				strip,
+  1390→				i,
+  1391→				directionDown,
+  1392→				startPixel,
+  1393→				5,
+  1394→				((outerChunks + 1) * spiralMultiplier),
+  1395→				false,
+  1396→				height,
+  1397→				hasTail,
+  1398→				meteorTailDecayValue,
+  1399→				rateClass,
+  1400→				animationType
+  1401→			);
+  1402→		}
+  1403→	}
+  1404→}
+  1405→
+  1406→
+  1407→void waveAnimation(
+  1408→	uint8_t strip,
+  1409→	bool isDown,
+  1410→	uint8_t numberOfWaves = 1,
+  1411→	uint8_t offset = 12,
+  1412→	uint8_t waveSize = 2,
+  1413→	uint8_t interval = 4,
+  1414→	bool hasTail = true,
+  1415→	float meteorTailDecayValue = 0.93,
+  1416→	int rateClass = 5,
+  1417→	uint8_t animationType = 0)
+  1418→{
+  1419→	uint8_t intervalAdjusted = interval * 2; // Interval is doubled because the LEDs are in front/back pairs
+  1420→	uint8_t startRegion;
+  1421→
+  1422→	if (isDown) {
+  1423→		startRegion = random8(0, outerChunks);
+  1424→	} else {
+  1425→		startRegion = random8(0, middleChunks);
+  1426→	}
+  1427→
+  1428→	for (uint8_t wave = 0; wave < numberOfWaves; wave++) {
+  1429→		if (isDown) {
+  1430→			startRegion += 2;
+  1431→		} else {
+  1432→			startRegion -= 2;
+  1433→		}
+  1434→
+  1435→		startRegion = regionWrap(startRegion, isDown);
+  1436→
+  1437→		for (uint8_t region = 0; region < (isDown ? outerChunks : middleChunks); region++) {
+  1438→			int startPixel = 0;
+  1439→
+  1440→			if (region < outerChunks / 2) {
+  1441→				startPixel -= (intervalAdjusted * region) + (offset * wave);
+  1442→			} else {
+  1443→				startPixel -= (intervalAdjusted * (outerChunks - region)) + (offset * wave);
+  1444→			}
+  1445→
+  1446→			createMeteor(
+  1447→				strip,
+  1448→				startRegion,
+  1449→				isDown,
+  1450→				startPixel,
+  1451→				waveSize,
+  1452→				hasTail,
+  1453→				meteorTailDecayValue,
+  1454→				rateClass,
+  1455→				animationType
+  1456→			);
+  1457→
+  1458→			startRegion++;
+  1459→			startRegion = regionWrap(startRegion, isDown);
+  1460→		}
+  1461→	}
+  1462→}
+  1463→
+  1464→void zigzagAnimation(
+  1465→	uint8_t strip,
+  1466→	bool isDown,
+  1467→	uint8_t pulseCount,
+  1468→	uint8_t zigzagSize,
+  1469→	uint8_t pulseOffset,
+  1470→	uint8_t height,
+  1471→	uint8_t interval,
+  1472→	bool hasTail,
+  1473→	float meteorTailDecayValue,
+  1474→	int rateClass,
+  1475→	uint8_t animationType = 0)
+  1476→{
+  1477→	zigzagSize--;
+  1478→
+  1479→	for (int pulse = 0; pulse < pulseCount; pulse++) {
+  1480→		// Serial.print("pulse: " + String(pulse) + "\n");
+  1481→
+  1482→		for (uint8_t region = 0; region < outerChunks; region++) {
+  1483→			// Serial.print("region: " + String(region) + "\n");
+  1484→
+  1485→			int startPixel;
+  1486→			int position = region % (zigzagSize * 2);
+  1487→
+  1488→			if (position <= zigzagSize) {
+  1489→				startPixel = (position * (interval * 2)) * -1;
+  1490→			} else {
+  1491→				startPixel = ((zigzagSize - (position - zigzagSize)) * (interval * 2)) * -1;
+  1492→			}
+  1493→
+  1494→			/* Offset pulses */
+  1495→			// pulseOffset is multiplied by 2 because the LEDs are in front/back pairs
+  1496→			startPixel = startPixel - (pulse * (pulseOffset * 2));
+  1497→
+  1498→			// Serial.print("startPixel: " + String(startPixel) + "\n");
+  1499→
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-02-24 21:36:21Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+  1500→			createMeteor(
+  1501→				strip,
+  1502→				region,
+  1503→				isDown,
+  1504→				startPixel,
+  1505→				height,
+  1506→				hasTail,
+  1507→				meteorTailDecayValue,
+  1508→				rateClass,
+  1509→				animationType
+  1510→			);
+  1511→		}
+  1512→	}
+  1513→}
+  1514→
+  1515→void laserGunAnimation(uint8_t strip, uint16_t chargeTime, uint8_t firingSize, int rateClass, uint8_t animationType = 0)
+  1516→{
+  1517→	// Charging up animation
+  1518→	for (uint8_t i = 0; i < outerPixelsChunkLength; ++i) {
+  1519→		for (uint8_t region = 0; region < outerChunks; ++region) {
+  1520→			createMeteor(strip, region, true, i, 1, false, rateClass);
+  1521→		}
+  1522→		delay(chargeTime / outerPixelsChunkLength);
+  1523→	}
+  1524→
+  1525→	// Firing animation
+  1526→	for (uint8_t i = 0; i < outerPixelsChunkLength - firingSize + 1; ++i) {
+  1527→		for (uint8_t region = 0; region < outerChunks; ++region) {
+  1528→			createMeteor(strip, region, true, i, firingSize, true, rateClass);
+  1529→		}
+  1530→		delay(chargeTime / (outerPixelsChunkLength * 2));
+  1531→	}
+  1532→}
+  1533→
+  1534→
+  1535→
+  1536→
+  1537→void doInnerCoreMeteors(bool isDown = true, int pulseCount = 1, int offset = 8, int meteorCount = 6, float meteorTailDecayValue = 0.93, int rateClass = 5) {
+  1538→	for (int i = 0; i < meteorCount; i++) {
+  1539→		animationMeteorPulseRegion(0, random8(4, 9), isDown, 0, pulseCount, offset, true, 1, true, meteorTailDecayValue, rateClass);
+  1540→	}
+  1541→}
+  1542→
+  1543→struct InnerCoreMeteorSettings {
+  1544→	bool isDown;
+  1545→	uint8_t pulseCount;
+  1546→	uint8_t offset;
+  1547→	uint8_t meteorCount;
+  1548→	float meteorTailDecayValue;
+  1549→};
+  1550→
+  1551→// Define constant settings for the different rate classes
+  1552→struct RateClassSettings {
+  1553→	uint8_t pulseCount;
+  1554→	uint8_t offset;
+  1555→	uint8_t height;
+  1556→	uint8_t numberOfWaves;
+  1557→	uint8_t waveSize;
+  1558→	uint8_t zigzagSize;
+  1559→	uint8_t interval;
+  1560→	uint8_t spiralMultiplier;
+  1561→	uint8_t repeats;
+  1562→	bool randomizeOffset;
+  1563→	uint8_t meteorSize;
+  1564→	bool hasTail;
+  1565→	uint8_t meteorCount;
+  1566→	float meteorTailDecayValue;
+  1567→};
+  1568→
+  1569→
+  1570→const InnerCoreMeteorSettings innerCoreSettings[6] = {
+  1571→	{pulseCount: 1, offset : 32, meteorCount : 2, meteorTailDecayValue : 0.88},	// Rate class 1
+  1572→	{pulseCount: 1, offset : 32, meteorCount : 4, meteorTailDecayValue : 0.90},	// Rate class 2
+  1573→	{pulseCount: 1, offset : 32, meteorCount : 6, meteorTailDecayValue : 0.92},	// Rate class 3
+  1574→	{pulseCount: 1, offset : 24, meteorCount : 6, meteorTailDecayValue : 0.93},	// Rate class 4
+  1575→	{pulseCount: 3, offset : 24, meteorCount : 6, meteorTailDecayValue : 0.93},	// Rate class 5
+  1576→	{pulseCount: 5, offset : 32, meteorCount : 6, meteorTailDecayValue : 0.97,}	// Rate class 6	
+  1577→};
+  1578→
+  1579→const RateClassSettings rateClass6Settings[] = {
+  1580→	/* Meteors */
+  1581→	{pulseCount: 4, offset : 32, randomizeOffset : true, meteorSize : 2, hasTail : true, meteorTailDecayValue : 0.97},
+  1582→
+  1583→	/* Ring */
+  1584→	{pulseCount: 6, offset : 18, randomizeOffset : false, meteorSize : 4, hasTail : true, meteorTailDecayValue : 0.97},
+  1585→
+  1586→	/* Spiral */
+  1587→	{pulseCount: 3, offset : 14, height : 2, spiralMultiplier : 2, repeats : 1, hasTail : true, meteorTailDecayValue : 0.96},
+  1588→
+  1589→	/* Wave */
+  1590→	{offset: 40, numberOfWaves : 3, waveSize : 4, interval : 2, hasTail : true, meteorTailDecayValue : 0.96},
+  1591→
+  1592→	/* Zigzag */
+  1593→	{pulseCount: 3, offset : 18, height : 5, zigzagSize : 3, interval : 4, hasTail : true, meteorTailDecayValue : 0.97},
+  1594→};
+  1595→
+  1596→const RateClassSettings rateClass5Settings[] = {
+  1597→	/* Meteors */
+  1598→	{pulseCount: 3, offset : 48, randomizeOffset : true, meteorSize : 2, hasTail : true, meteorTailDecayValue : 0.96},
+  1599→
+  1600→	/* Ring */
+  1601→	{pulseCount: 5, offset : 32, randomizeOffset : false, meteorSize : 2, hasTail : true, meteorTailDecayValue : 0.96},
+  1602→
+  1603→	/* Spiral */
+  1604→	{pulseCount: 2, offset : 14, height : 2, spiralMultiplier : 3, repeats : 1, hasTail : true, meteorTailDecayValue : 0.96},
+  1605→
+  1606→	/* Wave */
+  1607→	{offset: 40, numberOfWaves : 3, waveSize : 3, interval : 2, hasTail : true, meteorTailDecayValue : 0.96},
+  1608→
+  1609→	/* Zigzag */
+  1610→	{pulseCount: 2, offset : 28, height : 4, zigzagSize : 3, interval : 3, hasTail : true, meteorTailDecayValue : 0.96},
+  1611→};
+  1612→
+  1613→const RateClassSettings rateClass4Settings[] = {
+  1614→	/* Meteor */
+  1615→	{pulseCount: 2, offset : 64, randomizeOffset : true, meteorSize : 1, hasTail : true, meteorTailDecayValue : 0.96},
+  1616→
+  1617→	/* Ring */
+  1618→	{pulseCount: 3, offset : 48, randomizeOffset : false, hasTail : true, meteorTailDecayValue : 0.96},
+  1619→
+  1620→	/* Spiral */
+  1621→	{pulseCount: 1, offset : 16, height : 1, spiralMultiplier : 4, repeats : 1, hasTail : true, meteorTailDecayValue : 0.96},
+  1622→
+  1623→	/* Wave */
+  1624→	{offset: 32, numberOfWaves : 1, waveSize : 2, interval : 2, hasTail : true, meteorTailDecayValue : 0.96},
+  1625→
+  1626→	/* Zigzag */
+  1627→	{},
+  1628→};
+  1629→
+  1630→const RateClassSettings rateClass3Settings[] = {
+  1631→	/* Meteors */
+  1632→	{pulseCount: 1, offset : 64, randomizeOffset : true, meteorSize : 1, hasTail : true, meteorTailDecayValue : 0.95},
+  1633→
+  1634→	/* Ring */
+  1635→	{pulseCount: 1, offset : 32, randomizeOffset : false, meteorSize : 1, hasTail : true, meteorTailDecayValue : 0.95},
+  1636→
+  1637→	/* Spiral */
+  1638→	{pulseCount: 1, offset : 14, height : 1, spiralMultiplier : 5, repeats : 1, hasTail : true, meteorTailDecayValue : 0.95},
+  1639→
+  1640→	/* Wave */
+  1641→	{},
+  1642→
+  1643→	/* Zigzag */
+  1644→	{},
+  1645→};
+  1646→
+  1647→const RateClassSettings rateClass2Settings[] = {
+  1648→	/* Meteors */
+  1649→	{pulseCount: 1, offset : 64, randomizeOffset : true, meteorSize : 1, hasTail : true, meteorTailDecayValue : 0.97},
+  1650→
+  1651→	/* Ring */
+  1652→	{},
+  1653→
+  1654→	/* Spiral */
+  1655→	{},
+  1656→
+  1657→	/* Wave */
+  1658→	{},
+  1659→
+  1660→	/* Zigzag */
+  1661→	{},
+  1662→};
+  1663→
+  1664→const RateClassSettings rateClass1Settings[] = {
+  1665→	/* Meteors */
+  1666→	{pulseCount: 1, offset : 64, randomizeOffset : true, meteorSize : 1, hasTail : true, meteorTailDecayValue : 0.97},
+  1667→
+  1668→	/* Ring */
+  1669→	{},
+  1670→
+  1671→	/* Spiral */
+  1672→	{},
+  1673→
+  1674→	/* Wave */
+  1675→	{},
+  1676→
+  1677→	/* Zigzag */
+  1678→	{},
+  1679→};
+  1680→
+  1681→const RateClassSettings* rateClassSettings[] = {
+  1682→	rateClass1Settings,
+  1683→	rateClass2Settings,
+  1684→	rateClass3Settings,
+  1685→	rateClass4Settings,
+  1686→	rateClass5Settings,
+  1687→	rateClass6Settings
+  1688→};
+  1689→
+  1690→
+  1691→void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_t type) {
+  1692→	if (rateClass < 1 || rateClass > 6) return; // Invalid rate class
+  1693→
+  1694→	const bool showSerial = FileUtils::config.debugUtils.showSerial;
+  1695→	const uint8_t stripId = isDown ? 2 : 1;
+  1696→
+  1697→
+  1698→	// Serial.println("isDown: " + String(isDown) + " | strip: " + String(stripId) + " | rateClass: " + String(rateClass));
+  1699→
+  1700→
+  1701→	// Determine animation type
+  1702→	// uint8_t randomTypeAny = (rateClass <= 2) ? 0 : random8(0, 5);
+  1703→	uint8_t randomTypeAny = 0;
+  1704→	// Serial.println("random roll: " + String(randomTypeAny));
+  1705→
+  1706→	if ((isDown && animateFirstCycleDown) || (!isDown && animateFirstCycleUp)) {
+  1707→		if (rateClass == 5 || rateClass == 6) {
+  1708→			randomTypeAny = random8(1, 5);
+  1709→		} else if (rateClass == 3 || rateClass == 4) {
+  1710→			randomTypeAny = 0;
+  1711→		}
+  1712→	} else if (rateClass == 5 || rateClass == 6) {
+  1713→		randomTypeAny = random8(0, 5);
+  1714→	} else if (rateClass == 4) {
+  1715→		randomTypeAny = random8(0, 4);
+  1716→	} else if (rateClass == 3) {
+  1717→		randomTypeAny = random8(0, 3);
+  1718→	} else {
+  1719→		randomTypeAny = 0;
+  1720→	}
+  1721→
+  1722→	if (forceAnimationType)
+  1723→		randomTypeAny = animate.forcedAnimationType - 1;
+  1724→
+  1725→	// Debug log
+  1726→	if (showSerial) {
+  1727→		const char* direction = isDown ? "(↓)" : "(↑)";
+  1728→		char buffer[256];
+  1729→
+  1730→		snprintf(
+  1731→			buffer,
+  1732→			sizeof(buffer),
+  1733→			"%s·.·.·.·.·.·★ %s Rate Class: %d | Type: %d\n",
+  1734→			DevUtils::termColor("cyan"),
+  1735→			direction,
+  1736→			rateClass,
+  1737→			randomTypeAny,
+  1738→			DevUtils::termColor("reset")
+  1739→		);
+  1740→		Serial.print(buffer);
+  1741→	}
+  1742→
+  1743→	// Lookup settings
+  1744→	const RateClassSettings* currentRateSettings = rateClassSettings[rateClass - 1];
+  1745→
+  1746→	/* Assign animation types */
+  1747→	if (currentRateSettings) {
+  1748→		const RateClassSettings& settings = currentRateSettings[randomTypeAny];
+  1749→
+  1750→		if (rateClass == 1) {
+  1751→			// Only one meteor for down and one for up
+  1752→			animationMeteorPulseRegion(stripId, random8(0, 11), isDown, 0, settings.pulseCount, settings.offset, settings.randomizeOffset, settings.meteorSize, settings.hasTail, settings.meteorTailDecayValue, rateClass, randomTypeAny);
+  1753→		} else {
+  1754→			switch (randomTypeAny) {
+  1755→				case 0:
+  1756→				case 1:
+  1757→					animationMeteorPulseRing(stripId, isDown, settings.pulseCount, settings.offset, settings.randomizeOffset, settings.meteorSize, settings.hasTail, settings.meteorTailDecayValue, rateClass, randomTypeAny);
+  1758→					break;
+  1759→				case 2:
+  1760→					animationSpiralPulseRing(stripId, isDown, settings.height, settings.pulseCount, settings.offset, settings.spiralMultiplier, settings.repeats, settings.hasTail, settings.meteorTailDecayValue, rateClass, randomTypeAny);
+  1761→					break;
+  1762→				case 3:
+  1763→					waveAnimation(stripId, isDown, settings.numberOfWaves, settings.offset, settings.waveSize, settings.interval, settings.hasTail, settings.meteorTailDecayValue, rateClass, randomTypeAny);
+  1764→					break;
+  1765→				case 4:
+  1766→					zigzagAnimation(stripId, isDown, settings.pulseCount, settings.zigzagSize, settings.offset, settings.height, settings.interval, settings.hasTail, settings.meteorTailDecayValue, rateClass, randomTypeAny);
+  1767→					break;
+  1768→			}
+  1769→		}
+  1770→	}
+  1771→
+  1772→
+  1773→	const InnerCoreMeteorSettings& ics = innerCoreSettings[rateClass - 1];
+  1774→
+  1775→	// Inner Core meteors
+  1776→	if (isDown) {
+  1777→		// doInnerCoreMeteors(true, ics.pulseCount, ics.offset, ics.meteorCount, ics.meteorTailDecayValue, rateClass);
+  1778→
+  1779→		// Inlined doCoreMeteors() here for performance		
+  1780→		for (uint8_t i = 0; i < ics.meteorCount; i++) {
+  1781→			animationMeteorPulseRegion(0, random8(4, 9), isDown, 0, ics.pulseCount, offset, true, 1, true, ics.meteorTailDecayValue, rateClass);
+  1782→		}
+  1783→
+  1784→		animateFirstCycleDown = false;
+  1785→	} else {
+  1786→		animateFirstCycleUp = false;
+  1787→	}
+  1788→}
+  1789→
+  1790→
+  1791→void drawMeteors()
+  1792→{
+  1793→	// Update meteor animations
+  1794→	for (uint16_t i = 0; i < animate.ActiveMeteorArraySize; i++) {
+  1795→		if (animate.ActiveMeteors[i] != nullptr)
+  1796→			animate.animateMeteor(animate.ActiveMeteors[i]);
+  1797→	}
+  1798→}
+  1799→
+  1800→void setBottomPixelToMax(int pixel) {
+  1801→	CHSV color = CHSV(currentColors.meteor.hue, currentColors.meteor.sat, 255);
+  1802→	bottomPixelMap[pixel] = color;
+  1803→	bottom_leds[pixel] = color;
+  1804→}
+  1805→
+  1806→void updateBottomPixels()
+  1807→{
+  1808→	// Update bottom pixels
+  1809→	for (int i = 0; i < 5; i++) {
+  1810→		int pixelBrightness = bottomPixelMap[i].value;
+  1811→		if (pixelBrightness > 0) {
+  1812→			CHSV color = CHSV(currentColors.meteor.hue, currentColors.meteor.sat, dim8_raw(pixelBrightness - 1));
+  1813→			bottomPixelMap[i] = color;
+  1814→			bottom_leds[i] = color;
+  1815→		}
+  1816→	}
+  1817→}
+  1818→
+  1819→void updateMeteors()
+  1820→{
+  1821→	bool debugMeasure = FileUtils::config.debugUtils.diagMeasure;
+  1822→
+  1823→	// Rate class update timing
+  1824→	int8_t timingTable[6] = {
+  1825→		60, // Rate class 1
+  1826→		50, // Rate class 2
+  1827→		40, // Rate class 3
+  1828→		35, // Rate class 4
+  1829→		20, // Rate class 5
+  1830→		10  // Rate class 6
+  1831→	};
+  1832→
+  1833→	bool animationTypeCanSpiralTable[5] = {
+  1834→		false,
+  1835→		false,
+  1836→		false,
+  1837→		true,
+  1838→		false,
+  1839→	};
+  1840→
+  1841→	bool updateTable[6] = { false };
+  1842→	bool spiralUpdateTable[6] = { false };
+  1843→
+  1844→
+  1845→	/* Update rate classes at different intervals */
+  1846→	EVERY_N_MILLISECONDS(timingTable[0]) {
+  1847→		updateTable[0] = true; // Rate class 1
+  1848→	}
+  1849→	EVERY_N_MILLISECONDS(timingTable[1]) {
+  1850→		updateTable[1] = true; // Rate class 2
+  1851→	}
+  1852→	EVERY_N_MILLISECONDS(timingTable[2]) {
+  1853→		updateTable[2] = true; // Rate class 3
+  1854→	}
+  1855→	EVERY_N_MILLISECONDS(timingTable[3]) {
+  1856→		updateTable[3] = true; // Rate class 4
+  1857→	}
+  1858→	EVERY_N_MILLISECONDS(timingTable[4]) {
+  1859→		updateTable[4] = true; // Rate class 5
+  1860→	}
+  1861→	updateTable[5] = true; // Rate 6 is not slowed, it runs as fast as possible
+  1862→
+  1863→
+  1864→	EVERY_N_MILLISECONDS(timingTable[0] * 4) {
+  1865→		spiralUpdateTable[0] = true;
+  1866→	}
+  1867→	EVERY_N_MILLISECONDS(timingTable[1] * 4) {
+  1868→		spiralUpdateTable[1] = true;
+  1869→	}
+  1870→	EVERY_N_MILLISECONDS(timingTable[2] * 4) {
+  1871→		spiralUpdateTable[2] = true;
+  1872→	}
+  1873→	EVERY_N_MILLISECONDS(timingTable[3] * 4) {
+  1874→		spiralUpdateTable[3] = true;
+  1875→	}
+  1876→	EVERY_N_MILLISECONDS(timingTable[4] * 4) {
+  1877→		spiralUpdateTable[4] = true;
+  1878→	}
+  1879→	EVERY_N_MILLISECONDS(timingTable[5] * 4) {
+  1880→		spiralUpdateTable[5] = true;
+  1881→	}
+  1882→
+  1883→
+  1884→
+  1885→
+  1886→	// // Print the updateTable array
+  1887→	// Serial.print("updateTable: ");
+  1888→	// for (int i = 0; i < 6; i++) {
+  1889→	// 	Serial.print("[" + String(updateTable[i]) + "]");
+  1890→	// }
+  1891→	// Serial.print("\n");
+  1892→
+  1893→
+  1894→	// Update first pixel location for all active Meteors in array
+  1895→	uint16_t activeMeteors = 0;
+  1896→
+  1897→	for (int i = 0; i < animate.ActiveMeteorArraySize; i++) {
+  1898→		if (animate.ActiveMeteors[i] != nullptr) {
+  1899→			Meteor* thisMeteor = animate.ActiveMeteors[i];
+  1900→			const int rateClass = thisMeteor->rateClass;
+  1901→			const uint8_t animationType = thisMeteor->animationType;
+  1902→			const int region = thisMeteor->region;
+  1903→			const bool directionDown = thisMeteor->directionDown;
+  1904→
+  1905→			if (debugMeasure) {
+  1906→				// Count the active meteors for diagnostic output
+  1907→				activeMeteors++;
+  1908→			}
+  1909→
+  1910→
+  1911→			/* Handline horizontal region changes */
+  1912→			bool doSpiral = spiralUpdateTable[rateClass - 1];
+  1913→			bool shouldSpiral = animationTypeCanSpiralTable[animationType];
+  1914→
+  1915→			if (shouldSpiral == true && doSpiral == true) {
+  1916→				int8_t newRegion = region;
+  1917→				directionDown == true ? newRegion -= 1 : newRegion += 1; // Move meteor region based on direction
+  1918→				newRegion = regionWrap(newRegion, directionDown); // Check for wrap around 
+  1919→				thisMeteor->region = newRegion; // Update region in meteor object
+  1920→			}
+  1921→
+  1922→			// Not ready to update meteor location, skip
+  1923→			if (updateTable[rateClass - 1] == false) {
+  1924→				continue;
+  1925→			}
+  1926→
+  1927→
+  1928→			// Update meteor location
+  1929→			thisMeteor->firstPixel += 2; // Move meteor 2 pixels (visually moves by 1 due to back/front LED pairs)
+  1930→
+  1931→
+  1932→			// When meteor reaches the end of the region, animate corresponding bottom pixel
+  1933→			if (thisMeteor->firstPixel == thisMeteor->regionLength + 2 && thisMeteor->region % 2 == 1) {
+  1934→				int bottomPixel = ((thisMeteor->region - 1) / 2) % 5;
+  1935→				setBottomPixelToMax(bottomPixel);
+  1936→			}
+  1937→
+  1938→			// If meteor is beyond the display region, unallocate memory and remove array item
+  1939→			if (thisMeteor->firstPixel > thisMeteor->regionLength * 2) {
+  1940→				delete thisMeteor;
+  1941→				animate.ActiveMeteors[i] = nullptr;
+  1942→			}
+  1943→		}
+  1944→	}
+  1945→
+  1946→	if (debugMeasure)
+  1947→		Serial.print("Active_Meteors:" + String(activeMeteors) + ",");
+  1948→}
+  1949→
+  1950→/** Main Animation update function
+  1951→ * Gets called every loop();
+  1952→ */
+  1953→void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int downSignalRate, int upSignalRate)
+  1954→{
+  1955→	feedWatchdog();
+  1956→	const bool showDiagnostics = FileUtils::config.debugUtils.diagMeasure;
+  1957→
+  1958→	if (showDiagnostics == true) {
+  1959→		Serial.print("FPS:");
+  1960→		Serial.print(FastLED.getFPS() * 1);
+  1961→		Serial.print(",");
+  1962→	}
+  1963→
+  1964→	unsigned long currentMillis = millis(); // Store the current time
+  1965→	const unsigned long currentDisplayDuration = currentMillis - displayDurationTimer;
+  1966→
+  1967→	if (showDiagnostics)
+  1968→		Serial.print("animationCleanup:" + String(displayMinDuration + animationCleanupDelay) + ",");
+  1969→
+  1970→	if (animationTypeSetDown == false) {
+  1971→		// Serial.println("---");
+  1972→		// Serial.println("animationTypeSetDown == false");
+  1973→		// Serial.println("---");
+  1974→		// const uint8_t animationId = random8(0,2);
+  1975→		// const uint8_t animationId = random8(1, 4);
+  1976→		const uint8_t animationId = 1;
+  1977→		// Serial.print("roll animation: "); Serial.println(animationId);
+  1978→
+  1979→		/**
+  1980→		 * 0 = Meteor/Rain (default)
+  1981→		 * 1 = Pulse
+  1982→		 * 2 = Spiral
+  1983→		 */
+  1984→
+  1985→		animationTypeDown = animationId;
+  1986→		animationTypeUp = animationId;
+  1987→		animationTypeSetDown = true;
+  1988→	}
+  1989→
+  1990→	if (showDiagnostics)
+  1991→		Serial.print(
+  1992→			"displayDurationTimer:" + String(displayDurationTimer) +
+  1993→			", displayMinDuration:" + String(displayMinDuration) +
+  1994→			", display_diff:" + String(currentMillis - displayDurationTimer) +
+  1995→			", textMeteorGap:" + String(textMeteorGap) +
+  1996→			", animationTimer" + String(animationTimer) +
+  1997→			", animationRepeatGap:" + String(animationRepeatGap) +
+  1998→			", animation_diff" + String(currentMillis - animationTimer) +
+  1999→			", animationInProgress:" + String(animationInProgress) +
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-02-24 21:36:21Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+  2000→			", nameScrollDone:" + String(nameScrollDone) +
+  2001→			", currentDisplayDuration:" + String(currentDisplayDuration) +
+  2002→			","
+  2003→		);
+  2004→
+  2005→	if (
+  2006→		currentDisplayDuration < displayMinDuration
+  2007→		&& currentDisplayDuration > textMeteorGap
+  2008→		) {
+  2009→		bool shouldAnimate = false;
+  2010→
+  2011→		// if (animationInProgress && (currentMillis - animationTimer) > animationRepeatGap) {
+  2012→		// 	shouldAnimate = true;
+  2013→		// } else if (!animationInProgress && (currentMillis - animationTimer) > textMeteorGap) {
+  2014→		// 	shouldAnimate = true;
+  2015→		// }
+  2016→
+  2017→		if ((currentMillis - animationTimer) > animationRepeatGap) {
+  2018→			shouldAnimate = true;
+  2019→		} else if ((currentMillis - animationTimer) > textMeteorGap) {
+  2020→			shouldAnimate = true;
+  2021→		}
+  2022→
+  2023→		// if (shouldAnimate && nameScrollDone == false) {
+  2024→		if (shouldAnimate) {
+  2025→			if (downSignalRate > 0 || upSignalRate > 0) {
+  2026→
+  2027→				if (FileUtils::config.debugUtils.showSerial == true) {
+  2028→					char animateStatusBuffer[256];
+  2029→					snprintf(
+  2030→						animateStatusBuffer,
+  2031→						sizeof(animateStatusBuffer),
+  2032→						"%s ★★★ ANIMATE: [%s] (↓) %d | (↑) %d%s \n",
+  2033→						DevUtils::termColor("bg_blue"),
+  2034→						spacecraftName,
+  2035→						downSignalRate,
+  2036→						upSignalRate,
+  2037→						DevUtils::termColor("reset")
+  2038→					);
+  2039→					Serial.print(animateStatusBuffer);
+  2040→				}
+  2041→
+  2042→				if (downSignalRate > 0)
+  2043→					// printMeteorArray();
+  2044→					doRateBasedAnimation(true, downSignalRate, meteorOffset, animationTypeDown); // Down animation
+  2045→
+  2046→				if (upSignalRate > 0)
+  2047→					doRateBasedAnimation(false, upSignalRate, meteorOffset, animationTypeUp); // Up animation
+  2048→
+  2049→				animationTimer = currentMillis; // Reset meteor animation timer
+  2050→			}
+  2051→		}
+  2052→	}
+  2053→
+  2054→	// Gate render + update to achievable frame rate (~30 FPS)
+  2055→	if (currentMillis - fpsTimer >= fpsInMs) {
+  2056→		fpsTimer = currentMillis;
+  2057→
+  2058→		unsigned long frameStart = millis();
+  2059→
+  2060→		/* Update Scrolling letters animation */
+  2061→		if (nameScrollDone == false && currentDisplayDuration < displayMinDuration + animationCleanupDelay) {
+  2062→			scrollLetters(spacecraftName, spacecraftNameSize);
+  2063→		}
+  2064→
+  2065→		drawMeteors(); // Assign new pixels for meteors
+  2066→		EVERY_N_MILLISECONDS(100) updateBottomPixels();
+  2067→		FastLED.show(); // Update LEDs
+  2068→		updateMeteors(); // Advance meteor positions for next frame
+  2069→		unsigned long frameTime = millis() - frameStart;
+  2070→
+  2071→		if (showDiagnostics) {
+  2072→			FastLED.countFPS();
+  2073→			Serial.print("frameMs:");
+  2074→			Serial.print(frameTime);
+  2075→			Serial.print(",heap:");
+  2076→			Serial.print(ESP.getFreeHeap() / 1024);
+  2077→			Serial.print(",heapFrag:");
+  2078→			uint32_t freeHeap = ESP.getFreeHeap();
+  2079→			if (freeHeap > 0) {
+  2080→				Serial.print((ESP.getMaxAllocHeap() * 100) / freeHeap);
+  2081→			} else {
+  2082→				Serial.print("ERR");
+  2083→			}
+  2084→			Serial.print(",");
+  2085→		}
+  2086→	} else {
+  2087→		vTaskDelay(1); // Yield to FreeRTOS scheduler when not rendering
+  2088→	}
+  2089→}
+  2090→
+  2091→#pragma endregion -- ANIMATION FUNCTIONS
+  2092→
+  2093→#pragma region -- DATA FUNCTIONS
+  2094→
+  2095→
+  2096→const unsigned long ONE_Kbps = 1000;
+  2097→const unsigned long TEN_Kbps = 10 * 1000;
+  2098→const unsigned long FIFTY_Kbps = 50 * 1000;
+  2099→const unsigned long HUNDRED_Kbps = 100 * 1000;
+  2100→const unsigned long TWO_FIFTY_Kbps = 250 * 1000;
+  2101→const unsigned long FIVE_HUNDRED_Kbps = 500 * 1000;
+  2102→const unsigned long ONE_Mbps = 1000 * 1000;
+  2103→const unsigned long TWO_Mbps = 2 * ONE_Mbps;
+  2104→const unsigned long TWO_POINT_FIVE_Mbps = 2.5 * ONE_Mbps;
+  2105→const unsigned long MAX_RATE = 1000 * ONE_Mbps; // 1 Gbps
+  2106→
+  2107→/* Convert long rate to rate class
+  2108→ * Returns rate class as an unsigned int
+  2109→ */
+  2110→unsigned int rateLongToRateClass(unsigned long rate) {
+  2111→	// Cap the rate at just above 10 Gbps to catch erroneous values
+  2112→	unsigned long cappedRate = (rate > MAX_RATE) ? MAX_RATE : rate;
+  2113→
+  2114→	// Classify the rate into one of the 7 rate classes
+  2115→	if (cappedRate == 0) return 0; // No Data
+  2116→	else if (cappedRate < ONE_Kbps) return 1; // <1 Kbps
+  2117→	else if (cappedRate < TEN_Kbps) return 2; // <50 Kbps
+  2118→	else if (cappedRate < HUNDRED_Kbps) return 3; // <250 Kbps
+  2119→	else if (cappedRate < FIVE_HUNDRED_Kbps) return 4; // <1 Mbps
+  2120→	else if (cappedRate < TWO_POINT_FIVE_Mbps) return 5; // <2.5 Mbps
+  2121→	else return 6; // 2.5 Mbps and above
+  2122→}
+  2123→
+  2124→
+  2125→struct FoundSignals {
+  2126→	unsigned int downSignal;
+  2127→	unsigned int upSignal;
+  2128→};
+  2129→
+  2130→FoundSignals findSignals(XMLElement* xmlDish, CraftQueueItem* tempNewCraft) {
+  2131→	bool showSerial = FileUtils::config.debugUtils.showSerial;
+  2132→
+  2133→	FoundSignals foundSignals = { 0, 0 };
+  2134→
+  2135→	if (FileUtils::config.debugUtils.showSerial == true) {
+  2136→		char buffer[256];
+  2137→		snprintf(buffer, sizeof(buffer), "%s>>> Finding signals for %s%s\n", DevUtils::termColor("yellow"), tempNewCraft->callsign, DevUtils::termColor("reset"));
+  2138→		Serial.print(buffer);
+  2139→	}
+  2140→
+  2141→	// Loop through XML signal elements and find the one that matches the target
+  2142→	for (XMLElement* xmlSignal = xmlDish->FirstChildElement(); xmlSignal != NULL; xmlSignal = xmlSignal->NextSiblingElement()) {
+  2143→		feedWatchdog();
+  2144→		if (xmlDish == nullptr) continue; // Error finding next element
+  2145→
+  2146→		const char* elValue = xmlSignal->Value();
+  2147→		if (elValue == nullptr) continue; // Error getting value
+  2148→
+  2149→		const char* signalDirection = nullptr;
+  2150→		if (strcmp(elValue, "downSignal") == 0) {
+  2151→			signalDirection = "down";
+  2152→		} else if (strcmp(elValue, "upSignal") == 0) {
+  2153→			signalDirection = "up";
+  2154→		} else {
+  2155→			continue;
+  2156→		}
+  2157→
+  2158→		bool isDown;
+  2159→		if (strcmp(signalDirection, "down") == 0) {
+  2160→			isDown = true;
+  2161→		} else if (strcmp(signalDirection, "up") == 0) {
+  2162→			isDown = false;
+  2163→		} else {
+  2164→			continue;
+  2165→		}
+  2166→
+  2167→		if (isDown != true && isDown != false) continue;
+  2168→
+  2169→		feedWatchdog();
+  2170→
+  2171→		const char* spacecraft = xmlSignal->Attribute("spacecraft");
+  2172→		if (spacecraft == nullptr) continue;
+  2173→		// Serial.println("spacecraft: " + String(spacecraft));
+  2174→
+  2175→
+  2176→		const char* signalType = xmlSignal->Attribute("signalType");
+  2177→		if (signalType == nullptr) continue;
+  2178→		// Serial.println("signalType: " + String(signalType));
+  2179→
+  2180→
+  2181→		if (strcmp(signalType, "data") != 0) continue;
+  2182→
+  2183→		if (strcmp(spacecraft, tempNewCraft->callsign) != 0) continue;
+  2184→
+  2185→
+  2186→		// For up signals: binary detection (medium animation if data type found)
+  2187→		if (!isDown) {
+  2188→			tempNewCraft->upSignal = UP_SIGNAL_RATE_CLASS;
+  2189→			foundSignals.upSignal = UP_SIGNAL_RATE_CLASS;
+  2190→			continue;
+  2191→		}
+  2192→
+  2193→		// For down signals: keep existing rate-based logic
+  2194→		const char* rate = xmlSignal->Attribute("dataRate");
+  2195→		if (rate == nullptr) continue;
+  2196→
+  2197→		double rateDouble = stod(rate);
+  2198→		unsigned long rateLong = static_cast<unsigned long>(rateDouble);
+  2199→
+  2200→		if (rateLong == 0) continue;
+  2201→
+  2202→		unsigned int rateClass = rateLongToRateClass(rateLong);
+  2203→
+  2204→		if (rateClass == 0) continue;
+  2205→
+  2206→		tempNewCraft->downSignal = rateClass;
+  2207→		foundSignals.downSignal = rateClass;
+  2208→
+  2209→		if (tempNewCraft->downSignal != 0 && tempNewCraft->upSignal != 0) {
+  2210→			break;
+  2211→		}
+  2212→	}
+  2213→
+  2214→	// Serial.print("Down signal: " + String(tempNewCraft->downSignal) + "\n");
+  2215→	// Serial.print("Up signal:   " + String(tempNewCraft->upSignal) + "\n");
+  2216→
+  2217→	if (tempNewCraft->downSignal == 0 && tempNewCraft->upSignal == 0) {
+  2218→		if (FileUtils::config.debugUtils.showSerial == true)
+  2219→			Serial.print(
+  2220→				DevUtils::termColor("red") +
+  2221→				"No signals found for " +
+  2222→				String(tempNewCraft->callsign) +
+  2223→				DevUtils::termColor("reset") +
+  2224→				"\n");
+  2225→	}
+  2226→
+  2227→	return foundSignals;
+  2228→}
+  2229→
+  2230→void sendCrafToQueue(CraftQueueItem* newCraft) {
+  2231→
+  2232→	if (strlen(newCraft->name) != 0 && (newCraft->downSignal != 0 || newCraft->upSignal != 0)) {
+  2233→
+  2234→		if (FileUtils::config.debugUtils.showSerial == true) {
+  2235→			Serial.print(
+  2236→				"\n" +
+  2237→				DevUtils::termColor("yellow") +
+  2238→				">>--------=> Sending to queue >>--------=>" + DevUtils::termColor("reset") +
+  2239→				"\n");
+  2240→			printCraftInfo(0, newCraft->callsign, newCraft->name, newCraft->nameLength, newCraft->downSignal, newCraft->upSignal);
+  2241→			Serial.print(
+  2242→				DevUtils::termColor("yellow") + "----------------------------------------" + DevUtils::termColor("reset") +
+  2243→				"\n");
+  2244→		}
+  2245→
+  2246→		if (newCraft != nullptr) {
+  2247→			// Add data to queue, to be passed to another task
+  2248→			if (xQueueSend(queue, &newCraft, 100) == pdPASS) {
+  2249→				if (FileUtils::config.debugUtils.showSerial == true) {
+  2250→					Serial.print(
+  2251→						DevUtils::termColor("green") +
+  2252→						"[+] " +
+  2253→						String(newCraft->callsign) +
+  2254→						" added to queue" +
+  2255→						DevUtils::termColor("reset") +
+  2256→						"\n\n");
+  2257→				}
+  2258→			} else {
+  2259→				if (FileUtils::config.debugUtils.showSerial == true) {
+  2260→					char failedAddingQueueBuffer[256];
+  2261→					snprintf(
+  2262→						failedAddingQueueBuffer,
+  2263→						sizeof(failedAddingQueueBuffer),
+  2264→						"%s[-] %s Failed to add to queue%s\n\n",
+  2265→						DevUtils::termColor("red"),
+  2266→						newCraft->callsign,
+  2267→						DevUtils::termColor("reset")
+  2268→					);
+  2269→					Serial.print(failedAddingQueueBuffer);
+  2270→				}
+  2271→			}
+  2272→		}
+  2273→	}
+  2274→	// freeSemaphoreItem(newCraft);
+  2275→}
+  2276→
+  2277→void incrementDataParseCounter() {
+  2278→	/* Increment target counters */
+  2279→	targetCount++;
+  2280→	if (targetCount > 9) {
+  2281→		targetCount = 0;
+  2282→		dishCount++;
+  2283→	}
+  2284→	if (dishCount > 9) {
+  2285→		targetCount = 0;
+  2286→		dishCount = 0;
+  2287→		stationCount++;
+  2288→	}
+  2289→	if (stationCount > 2) {
+  2290→		targetCount = 0;
+  2291→		dishCount = 0;
+  2292→		stationCount = 0;
+  2293→	}
+  2294→}
+  2295→
+  2296→CraftQueueItem* assignValuesToCraftSemaphore(CraftQueueItem* tempNewCraft) {
+  2297→	CraftQueueItem* newCraft = nullptr;
+  2298→
+  2299→	// Get a free item from the freeList
+  2300→	// Serial.println("freeListTop: " + String(freeListTop));
+  2301→
+  2302→	if (freeListTop < 0 || freeListTop >= MAX_ITEMS) {
+  2303→		return newCraft; // Pool empty or invalid state
+  2304→	}
+  2305→
+  2306→	if (freeList[freeListTop] != nullptr) {
+  2307→		newCraft = freeList[freeListTop];
+  2308→		freeList[freeListTop] = nullptr;
+  2309→		freeListTop--;
+  2310→
+  2311→		// Copy callsign
+  2312→		strlcpy(newCraft->callsignArray, tempNewCraft->callsignArray, sizeof(newCraft->callsignArray));
+  2313→		newCraft->callsign = newCraft->callsignArray;
+  2314→
+  2315→		// Copy name
+  2316→		strlcpy(newCraft->nameArray, tempNewCraft->nameArray, sizeof(newCraft->nameArray));
+  2317→		newCraft->name = newCraft->nameArray;
+  2318→
+  2319→		// Copy name length
+  2320→		newCraft->nameLength = tempNewCraft->nameLength;
+  2321→
+  2322→		// Copy down signal
+  2323→		newCraft->downSignal = tempNewCraft->downSignal;
+  2324→
+  2325→		// Copy up signal
+  2326→		newCraft->upSignal = tempNewCraft->upSignal;
+  2327→	}
+  2328→
+  2329→	return newCraft;
+  2330→}
+  2331→
+  2332→bool isValidCraftQueueItem(CraftQueueItem* item) {
+  2333→	// Check if callsign and name are not empty
+  2334→	if (strlen(item->callsignArray) == 0 || strlen(item->nameArray) == 0) {
+  2335→		return false;
+  2336→	}
+  2337→
+  2338→	// Check if nameLength matches the actual length of the name in nameArray
+  2339→	if (item->nameLength != strlen(item->nameArray)) {
+  2340→		return false;
+  2341→	}
+  2342→
+  2343→	// Check if upSignal and downSignal are within expected ranges
+  2344→	// (Adjust these checks as necessary based on your specific requirements)
+  2345→	if (item->upSignal < 0 || item->downSignal < 0) {
+  2346→		return false;
+  2347→	}
+  2348→
+  2349→	// All checks passed
+  2350→	return true;
+  2351→}
+  2352→
+  2353→void parseData(const char* payload)
+  2354→{
+  2355→	bool showSerial = FileUtils::config.debugUtils.showSerial;
+  2356→	feedWatchdog();
+  2357→	static bool semaphoreTaken = false;
+  2358→	
+  2359→	if (showSerial)
+  2360→		Serial.print("Data Parse attempts: " + String(parseCounter) + "\n");
+  2361→
+  2362→	/* XML Parsing */
+  2363→	XMLDocument xmlDocument; // Create variable for XML document
+  2364→	const char* charPayload = payload; // Convert payload to char array
+  2365→
+  2366→	/* Handle XML parsing error */
+  2367→	try {
+  2368→		if (xmlDocument.Parse(charPayload) == XML_SUCCESS) {
+  2369→			if (showSerial == true)
+  2370→				Serial.print(
+  2371→					"\n" +
+  2372→					DevUtils::termColor("green") +
+  2373→					"XML Parsed Succcessfully" +
+  2374→					DevUtils::termColor("reset") +
+  2375→					"\n");
+  2376→		} else {
+  2377→			if (showSerial) {
+  2378→				char unableToParseBuffer[256];
+  2379→				snprintf(
+  2380→					unableToParseBuffer,
+  2381→					sizeof(unableToParseBuffer),
+  2382→					"%sUnable to parse XML%s\n",
+  2383→					DevUtils::termColor("red"),
+  2384→					DevUtils::termColor("reset")
+  2385→				);
+  2386→				Serial.print(unableToParseBuffer);
+  2387→			}
+  2388→
+  2389→			return;
+  2390→		}
+  2391→	}
+  2392→	catch (XMLError error) {
+  2393→		if (showSerial) {
+  2394→			char xmlErrorBuffer[256];
+  2395→			snprintf(
+  2396→				xmlErrorBuffer,
+  2397→				sizeof(xmlErrorBuffer),
+  2398→				"%sXML Error: %d%s\n",
+  2399→				DevUtils::termColor("red"),
+  2400→				error,
+  2401→				DevUtils::termColor("reset")
+  2402→			);
+  2403→			Serial.print(xmlErrorBuffer);
+  2404→		}
+  2405→
+  2406→		return;
+  2407→	}
+  2408→	catch (...) {
+  2409→		if (showSerial) {
+  2410→			char xmlErrorBuffer[256];
+  2411→			snprintf(
+  2412→				xmlErrorBuffer,
+  2413→				sizeof(xmlErrorBuffer),
+  2414→				"%sProblem parsing payload%s\n",
+  2415→				DevUtils::termColor("red"),
+  2416→				DevUtils::termColor("reset")
+  2417→			);
+  2418→			Serial.print(xmlErrorBuffer);
+  2419→		}
+  2420→		dev.handleException();
+  2421→		return;
+  2422→	}
+  2423→
+  2424→	/* Find XML elements */
+  2425→	XMLNode* root = xmlDocument.RootElement();					  // Find document root node
+  2426→	XMLElement* timestamp = root->FirstChildElement("timestamp"); // Find XML timestamp element
+  2427→
+  2428→
+  2429→	/* Parse the XML file */
+  2430→	if (xSemaphoreTake(freeListMutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
+  2431→		semaphoreTaken = true;
+  2432→		printSemaphoreList();
+  2433→		if (freeListTop >= 0) {
+  2434→			CraftQueueItem tempNewCraft = {};
+  2435→			bool breakParseLoop = false;
+  2436→
+  2437→			/* Loop through all XML elements */
+  2438→			// 2 attempts at loop
+  2439→			for (int i = 0; i < 2; i++) {
+  2440→				// Serial.println("Parsing loop: " + String(i));
+  2441→				feedWatchdog();
+  2442→				if (showSerial == true) {
+  2443→					Serial.print("\n───────────────────────────────────────────────────────────────────\n");
+  2444→					Serial.print("  Parse Counters -- Station: " + String(stationCount) + " | Dish: " + String(dishCount) + " | Target: " + String(targetCount) + " | Signal: " + String(signalCount));
+  2445→					Serial.print("\n───────────────────────────────────────────────────────────────────\n\n");
+  2446→				}
+  2447→				try {
+  2448→					int s = 0; // Create station elements counter
+  2449→					for (XMLElement* xmlStation = root->FirstChildElement("station"); true; xmlStation = xmlStation->NextSiblingElement("station")) {
+  2450→						feedWatchdog();
+  2451→						vTaskDelay(pdMS_TO_TICKS(100)); // Slow the station loop
+  2452→
+  2453→						// if (showSerial == true)
+  2454→						// 	Serial.print("── stationCount: " + String(stationCount) + " | s: " + String(s) + "\n");
+  2455→
+  2456→						if (xmlStation == NULL) {
+  2457→							// if (showSerial == true)
+  2458→							// 	Serial.print("xmlStation == NULL\n");
+  2459→							stationCount = 0;
+  2460→							dishCount = 0;
+  2461→							targetCount = 0;
+  2462→							break;
+  2463→						}
+  2464→
+  2465→						if (stationCount > 2) {
+  2466→							stationCount = 0;
+  2467→							dishCount = 0;
+  2468→							targetCount = 0;
+  2469→						}
+  2470→
+  2471→						if (s > 2) {
+  2472→							s = 0;
+  2473→							dishCount = 0;
+  2474→							targetCount = 0;
+  2475→						}
+  2476→						if (s != stationCount) {
+  2477→							s++;
+  2478→							continue;
+  2479→						}
+  2480→
+  2481→						bool goToNextStation = false;
+  2482→						int d = 0; // Create dish elements counter
+  2483→						for (XMLElement* xmlDish = xmlStation->NextSiblingElement(); xmlDish != NULL; xmlDish = xmlDish->NextSiblingElement()) {
+  2484→							feedWatchdog();
+  2485→							vTaskDelay(pdMS_TO_TICKS(100)); // Slow the dish loop
+  2486→
+  2487→							// if (showSerial == true)
+  2488→							// 	Serial.print("   └── dishCount: " + String(dishCount) + " | d: " + String(d) + "\n");
+  2489→
+  2490→							if (d > 9) {
+  2491→								stationCount++;
+  2492→								if (stationCount > 2)
+  2493→									stationCount = 0;
+  2494→
+  2495→								d = 0;
+  2496→								break;
+  2497→							}
+  2498→							if (d != dishCount) {
+  2499→								d++;
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-02-24 21:36:24Z)**_
+
+Let me continue reading the remaining sections of the file where I found the other constants.
+
+_**Agent - sidechain (claude-opus-4-6 2026-02-24 21:36:26Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+  2500→								continue;
+  2501→							}
+  2502→
+  2503→							const char* elValue = xmlDish->Value();
+  2504→							if (strcmp(elValue, "dish") != 0) {
+  2505→								goToNextStation = true;
+  2506→								break;
+  2507→							}
+  2508→
+  2509→							bool goToNextDish = false;
+  2510→							int t = 0; // Create target elements counter
+  2511→
+  2512→							for (XMLElement* xmlTarget = xmlDish->FirstChildElement("target"); true; xmlTarget = xmlTarget->NextSiblingElement("target")) {
+  2513→								feedWatchdog();
+  2514→								vTaskDelay(pdMS_TO_TICKS(100)); // Slow the target loop
+  2515→
+  2516→								// if (showSerial == true)
+  2517→								// 	Serial.print("      └── targetCount: " + String(targetCount) + " | t: " + String(t) + "\n");
+  2518→
+  2519→								if (xmlTarget == NULL) {
+  2520→									// if (showSerial == true)
+  2521→									// 	Serial.print("                xmlTarget == NULL\n");
+  2522→									goToNextDish = true;
+  2523→									break;
+  2524→								}
+  2525→
+  2526→								if (t > 9 || t > targetCount) {
+  2527→									// if (showSerial == true)
+  2528→									// 	Serial.print("                t > 9\n");
+  2529→									goToNextDish = true;
+  2530→									break;
+  2531→								}
+  2532→								if (t != targetCount) {
+  2533→									// if (showSerial == true)
+  2534→									// 	Serial.print("                t != targetCount\n");
+  2535→									t++;
+  2536→									continue;
+  2537→								}
+  2538→
+  2539→								// if (showSerial == true)
+  2540→								// 	Serial.print(
+  2541→								// 		DevUtils::termColor("yellow") +
+  2542→								// 		">>> Finding craft...." +
+  2543→								// 		DevUtils::termColor("reset") +
+  2544→								// 		"\n"
+  2545→								// 	);
+  2546→
+  2547→
+  2548→								const char* target = xmlTarget->Attribute("name"); // Get target name
+  2549→
+  2550→								// Validate target name
+  2551→								if (target == nullptr) {
+  2552→									t++;
+  2553→									continue;
+  2554→								}
+  2555→
+  2556→								size_t targetLength = strlen(target);
+  2557→								if (targetLength >= sizeof(tempNewCraft.callsignArray)) {
+  2558→									if (showSerial == true) {
+  2559→										Serial.print(DevUtils::termColor("red"));
+  2560→										Serial.println("Error: target length exceeds buffer size");
+  2561→										Serial.println(DevUtils::termColor("reset"));
+  2562→									}
+  2563→									t++;
+  2564→									continue;
+  2565→								}
+  2566→
+  2567→								/* Check Blacklist */
+  2568→								feedWatchdog();
+  2569→								if (SpacecraftData::checkBlacklist(target) == true) {
+  2570→									// if (showSerial == true)
+  2571→									// 	Serial.print(DevUtils::termColor("red") + "Blacklisted target, skipping..." + DevUtils::termColor("reset") + "\n");
+  2572→									vTaskDelay(pdMS_TO_TICKS(100)); // Delay to allow other tasks to run
+  2573→									t++;
+  2574→									continue;
+  2575→								}
+  2576→
+  2577→								/* Get the craft name to compare in finding signal */
+  2578→								int callsignArrayLength = sizeof(CraftQueueItem::callsignArray);
+  2579→								size_t result = strlcpy(tempNewCraft.callsignArray, target, callsignArrayLength);
+  2580→
+  2581→								if (result >= callsignArrayLength) {
+  2582→									if (showSerial == true) {
+  2583→										Serial.print(DevUtils::termColor("red"));
+  2584→										Serial.print("Problem copying callsign to tempNewCraft.callsignArray: truncated copy");
+  2585→										Serial.print(DevUtils::termColor("reset") + "\n");
+  2586→									}
+  2587→									t++;
+  2588→									continue;
+  2589→								}
+  2590→								tempNewCraft.callsign = tempNewCraft.callsignArray; // Set the callsign
+  2591→
+  2592→								feedWatchdog();
+  2593→								const char* name = SpacecraftData::callsignToName(target);
+  2594→
+  2595→								if (name == nullptr) {
+  2596→									if (showSerial == true)
+  2597→										Serial.print(
+  2598→											DevUtils::termColor("red") +
+  2599→											"Error: name is null" +
+  2600→											DevUtils::termColor("reset") +
+  2601→											"\n");
+  2602→									t++;
+  2603→									continue;
+  2604→								}
+  2605→
+  2606→								size_t nameLength = strlen(name);
+  2607→								if (nameLength >= sizeof(tempNewCraft.nameArray)) {
+  2608→									if (showSerial == true) {
+  2609→										Serial.print(DevUtils::termColor("red"));
+  2610→										Serial.println("Error: name length exceeds buffer size");
+  2611→										Serial.println(DevUtils::termColor("reset"));
+  2612→									}
+  2613→									t++;
+  2614→									continue;
+  2615→								}
+  2616→
+  2617→								result = strlcpy(tempNewCraft.nameArray, name, 100);
+  2618→
+  2619→								if (result >= 100) {
+  2620→									if (showSerial == true) {
+  2621→										Serial.print(DevUtils::termColor("red"));
+  2622→										Serial.println("Problem copying name to newCraft->nameArray: truncated copy");
+  2623→										Serial.println(DevUtils::termColor("reset"));
+  2624→									}
+  2625→									t++;
+  2626→									continue;
+  2627→								}
+  2628→
+  2629→								tempNewCraft.name = tempNewCraft.nameArray; // Set the name
+  2630→								tempNewCraft.nameLength = strlen(name); // Set the name length
+  2631→
+  2632→
+  2633→
+  2634→								if (showSerial == true) {
+  2635→									char validatedBuffer[256];
+  2636→									snprintf(
+  2637→										validatedBuffer,
+  2638→										sizeof(validatedBuffer),
+  2639→										"%sValidated: (%s) %s%s\n", DevUtils::termColor("green"), tempNewCraft.callsign,
+  2640→										name, DevUtils::termColor("reset")
+  2641→									);
+  2642→									Serial.print(validatedBuffer);
+  2643→								}
+  2644→
+  2645→
+  2646→
+  2647→								/* Look for craft signals */
+  2648→								feedWatchdog();
+  2649→								FoundSignals foundSignals = findSignals(xmlDish, &tempNewCraft);
+  2650→
+  2651→								// No signals found
+  2652→								if (foundSignals.downSignal == 0 && foundSignals.upSignal == 0) {
+  2653→									// if (showSerial == true)
+  2654→									// 	Serial.print(
+  2655→									// 		DevUtils::termColor("red") +
+  2656→									// 		"No signals found for " +
+  2657→									// 		String(tempNewCraft.callsign) +
+  2658→									// 		DevUtils::termColor("reset") +
+  2659→									// 		"\n");
+  2660→									t++;
+  2661→									continue;
+  2662→								} else {
+  2663→									tempNewCraft.downSignal = foundSignals.downSignal;
+  2664→									tempNewCraft.upSignal = foundSignals.upSignal;
+  2665→								}
+  2666→
+  2667→
+  2668→								/** TARGET HAS BEEN FULLY VALIDATED
+  2669→								 * We hav all of the info needed for this new craft
+  2670→								 * **/
+  2671→								 // if (showSerial == true) {
+  2672→								 // 	Serial.print("======== TEMP NEW CRAFT ========\n");
+  2673→								 // 	Serial.print("callsign: " + String(tempNewCraft.callsign) + "\n");
+  2674→								 // 	Serial.print("name: " + String(tempNewCraft.name) + "\n");
+  2675→								 // 	Serial.print("nameLength: " + String(tempNewCraft.nameLength) + "\n");
+  2676→								 // 	Serial.print("downSignal: " + String(tempNewCraft.downSignal) + "\n");
+  2677→								 // 	Serial.print("upSignal: " + String(tempNewCraft.upSignal) + "\n");
+  2678→								 // 	Serial.print("================================\n");
+  2679→								 // }
+  2680→
+  2681→								if (showSerial) {
+  2682→									char validatedBuffer[256];
+  2683→									snprintf(
+  2684→										validatedBuffer,
+  2685→										sizeof(validatedBuffer),
+  2686→										"%sValidated: (%s) %s%s\n", DevUtils::termColor("green"), tempNewCraft.callsign, name, DevUtils::termColor("reset")
+  2687→									);
+  2688→									Serial.print(validatedBuffer);
+  2689→								}
+  2690→
+  2691→
+  2692→								feedWatchdog();
+  2693→								CraftQueueItem* newCraft = assignValuesToCraftSemaphore(&tempNewCraft);
+  2694→
+  2695→
+  2696→								if (newCraft == nullptr) {
+  2697→									if (showSerial == true)
+  2698→										Serial.print("assignValuesToCraftSemaphore returned nullptr\n");
+  2699→									t++;
+  2700→									continue;
+  2701→								}
+  2702→
+  2703→								if (isValidCraftQueueItem(newCraft)) {
+  2704→									// SUCCESS - craft validated and sent to the queue
+  2705→									// The data fetching process is complete
+  2706→									sendCrafToQueue(newCraft);
+  2707→									
+  2708→									if (usingDummyData == true) {
+  2709→										if (parseCounter >= retryDataFetchLimit) {
+  2710→											parseCounter = 0;
+  2711→											breakParseLoop = true; // Break out of all loops
+  2712→											targetCount = 0; // Reset the global target counter
+  2713→											dishCount = 0; // Reset the global dish counter
+  2714→											stationCount = 0; // Reset the global station counter
+  2715→										}
+  2716→									} else {
+  2717→										parseCounter = 0;		
+  2718→										breakParseLoop = true; // Break out of all loops
+  2719→										targetCount = t; // Set the global target counter to the current target number
+  2720→										dishCount = d; // Set the global dish counter to the current dish number
+  2721→										stationCount = s; // Set the global station counter to the current station number
+  2722→									}
+  2723→									feedWatchdog();
+  2724→
+  2725→									break;
+  2726→								} else {
+  2727→									if (showSerial == true)
+  2728→										Serial.print(
+  2729→											DevUtils::termColor("red") +
+  2730→											"Invalid craft queue item" +
+  2731→											DevUtils::termColor("reset") +
+  2732→											"\n");
+  2733→									t++;
+  2734→									continue;
+  2735→								}
+  2736→
+  2737→								feedWatchdog();
+  2738→								break; // If somehow we got here, break out of the target loop
+  2739→							} // End target loop
+  2740→
+  2741→
+  2742→							if (goToNextDish == true) {
+  2743→								targetCount = 0;
+  2744→								dishCount++;
+  2745→								d++;
+  2746→								// if (showSerial == true)
+  2747→								// 	Serial.println("go to next dish!");
+  2748→								continue;
+  2749→							}
+  2750→
+  2751→							if (breakParseLoop == true) break;
+  2752→						} // End dish loop
+  2753→
+  2754→						if (goToNextStation == true) {
+  2755→							targetCount = 0;
+  2756→							dishCount = 0;
+  2757→							stationCount++;
+  2758→							s++;
+  2759→
+  2760→							if (stationCount > 2) {
+  2761→								stationCount = 0;
+  2762→								s = 0;
+  2763→							}
+  2764→							// if (FileUtils::config.debugUtils.showSerial == true)
+  2765→							// 	Serial.println("go to next station!");
+  2766→							continue;
+  2767→						}
+  2768→
+  2769→						if (breakParseLoop == true) break;
+  2770→
+  2771→						s++;
+  2772→					} // End station loop
+  2773→				}
+  2774→
+  2775→				catch (...) {
+  2776→					if (FileUtils::config.debugUtils.showSerial == true) {
+  2777→						Serial.print(DevUtils::termColor("red"));
+  2778→						Serial.println("Problem parsing payload:");
+  2779→						Serial.println(DevUtils::termColor("reset"));
+  2780→					}
+  2781→					dev.handleException();
+  2782→					parseCounter++;
+  2783→					if (semaphoreTaken == true && freeListMutex != nullptr) {
+  2784→						xSemaphoreGive(freeListMutex);
+  2785→						semaphoreTaken = false;
+  2786→					}
+  2787→					return;
+  2788→				}
+  2789→
+  2790→				if (breakParseLoop == true) break;
+  2791→			} // End arbitary loop
+  2792→
+  2793→			incrementDataParseCounter();
+  2794→			if (semaphoreTaken == true && freeListMutex != nullptr) {
+  2795→				xSemaphoreGive(freeListMutex);
+  2796→				semaphoreTaken = false;
+  2797→			}
+  2798→
+  2799→			feedWatchdog();
+  2800→			parseCounter++;
+  2801→			return;
+  2802→
+  2803→		} else {
+  2804→			// There are no free items in the queue item pool
+  2805→			Serial.println("No free items in queue item pool");
+  2806→			if (semaphoreTaken == true && freeListMutex != nullptr) {
+  2807→				xSemaphoreGive(freeListMutex);
+  2808→				semaphoreTaken = false;
+  2809→			}
+  2810→
+  2811→			return;
+  2812→		}
+  2813→
+  2814→
+  2815→		if (semaphoreTaken == true && freeListMutex != nullptr) {
+  2816→			xSemaphoreGive(freeListMutex);
+  2817→			semaphoreTaken = false;
+  2818→		}
+  2819→
+  2820→		if (FileUtils::config.debugUtils.showSerial == true)
+  2821→			Serial.print("Reached the end of logic for parse attempt: " + String(parseCounter) + "\n");
+  2822→		parseCounter++;
+  2823→
+  2824→		feedWatchdog();
+  2825→		return;
+  2826→	}
+  2827→	// Serial.println("fetch done");
+  2828→	feedWatchdog();
+  2829→}
+  2830→
+  2831→void logOutput(const char* color, const String& message) {
+  2832→	const bool showSerial = FileUtils::config.debugUtils.showSerial;
+  2833→	if (showSerial == true) {
+  2834→		String resetColorString = DevUtils::termColor("reset");
+  2835→		String coloredMessageString = DevUtils::termColor(color);
+  2836→
+  2837→		const char* resetColor = resetColorString.c_str();
+  2838→		const char* coloredMessage = coloredMessageString.c_str();
+  2839→
+  2840→		int bufferSize = strlen(coloredMessage) + message.length() + strlen(resetColor) + 2; // +1 for newline, +1 for null terminator
+  2841→
+  2842→		const char* messageCharPtr = message.c_str();
+  2843→
+  2844→		char* buffer = (char*)malloc(bufferSize);
+  2845→		if (buffer) {
+  2846→			snprintf(
+  2847→				buffer,
+  2848→				bufferSize,
+  2849→				"%s%s%s\n",
+  2850→				coloredMessage,
+  2851→				messageCharPtr,
+  2852→				resetColor
+  2853→			);
+  2854→			Serial.print(buffer);
+  2855→			free(buffer);
+  2856→		} else {
+  2857→			// handle memory allocation failure
+  2858→			if (showSerial == true)
+  2859→				Serial.print("Memory allocation failed\n");
+  2860→		}
+  2861→	}
+  2862→}
+  2863→
+  2864→bool isWiFiConnected() {
+  2865→	if (WiFi.status() == WL_CONNECTED) {
+  2866→		logOutput("green", "WiFi Connected");
+  2867→		return true;
+  2868→	} else {
+  2869→		logOutput("red", "WiFi Disconnected");
+  2870→		return false;
+  2871→	}
+  2872→}
+  2873→
+  2874→char* generateFetchUrl() {
+  2875→	static char fetchUrl[64];  // Use static storage duration
+  2876→	memset(fetchUrl, 0, sizeof(fetchUrl));
+  2877→	try {
+  2878→		if (FileUtils::config.wifiNetwork.serverName != NULL) {
+  2879→			strncpy(fetchUrl, FileUtils::config.wifiNetwork.serverName, sizeof(fetchUrl) - 1);
+  2880→			char randBuffer[10];
+  2881→			ltoa(random(999999999), randBuffer, 10);
+  2882→			strncat(fetchUrl, randBuffer, sizeof(fetchUrl) - strlen(fetchUrl) - 1);
+  2883→		}
+  2884→	}
+  2885→	catch (...) {
+  2886→		Serial.println("Error: generateFetchUrl() failed");
+  2887→		dev.handleException();
+  2888→	}
+  2889→	return fetchUrl;
+  2890→}
+  2891→
+  2892→
+  2893→
+  2894→bool handleHttpResponse(uint16_t httpResponseCode) {
+  2895→	/* MANUAL DEBUG */
+  2896→	// Serial.print("HTTP Response: " + String(httpResponseCode) + " - " + http.errorToString(httpResponseCode) + "\n");
+  2897→	
+  2898→	
+  2899→	if (httpResponseCode != 200) {
+  2900→		logOutput("red", "HTTP Response: " + String(httpResponseCode) + " - " + http.errorToString(httpResponseCode) + "\n");
+  2901→		return false;
+  2902→	} else {
+  2903→		try {
+  2904→			logOutput("green", "HTTP response received:" + String(httpResponseCode));
+  2905→			return true;
+  2906→		}
+  2907→		catch (...) {
+  2908→			Serial.println("Error: handleHttpResponse() failed");
+  2909→			dev.handleException();
+  2910→			return false;
+  2911→		}
+  2912→	}
+  2913→}
+  2914→
+  2915→bool attemptHTTPConnection(const String& url) {
+  2916→	if (!http.begin(url.c_str())) {
+  2917→		logOutput("red", "[!] Failed to connect to server");
+  2918→		return false;
+  2919→	}
+  2920→	feedWatchdog();
+  2921→	http.setTimeout(5000);
+  2922→	http.addHeader("Content-Type", "text/xml");
+  2923→	int httpResponseCode = http.GET();
+  2924→	feedWatchdog();
+  2925→	return handleHttpResponse(httpResponseCode);
+  2926→}
+  2927→
+  2928→static char xmlDataBuffer[20480];  // 20KB buffer for XML data from HTTP response
+  2929→
+  2930→bool fetchHTTPData(const String& url, char* buffer, size_t bufferSize) {
+  2931→	bool showSerial = FileUtils::config.debugUtils.showSerial;
+  2932→
+  2933→	const int maxHttpRetries = 3;
+  2934→	for (int retry = 0; retry < maxHttpRetries; retry++) {
+  2935→		feedWatchdog(); // HTTP connection can sometimes be slow
+  2936→
+  2937→		char conectionAttemptBuffer[128];
+  2938→		snprintf(
+  2939→			conectionAttemptBuffer,
+  2940→			sizeof(conectionAttemptBuffer),
+  2941→			"%sHTTP connection attempt %d of %d%s\n",
+  2942→			DevUtils::termColor("yellow"),
+  2943→			retry + 1,
+  2944→			maxHttpRetries,
+  2945→			DevUtils::termColor("reset")
+  2946→		);
+  2947→
+  2948→		try {
+  2949→			if (attemptHTTPConnection(url) == true) {
+  2950→				if (showSerial) {
+  2951→					Serial.print("Getting string from API response...\n");
+  2952→				}
+  2953→
+  2954→				try {
+  2955→					String res = http.getString();
+  2956→
+  2957→					if (res == nullptr or res.length() == 0 or res == "") {
+  2958→						Serial.print("Error: API response is empty\n");
+  2959→						http.end();
+  2960→						return false;
+  2961→					}
+  2962→
+  2963→					feedWatchdog(); // The response may be large, just in case
+  2964→
+  2965→					if (res.length() >= bufferSize) {
+  2966→						if (showSerial)
+  2967→							Serial.println("[fetchHTTPData] Response too large for buffer");
+  2968→						http.end();
+  2969→						return false;
+  2970→					}
+  2971→
+  2972→					memcpy(buffer, res.c_str(), res.length());
+  2973→					buffer[res.length()] = '\0';
+  2974→
+  2975→					if (showSerial)
+  2976→						Serial.println("[fetchHTTPData] XML data copied to buffer (" + String(res.length()) + " bytes)");
+  2977→				}
+  2978→				catch (...) {
+  2979→					Serial.print("Error getting string from API response\n");
+  2980→					http.end();
+  2981→					return false;
+  2982→				}
+  2983→
+  2984→				http.end();
+  2985→				return true;
+  2986→			} else {
+  2987→				http.end();
+  2988→				if (FileUtils::config.debugUtils.showSerial == true)
+  2989→					Serial.println("[fetchHTTPData] Failed to fetch data");
+  2990→			}
+  2991→		}
+  2992→		catch (...) {
+  2993→			Serial.println("Error: fetchHTTPData() failed");
+  2994→			dev.handleException();
+  2995→			http.end();
+  2996→			vTaskDelay(pdMS_TO_TICKS(100));
+  2997→		}
+  2998→	}
+  2999→	http.end();
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-02-24 21:36:26Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+  2900→		logOutput("red", "HTTP Response: " + String(httpResponseCode) + " - " + http.errorToString(httpResponseCode) + "\n");
+  2901→		return false;
+  2902→	} else {
+  2903→		try {
+  2904→			logOutput("green", "HTTP response received:" + String(httpResponseCode));
+  2905→			return true;
+  2906→		}
+  2907→		catch (...) {
+  2908→			Serial.println("Error: handleHttpResponse() failed");
+  2909→			dev.handleException();
+  2910→			return false;
+  2911→		}
+  2912→	}
+  2913→}
+  2914→
+  2915→bool attemptHTTPConnection(const String& url) {
+  2916→	if (!http.begin(url.c_str())) {
+  2917→		logOutput("red", "[!] Failed to connect to server");
+  2918→		return false;
+  2919→	}
+  2920→	feedWatchdog();
+  2921→	http.setTimeout(5000);
+  2922→	http.addHeader("Content-Type", "text/xml");
+  2923→	int httpResponseCode = http.GET();
+  2924→	feedWatchdog();
+  2925→	return handleHttpResponse(httpResponseCode);
+  2926→}
+  2927→
+  2928→static char xmlDataBuffer[20480];  // 20KB buffer for XML data from HTTP response
+  2929→
+  2930→bool fetchHTTPData(const String& url, char* buffer, size_t bufferSize) {
+  2931→	bool showSerial = FileUtils::config.debugUtils.showSerial;
+  2932→
+  2933→	const int maxHttpRetries = 3;
+  2934→	for (int retry = 0; retry < maxHttpRetries; retry++) {
+  2935→		feedWatchdog(); // HTTP connection can sometimes be slow
+  2936→
+  2937→		char conectionAttemptBuffer[128];
+  2938→		snprintf(
+  2939→			conectionAttemptBuffer,
+  2940→			sizeof(conectionAttemptBuffer),
+  2941→			"%sHTTP connection attempt %d of %d%s\n",
+  2942→			DevUtils::termColor("yellow"),
+  2943→			retry + 1,
+  2944→			maxHttpRetries,
+  2945→			DevUtils::termColor("reset")
+  2946→		);
+  2947→
+  2948→		try {
+  2949→			if (attemptHTTPConnection(url) == true) {
+  2950→				if (showSerial) {
+  2951→					Serial.print("Getting string from API response...\n");
+  2952→				}
+  2953→
+  2954→				try {
+  2955→					String res = http.getString();
+  2956→
+  2957→					if (res == nullptr or res.length() == 0 or res == "") {
+  2958→						Serial.print("Error: API response is empty\n");
+  2959→						http.end();
+  2960→						return false;
+  2961→					}
+  2962→
+  2963→					feedWatchdog(); // The response may be large, just in case
+  2964→
+  2965→					if (res.length() >= bufferSize) {
+  2966→						if (showSerial)
+  2967→							Serial.println("[fetchHTTPData] Response too large for buffer");
+  2968→						http.end();
+  2969→						return false;
+  2970→					}
+  2971→
+  2972→					memcpy(buffer, res.c_str(), res.length());
+  2973→					buffer[res.length()] = '\0';
+  2974→
+  2975→					if (showSerial)
+  2976→						Serial.println("[fetchHTTPData] XML data copied to buffer (" + String(res.length()) + " bytes)");
+  2977→				}
+  2978→				catch (...) {
+  2979→					Serial.print("Error getting string from API response\n");
+  2980→					http.end();
+  2981→					return false;
+  2982→				}
+  2983→
+  2984→				http.end();
+  2985→				return true;
+  2986→			} else {
+  2987→				http.end();
+  2988→				if (FileUtils::config.debugUtils.showSerial == true)
+  2989→					Serial.println("[fetchHTTPData] Failed to fetch data");
+  2990→			}
+  2991→		}
+  2992→		catch (...) {
+  2993→			Serial.println("Error: fetchHTTPData() failed");
+  2994→			dev.handleException();
+  2995→			http.end();
+  2996→			vTaskDelay(pdMS_TO_TICKS(100));
+  2997→		}
+  2998→	}
+  2999→	http.end();
+  3000→	return false;
+  3001→}
+  3002→
+  3003→
+  3004→void fetchData() {
+  3005→	feedWatchdog();
+  3006→
+  3007→	const bool showSerial = FileUtils::config.debugUtils.showSerial;
+  3008→
+  3009→	if (FileUtils::config.debugUtils.testCores == true) {
+  3010→		Serial.print("fetchData() running on core " + String(xPortGetCoreID()) + "\n\n");
+  3011→	}
+  3012→
+  3013→	if (showSerial) {
+  3014→		Serial.print("\n\n");
+  3015→		Serial.print("   ┌─────────────────────────────┐\n");
+  3016→		Serial.print("───│          FETCH DATA         │───\n");
+  3017→		Serial.print("   └─────────────────────────────┘\n");
+  3018→	}
+  3019→
+  3020→	if (uxQueueSpacesAvailable(queue) == 0) {
+  3021→		logOutput("red", ">>>   Queue is full, returning");
+  3022→		return;
+  3023→	}
+  3024→
+  3025→
+  3026→	bool dataFetched = false;
+  3027→
+  3028→	bool parseLimitReached = parseCounter >= retryDataFetchLimit;
+  3029→
+  3030→	if (!forceDummyData && isWiFiConnected()) {
+  3031→		String url = generateFetchUrl();
+  3032→
+  3033→		if (showSerial) {
+  3034→			char deviceIPBuffer[128];
+  3035→			String deviceIP = WiFi.localIP().toString();
+  3036→			String connectedNetwork = WiFi.SSID();
+  3037→			snprintf(
+  3038→				deviceIPBuffer,
+  3039→				sizeof(deviceIPBuffer),
+  3040→				"%s on %s\n",
+  3041→				deviceIP,
+  3042→				connectedNetwork
+  3043→			);
+  3044→			Serial.print(deviceIPBuffer);
+  3045→
+  3046→			Serial.print("URL: " + url + "\n");
+  3047→
+  3048→			// char urlBuffer[512];
+  3049→			// snprintf(
+  3050→			// 	urlBuffer,
+  3051→			// 	sizeof(urlBuffer),
+  3052→			// 	"Generated URL: %s\n",
+  3053→			// 	url
+  3054→			// );
+  3055→			// Serial.print(urlBuffer);
+  3056→		}
+  3057→
+  3058→		dataFetched = fetchHTTPData(url, xmlDataBuffer, sizeof(xmlDataBuffer));
+  3059→
+  3060→		if (showSerial) {
+  3061→			const char* dataFetchedStatusString = dataFetched ? "Success" : "Failure";
+  3062→			const char* dataStatusColor = dataFetched ? "green" : "red";
+  3063→
+  3064→			char dataStatusBuffer[128];
+  3065→			snprintf(
+  3066→				dataStatusBuffer,
+  3067→				sizeof(dataStatusBuffer),
+  3068→				"%sData Fetch: %s %s\n",
+  3069→				DevUtils::termColor(dataStatusColor),
+  3070→				dataFetchedStatusString,
+  3071→				DevUtils::termColor("reset")
+  3072→			);
+  3073→
+  3074→			// Print the data status buffer
+  3075→			Serial.print(dataStatusBuffer);
+  3076→		}
+  3077→	}
+  3078→
+  3079→	const unsigned long currentMillis = millis();
+  3080→	const unsigned long dataFetchDurationSeconds = (currentMillis - dataFetchTimerMilliseconds) / 1000;
+  3081→	dataFetchTimerMilliseconds = currentMillis;
+  3082→
+  3083→	if (dataFetched) {
+  3084→		// Data was fetched directly into xmlDataBuffer, use live data
+  3085→		feedWatchdog();
+  3086→		usingDummyData = false;
+  3087→
+  3088→		if (showSerial) {
+  3089→			char dataStatusBuffer[128];
+  3090→			snprintf(
+  3091→				dataStatusBuffer,
+  3092→				sizeof(dataStatusBuffer),
+  3093→				"%s + %ds --- %s %s\n",
+  3094→				DevUtils::termColor("bg_blue"),
+  3095→				dataFetchDurationSeconds,
+  3096→				"Using live data",
+  3097→				DevUtils::termColor("reset")
+  3098→			);
+  3099→			Serial.print(dataStatusBuffer);
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-02-24 21:36:27Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+  3350→
+  3351→	/* User Settings */
+  3352→	new (&param_brightness) WiFiManagerParameter("brightness", "Brightness", String(brightnessPercent).c_str(), 3, "type='range' min='0' max='100' step='1'");
+  3353→	wm.addParameter(&param_brightness);
+  3354→
+  3355→	new (&param_separator) WiFiManagerParameter("<hr style='margin-bottom:1em;'>");
+  3356→	wm.addParameter(&param_separator);
+  3357→
+  3358→	/* Developer Settings */
+  3359→	new (&param_show_serial) WiFiManagerParameter("show_serial", "Show Serial", "1", 1, FileUtils::config.debugUtils.showSerial ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
+  3360→	wm.addParameter(&param_show_serial);
+  3361→
+  3362→	// Show graphing diagnostics
+  3363→	new (&param_show_diagnostics) WiFiManagerParameter("show_diagnostics", "Show Diagnostics", "1", 1, FileUtils::config.debugUtils.diagMeasure ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
+  3364→	wm.addParameter(&param_show_diagnostics);
+  3365→
+  3366→	// Force override animation type (checkbox + number)
+  3367→	new (&param_force_animation_enabled) WiFiManagerParameter("force_animation_enabled", "Force Animation Type", "1", 1, "type='checkbox' style='margin-top:-1.2em; float:right;'");
+  3368→	wm.addParameter(&param_force_animation_enabled);
+  3369→	new (&param_force_animation_type) WiFiManagerParameter("force_animation_type", "Animation Type (1-5)", "1", 1, "type='number' min='1' max='5' step='1'");
+  3370→	wm.addParameter(&param_force_animation_type);
+  3371→
+  3372→	new (&param_force_dummy_data) WiFiManagerParameter("force_dummy_data", "Force placeholder data", "1", 1, FileUtils::config.wifiNetwork.forceDummyData ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
+  3373→	wm.addParameter(&param_force_dummy_data);
+  3374→
+  3375→	/* Custom */
+  3376→	const char* update_button_html = R"---(
+  3377→		<style>
+  3378→			.param-group { display:flex; align-items:center; justify-content:space-between; margin-bottom:0.5em; }
+  3379→			.param-group input[type='checkbox'] { float:none !important; margin:0 !important; }
+  3380→			.param-group input[type='number'] { width:min-content; }
+  3381→			.param-group-stacked { display:flex; flex-direction:column; align-items:stretch; margin-bottom:0.5em; }
+  3382→			.param-group-stacked input[type='range'] { margin-top:0.3em; }
+  3383→		</style>
+  3384→		<div>
+  3385→			<div style="display: inline-block; border: 1px solid gray;padding:5px 20px;">
+  3386→				<p id="firmwareStatus" style="margin-top:0; white-space:pre-line;"></p>
+  3387→				<p id="updateResponse"></p>
+  3388→				<button id="updateButton">Update Firmware</button>
+  3389→			</div>
+  3390→		</div>
+  3391→		<script>
+  3392→			document.addEventListener('DOMContentLoaded', function() {
+  3393→				fetch('/get-latest-version-number')
+  3394→				.then(function (response) {
+  3395→					return response.text();
+  3396→				}).
+  3397→				then(function (text) {
+  3398→					document.getElementById("firmwareStatus").textContent = text;
+  3399→					console.log(text);
+  3400→				})
+  3401→
+  3402→				// Display device hostname at top of every page
+  3403→				fetch('/hostname')
+  3404→				.then(function(r) { return r.text(); })
+  3405→				.then(function(hostname) {
+  3406→					var banner = document.createElement('div');
+  3407→					banner.style.cssText = 'text-align:center;padding:6px 0;opacity:0.7;font-size:0.85em;';
+  3408→					var label = document.createTextNode('Device address: ');
+  3409→					var strong = document.createElement('strong');
+  3410→					strong.textContent = 'http://' + hostname;
+  3411→					banner.appendChild(label);
+  3412→					banner.appendChild(strong);
+  3413→					var container = document.querySelector('.wrap');
+  3414→					if (container) container.insertBefore(banner, container.firstChild);
+  3415→				});
+  3416→
+  3417→				// Rename "Setup" button to "Options" on portal home
+  3418→				document.querySelectorAll('form[action="/param"] button').forEach(function(b) { b.textContent = 'Options'; });
+  3419→
+  3420→				// Wrap each label+input pair in a flex container
+  3421→				document.querySelectorAll('form label[for]').forEach(function(label) {
+  3422→					var input = document.getElementById(label.getAttribute('for'));
+  3423→					if (!input) return;
+  3424→					var wrapper = document.createElement('div');
+  3425→					wrapper.className = (input.type === 'range') ? 'param-group-stacked' : 'param-group';
+  3426→					label.parentNode.insertBefore(wrapper, label);
+  3427→					// Remove <br/> nodes between label position and input
+  3428→					var node = wrapper.nextSibling;
+  3429→					while (node && node !== input) {
+  3430→						var next = node.nextSibling;
+  3431→						if (node.nodeName === 'BR') node.remove();
+  3432→						node = next;
+  3433→					}
+  3434→					wrapper.appendChild(label);
+  3435→					wrapper.appendChild(input);
+  3436→				});
+  3437→
+  3438→				document.getElementById("updateButton").addEventListener('click', function() {
+  3439→				fetch('/trigger-firmware-update')
+  3440→				.then(function (response) {
+  3441→					return response.text();
+  3442→				})
+  3443→				.then(function (text) {
+  3444→					document.getElementById("updateResponse").textContent = text;
+  3445→					console.log("response:", text);
+  3446→				})
+  3447→				.catch(function (error) {
+  3448→					console.error(error);
+  3449→				});
+  3450→			});
+  3451→			}); // DOMContentLoaded
+  3452→		</script>
+  3453→	)---";
+  3454→
+  3455→	wm.setCustomHeadElement(update_button_html); // Add "Update Firmware" button to WiFi portal <head>
+  3456→
+  3457→
+  3458→	char existingWifiBuffer[128];
+  3459→	snprintf(
+  3460→		existingWifiBuffer,
+  3461→		sizeof(existingWifiBuffer),
+  3462→		"Existing WiFi credentials: %s\n",
+  3463→		wm.getWiFiIsSaved() ? "TRUE" : "FALSE"
+  3464→	);
+  3465→	Serial.print(existingWifiBuffer);
+  3466→
+  3467→	if (wm.getWiFiIsSaved() == true) {
+  3468→		char ssidBuffer[256];
+  3469→		snprintf(
+  3470→			ssidBuffer,
+  3471→			sizeof(ssidBuffer),
+  3472→			"Connecting to WiFi network %s...\n",
+  3473→			wm.getWiFiSSID().c_str()
+  3474→		);
+  3475→		Serial.print(ssidBuffer);
+  3476→
+  3477→		bool res;
+  3478→		res = wm.autoConnect(FileUtils::config.wifiNetwork.apSSID, FileUtils::config.wifiNetwork.apPass);
+  3479→
+  3480→		if (!res) // Wifi connection failed
+  3481→		{
+  3482→			char failureStringBuffer[256];
+  3483→			snprintf(failureStringBuffer, sizeof(failureStringBuffer), "%sFailed to connect to WiFi%s\n", DevUtils::termColor("red"), DevUtils::termColor("reset"));
+  3484→			Serial.print(failureStringBuffer);
+  3485→		} else // Wifi connection successful
+  3486→		{
+  3487→			String deviceIP = WiFi.localIP().toString();
+  3488→			String deviceLocalWifi = WiFi.SSID();
+  3489→			char successStringBuffer[256];
+  3490→			snprintf(
+  3491→				successStringBuffer,
+  3492→				sizeof(successStringBuffer),
+  3493→				"%sConnected to WiFi successfully%s\n%s on %s\n\n",
+  3494→				DevUtils::termColor("green"),
+  3495→				DevUtils::termColor("reset"),
+  3496→				deviceIP != nullptr ? deviceIP : "NULL",
+  3497→				deviceLocalWifi != nullptr ? deviceLocalWifi : "NULL"
+  3498→			);
+  3499→			Serial.print(successStringBuffer);
+  3500→		}
+  3501→
+  3502→	} else {
+  3503→		Serial.print("Use the WiFi access portal for configuration\n\n");
+  3504→	}
+  3505→	Serial.print("WiFi Status: " + wm.getWLStatusString() + "\n\n");
+  3506→
+  3507→	// Start mDNS responder so device is reachable at <hostname>.local
+  3508→	if (MDNS.begin(mdnsHostname)) {
+  3509→		Serial.printf("mDNS responder started: http://%s.local\n", mdnsHostname);
+  3510→	} else {
+  3511→		Serial.println("WARNING: mDNS responder failed to start");
+  3512→	}
+  3513→
+  3514→	// Start the web portal anyways for settings
+  3515→	Serial.print("Starting local WiFi access point for configuration...\n");
+  3516→
+  3517→	delay(1000); // Small delay to allow WiFi to connect
+  3518→
+  3519→	if (FileUtils::config.wifiNetwork.apSSID != nullptr && strcmp(FileUtils::config.wifiNetwork.apSSID, "") != 0) {
+  3520→		if (FileUtils::config.wifiNetwork.apPass != nullptr && strcmp(FileUtils::config.wifiNetwork.apPass, "") != 0) {
+  3521→			wm.startConfigPortal(FileUtils::config.wifiNetwork.apSSID, FileUtils::config.wifiNetwork.apPass);
+  3522→
+  3523→		} else {
+  3524→			wm.startConfigPortal(FileUtils::config.wifiNetwork.apSSID);
+  3525→		}
+  3526→	} else {
+  3527→		Serial.print("No SSID set for access point\n");
+  3528→		wm.startConfigPortal();
+  3529→	}
+  3530→
+  3531→	feedWatchdog();
+  3532→	delay(1000); // Small delay to allow WiFi to connect
+  3533→
+  3534→	const char* apPassword = FileUtils::config.wifiNetwork.apPass;
+  3535→	DevUtils::SerialBanners::printWiFiConfigBanner(apPassword, wm); // Display Wifi config portal connection info
+  3536→
+  3537→
+  3538→
+  3539→
+  3540→	http.setReuse(true);	   // Use persistent connection
+  3541→	setupOtaUpdate();		   // Setup OTA update
+  3542→
+  3543→	SpacecraftData::loadJson();		   // Load JSON data for spacecraft lookup
+  3544→	// SpacecraftData::loadSpacecraftNamesProgmem(); // Load raw spacecraft names for lookup
+  3545→	// SpacecraftData::loadSpacecraftPlaceholderRatesRaw(); // Load raw spacecraft placeholder rates for lookup
+  3546→	// SpacecraftData::loadSpacecraftBlacklistRaw(); // Load raw spacecraft blacklist for lookup
+  3547→	// SpacecraftData::loadSpacecraftBlacklist();
+  3548→	delay(100);
+  3549→
+  3550→
+  3551→	/* Assign config to global state variables */
+  3552→	characterWidth = FileUtils::config.textTypography.characterWidth;
+  3553→
+  3554→	setColorTheme(FileUtils::config.miscellaneous.colorTheme); // Set color theme
+  3555→	// drawBottomPixels();		   // Draw initial bottom pixels
+  3556→	delay(100);				   // Small delay to allow bottom pixels to draw
+  3557→	feedWatchdog();
+  3558→
+  3559→	/* DATA TASK SETUP */
+  3560→	// Initialize the queue item pool
+  3561→	freeListMutex = xSemaphoreCreateMutex();	  // Create the mutex
+  3562→	xSemaphoreTake(freeListMutex, portMAX_DELAY); // Take the mutex before accessing shared data
+  3563→	freeList[0] = &itemPool[0];
+  3564→	freeList[1] = &itemPool[1];
+  3565→	freeList[2] = &itemPool[2];
+  3566→	freeList[3] = &itemPool[3];
+  3567→	freeList[4] = &itemPool[4];
+  3568→	xSemaphoreGive(freeListMutex); // Give the mutex back when done accessing shared data
+  3569→
+  3570→	queue = xQueueCreate(5, sizeof(CraftQueueItem*)); // Create queue to pass data between tasks on separate cores
+  3571→
+  3572→	// Check that queue was created successfully
+  3573→	if (queue == NULL) {
+  3574→		if (FileUtils::config.debugUtils.showSerial) {
+  3575→			Serial.print(
+  3576→				DevUtils::termColor("red") +
+  3577→				"Error creating the queue" +
+  3578→				DevUtils::termColor("reset") +
+  3579→				"\n");
+  3580→			delay(3000);
+  3581→		}
+  3582→		ESP.restart();
+  3583→	}
+  3584→
+  3585→	/* Initialize the data task on the second core */
+  3586→	xTaskCreatePinnedToCore(
+  3587→		getData,	  /* Function to implement the task */
+  3588→		"getData",	  /* Name of the task */
+  3589→		6144,		  /* Stack size in byts */
+  3590→		NULL,		  /* Task input parameter */
+  3591→		0,			  /* Priority of the task */
+  3592→		&xHandleData, /* Task handle. */
+  3593→		0);			  /* Core where the task should run */
+  3594→
+  3595→	esp_task_wdt_init(60, true); // Enable watchdog timer with 60 second timeout
+  3596→	// updateFirmwareOta(); // Check for OTA update
+  3597→	feedWatchdog();
+  3598→	delay(1000);
+  3599→
+  3600→}
+  3601→
+  3602→
+  3603→/* MAIN LOOP
+  3604→ * Runs repeatedly as long as board is on
+  3605→ */
+  3606→void loop() {
+  3607→	uint32_t currentMillis = millis(); // Store the current time
+  3608→
+  3609→	bool showSerial = FileUtils::config.debugUtils.showSerial;
+  3610→	bool testCoresEnabled = FileUtils::config.debugUtils.testCores;
+  3611→	bool diagMeasureEnabled = FileUtils::config.debugUtils.diagMeasure;
+  3612→
+  3613→	// Check core test
+  3614→	if (testCoresEnabled && currentMillis - lastTime > 4000 && currentMillis - lastTime < 4500) {
+  3615→		Serial.printf("loop() running on core: %d\n", xPortGetCoreID());
+  3616→	}
+  3617→
+  3618→	doWiFiManager();
+  3619→
+  3620→	try {
+  3621→		// Check for new data
+  3622→		if (dataStarted && nameScrollDone && (currentMillis - displayDurationTimer) > displayMinDuration + animationCleanupDelay && (currentMillis - craftDelayTimer) > craftDelay) {
+  3623→
+  3624→			if (diagMeasureEnabled) {
+  3625→				// Serial.printf("Queue: %u\n", uxQueueMessagesWaiting(queue));
+  3626→			}
+  3627→
+  3628→			if (showSerial)
+  3629→				Serial.print("Getting new data...\n");
+  3630→
+  3631→			CraftQueueItem theInfoBuffer; // Buffer to hold data from queue
+  3632→			CraftQueueItem* infoBuffer = &theInfoBuffer;
+  3633→
+  3634→			if (queue && infoBuffer && xQueueReceive(queue, &infoBuffer, 1) == pdPASS) {
+  3635→				if (showSerial) {
+  3636→					char retrieveQueueBuffer[256];
+  3637→					snprintf(
+  3638→						retrieveQueueBuffer,
+  3639→						sizeof(retrieveQueueBuffer),
+  3640→						"\n\n%s%s%s",
+  3641→						"   ┌────────────────────────────────┐   \n",
+  3642→						"───│          RETRIEVE QUEUE        │───\n",
+  3643→						"   └────────────────────────────────┘   \n"
+  3644→					);
+  3645→					printCurrentQueue(queue);
+  3646→
+  3647→					// printCraftInfo(0, infoBuffer->callsign, infoBuffer->name, infoBuffer->nameLength, infoBuffer->downSignal, infoBuffer->upSignal);
+  3648→					// Serial.println("--------------------------------------------\n\n");
+  3649→				}
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-02-24 21:36:31Z)**_
+
+Now let me also look at the `updateMeteors()` function more carefully for the timing table and related constants, and check the `setup()` function area.
+
+_**Agent - sidechain (claude-opus-4-6 2026-02-24 21:36:32Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+  1940→				delete thisMeteor;
+  1941→				animate.ActiveMeteors[i] = nullptr;
+  1942→			}
+  1943→		}
+  1944→	}
+  1945→
+  1946→	if (debugMeasure)
+  1947→		Serial.print("Active_Meteors:" + String(activeMeteors) + ",");
+  1948→}
+  1949→
+  1950→/** Main Animation update function
+  1951→ * Gets called every loop();
+  1952→ */
+  1953→void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int downSignalRate, int upSignalRate)
+  1954→{
+  1955→	feedWatchdog();
+  1956→	const bool showDiagnostics = FileUtils::config.debugUtils.diagMeasure;
+  1957→
+  1958→	if (showDiagnostics == true) {
+  1959→		Serial.print("FPS:");
+  1960→		Serial.print(FastLED.getFPS() * 1);
+  1961→		Serial.print(",");
+  1962→	}
+  1963→
+  1964→	unsigned long currentMillis = millis(); // Store the current time
+  1965→	const unsigned long currentDisplayDuration = currentMillis - displayDurationTimer;
+  1966→
+  1967→	if (showDiagnostics)
+  1968→		Serial.print("animationCleanup:" + String(displayMinDuration + animationCleanupDelay) + ",");
+  1969→
+  1970→	if (animationTypeSetDown == false) {
+  1971→		// Serial.println("---");
+  1972→		// Serial.println("animationTypeSetDown == false");
+  1973→		// Serial.println("---");
+  1974→		// const uint8_t animationId = random8(0,2);
+  1975→		// const uint8_t animationId = random8(1, 4);
+  1976→		const uint8_t animationId = 1;
+  1977→		// Serial.print("roll animation: "); Serial.println(animationId);
+  1978→
+  1979→		/**
+  1980→		 * 0 = Meteor/Rain (default)
+  1981→		 * 1 = Pulse
+  1982→		 * 2 = Spiral
+  1983→		 */
+  1984→
+  1985→		animationTypeDown = animationId;
+  1986→		animationTypeUp = animationId;
+  1987→		animationTypeSetDown = true;
+  1988→	}
+  1989→
+  1990→	if (showDiagnostics)
+  1991→		Serial.print(
+  1992→			"displayDurationTimer:" + String(displayDurationTimer) +
+  1993→			", displayMinDuration:" + String(displayMinDuration) +
+  1994→			", display_diff:" + String(currentMillis - displayDurationTimer) +
+  1995→			", textMeteorGap:" + String(textMeteorGap) +
+  1996→			", animationTimer" + String(animationTimer) +
+  1997→			", animationRepeatGap:" + String(animationRepeatGap) +
+  1998→			", animation_diff" + String(currentMillis - animationTimer) +
+  1999→			", animationInProgress:" + String(animationInProgress) +
+  2000→			", nameScrollDone:" + String(nameScrollDone) +
+  2001→			", currentDisplayDuration:" + String(currentDisplayDuration) +
+  2002→			","
+  2003→		);
+  2004→
+  2005→	if (
+  2006→		currentDisplayDuration < displayMinDuration
+  2007→		&& currentDisplayDuration > textMeteorGap
+  2008→		) {
+  2009→		bool shouldAnimate = false;
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-02-24 21:36:33Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+  3100→		}
+  3101→
+  3102→		feedWatchdog();
+  3103→		parseData(xmlDataBuffer); // Parse live data
+  3104→	} else {
+  3105→		// If no data was fetched, use dummy data
+  3106→		usingDummyData = true;
+  3107→		
+  3108→		if (showSerial) {
+  3109→			char dataStatusBuffer[128];
+  3110→			snprintf(
+  3111→				dataStatusBuffer,
+  3112→				sizeof(dataStatusBuffer),
+  3113→				"%s + %d --- %s %s\n",
+  3114→				DevUtils::termColor("bg_purple"),
+  3115→				dataFetchDurationSeconds,
+  3116→				"Using dummy data",
+  3117→				DevUtils::termColor("reset")
+  3118→			);
+  3119→			Serial.print(dataStatusBuffer);
+  3120→		}
+  3121→
+  3122→		parseData(dummyXmlData); // Parse dummy data
+  3123→	}
+  3124→
+  3125→	if (!dataStarted) {
+  3126→		dataStarted = true;  // Set dataStarted to true after first data fetch
+  3127→	}
+  3128→
+  3129→	if (showSerial)
+  3130→		Serial.print("(* END fetchData *)\n\n");
+  3131→
+  3132→	feedWatchdog();
+  3133→
+  3134→	if (!isWiFiConnected() && wm.getWiFiIsSaved() == true) {
+  3135→		Serial.print("Trying to reconnect to WiFi \"" + String(wm.getWiFiSSID()) + "\"\n");
+  3136→
+  3137→		bool res = wm.autoConnect(FileUtils::config.wifiNetwork.apSSID, FileUtils::config.wifiNetwork.apPass);
+  3138→
+  3139→		if (!res) { // Wifi connection failed
+  3140→			Serial.print(
+  3141→				DevUtils::termColor("red") +
+  3142→				"Failed to reconnect to WiFi" +
+  3143→				DevUtils::termColor("reset"));
+  3144→		} else { // Wifi connection successful
+  3145→			String deviceIP = WiFi.localIP().toString();
+  3146→			String connectedNetwork = WiFi.SSID();
+  3147→			char successStringBuffer[256];
+  3148→			snprintf(
+  3149→				successStringBuffer,
+  3150→				sizeof(successStringBuffer),
+  3151→				"%sConnected to WiFi '%s' successfully%s\n",
+  3152→				DevUtils::termColor("green"),
+  3153→				connectedNetwork != nullptr ? connectedNetwork : "NULL",
+  3154→				DevUtils::termColor("reset")
+  3155→			);
+  3156→			Serial.print(successStringBuffer);
+  3157→			MDNS.begin(mdnsHostname); // Restart mDNS after reconnect
+  3158→		}
+  3159→	}
+  3160→
+  3161→	return;
+  3162→}
+  3163→
+  3164→
+  3165→
+  3166→// Fetch XML data from HTTP & parse for use in animations
+  3167→void getData(void* parameter) {
+  3168→	// UBaseType_t uxHighWaterMark;
+  3169→	// uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
+  3170→	// Serial.print("high_water_mark:"); Serial.print(uxHighWaterMark); Serial.print("\n");
+  3171→
+  3172→	for (;;) {
+  3173→		feedWatchdog();
+  3174→		if (otaUpdateTriggered) {
+  3175→			vTaskDelay(pdMS_TO_TICKS(1000)); // Delay to allow other tasks to run
+  3176→			continue;
+  3177→		}
+  3178→		try {
+  3179→			// Send an HTTP POST request every so many seconds
+  3180→			// Serial.println(String(millis()) + " - " + String(lastTime) + " - " + String(timerDelay));
+  3181→			// Serial.println("= " + String(millis() - lastTime));
+  3182→			if ((millis() - lastTime) > timerDelay) {
+  3183→				// Serial.println("getData() running");
+  3184→				if (uxQueueSpacesAvailable(queue) > 0) {
+  3185→					// Serial.println("getData() queue space available");
+  3186→
+  3187→					vTaskDelay(pdMS_TO_TICKS(100)); // Delay to allow other tasks to run
+  3188→
+  3189→					fetchData();
+  3190→				} else {
+  3191→					if (FileUtils::config.debugUtils.showSerial == true)
+  3192→						Serial.print("Craft Queue is full, waiting...\n");
+  3193→					vTaskDelay(pdMS_TO_TICKS(1000)); // Delay to allow other tasks to run
+  3194→				}
+  3195→
+  3196→				lastTime = millis(); // Sync reference variable for timer
+  3197→			}
+  3198→		}
+  3199→		catch (...) {
+  3200→			Serial.println("Error: getData() failed");
+  3201→			dev.handleException();
+  3202→		}
+  3203→
+  3204→		vTaskDelay(pdMS_TO_TICKS(100)); // delay for 100 milliseconds to allow other tasks to run
+  3205→	}
+  3206→}
+  3207→
+  3208→#pragma endregion -- DATA FUNCTIONS
+  3209→
+  3210→
+  3211→
+  3212→
+  3213→
+  3214→
+  3215→
+  3216→/* SETUP
+  3217→* Runs once at startup */
+  3218→void setup()
+  3219→{
+  3220→	Serial.begin(115200); // Begin serial communications, ESP32 uses 115200 rate
+  3221→
+  3222→	DevUtils::SerialBanners::printBootSplashBanner(); // Display fancy splash ASCII graphics
+  3223→	Serial.print("VERSION: " + String(currentFirmwareVersion) + "\n\n");
+  3224→	Serial.print("Starting...\n\n");
+  3225→
+  3226→	// Initialize LittleFS
+  3227→	if (!LittleFS.begin(FORMAT_LITTLEFS_IF_FAILED)) {
+  3228→		Serial.println("LittleFS Mount Failed");
+  3229→		return;
+  3230→	}
+  3231→
+  3232→
+  3233→	// Make sure we can read the EEPROM
+  3234→	if (LittleFS.begin(true)) {
+  3235→		Serial.println("LittleFs filesystem mounted successfully");
+  3236→		Serial.print("\n");
+  3237→		Serial.print("┌────────────────────────────────┐\n");
+  3238→		Serial.print("│ ./data  |   ROOT FILESYSTEM    │\n");
+  3239→		Serial.print("└────────────────────────────────┘\n");
+  3240→		FileUtils::listFilesystem("/", 0);
+  3241→		Serial.print("\n");
+  3242→		Serial.print("└────────────────────────────────┘\n\n");
+  3243→
+  3244→		FileUtils::initConfigFile();
+  3245→		Serial.print("Config loaded\n\n");
+  3246→		FileUtils::printAllConfigFileKeys();
+  3247→
+  3248→		// if (FileUtils::config.wifiNetwork.apPass != nullptr) {
+  3249→		// 	Serial.print("password: " + String(FileUtils::config.wifiNetwork.apPass) + "\n");
+  3250→		// } else {
+  3251→		// 	Serial.print("password: NULL\n");
+  3252→		// }
+  3253→		Serial.print("serverName: " + String(FileUtils::config.wifiNetwork.serverName) + "\n\n");
+  3254→	} else {
+  3255→		Serial.println("An Error has occurred while mounting LittleFS filesystem");
+  3256→		Serial.println("Using default config, settings will not be saved");
+  3257→	}
+  3258→
+  3259→	// Reset settings - wipe stored credentials for testing
+  3260→	// wm.resetSettings();
+  3261→	// wm.setDebugOutput(true);
+  3262→
+  3263→	// if (FileUtils::config.debugUtils.showSerial == false) {
+  3264→	// 	Serial.setDebugOutput(false);
+  3265→	// 	wm.setDebugOutput(false);
+  3266→	// }
+  3267→	wm.setDebugOutput(false);
+  3268→	Serial.setDebugOutput(false);
+  3269→
+  3270→	if (FileUtils::config.debugUtils.testCores == true) {
+  3271→		Serial.print("setup() running on core " + String(xPortGetCoreID()) + "\n\n");
+  3272→	}
+  3273→
+  3274→
+  3275→	// Set up pins
+  3276→	pinMode(OUTER_PIN, OUTPUT);
+  3277→	pinMode(INNER_PIN, OUTPUT);
+  3278→	pinMode(MIDDLE_PIN, OUTPUT);
+  3279→	pinMode(BOTTOM_PIN, OUTPUT);
+  3280→	pinMode(OUTPUT_ENABLE, OUTPUT);
+  3281→	pinMode(WIFI_RST, INPUT);
+  3282→	pinMode(POTENTIOMETER, INPUT);
+  3283→	digitalWrite(OUTPUT_ENABLE, HIGH);
+  3284→
+  3285→	// Set initial LED brightness to half
+  3286→	FastLED.setBrightness(FileUtils::config.displayLED.brightness);
+  3287→
+  3288→	/* Fast LED Hardware Setup */
+  3289→	FastLED.addLeds<NEOPIXEL, OUTER_PIN>(outer_leds, outerPixelsTotal);
+  3290→	FastLED.addLeds<NEOPIXEL, MIDDLE_PIN>(middle_leds, middlePixelsTotal);
+  3291→	FastLED.addLeds<NEOPIXEL, INNER_PIN>(inner_leds, innerPixelsTotal);
+  3292→	FastLED.addLeds<NEOPIXEL, BOTTOM_PIN>(bottom_leds, bottomPixelsTotal);
+  3293→	allStripsOff();
+  3294→
+  3295→	/* Test strips by filling with different colors */
+  3296→	if (FileUtils::config.debugUtils.testLEDs == true) {
+  3297→		fill_solid(outer_leds, outerPixelsTotal, CRGB::Red);
+  3298→		fill_solid(middle_leds, middlePixelsTotal, CRGB::Green);
+  3299→		fill_solid(inner_leds, innerPixelsTotal, CRGB::Blue);
+  3300→		FastLED.show();
+  3301→		delay(1000);
+  3302→		allStripsOff();
+  3303→
+  3304→		for (int i = 0; i < 4; i++) {
+  3305→			CRGB* strip = allStrips[i];
+  3306→
+  3307→			for (int dot = 0; dot < outerPixelsTotal; dot++) {
+  3308→				strip[dot] = CRGB::Purple;
+  3309→				FastLED.show();
+  3310→				// clear this led for the next time around the loop
+  3311→				if (dot > 0) strip[dot - 1] = CRGB::Black;
+  3312→				// delay(30);
+  3313→			}
+  3314→		}
+  3315→		allStripsOff();
+  3316→	}
+  3317→
+  3318→
+  3319→	/* WIFI MANAGER SETUP */
+  3320→	WiFi.mode(WIFI_AP_STA);  // explicitly set mode, esp defaults to STA+AP
+  3321→
+  3322→	// Generate unique hostname from last 2 bytes of MAC address
+  3323→	uint8_t mac[6];
+  3324→	WiFi.macAddress(mac);
+  3325→	snprintf(mdnsHostname, sizeof(mdnsHostname), "minipulse-%02x%02x", mac[4], mac[5]);
+  3326→
+  3327→	wm.setCountry("US");	  // setting wifi country seems to improve OSX soft ap connectivity
+  3328→	wm.setConfigPortalBlocking(false);
+  3329→	wm.setCleanConnect(true);
+  3330→	wm.setConnectRetries(3);
+  3331→	wm.setConnectTimeout(10); // connect attempt fails after n seconds
+  3332→	// wm.setAPStaticIPConfig(IPAddress(192, 168, 0, 1), IPAddress(192, 168, 0, 1), IPAddress(255, 255, 255, 0)); // set static ip
+  3333→	wm.setHostname(mdnsHostname);
+  3334→	// wm.setEnableConfigPortal(false); // Disable auto AP, it will be started manually
+  3335→	// wm.setDisableConfigPortal(true); // Disable auto-closing config portal
+  3336→	wm.setCaptivePortalEnable(false);
+  3337→	wm.setWebServerCallback(webServerCallback);
+  3338→	wm.setTitle("JPL MiniPulse");
+  3339→
+  3340→	// wm.setPreSaveConfigCallback(saveParamsCallback);
+  3341→	// wm.setPreSaveParamsCallback(saveParamsCallback);
+  3342→	wm.setSaveParamsCallback(saveParamsCallback);
+  3343→	std::vector<const char*> menu = { "wifi", "info", "param", "sep", "restart" };
+  3344→	wm.setMenu(menu);
+  3345→
+  3346→	// set dark theme
+  3347→	wm.setClass("invert");
+  3348→
+  3349→	int brightnessPercent = constrain(MathHelpers::map(FileUtils::config.displayLED.brightness, 8, 160, 0, 100), 0, 100);
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-02-24 21:37:08Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="mcp__sequential-thinking__sequentialthinking"><details>
+<summary>Tool use: **mcp__sequential-thinking__sequentialthinking**</summary>
+
+```text
+{"thoughtNumber":1,"totalThoughts":1,"nextThoughtNeeded":false,"branches":[],"thoughtHistoryLength":1}
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-02-24 21:37:11Z)**_
+
+Now I have a complete picture. Let me send the findings to the team lead.
+
+_**Agent - sidechain (claude-opus-4-6 2026-02-24 21:37:12Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskUpdate"><details>
+<summary>Tool use: **TaskUpdate**</summary>
+
+```text
+Updated task #6 status
+
+Task completed. Call TaskList now to find your next available task or see if your work unblocked others.
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-02-24 21:37:36Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="SendMessage"><details>
+<summary>Tool use: **SendMessage**</summary>
+
+```text
+{
+  "success": true,
+  "message": "Message sent to team-lead's inbox",
+  "routing": {
+    "sender": "find-inline-constants",
+    "senderColor": "yellow",
+    "target": "@team-lead",
+    "targetColor": "red",
+    "summary": "6 inline constants found, 3 in hot paths",
+    "content": "## Inline Constants Analysis: `/Users/grant/code/JPL-MiniPulse/src/main.cpp`\n\nFound **6 findings** -- constants with fixed literal values declared inside function bodies that should be elevated to file scope.\n\n---\n\n### Finding 1: `animationId` (HOT PATH)\n- **Line**: 1976\n- **Declaration**: `const uint8_t animationId = 1;`\n- **Function**: `updateAnimation()` -- the main animation update function\n- **Hot path**: YES -- called every `loop()` iteration\n- **Notes**: Hardcoded to 1 (selects \"Pulse\" animation type). Previously had commented-out randomization (`random8(0,2)`, `random8(1,4)`). This is a fixed config value that should be at file scope near the other animation constants (around line 370-375).\n\n### Finding 2: `timingTable` (HOT PATH)\n- **Lines**: 1824-1831\n- **Declaration**: `int8_t timingTable[6] = { 60, 50, 40, 35, 20, 10 };`\n- **Function**: `updateMeteors()` -- updates meteor positions every frame\n- **Hot path**: YES -- called every frame during animation rendering\n- **Notes**: Not declared `const` but contains only fixed literal values and is never modified. This array is re-created on the stack every frame. Should be `static const` or moved to file scope near the `innerCoreSettings`/`rateClassSettings` tables (around line 1570-1688). Making it `static const` would eliminate per-frame stack allocation.\n\n### Finding 3: `animationTypeCanSpiralTable` (HOT PATH)\n- **Lines**: 1833-1839\n- **Declaration**: `bool animationTypeCanSpiralTable[5] = { false, false, false, true, false };`\n- **Function**: `updateMeteors()` -- same as above\n- **Hot path**: YES -- called every frame during animation rendering\n- **Notes**: Same issue as timingTable -- not declared `const` but is a fixed lookup table rebuilt on stack every frame. Should be `static const` or at file scope alongside the other rate class settings.\n\n### Finding 4: `inner_leds_size` (HOT PATH)\n- **Line**: 1165\n- **Declaration**: `const size_t inner_leds_size = sizeof(inner_leds) / sizeof(inner_leds[0]);`\n- **Function**: `doLetterRegions()` -- renders individual characters on LED strips\n- **Hot path**: YES -- called multiple times per frame during text scrolling (once per character per frame)\n- **Notes**: This is a compile-time constant (`sizeof` resolves at compile time). The value is always `innerPixelsTotal` (960). Should be at file scope, or just use the existing `innerPixelsTotal` constant directly since `inner_leds` is declared as `CRGB inner_leds[innerPixelsTotal]`.\n\n### Finding 5: `maxHttpRetries` (not hot path)\n- **Line**: 2933\n- **Declaration**: `const int maxHttpRetries = 3;`\n- **Function**: `fetchHTTPData()` -- fetches XML data from DSN API\n- **Hot path**: No -- called periodically during data fetch (~every 10 seconds)\n- **Notes**: Configuration constant for HTTP retry behavior. Should be at file scope near the other data-fetching config (`retryDataFetchLimit` on line 244, `timerDelay` on line 363).\n\n### Finding 6: `update_button_html` (not hot path, but large)\n- **Line**: 3376\n- **Declaration**: `const char* update_button_html = R\"---(...)---\";` (~80 lines of HTML/CSS/JS)\n- **Function**: `setup()` -- runs once at boot\n- **Hot path**: No -- runs once at startup\n- **Notes**: Large embedded HTML string (~2KB) containing the WiFi portal firmware update UI. While not a performance concern (runs once), it lives on the stack during `setup()`. On ESP32 with limited stack, moving this to file scope with `PROGMEM` would be more appropriate and consistent with how the test XML data strings are handled (lines 82-230).\n\n---\n\n### Summary by Priority\n\n**High priority (hot path, per-frame impact):**\n1. `timingTable` (line 1824) -- stack array rebuilt every frame\n2. `animationTypeCanSpiralTable` (line 1833) -- stack array rebuilt every frame\n3. `inner_leds_size` (line 1165) -- redundant with existing `innerPixelsTotal`\n\n**Medium priority (hot path, minimal overhead):**\n4. `animationId` (line 1976) -- single byte, but semantically belongs at file scope\n\n**Low priority (not hot path):**\n5. `maxHttpRetries` (line 2933) -- configuration constant\n6. `update_button_html` (line 3376) -- large string on stack during setup"
+  }
+}
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-02-24 21:37:39Z)**_
+
+Analysis complete. I found 6 inline constants in `main.cpp` that should be elevated to file scope, with 3 of them in hot paths (called every frame). The findings have been sent to the team lead with full details including line numbers, function context, and prioritization.
+
+---
+
+_**User (2026-02-24 21:37:41Z)**_
+
+<teammate-message teammate_id="find-inline-constants" color="yellow" summary="6 inline constants found, 3 in hot paths">
+## Inline Constants Analysis: `/Users/grant/code/JPL-MiniPulse/src/main.cpp`
+
+Found **6 findings** -- constants with fixed literal values declared inside function bodies that should be elevated to file scope.
+
+---
+
+### Finding 1: `animationId` (HOT PATH)
+- **Line**: 1976
+- **Declaration**: `const uint8_t animationId = 1;`
+- **Function**: `updateAnimation()` -- the main animation update function
+- **Hot path**: YES -- called every `loop()` iteration
+- **Notes**: Hardcoded to 1 (selects "Pulse" animation type). Previously had commented-out randomization (`random8(0,2)`, `random8(1,4)`). This is a fixed config value that should be at file scope near the other animation constants (around line 370-375).
+
+### Finding 2: `timingTable` (HOT PATH)
+- **Lines**: 1824-1831
+- **Declaration**: `int8_t timingTable[6] = { 60, 50, 40, 35, 20, 10 };`
+- **Function**: `updateMeteors()` -- updates meteor positions every frame
+- **Hot path**: YES -- called every frame during animation rendering
+- **Notes**: Not declared `const` but contains only fixed literal values and is never modified. This array is re-created on the stack every frame. Should be `static const` or moved to file scope near the `innerCoreSettings`/`rateClassSettings` tables (around line 1570-1688). Making it `static const` would eliminate per-frame stack allocation.
+
+### Finding 3: `animationTypeCanSpiralTable` (HOT PATH)
+- **Lines**: 1833-1839
+- **Declaration**: `bool animationTypeCanSpiralTable[5] = { false, false, false, true, false };`
+- **Function**: `updateMeteors()` -- same as above
+- **Hot path**: YES -- called every frame during animation rendering
+- **Notes**: Same issue as timingTable -- not declared `const` but is a fixed lookup table rebuilt on stack every frame. Should be `static const` or at file scope alongside the other rate class settings.
+
+### Finding 4: `inner_leds_size` (HOT PATH)
+- **Line**: 1165
+- **Declaration**: `const size_t inner_leds_size = sizeof(inner_leds) / sizeof(inner_leds[0]);`
+- **Function**: `doLetterRegions()` -- renders individual characters on LED strips
+- **Hot path**: YES -- called multiple times per frame during text scrolling (once per character per frame)
+- **Notes**: This is a compile-time constant (`sizeof` resolves at compile time). The value is always `innerPixelsTotal` (960). Should be at file scope, or just use the existing `innerPixelsTotal` constant directly since `inner_leds` is declared as `CRGB inner_leds[innerPixelsTotal]`.
+
+### Finding 5: `maxHttpRetries` (not hot path)
+- **Line**: 2933
+- **Declaration**: `const int maxHttpRetries = 3;`
+- **Function**: `fetchHTTPData()` -- fetches XML data from DSN API
+- **Hot path**: No -- called periodically during data fetch (~every 10 seconds)
+- **Notes**: Configuration constant for HTTP retry behavior. Should be at file scope near the other data-fetching config (`retryDataFetchLimit` on line 244, `timerDelay` on line 363).
+
+### Finding 6: `update_button_html` (not hot path, but large)
+- **Line**: 3376
+- **Declaration**: `const char* update_button_html = R"---(...)---";` (~80 lines of HTML/CSS/JS)
+- **Function**: `setup()` -- runs once at boot
+- **Hot path**: No -- runs once at startup
+- **Notes**: Large embedded HTML string (~2KB) containing the WiFi portal firmware update UI. While not a performance concern (runs once), it lives on the stack during `setup()`. On ESP32 with limited stack, moving this to file scope with `PROGMEM` would be more appropriate and consistent with how the test XML data strings are handled (lines 82-230).
+
+---
+
+### Summary by Priority
+
+**High priority (hot path, per-frame impact):**
+1. `timingTable` (line 1824) -- stack array rebuilt every frame
+2. `animationTypeCanSpiralTable` (line 1833) -- stack array rebuilt every frame
+3. `inner_leds_size` (line 1165) -- redundant with existing `innerPixelsTotal`
+
+**Medium priority (hot path, minimal overhead):**
+4. `animationId` (line 1976) -- single byte, but semantically belongs at file scope
+
+**Low priority (not hot path):**
+5. `maxHttpRetries` (line 2933) -- configuration constant
+6. `update_button_html` (line 3376) -- large string on stack during setup
+</teammate-message>
+
+<teammate-message teammate_id="find-inline-constants" color="yellow">
+{"type":"idle_notification","from":"find-inline-constants","timestamp":"2026-02-24T21:37:39.764Z","idleReason":"available"}
+</teammate-message>
+
+---
+
+_**Agent (claude-opus-4-6 2026-02-24 21:37:47Z)**_
+
+Good findings. Here's the summary:
+
+**Hot path (rebuilt every frame):**
+1. `timingTable` (line 1824) — `int8_t[6]` array recreated on stack every frame in `updateMeteors()`
+2. `animationTypeCanSpiralTable` (line 1833) — `bool[5]` array, same issue
+3. `inner_leds_size` (line 1165) — redundant, could just use existing `innerPixelsTotal` constant
+
+**Medium:**
+4. `animationId` (line 1976) — hardcoded `1` in `updateAnimation()`, belongs at file scope
+
+**Low:**
+5. `maxHttpRetries` (line 2933) — config value, should live near other fetch config
+6. `update_button_html` (line 3376) — large HTML string on stack in `setup()`, but runs once
+
+The two lookup tables in `updateMeteors()` (#1 and #2) are the most impactful — they're allocating on the stack every single frame for no reason. Want me to hoist these out?
+
+---
+
+_**User (2026-02-24 21:42:32Z)**_
+
+yes take care of 1, 2, and 3. for animationID, do we even need that variable? 
+
+---
+
+_**Agent (claude-opus-4-6 2026-02-24 21:42:36Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+  1820→{
+  1821→	bool debugMeasure = FileUtils::config.debugUtils.diagMeasure;
+  1822→
+  1823→	// Rate class update timing
+  1824→	int8_t timingTable[6] = {
+  1825→		60, // Rate class 1
+  1826→		50, // Rate class 2
+  1827→		40, // Rate class 3
+  1828→		35, // Rate class 4
+  1829→		20, // Rate class 5
+  1830→		10  // Rate class 6
+  1831→	};
+  1832→
+  1833→	bool animationTypeCanSpiralTable[5] = {
+  1834→		false,
+  1835→		false,
+  1836→		false,
+  1837→		true,
+  1838→		false,
+  1839→	};
+  1840→
+  1841→	bool updateTable[6] = { false };
+  1842→	bool spiralUpdateTable[6] = { false };
+  1843→
+  1844→
+  1845→	/* Update rate classes at different intervals */
+  1846→	EVERY_N_MILLISECONDS(timingTable[0]) {
+  1847→		updateTable[0] = true; // Rate class 1
+  1848→	}
+  1849→	EVERY_N_MILLISECONDS(timingTable[1]) {
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:42:36Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+  1160→	const uint16_t regionOffset = innerPixelsChunkLength * regionStart;
+  1161→
+  1162→	int16_t pixel = startingPixel + regionOffset;
+  1163→	const int16_t previousPixel = pixel - letterSpacing;
+  1164→
+  1165→	const size_t inner_leds_size = sizeof(inner_leds) / sizeof(inner_leds[0]);
+  1166→
+  1167→	for (int i = 0; i < ledCharacter.characterTotalPixels; i++) {
+  1168→		int j = i + 1;
+  1169→		// Serial.print("j: " + String(j) + "\n");
+  1170→		// Serial.println("characterWidth: " + String(characterWidth) + "\n");
+  1171→
+  1172→		int regionInt = (j % characterWidth) - 1;
+  1173→		if (regionInt < 0)
+  1174→			regionInt = characterWidth - 1;
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:42:37Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+  1970→	if (animationTypeSetDown == false) {
+  1971→		// Serial.println("---");
+  1972→		// Serial.println("animationTypeSetDown == false");
+  1973→		// Serial.println("---");
+  1974→		// const uint8_t animationId = random8(0,2);
+  1975→		// const uint8_t animationId = random8(1, 4);
+  1976→		const uint8_t animationId = 1;
+  1977→		// Serial.print("roll animation: "); Serial.println(animationId);
+  1978→
+  1979→		/**
+  1980→		 * 0 = Meteor/Rain (default)
+  1981→		 * 1 = Pulse
+  1982→		 * 2 = Spiral
+  1983→		 */
+  1984→
+  1985→		animationTypeDown = animationId;
+  1986→		animationTypeUp = animationId;
+  1987→		animationTypeSetDown = true;
+  1988→	}
+  1989→
+  1990→	if (showDiagnostics)
+  1991→		Serial.print(
+  1992→			"displayDurationTimer:" + String(displayDurationTimer) +
+  1993→			", displayMinDuration:" + String(displayMinDuration) +
+  1994→			", display_diff:" + String(currentMillis - displayDurationTimer) +
+  1995→			", textMeteorGap:" + String(textMeteorGap) +
+  1996→			", animationTimer" + String(animationTimer) +
+  1997→			", animationRepeatGap:" + String(animationRepeatGap) +
+  1998→			", animation_diff" + String(currentMillis - animationTimer) +
+  1999→			", animationInProgress:" + String(animationInProgress) +
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:42:45Z)**_
+
+<think><details><summary>Thought Process</summary>
+For `animationId` - it's hardcoded to `1` and immediately assigned to both `animationTypeDown` and `animationTypeUp`. We can just inline `1` directly. But the user asked if we even need the variable - the answer is no, we can just assign `1` directly.
+
+Now let me handle the three items:
+
+1. `timingTable` - move to file scope as `static const`
+2. `animationTypeCanSpiralTable` - move to file scope as `static const`
+3. `inner_leds_size` - replace with `innerPixelsTotal`
+
+For #4 (animationId), let me check if it's used elsewhere or if we can just inline it.
+
+
+Since `animationId` is only used to set those two variables, I can eliminate it entirely and assign `1` directly to both. I should also verify that swapping `inner_leds_size` for `innerPixelsTotal` won't break anything.
+</details></think>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:42:45Z)**_
+
+For `animationId` — it's just `1` assigned to both `animationTypeDown` and `animationTypeUp`. No, we don't need it. Let me check how `inner_leds_size` is used to confirm the swap is safe.
+
+_**Agent (claude-opus-4-6 2026-02-24 21:42:46Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+  1165→	const size_t inner_leds_size = sizeof(inner_leds) / sizeof(inner_leds[0]);
+  1166→
+  1167→	for (int i = 0; i < ledCharacter.characterTotalPixels; i++) {
+  1168→		int j = i + 1;
+  1169→		// Serial.print("j: " + String(j) + "\n");
+  1170→		// Serial.println("characterWidth: " + String(characterWidth) + "\n");
+  1171→
+  1172→		int regionInt = (j % characterWidth) - 1;
+  1173→		if (regionInt < 0)
+  1174→			regionInt = characterWidth - 1;
+  1175→
+  1176→		int drawPixel = (pixel + (innerPixelsChunkLength * regionInt)) % innerPixelsTotal;
+  1177→		int drawPreviousPixel = (previousPixel + (innerPixelsChunkLength * regionInt)) % innerPixelsTotal;
+  1178→
+  1179→		int regionStart = (innerPixelsChunkLength * regionInt + regionOffset) % innerPixelsTotal;
+  1180→		int regionEnd = (innerPixelsChunkLength * (regionInt + 1) + regionOffset) % innerPixelsTotal;
+  1181→
+  1182→		bool drawPixelInRegion = (regionStart <= drawPixel && drawPixel < regionEnd) ||
+  1183→			(regionStart > regionEnd && (drawPixel < regionEnd || drawPixel >= regionStart));
+  1184→
+  1185→		bool drawPrevPixelInRegion = (regionStart <= drawPreviousPixel && drawPreviousPixel < regionEnd) ||
+  1186→			(regionStart > regionEnd && (drawPreviousPixel < regionEnd || drawPreviousPixel >= regionStart));
+  1187→
+  1188→
+  1189→		if (drawPrevPixelInRegion) {
+  1190→			if (drawPreviousPixel >= 0 && drawPreviousPixel < inner_leds_size) {
+  1191→				inner_leds[drawPreviousPixel] = mpColors.off.value;
+  1192→			} else {
+  1193→				// Serial.print(DevUtils::termColor("red")) + "drawPreviousPixel out of bounds" + DevUtils::termColor("reset")) + "\n");
+  1194→			}
+  1195→		}
+  1196→
+  1197→		if (drawPixelInRegion) {
+  1198→			if (drawPixel >= 0 && drawPixel < inner_leds_size) {
+  1199→				inner_leds[drawPixel] = ledCharacter.characterArray[i] == 1 ? currentColors.letter : mpColors.off.value;
+  1200→			} else {
+  1201→				// Serial.print(DevUtils::termColor("red")) + "drawPixel out of bounds" + DevUtils::termColor("reset")) + "\n");
+  1202→			}
+  1203→		}
+  1204→
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:42:50Z)**_
+
+It's used as a bounds check — same value as `innerPixelsTotal`. Safe to swap. Now let me find where to place the two tables. They belong near the existing rate class settings.
+
+_**Agent (claude-opus-4-6 2026-02-24 21:42:51Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+  1677→	/* Zigzag */
+  1678→	{},
+  1679→};
+  1680→
+  1681→const RateClassSettings* rateClassSettings[] = {
+  1682→	rateClass1Settings,
+  1683→	rateClass2Settings,
+  1684→	rateClass3Settings,
+  1685→	rateClass4Settings,
+  1686→	rateClass5Settings,
+  1687→	rateClass6Settings
+  1688→};
+  1689→
+  1690→
+  1691→void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_t type) {
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:42:54Z)**_
+
+Now let me check what's right before `updateMeteors()` to see the inner core settings.
+
+_**Agent (claude-opus-4-6 2026-02-24 21:42:54Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+  1793→	// Update meteor animations
+  1794→	for (uint16_t i = 0; i < animate.ActiveMeteorArraySize; i++) {
+  1795→		if (animate.ActiveMeteors[i] != nullptr)
+  1796→			animate.animateMeteor(animate.ActiveMeteors[i]);
+  1797→	}
+  1798→}
+  1799→
+  1800→void setBottomPixelToMax(int pixel) {
+  1801→	CHSV color = CHSV(currentColors.meteor.hue, currentColors.meteor.sat, 255);
+  1802→	bottomPixelMap[pixel] = color;
+  1803→	bottom_leds[pixel] = color;
+  1804→}
+  1805→
+  1806→void updateBottomPixels()
+  1807→{
+  1808→	// Update bottom pixels
+  1809→	for (int i = 0; i < 5; i++) {
+  1810→		int pixelBrightness = bottomPixelMap[i].value;
+  1811→		if (pixelBrightness > 0) {
+  1812→			CHSV color = CHSV(currentColors.meteor.hue, currentColors.meteor.sat, dim8_raw(pixelBrightness - 1));
+  1813→			bottomPixelMap[i] = color;
+  1814→			bottom_leds[i] = color;
+  1815→		}
+  1816→	}
+  1817→}
+  1818→
+  1819→void updateMeteors()
+  1820→{
+  1821→	bool debugMeasure = FileUtils::config.debugUtils.diagMeasure;
+  1822→
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:42:57Z)**_
+
+Good. Now I'll make all four changes.
+
+_**Agent (claude-opus-4-6 2026-02-24 21:43:00Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/src/main.cpp has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:43:06Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/src/main.cpp has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:43:08Z)**_
+
+Now update the references from `timingTable` to `meteorTimingTable` inside `updateMeteors()`.
+
+_**Agent (claude-opus-4-6 2026-02-24 21:43:10Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Grep"><details>
+<summary>Tool use: **Grep**</summary>
+ path `./src/main.cpp` pattern `timingTable\[`
+
+```text
+1847:	EVERY_N_MILLISECONDS(timingTable[0]) {
+1850:	EVERY_N_MILLISECONDS(timingTable[1]) {
+1853:	EVERY_N_MILLISECONDS(timingTable[2]) {
+1856:	EVERY_N_MILLISECONDS(timingTable[3]) {
+1859:	EVERY_N_MILLISECONDS(timingTable[4]) {
+1865:	EVERY_N_MILLISECONDS(timingTable[0] * 4) {
+1868:	EVERY_N_MILLISECONDS(timingTable[1] * 4) {
+1871:	EVERY_N_MILLISECONDS(timingTable[2] * 4) {
+1874:	EVERY_N_MILLISECONDS(timingTable[3] * 4) {
+1877:	EVERY_N_MILLISECONDS(timingTable[4] * 4) {
+1880:	EVERY_N_MILLISECONDS(timingTable[5] * 4) {
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:43:13Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/src/main.cpp has been updated. All occurrences of 'timingTable[' were successfully replaced with 'meteorTimingTable['.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:43:16Z)**_
+
+Now fix #3 — replace `inner_leds_size` with `innerPixelsTotal`.
+
+_**Agent (claude-opus-4-6 2026-02-24 21:43:17Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/src/main.cpp has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:43:20Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/src/main.cpp has been updated. All occurrences of 'inner_leds_size' were successfully replaced with 'innerPixelsTotal'.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:43:23Z)**_
+
+Now inline `animationId` away.
+
+_**Agent (claude-opus-4-6 2026-02-24 21:43:27Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/src/main.cpp has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:43:30Z)**_
+
+Now build to verify.
+
+_**Agent (claude-opus-4-6 2026-02-24 21:44:04Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Build all PlatformIO environments
+
+`~/.platformio/penv/bin/pio run 2>&1 | tail -15`
+
+```text
+RAM:   [===       ]  27.5% (used 90268 bytes from 327680 bytes)
+Flash: [=====     ]  49.3% (used 1551397 bytes from 3145728 bytes)
+Building .pio/build/devdebug/firmware.bin
+esptool.py v4.9.0
+Creating esp32 image...
+Merged 27 ELF sections
+Successfully created esp32 image.
+========================= [SUCCESS] Took 10.88 seconds =========================
+
+Environment    Status    Duration
+-------------  --------  ------------
+release        SUCCESS   00:00:10.778
+debug          SUCCESS   00:00:10.929
+devdebug       SUCCESS   00:00:10.879
+========================= 3 succeeded in 00:00:32.586 =========================
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:44:09Z)**_
+
+All builds pass. Flash is down 20 bytes too (1551417 → 1551397) from eliminating the per-frame stack allocations.
+
+Summary of changes:
+1. **`timingTable`** → hoisted to file scope as `const int8_t meteorTimingTable[6]` near the other rate class settings
+2. **`animationTypeCanSpiralTable`** → hoisted to file scope as `const bool animationTypeCanSpiralTable[5]` alongside it
+3. **`inner_leds_size`** → removed, replaced with existing `innerPixelsTotal` constant
+4. **`animationId`** → removed entirely, inlined `1` directly into the two assignments
+
+---
+
+_**User (2026-02-24 21:45:17Z)**_
+
+whats the expected performance improvement from that?
+
+---
+
+_**Agent (claude-opus-4-6 2026-02-24 21:45:27Z)**_
+
+
+
+Honestly, minimal in practice. Here's why:
+
+**The two lookup tables** (`timingTable`, `animationTypeCanSpiralTable`) were 6 + 5 = 11 bytes on the stack. Allocating 11 bytes on the stack is essentially a single stack pointer adjustment — it's near-zero cost on ESP32. The compiler may have already optimized them to constants anyway.
+
+**`inner_leds_size`** was a `sizeof` division that resolves at compile time, so the compiler was already treating it as a constant `960`. Zero runtime difference.
+
+**The real value is correctness and clarity**, not performance:
+- The tables are now properly `const` — before they were mutable, meaning the compiler couldn't assume they wouldn't change and had to reload values
+- `meteorTimingTable` is a better name than `timingTable` buried inside a function
+- One less redundant variable (`inner_leds_size`) that duplicates an existing constant
+
+If you wanted actual measurable performance wins in `updateMeteors()`, the bigger targets would be things like the `EVERY_N_MILLISECONDS` macro expansion pattern or the meteor array iteration — not 11 bytes of stack allocation.
+
+---
+
+_**User (2026-02-24 21:46:25Z)**_
+
+clean up the team
+
+---
+
+_**Agent (claude-opus-4-6 2026-02-24 21:46:28Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="ToolSearch"><details>
+<summary>Tool use: **ToolSearch**</summary>
+
+**Input:**
+
+- max_results: `1`
+- query: `select:TeamDelete`
+
+**Result:**
+
+```
+
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:46:31Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TeamDelete"><details>
+<summary>Tool use: **TeamDelete**</summary>
+
+```text
+{
+  "success": false,
+  "message": "Cannot cleanup team with 1 active member(s): find-inline-constants. Use requestShutdown to gracefully terminate teammates first.",
+  "team_name": "binary-upsignal"
+}
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:46:34Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="SendMessage"><details>
+<summary>Tool use: **SendMessage**</summary>
+
+```text
+{
+  "success": true,
+  "message": "Shutdown request sent to find-inline-constants. Request ID: shutdown-1771969594853@find-inline-constants",
+  "request_id": "shutdown-1771969594853@find-inline-constants",
+  "target": "find-inline-constants"
+}
+```
+</details></tool-use>
+
+_**Agent - sidechain (2026-02-24 21:46:35Z)**_
+
+<teammate-message teammate_id="team-lead">
+{"type":"shutdown_request","requestId":"shutdown-1771969594853@find-inline-constants","from":"team-lead","reason":"Work complete, shutting down.","timestamp":"2026-02-24T21:46:34.853Z"}
+</teammate-message>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:46:37Z)**_
+
+Waiting for the last agent to shut down, then I'll delete the team.
+
+_**Agent - sidechain (claude-opus-4-6 2026-02-24 21:46:39Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="SendMessage"><details>
+<summary>Tool use: **SendMessage**</summary>
+
+**Input:**
+
+- approve: `true`
+- request_id: `shutdown-1771969594853@find-inline-constants`
+- type: `shutdown_response`
+
+</details></tool-use>
+
+---
+
+_**User (2026-02-24 21:46:40Z)**_
+
+<teammate-message teammate_id="find-inline-constants" color="yellow">
+{"type":"shutdown_approved","requestId":"shutdown-1771969594853@find-inline-constants","from":"find-inline-constants","timestamp":"2026-02-24T21:46:39.245Z","paneId":"in-process","backendType":"in-process"}
+</teammate-message>
+
+---
+
+_**Agent (claude-opus-4-6 2026-02-24 21:46:43Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TeamDelete"><details>
+<summary>Tool use: **TeamDelete**</summary>
+
+```text
+{
+  "success": true,
+  "message": "Cleaned up directories and worktrees for team \"binary-upsignal\"",
+  "team_name": "binary-upsignal"
+}
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:46:47Z)**_
+
+Team cleaned up. You've got two uncommitted changes on `feature/binary-upsignal`:
+
+1. **`fe3f7fc`** (committed) — binary up signal detection
+2. **(unstaged)** — hoisted inline constants, removed `animationId`
+
+Let me know when you want to commit the second batch.
+
+---
+
+_**User (2026-02-24 21:47:34Z)**_
+
+lets go ahead and fix maxHttpRetries (line 2933) and update_button_html (line 3376)
+
+---
+
+_**Agent (claude-opus-4-6 2026-02-24 21:47:39Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Grep"><details>
+<summary>Tool use: **Grep**</summary>
+ path `./src/main.cpp` pattern `maxHttpRetries`
+
+```text
+2918-bool fetchHTTPData(const String& url, char* buffer, size_t bufferSize) {
+2919-	bool showSerial = FileUtils::config.debugUtils.showSerial;
+2920-
+2921:	const int maxHttpRetries = 3;
+2922:	for (int retry = 0; retry < maxHttpRetries; retry++) {
+2923-		feedWatchdog(); // HTTP connection can sometimes be slow
+2924-
+2925-		char conectionAttemptBuffer[128];
+--
+2929-			"%sHTTP connection attempt %d of %d%s\n",
+2930-			DevUtils::termColor("yellow"),
+2931-			retry + 1,
+2932:			maxHttpRetries,
+2933-			DevUtils::termColor("reset")
+2934-		);
+2935-
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:47:40Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Grep"><details>
+<summary>Tool use: **Grep**</summary>
+ path `./src/main.cpp` pattern `update_button_html`
+
+```text
+3362-
+3363-	/* Custom */
+3364:	const char* update_button_html = R"---(
+3365-		<style>
+3366-			.param-group { display:flex; align-items:center; justify-content:space-between; margin-bottom:0.5em; }
+--
+3441-	)---";
+3442-
+3443:	wm.setCustomHeadElement(update_button_html); // Add "Update Firmware" button to WiFi portal <head>
+3444-
+3445-
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:47:43Z)**_
+
+Let me see the existing fetch config constants and the full HTML string.
+
+_**Agent (claude-opus-4-6 2026-02-24 21:47:44Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+   240→bool forceDummyData = false;
+   241→bool forceAnimationType = false;
+   242→uint8_t noTargetFoundCounter = 0;  // Keeps track of how many times target is not found
+   243→uint8_t retryDataFetchCounter = 0; // Keeps track of how many times data fetch failed
+   244→uint8_t retryDataFetchLimit = 3;  // After dummy data is used this many times, try to get actual data again
+   245→bool dataStarted = false;
+   246→// char fetchUrl[64];	// Fixed memory for DSN XML fetch URL - random number is appended when used to prevent caching
+   247→
+   248→#pragma endregion -- END DATA FETCHING STATE VARS
+   249→
+   250→#pragma region -- DATA COUNTERS
+   251→// Counters to track during XML parsing
+   252→unsigned int stationCount = 0;
+   253→unsigned int dishCount = 0;
+   254→unsigned int targetCount = 0;
+   255→unsigned int signalCount = 0;
+   256→int parseCounter = 0;
+   257→#pragma endregion DATA COUNTERS
+   258→
+   259→#pragma region -- DATA CURRENT CRAFT
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:47:45Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+  3362→
+  3363→	/* Custom */
+  3364→	const char* update_button_html = R"---(
+  3365→		<style>
+  3366→			.param-group { display:flex; align-items:center; justify-content:space-between; margin-bottom:0.5em; }
+  3367→			.param-group input[type='checkbox'] { float:none !important; margin:0 !important; }
+  3368→			.param-group input[type='number'] { width:min-content; }
+  3369→			.param-group-stacked { display:flex; flex-direction:column; align-items:stretch; margin-bottom:0.5em; }
+  3370→			.param-group-stacked input[type='range'] { margin-top:0.3em; }
+  3371→		</style>
+  3372→		<div>
+  3373→			<div style="display: inline-block; border: 1px solid gray;padding:5px 20px;">
+  3374→				<p id="firmwareStatus" style="margin-top:0; white-space:pre-line;"></p>
+  3375→				<p id="updateResponse"></p>
+  3376→				<button id="updateButton">Update Firmware</button>
+  3377→			</div>
+  3378→		</div>
+  3379→		<script>
+  3380→			document.addEventListener('DOMContentLoaded', function() {
+  3381→				fetch('/get-latest-version-number')
+  3382→				.then(function (response) {
+  3383→					return response.text();
+  3384→				}).
+  3385→				then(function (text) {
+  3386→					document.getElementById("firmwareStatus").textContent = text;
+  3387→					console.log(text);
+  3388→				})
+  3389→
+  3390→				// Display device hostname at top of every page
+  3391→				fetch('/hostname')
+  3392→				.then(function(r) { return r.text(); })
+  3393→				.then(function(hostname) {
+  3394→					var banner = document.createElement('div');
+  3395→					banner.style.cssText = 'text-align:center;padding:6px 0;opacity:0.7;font-size:0.85em;';
+  3396→					var label = document.createTextNode('Device address: ');
+  3397→					var strong = document.createElement('strong');
+  3398→					strong.textContent = 'http://' + hostname;
+  3399→					banner.appendChild(label);
+  3400→					banner.appendChild(strong);
+  3401→					var container = document.querySelector('.wrap');
+  3402→					if (container) container.insertBefore(banner, container.firstChild);
+  3403→				});
+  3404→
+  3405→				// Rename "Setup" button to "Options" on portal home
+  3406→				document.querySelectorAll('form[action="/param"] button').forEach(function(b) { b.textContent = 'Options'; });
+  3407→
+  3408→				// Wrap each label+input pair in a flex container
+  3409→				document.querySelectorAll('form label[for]').forEach(function(label) {
+  3410→					var input = document.getElementById(label.getAttribute('for'));
+  3411→					if (!input) return;
+  3412→					var wrapper = document.createElement('div');
+  3413→					wrapper.className = (input.type === 'range') ? 'param-group-stacked' : 'param-group';
+  3414→					label.parentNode.insertBefore(wrapper, label);
+  3415→					// Remove <br/> nodes between label position and input
+  3416→					var node = wrapper.nextSibling;
+  3417→					while (node && node !== input) {
+  3418→						var next = node.nextSibling;
+  3419→						if (node.nodeName === 'BR') node.remove();
+  3420→						node = next;
+  3421→					}
+  3422→					wrapper.appendChild(label);
+  3423→					wrapper.appendChild(input);
+  3424→				});
+  3425→
+  3426→				document.getElementById("updateButton").addEventListener('click', function() {
+  3427→				fetch('/trigger-firmware-update')
+  3428→				.then(function (response) {
+  3429→					return response.text();
+  3430→				})
+  3431→				.then(function (text) {
+  3432→					document.getElementById("updateResponse").textContent = text;
+  3433→					console.log("response:", text);
+  3434→				})
+  3435→				.catch(function (error) {
+  3436→					console.error(error);
+  3437→				});
+  3438→			});
+  3439→			}); // DOMContentLoaded
+  3440→		</script>
+  3441→	)---";
+  3442→
+  3443→	wm.setCustomHeadElement(update_button_html); // Add "Update Firmware" button to WiFi portal <head>
+  3444→
+  3445→
+  3446→	char existingWifiBuffer[128];
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:47:48Z)**_
+
+Now let me find `setup()` to see what pragma region it's in.
+
+_**Agent (claude-opus-4-6 2026-02-24 21:47:49Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Grep"><details>
+<summary>Tool use: **Grep**</summary>
+ path `./src/main.cpp` pattern `pragma region.*PORTAL|pragma endregion.*PORTAL`
+
+```text
+271:#pragma region -- WIFIMANAGER PORTAL
+353:#pragma endregion -- END WIFIMANAGER PORTAL
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:47:53Z)**_
+
+Good — `update_button_html` fits right in that portal region. Now the edits:
+
+_**Agent (claude-opus-4-6 2026-02-24 21:47:55Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/src/main.cpp has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:47:59Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+   349→// wm.addParameter(&field_global_fps);
+   350→// wm.addParameter(&field_show_serial);
+   351→
+   352→
+   353→
+   354→#pragma endregion -- END WIFIMANAGER PORTAL
+   355→
+   356→#pragma region -- TIMERS
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:48:22Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/src/main.cpp has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:48:25Z)**_
+
+Now remove the old inline declaration and update the reference in `setup()`.
+
+_**Agent (claude-opus-4-6 2026-02-24 21:48:33Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/src/main.cpp has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:48:35Z)**_
+
+Now remove the inline `maxHttpRetries` in `fetchHTTPData()`.
+
+_**Agent (claude-opus-4-6 2026-02-24 21:48:36Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+  2996→static char xmlDataBuffer[20480];  // 20KB buffer for XML data from HTTP response
+  2997→
+  2998→bool fetchHTTPData(const String& url, char* buffer, size_t bufferSize) {
+  2999→	bool showSerial = FileUtils::config.debugUtils.showSerial;
+  3000→
+  3001→	const int maxHttpRetries = 3;
+  3002→	for (int retry = 0; retry < maxHttpRetries; retry++) {
+  3003→		feedWatchdog(); // HTTP connection can sometimes be slow
+  3004→
+  3005→		char conectionAttemptBuffer[128];
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:48:40Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/src/main.cpp has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:49:17Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Build all PlatformIO environments
+
+`~/.platformio/penv/bin/pio run 2>&1 | tail -15`
+
+```text
+RAM:   [===       ]  27.5% (used 90268 bytes from 327680 bytes)
+Flash: [=====     ]  49.3% (used 1551401 bytes from 3145728 bytes)
+Building .pio/build/devdebug/firmware.bin
+esptool.py v4.9.0
+Creating esp32 image...
+Merged 27 ELF sections
+Successfully created esp32 image.
+========================= [SUCCESS] Took 11.23 seconds =========================
+
+Environment    Status    Duration
+-------------  --------  ------------
+release        SUCCESS   00:00:10.798
+debug          SUCCESS   00:00:10.836
+devdebug       SUCCESS   00:00:11.226
+========================= 3 succeeded in 00:00:32.861 =========================
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 21:49:21Z)**_
+
+All builds pass. Done:
+
+- **`maxHttpRetries`** → moved to file scope near `retryDataFetchLimit` (line ~245)
+- **`update_button_html`** → moved to file scope as `portalHeadHtml` in the WiFiManager Portal region, off the stack during `setup()`
+
+---
+
+_**User (2026-02-24 21:50:01Z)**_
+
+<command-message>commit-commands:commit</command-message>
+<command-name>/commit-commands:commit</command-name>
+
+_**User (2026-02-24 21:50:01Z)**_
+
+## Context
+
+- Current git status: On branch feature/binary-upsignal
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   .specstory/history/2026-02-24_20-59-20Z-command-name-clear-command.md
+	modified:   src/main.cpp
+
+no changes added to commit (use "git add" and/or "git commit -a")
+- Current git diff (staged and unstaged changes): <persisted-output>
+Output too large (244.8KB). Full output saved to: /Users/grant/.claude/projects/-Users-grant-code-JPL-MiniPulse/e5b64b22-35a6-4c5e-9f5d-024b7fada110/tool-results/bc60c85.txt
+
+Preview (first 2KB):
+diff --git a/.specstory/history/2026-02-24_20-59-20Z-command-name-clear-command.md b/.specstory/history/2026-02-24_20-59-20Z-command-name-clear-command.md
+index 435178c..2714ebb 100644
+--- a/.specstory/history/2026-02-24_20-59-20Z-command-name-clear-command.md
++++ b/.specstory/history/2026-02-24_20-59-20Z-command-name-clear-command.md
+@@ -4017,7 +4017,7 @@ You have the capability to call multiple tools in a single response. Stage and c
+ 
+ ---
+ 
+-_**Agent (claude-opus-4-6 2026-02-24 21:35:14Z)**_
++_**Agent (claude-opus-4-6 2026-02-24 21:35:15Z)**_
+ 
+ <tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+ <summary>Tool use: **Bash**</summary>
+@@ -4029,4 +4029,5123 @@ fix(signals): simplify up signal to binary detection, drop placeholder rates
+ EOF
+ )"
+ ```
++
++```text
++[feature/binary-upsignal fe3f7fc] fix(signals): simplify up signal to binary detection, drop placeholder rates
++ 4 files changed, 4062 insertions(+), 25 deletions(-)
++ create mode 100644 .specstory/history/2026-02-24_20-59-20Z-command-name-clear-command.md
++```
++</details></tool-use>
++
++_**Agent (claude-opus-4-6 2026-02-24 21:35:17Z)**_
++
++Committed as `fe3f7fc`.
++
++---
++
++_**User (2026-02-24 21:35:46Z)**_
++
++look for other instances where constants are being instantiated within the program instead of at runtime like that
++
++---
++
++_**Agent (claude-opus-4-6 2026-02-24 21:35:50Z)**_
++
++<think><details><summary>Thought Process</summary>
++The user wants me to find constants that are being declared inside functions/loops instead of at file scope. Let me search for `const` declarations inside functions in main.cpp that could be hoisted to file level.
++</details></think>
++
++_**Agent (claude-opus-4-6 2026-02-24 21:35:57Z)**_
++
++<tool-use data-tool-type="generic" data-tool-name="Task"><details>
++<summary>Tool use: **Task**</summary>
++Find inline constants in main.cpp
++
++```text
++Spawned successfully.
++agent_id: find-inline-constants@binary-upsignal
++name: find-inline-constants
+...
+</persisted-output>
+- Current branch: feature/binary-upsignal
+- Recent commits: fe3f7fc fix(signals): simplify up signal to binary detection, drop placeholder rates
+80708ed docs: add v1.1.0 plans for GitHub OTA, remote spacecraft data, and backlog
+ba668ea fix(deps): pin all library versions for reproducible builds
+90f026e feat: add mDNS discovery, track board docs and specstory history
+0786d24 fix(portal): harden input parsing and guard heap fragmentation division
+dbc79df fix(portal): improve layout with flex groups, reorder params, and gate scroll to frame limiter
+f53a46a feat(portal): split force animation type into checkbox + number field
+241228a fix(portal): convert boolean params to checkboxes with post-save re-init
+0b53f62 fix(portal): harden checkbox parsing and constrain brightness slider range
+63b3d20 fix(portal): correct brightness mapping, input validation, and UI params
+
+## Your task
+
+Based on the above changes, create a single git commit.
+
+You have the capability to call multiple tools in a single response. Stage and create the commit using a single message. Do not use any other tools or do anything else. Do not send any other text or messages besides these tool calls.
