@@ -1,4 +1,4 @@
-const char* currentFirmwareVersion = "1.1.0-11"; // Current firmware version
+const char* currentFirmwareVersion = "1.1.0-12"; // Current firmware version
 
 #pragma region -- LIBRARIES
 #include <Arduino.h>		// Arduino core
@@ -3529,7 +3529,6 @@ void setup()
 
 	SpacecraftData::loadJson();		   // Load JSON data for spacecraft lookup
 	// SpacecraftData::loadSpacecraftNamesProgmem(); // Load raw spacecraft names for lookup
-	// SpacecraftData::loadSpacecraftPlaceholderRatesRaw(); // Load raw spacecraft placeholder rates for lookup
 	// SpacecraftData::loadSpacecraftBlacklistRaw(); // Load raw spacecraft blacklist for lookup
 	// SpacecraftData::loadSpacecraftBlacklist();
 	delay(100);

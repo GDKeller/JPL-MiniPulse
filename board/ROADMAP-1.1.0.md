@@ -1,6 +1,6 @@
 # Roadmap — v1.1.0
 
-Current dev version: **1.1.0-3**
+Current dev version: **1.1.0-12**
 
 Items sourced from [codebase-analysis.md](codebase-analysis.md) and review findings (2026-02-20). Deferred items moved to [BACKLOG.md](BACKLOG.md).
 
@@ -57,8 +57,8 @@ Items sourced from [codebase-analysis.md](codebase-analysis.md) and review findi
 
 | # | Issue | Ref | Risk | Type | Status |
 |---|-------|-----|------|------|--------|
-| 37 | Binary up signal logic | [PLAN](PLAN-binary-upsignal.md) | MED | FIX | TODO |
-| 38 | Clean up placeholder rate system (after #37) | — | LOW | CLEAN | TODO |
+| 37 | Binary up signal logic | [PLAN](PLAN-binary-upsignal.md) | MED | FIX | DONE — `fe3f7fc` |
+| 38 | Clean up placeholder rate system (after #37) | — | LOW | CLEAN | DONE |
 | 40 | GitHub-based OTA firmware updates | [PLAN](PLAN-github-ota.md) | MED | FEAT | TODO |
 | 41 | Remote spacecraft data (fetch + cache from GitHub) | [PLAN](PLAN-remote-spacecraft-data.md) | HIGH | FEAT | TODO |
 | 42 | Full vs restricted spacecraft list setting | [PLAN](PLAN-remote-spacecraft-data.md) | MED | FEAT | TODO |
@@ -73,3 +73,5 @@ Items sourced from [codebase-analysis.md](codebase-analysis.md) and review findi
 | 1.1.0-1 | 2026-02-19 | Fixed 5 critical bugs (CQ1–CQ5). OTA WiFi flashing confirmed working. |
 | 1.1.0-2 | 2026-02-19 | Fixed 5 short-term code quality issues (CQ6–CQ11). Rewrote pool allocator to fix duplicates/leaks. Fixed display timer reset. Added boot banner color reset. |
 | 1.1.0-3 | 2026-02-19 | Performance optimizations: replaced std::map in termColor(), added 30 FPS frame limiter with heap/fragmentation diagnostics, eliminated LittleFS round-trip in data fetch. |
+| 1.1.0-11 | 2026-02-24 | Binary up signal detection (#37): simplified from rate-based to binary. Hoisted inline constants to file scope (meteorTimingTable, animationTypeCanSpiralTable, portalHeadHtml, maxHttpRetries). Removed redundant inner_leds_size and animationId variables. |
+| 1.1.0-12 | 2026-02-24 | Removed placeholder rate system (#38): deleted getPlaceholderRate(), spacecraftPlaceholderRatesJson (6KB), and all placeholder_rates.json file operations from SpacecraftData. |

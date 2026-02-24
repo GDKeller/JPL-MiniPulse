@@ -35,20 +35,15 @@ class SpacecraftData
     static void loadSpacecraftNamesFile();
     // static void loadSpacecraftBlacklistProgmem();
     static void loadSpacecraftBlacklistFile();
-    static void loadSpacecraftPlaceholderRatesFile();
-    // static void loadSpacecraftPlaceholderRatesProgmem();
-    
+
     static void createAndWriteNamesFile();
     static void createAndWriteBlacklistFile();
-    static void createAndWritePlaceholderRatesFile();
     static const char* callsignToName(const char* key);
     static bool checkBlacklist(const char* callsign);
-    static const char* getPlaceholderRate(const char* key);
 
     private:
     static DynamicJsonDocument spacecraftNamesJson;
     static DynamicJsonDocument spacecraftBlacklistJson;
-    static DynamicJsonDocument spacecraftPlaceholderRatesJson;
 };
 
 struct CraftQueueItem
@@ -96,17 +91,13 @@ struct CraftQueueItem
 //     void loadJson();
 //     // void loadSpacecraftNames();
 //     void loadSpacecraftNamesRaw();
-//     // void loadSpacecraftPlaceholderRates();
-//     void loadSpacecraftPlaceholderRatesRaw();
 //     // void loadSpacecraftBlacklist();
 //     void loadSpacecraftBlacklistRaw();
 //     const char* callsignToName(const char* key);
-//     const char* getPlaceholderRate(const char* key);
 //     bool checkBlacklist(const char* callsign);
 
 //     private:
 //     DynamicJsonDocument spacecraftNamesJson;
-//     DynamicJsonDocument spacecraftPlaceholderRatesJson;
 //     DynamicJsonDocument spacecraftBlacklistJson;
 // };
 
