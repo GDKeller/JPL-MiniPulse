@@ -16605,7 +16605,7 @@ ba668ea fix(deps): pin all library versions for reproducible builds
 ```
 </details></tool-use>
 
-_**Agent (claude-opus-4-6 2026-02-24 20:56:07Z)**_
+_**Agent (claude-opus-4-6 2026-02-24 20:57:46Z)**_
 
 <tool-use data-tool-type="shell" data-tool-name="Bash"><details>
 <summary>Tool use: **Bash**</summary>
@@ -16617,4 +16617,17 @@ docs: add v1.1.0 plans for GitHub OTA, remote spacecraft data, and backlog
 EOF
 )"
 ```
+
+```text
+[develop/1.1.0 80708ed] docs: add v1.1.0 plans for GitHub OTA, remote spacecraft data, and backlog
+ 6 files changed, 17679 insertions(+), 15 deletions(-)
+ create mode 100644 .specstory/history/2026-02-24_20-10-44Z-didnt-we-do-roadmap.md
+ create mode 100644 board/BACKLOG.md
+ create mode 100644 board/PLAN-github-ota.md
+ create mode 100644 board/PLAN-remote-spacecraft-data.md
+```
 </details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-02-24 20:57:50Z)**_
+
+Committed as `80708ed`. The CSV stays untracked.

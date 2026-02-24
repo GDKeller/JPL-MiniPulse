@@ -1,4 +1,4 @@
-const char* currentFirmwareVersion = "1.1.0-9"; // Current firmware version
+const char* currentFirmwareVersion = "1.1.0-10"; // Current firmware version
 
 #pragma region -- LIBRARIES
 #include <Arduino.h>		// Arduino core
@@ -375,6 +375,8 @@ const uint8_t offsetHalf = meteorOffset * 0.5;
 unsigned long dataFetchTimerMilliseconds = 0;
 
 #pragma endregion -- END TIMERS
+
+const unsigned int UP_SIGNAL_RATE_CLASS = 3; // Binary up signal: medium animation
 
 #pragma region -- LED HARDWARE CONFIG
 // Totaly number of pixels (diodes) in each strip
@@ -2181,39 +2183,28 @@ FoundSignals findSignals(XMLElement* xmlDish, CraftQueueItem* tempNewCraft) {
 		if (strcmp(spacecraft, tempNewCraft->callsign) != 0) continue;
 
 
+		// For up signals: binary detection (medium animation if data type found)
+		if (!isDown) {
+			tempNewCraft->upSignal = UP_SIGNAL_RATE_CLASS;
+			foundSignals.upSignal = UP_SIGNAL_RATE_CLASS;
+			continue;
+		}
+
+		// For down signals: keep existing rate-based logic
 		const char* rate = xmlSignal->Attribute("dataRate");
 		if (rate == nullptr) continue;
 
 		double rateDouble = stod(rate);
 		unsigned long rateLong = static_cast<unsigned long>(rateDouble);
 
-		// if (rateLong == 0) continue;
-		if (rateLong == 0) {
-			if (isDown) {
-				// if (showSerial)
-				// 	Serial.println("Downsignal rate is 0, skipping");
-				continue;
-			} else {
-				// if (showSerial)
-				// 	Serial.println("Upsignal rate is 0 - using placeholder");
-
-				const char* placeholderRate = SpacecraftData::getPlaceholderRate(tempNewCraft->callsign);
-				rateDouble = stod(placeholderRate);
-				rateLong = static_cast<unsigned long>(rateDouble);
-			}
-		}
+		if (rateLong == 0) continue;
 
 		unsigned int rateClass = rateLongToRateClass(rateLong);
 
 		if (rateClass == 0) continue;
 
-		if (isDown == true) {
-			tempNewCraft->downSignal = rateClass;
-			foundSignals.downSignal = rateClass;
-		} else if (isDown == false) {
-			tempNewCraft->upSignal = rateClass;
-			foundSignals.upSignal = rateClass;
-		}
+		tempNewCraft->downSignal = rateClass;
+		foundSignals.downSignal = rateClass;
 
 		if (tempNewCraft->downSignal != 0 && tempNewCraft->upSignal != 0) {
 			break;
