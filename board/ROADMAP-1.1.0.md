@@ -31,7 +31,7 @@ Items sourced from [codebase-analysis.md](codebase-analysis.md) and review findi
 | 11 | `colorTheme` global shadows config | CQ9 | LOW | FIX | DONE — `b4bae67` |
 | 12 | `firstStartupAnimation` logic inverted | CQ10 | LOW | FIX | DONE — `b4bae67`, `e446cb4` |
 | 13 | `strncpy` null-termination | CQ11 | LOW | FIX | DONE — `b4bae67` |
-| 14 | Pin dependency versions | S7 | LOW | SEC | TODO |
+| 14 | Pin dependency versions | S7 | LOW | SEC | DONE |
 | 15 | Portal input validation | S5 | MED | SEC | TODO |
 | 16 | `innerHTML` to `textContent` | S10 | LOW | SEC | TODO |
 | 39 | Add `.catch()` to firmware version fetch | RF4 | LOW | FIX | TODO |
