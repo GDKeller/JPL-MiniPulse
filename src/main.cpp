@@ -1,4 +1,4 @@
-const char* currentFirmwareVersion = "1.1.0-13"; // Current firmware version
+const char* currentFirmwareVersion = "1.1.0-14"; // Current firmware version
 
 #pragma region -- LIBRARIES
 #include <Arduino.h>		// Arduino core
@@ -2301,7 +2301,7 @@ FoundSignals findSignals(XMLElement* xmlDish, CraftQueueItem* tempNewCraft) {
 	return foundSignals;
 }
 
-void sendCrafToQueue(CraftQueueItem* newCraft) {
+void sendCraftToQueue(CraftQueueItem* newCraft) {
 
 	if (strlen(newCraft->name) != 0 && (newCraft->downSignal != 0 || newCraft->upSignal != 0)) {
 
@@ -2428,8 +2428,6 @@ void parseData(const char* payload)
 {
 	bool showSerial = FileUtils::config.debugUtils.showSerial;
 	feedWatchdog();
-	static bool semaphoreTaken = false;
-	
 	if (showSerial)
 		Serial.print("Data Parse attempts: " + String(parseCounter) + "\n");
 
@@ -2500,15 +2498,31 @@ void parseData(const char* payload)
 	XMLElement* timestamp = root->FirstChildElement("timestamp"); // Find XML timestamp element
 
 
-	/* Parse the XML file */
-	if (xSemaphoreTake(freeListMutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
-		semaphoreTaken = true;
-		printSemaphoreList();
-		if (freeListTop >= 0) {
-			CraftQueueItem tempNewCraft = {};
-			bool breakParseLoop = false;
+	/* Phase 1 — Brief lock: check pool availability (microseconds) */
+	CraftQueueItem tempNewCraft = {};
+	bool breakParseLoop = false;
+	bool craftValidated = false;
 
-			/* Loop through all XML elements */
+	if (xSemaphoreTake(freeListMutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
+		if (showSerial) printSemaphoreList();
+		bool poolAvailable = (freeListTop >= 0);
+		xSemaphoreGive(freeListMutex);
+		if (!poolAvailable) {
+			Serial.println("No free items in queue item pool");
+			feedWatchdog();
+			parseCounter++;
+			return;
+		}
+	} else {
+		Serial.println("Phase 1: freeListMutex timeout — parse cycle skipped");
+		feedWatchdog();
+		parseCounter++;
+		return;
+	}
+
+	/* Phase 2 — Parse loop (no lock held) */
+	{
+		/* Loop through all XML elements */
 			// 2 attempts at loop
 			for (int i = 0; i < 2; i++) {
 				// Serial.println("Parsing loop: " + String(i));
@@ -2764,38 +2778,25 @@ void parseData(const char* payload)
 
 
 								feedWatchdog();
-								CraftQueueItem* newCraft = assignValuesToCraftSemaphore(&tempNewCraft);
-
-
-								if (newCraft == nullptr) {
-									if (showSerial == true)
-										Serial.print("assignValuesToCraftSemaphore returned nullptr\n");
-									t++;
-									continue;
-								}
-
-								if (isValidCraftQueueItem(newCraft)) {
-									// SUCCESS - craft validated and sent to the queue
-									// The data fetching process is complete
-									sendCrafToQueue(newCraft);
-									
+								if (isValidCraftQueueItem(&tempNewCraft)) {
+									// SUCCESS — target validated, defer pool pop to Phase 3
+									craftValidated = true;
 									if (usingDummyData == true) {
 										if (parseCounter >= retryDataFetchLimit) {
 											parseCounter = 0;
-											breakParseLoop = true; // Break out of all loops
-											targetCount = 0; // Reset the global target counter
-											dishCount = 0; // Reset the global dish counter
-											stationCount = 0; // Reset the global station counter
+											breakParseLoop = true;
+											targetCount = 0;
+											dishCount = 0;
+											stationCount = 0;
 										}
 									} else {
-										parseCounter = 0;		
-										breakParseLoop = true; // Break out of all loops
-										targetCount = t; // Set the global target counter to the current target number
-										dishCount = d; // Set the global dish counter to the current dish number
-										stationCount = s; // Set the global station counter to the current station number
+										parseCounter = 0;
+										breakParseLoop = true;
+										targetCount = t;
+										dishCount = d;
+										stationCount = s;
 									}
 									feedWatchdog();
-
 									break;
 								} else {
 									if (showSerial == true)
@@ -2847,59 +2848,36 @@ void parseData(const char* payload)
 				}
 
 				catch (...) {
-					if (FileUtils::config.debugUtils.showSerial == true) {
-						Serial.print(DevUtils::termColor("red"));
-						Serial.println("Problem parsing payload:");
-						Serial.println(DevUtils::termColor("reset"));
-					}
+					Serial.println("Exception in parse loop");
 					dev.handleException();
+					feedWatchdog();
 					parseCounter++;
-					if (semaphoreTaken == true && freeListMutex != nullptr) {
-						xSemaphoreGive(freeListMutex);
-						semaphoreTaken = false;
-					}
 					return;
 				}
 
 				if (breakParseLoop == true) break;
 			} // End arbitary loop
+	} // End Phase 2 scope
 
-			incrementDataParseCounter();
-			if (semaphoreTaken == true && freeListMutex != nullptr) {
-				xSemaphoreGive(freeListMutex);
-				semaphoreTaken = false;
-			}
-
-			feedWatchdog();
-			parseCounter++;
-			return;
-
-		} else {
-			// There are no free items in the queue item pool
-			Serial.println("No free items in queue item pool");
-			if (semaphoreTaken == true && freeListMutex != nullptr) {
-				xSemaphoreGive(freeListMutex);
-				semaphoreTaken = false;
-			}
-
-			return;
-		}
-
-
-		if (semaphoreTaken == true && freeListMutex != nullptr) {
+	/* Phase 3 — Brief lock: pool pop + queue send (microseconds under lock) */
+	if (craftValidated) {
+		CraftQueueItem* newCraft = nullptr;
+		if (xSemaphoreTake(freeListMutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
+			newCraft = assignValuesToCraftSemaphore(&tempNewCraft);
 			xSemaphoreGive(freeListMutex);
-			semaphoreTaken = false;
+		} else {
+			Serial.println("Phase 3: freeListMutex timeout — validated craft lost");
 		}
-
-		if (FileUtils::config.debugUtils.showSerial == true)
-			Serial.print("Reached the end of logic for parse attempt: " + String(parseCounter) + "\n");
-		parseCounter++;
-
-		feedWatchdog();
-		return;
+		if (newCraft != nullptr) {
+			sendCraftToQueue(newCraft);
+		} else {
+			Serial.println("Pool allocation failed — validated craft lost");
+		}
 	}
-	// Serial.println("fetch done");
+
+	incrementDataParseCounter();
 	feedWatchdog();
+	parseCounter++;
 }
 
 void logOutput(const char* color, const String& message) {
