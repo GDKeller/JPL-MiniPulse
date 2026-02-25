@@ -29,9 +29,9 @@ Items sourced from [codebase-analysis.md](codebase-analysis.md) and review findi
 | 12 | `firstStartupAnimation` logic inverted | CQ10 | LOW | FIX | DONE — `b4bae67`, `e446cb4` |
 | 13 | `strncpy` null-termination | CQ11 | LOW | FIX | DONE — `b4bae67` |
 | 14 | Pin dependency versions | S7 | LOW | SEC | DONE |
-| 15 | Portal input validation | S5 | MED | SEC | TODO |
-| 16 | `innerHTML` to `textContent` | S10 | LOW | SEC | TODO |
-| 39 | Add `.catch()` to firmware version fetch | RF4 | LOW | FIX | Absorbed by #40 |
+| 15 | Portal input validation | S5 | MED | SEC | DONE (already secure) |
+| 16 | `innerHTML` to `textContent` | S10 | LOW | SEC | DONE (already uses textContent) |
+| 39 | Add `.catch()` to firmware version fetch | RF4 | LOW | FIX | DONE |
 | 18 | Eliminate LittleFS round-trip | P2 | MED | OPT | DONE — `3c57fcc` |
 | 19 | Add frame rate limiter | P3 | MED | OPT | DONE — `85870c9` |
 | 20 | Replace `std::map` in `termColor()` | P4 | MED | OPT | DONE — `7f74634` |

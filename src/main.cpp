@@ -376,6 +376,9 @@ const char* portalHeadHtml = R"---(
 					document.getElementById("firmwareStatus").textContent = text;
 					console.log(text);
 				})
+				.catch(function (error) {
+					console.error('Firmware version fetch failed:', error);
+				});
 
 				// Display device hostname at top of every page
 				fetch('/hostname')
@@ -390,6 +393,9 @@ const char* portalHeadHtml = R"---(
 					banner.appendChild(strong);
 					var container = document.querySelector('.wrap');
 					if (container) container.insertBefore(banner, container.firstChild);
+				})
+				.catch(function (error) {
+					console.error('Hostname fetch failed:', error);
 				});
 
 				// Rename "Setup" button to "Options" on portal home
