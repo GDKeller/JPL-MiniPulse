@@ -1,4 +1,4 @@
-const char* currentFirmwareVersion = "1.1.0-12"; // Current firmware version
+const char* currentFirmwareVersion = "1.1.0-13"; // Current firmware version
 
 #pragma region -- LIBRARIES
 #include <Arduino.h>		// Arduino core
@@ -371,8 +371,8 @@ const char* portalHeadHtml = R"---(
 				fetch('/get-latest-version-number')
 				.then(function (response) {
 					return response.text();
-				}).
-				then(function (text) {
+				})
+				.then(function (text) {
 					document.getElementById("firmwareStatus").textContent = text;
 					console.log(text);
 				})
@@ -429,7 +429,7 @@ const char* portalHeadHtml = R"---(
 					console.log("response:", text);
 				})
 				.catch(function (error) {
-					console.error(error);
+					console.error('Firmware update fetch failed:', error);
 				});
 			});
 			}); // DOMContentLoaded
@@ -3533,12 +3533,8 @@ void setup()
 	http.setReuse(true);	   // Use persistent connection
 	setupOtaUpdate();		   // Setup OTA update
 
-	SpacecraftData::loadJson();		   // Load JSON data for spacecraft lookup
-	// SpacecraftData::loadSpacecraftNamesProgmem(); // Load raw spacecraft names for lookup
-	// SpacecraftData::loadSpacecraftBlacklistRaw(); // Load raw spacecraft blacklist for lookup
-	// SpacecraftData::loadSpacecraftBlacklist();
+	SpacecraftData::loadJson();
 	delay(100);
-
 
 	/* Assign config to global state variables */
 	characterWidth = FileUtils::config.textTypography.characterWidth;

@@ -3,36 +3,23 @@
 DynamicJsonDocument SpacecraftData::spacecraftNamesJson(5120);
 DynamicJsonDocument SpacecraftData::spacecraftBlacklistJson(1024);
 
-
 void SpacecraftData::loadJson() {
-    Serial.println("Loading spacecraft data...");
-    SpacecraftData::loadSpacecraftNamesFile();
-    delay(100);
-    Serial.println("Loading spacecraft blacklist...");
-    SpacecraftData::loadSpacecraftBlacklistFile();
-    delay(100);
-};
+    Serial.println("Initializing spacecraft data...");
+    SpacecraftData::createAndWriteNamesFile();
+    SpacecraftData::createAndWriteBlacklistFile();
+}
 
-// Create and write spacecraft names file
 void SpacecraftData::createAndWriteNamesFile() {
-    if (LittleFS.exists("/spacecraft_data/names.json")) {
-        Serial.println("names.json already exists, overwriting...");
-    }
+    FileUtils::createDir("spacecraft_data");
 
-    // Open file for writing
     Serial.println("Opening names.json for writing...");
     File file = LittleFS.open("/spacecraft_data/names.json", "w");
-
     if (!file) {
         Serial.print(DevUtils::termColor("red") + "Failed trying to open names.json" + DevUtils::termColor("reset") + "\n");
         return;
     }
 
-    // Prep JSON buffer
-    Serial.println("Clearing global JSON document...");
     spacecraftNamesJson.clear();
-
-    // Add spacecraft data directly into the JSON object
     spacecraftNamesJson["ACE"] = "Advanced Composition Explorer";
     spacecraftNamesJson["PLC"] = "Akatsuki";
     spacecraftNamesJson["ARGO"] = "ArgoMoon";
@@ -115,101 +102,32 @@ void SpacecraftData::createAndWriteNamesFile() {
     spacecraftNamesJson["Rate5"] = "Test Rate 5";
     spacecraftNamesJson["Rate6"] = "Test Rate 6";
 
-
-    // Serialize JSON to file
-    Serial.println("Serializing JSON to file...");
     if (serializeJson(spacecraftNamesJson, file) == 0) {
         Serial.print(DevUtils::termColor("red") + "Failed to write to names.json" + DevUtils::termColor("reset") + "\n");
         return;
     }
 
-    // Close file
-    Serial.println("Closing names.json...");
     file.close();
     Serial.print(DevUtils::termColor("green") + "names.json created and written" + DevUtils::termColor("reset") + "\n");
-
-    // print all key value pairs
-    int craftCount = 0;
-    for (JsonPair kv : spacecraftNamesJson.as<JsonObject>()) {
-        craftCount++;
-        // Serial.print(String(kv.key().c_str()) + ": " + kv.value().as<String>() + "\n");
-    }
-    
-    char craftCountBuffer[128];
-    snprintf(
-        craftCountBuffer,
-        sizeof(craftCountBuffer),
-        "Known spacecraft: %d\n\n",
-        craftCount
-    );
-}
-
-// Load spacecraft Names
-void SpacecraftData::loadSpacecraftNamesFile()
-{
-    SpacecraftData::createAndWriteNamesFile();
-
-    Serial.println("Loading spacecraft names from filesystem...");
-
-    FileUtils::createDir("spacecraft_data");
-
-    // Open file for reading
-    Serial.println("Opening names.json for reading...");
-    File file = LittleFS.open("/spacecraft_data/names.json", "r");
-
-    if (!file) {
-        Serial.print(DevUtils::termColor("red") + "Failed trying to open names.json" + DevUtils::termColor("reset") + "\n");
-        return;
-    }
-
-    Serial.println("File \"names.json\" opened successfully");
-
-    size_t size = file.size();
-    if (size > 5120) {
-        Serial.print(DevUtils::termColor("red") + "names.json file size is too large" + DevUtils::termColor("reset") + "\n");
-        return;
-    }
-
-    Serial.println("Deserializing JSON from file...");
-    DeserializationError error = deserializeJson(spacecraftNamesJson, file);
-    file.close();
-    vTaskDelay(100); // Make sure the file is closed
-
-    if (error) {
-        Serial.print(DevUtils::termColor("red") + "Failed trying to deserialize names JSON with error: " + error.c_str() + DevUtils::termColor("reset") + "\n");
-        return;
-    }
-
-    Serial.print(DevUtils::termColor("green") + "Spacecraft names loaded" + DevUtils::termColor("reset") + "\n");
-    // Serial.print("\n");
 }
 
 void SpacecraftData::createAndWriteBlacklistFile() {
-    if (LittleFS.exists("/spacecraft_data/blacklist.json")) {
-        Serial.println("blacklist.json already exists, overwriting...");
-    }
+    FileUtils::createDir("spacecraft_data");
 
-    // Open file for writing
     Serial.println("Opening blacklist.json for writing...");
     File file = LittleFS.open("/spacecraft_data/blacklist.json", "w");
-
     if (!file) {
         Serial.print(DevUtils::termColor("red") + "Failed trying to open blacklist.json" + DevUtils::termColor("reset") + "\n");
         return;
     }
 
-    // Prep JSON buffer
-    Serial.println("Clearing global JSON document...");
     spacecraftBlacklistJson.clear();
 
-    // Add spacecraft data directly into the JSON object
     spacecraftBlacklistJson["TEST"] = true;
     spacecraftBlacklistJson["DSN"] = true;
     spacecraftBlacklistJson["RFC(VLBI)"] = true;
-    spacecraftBlacklistJson["GO19"];
+    spacecraftBlacklistJson["GO19"] = true;
 
-    // Serialize JSON to file
-    Serial.println("Serializing JSON to file...");
     if (serializeJson(spacecraftBlacklistJson, file) == 0) {
         Serial.print(DevUtils::termColor("red") + "Failed to write to blacklist.json" + DevUtils::termColor("reset") + "\n");
         return;
@@ -217,86 +135,11 @@ void SpacecraftData::createAndWriteBlacklistFile() {
 
     file.close();
     Serial.println(DevUtils::termColor("green") + "blacklist.json written" + DevUtils::termColor("reset") + "\n");
-
-    // print all key value pairs
-    for (JsonPair kv : spacecraftBlacklistJson.as<JsonObject>()) {
-        Serial.println(kv.key().c_str());
-    }
-
 }
-
-void SpacecraftData::loadSpacecraftBlacklistFile() {
-    SpacecraftData::createAndWriteBlacklistFile();
-    
-    Serial.println("Loading spacecraft blacklist from filesystem...");
-    
-    FileUtils::createDir("spacecraft_data");
-    
-
-    // Open file for reading
-    Serial.println("Opening blacklist.json for reading...");
-    File file = LittleFS.open("/spacecraft_data/blacklist.json", "r");
-
-    if (!file) {
-        Serial.print(DevUtils::termColor("red") + "Failed trying to open blacklist.json" + DevUtils::termColor("reset") + "\n");
-        return;
-    }
-
-    Serial.println("File \"blacklist.json\" opened successfully");
-
-    size_t size = file.size();
-    if (size > 1024) {
-        Serial.print(DevUtils::termColor("red") + "blacklist.json file size is too large" + DevUtils::termColor("reset") + "\n");
-        return;
-    }
-
-    Serial.println("Deserializing JSON...");
-    DeserializationError error = deserializeJson(spacecraftBlacklistJson, file);
-    file.close();
-
-    if (error) {
-        if (FileUtils::config.debugUtils.showSerial)
-            Serial.print(DevUtils::termColor("red") + "Failed trying to deserialize blacklist.json with error: " + error.c_str() + DevUtils::termColor("reset") + "\n");
-
-        return;
-    }
-
-    Serial.print(DevUtils::termColor("green") + "Spacecraft blacklist loaded" + DevUtils::termColor("reset") + "\n");
-    Serial.print("\n\n");
-}
-
-
-
-
 
 /* Check Name */
 const char* SpacecraftData::callsignToName(const char* key) {
     bool showSerial = FileUtils::config.debugUtils.showSerial;
-
-    // if (showSerial) {
-    //     Serial.print("\n\n------------------------------\n");
-    //     Serial.print("*  Spacecraft Names  *\n");
-    //     Serial.print("------------------------------\n");
-    // }
-    
-    // File jsonFile = LittleFS.open("/spacecraft_data/names.json", "r");
-
-    // if (jsonFile) {
-    //     if (showSerial)
-    //         Serial.println("File \"names.json\" opened");
-    // } else {
-    //     if (showSerial)
-    //         Serial.println(DevUtils::termColor("red") + "Failed to open names.json" + DevUtils::termColor("reset") + "\n");
-    // }
-    
-    // DeserializationError error = deserializeJson(spacecraftNamesJson, jsonFile);
-    // jsonFile.close();
-
-    // print every key in spacecraftNamesJson
-    // for (JsonPair kv : spacecraftNamesJson.as<JsonObject>()) {
-    //     Serial.println(String(kv.key().c_str()) + ": " + kv.value().as<String>());
-    //     // break;
-    // }
 
     if (showSerial) {
         char buffer[256];
@@ -326,16 +169,13 @@ const char* SpacecraftData::callsignToName(const char* key) {
     return key;
 }
 
-
 /* Check Blacklist */
 bool SpacecraftData::checkBlacklist(const char* key) {
     bool showSerial = FileUtils::config.debugUtils.showSerial;
     bool isBlacklisted = spacecraftBlacklistJson[key] != nullptr; // If the key is not null, it is blacklisted
 
     if (showSerial) {
-        char buffer[128]; // Size this appropriately for your expected output length
-        // const char* isBlacklistedString = isBlacklisted ? "TRUE" : "FALSE";
-
+        char buffer[128];
         if (isBlacklisted) {
             snprintf(
                 buffer,
@@ -351,12 +191,6 @@ bool SpacecraftData::checkBlacklist(const char* key) {
 
     return isBlacklisted;
 }
-
-
-
-
-
-
 
 
 // void SpacecraftData::loadSpacecraftNamesProgmem()

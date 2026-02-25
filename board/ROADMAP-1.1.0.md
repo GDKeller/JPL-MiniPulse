@@ -41,7 +41,7 @@ Items sourced from [codebase-analysis.md](codebase-analysis.md) and review findi
 | # | Issue | Ref | Risk | Type | Status |
 |---|-------|-----|------|------|--------|
 | 23 | Remove commented-out code | A5 | MED | CLEAN | TODO |
-| 24 | Fix SpacecraftData write-then-read | A3 | MED | OPT | TODO |
+| 24 | Fix SpacecraftData write-then-read | A3 | MED | OPT | DONE |
 | 25 | Reduce semaphore hold time | P5 | MED | OPT | TODO |
 | 27 | Optimize boot sequence | P7 | MED | OPT | TODO |
 | 29 | Serial output gating | S9 | LOW | CLEAN | TODO |
