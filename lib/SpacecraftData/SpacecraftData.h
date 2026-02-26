@@ -21,13 +21,16 @@
 class SpacecraftData
 {
     public:
-    static void loadJson();
-    static void createAndWriteNamesFile();
-    static void createAndWriteBlacklistFile();
+    static void loadJson(const char* firmwareVersion);
     static const char* callsignToName(const char* key);
     static bool checkBlacklist(const char* callsign);
 
     private:
+    static void populateNamesInMemory();
+    static void populateBlacklistInMemory();
+    static bool shouldWriteFiles(const char* firmwareVersion);
+    static void writeFilesToFlash(const char* firmwareVersion);
+
     static DynamicJsonDocument spacecraftNamesJson;
     static DynamicJsonDocument spacecraftBlacklistJson;
 };

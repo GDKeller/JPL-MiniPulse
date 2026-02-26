@@ -3485,7 +3485,7 @@ void setup()
 	// Start the web portal anyways for settings
 	Serial.print("Starting local WiFi access point for configuration...\n");
 
-	delay(1000); // Small delay to allow WiFi to connect
+	delay(250); // Brief stabilization for WiFi (WiFiManager has its own timeouts)
 
 	if (FileUtils::config.wifiNetwork.apSSID != nullptr && strcmp(FileUtils::config.wifiNetwork.apSSID, "") != 0) {
 		if (FileUtils::config.wifiNetwork.apPass != nullptr && strcmp(FileUtils::config.wifiNetwork.apPass, "") != 0) {
@@ -3500,7 +3500,7 @@ void setup()
 	}
 
 	feedWatchdog();
-	delay(1000); // Small delay to allow WiFi to connect
+	delay(250); // Brief stabilization for portal startup
 
 	const char* apPassword = FileUtils::config.wifiNetwork.apPass;
 	DevUtils::SerialBanners::printWiFiConfigBanner(apPassword, wm); // Display Wifi config portal connection info
@@ -3511,15 +3511,12 @@ void setup()
 	http.setReuse(true);	   // Use persistent connection
 	setupOtaUpdate();		   // Setup OTA update
 
-	SpacecraftData::loadJson();
-	delay(100);
+	SpacecraftData::loadJson(currentFirmwareVersion);
 
 	/* Assign config to global state variables */
 	characterWidth = FileUtils::config.textTypography.characterWidth;
 
 	setColorTheme(FileUtils::config.miscellaneous.colorTheme); // Set color theme
-	// drawBottomPixels();		   // Draw initial bottom pixels
-	delay(100);				   // Small delay to allow bottom pixels to draw
 	feedWatchdog();
 
 	/* DATA TASK SETUP */
@@ -3561,7 +3558,7 @@ void setup()
 	esp_task_wdt_init(60, true); // Enable watchdog timer with 60 second timeout
 	// updateFirmwareOta(); // Check for OTA update
 	feedWatchdog();
-	delay(1000);
+	delay(100);
 
 }
 
