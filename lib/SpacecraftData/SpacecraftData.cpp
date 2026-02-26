@@ -78,6 +78,7 @@ void SpacecraftData::populateNamesInMemory() {
     spacecraftNamesJson["VGR1"] = "Voyager 1";
     spacecraftNamesJson["VGR2"] = "Voyager 2";
     spacecraftNamesJson["WIND"] = "Wind";
+    spacecraftNamesJson["SWFO"] = "SOLAR 1";
     spacecraftNamesJson["XMM"] = "XMM Newton";
     spacecraftNamesJson["ATOT"] = "Advanced Tracking and Observational Techniques";
     spacecraftNamesJson["EGS"] = "EVN and Global Sevices";
