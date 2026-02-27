@@ -1,4 +1,4 @@
-const char* currentFirmwareVersion = "1.1.0-15"; // Current firmware version
+const char* currentFirmwareVersion = "1.1.0-16"; // Current firmware version
 
 #pragma region -- LIBRARIES
 #include <Arduino.h>		// Arduino core
@@ -552,7 +552,6 @@ void printCraftInfo(uint listPosition, const char* callsign, const char* name, u
 	if (!FileUtils::config.debugUtils.showSerial) return;
 
 	char buffer[256];
-	// Serial.print()
 	if (callsign == nullptr || name == nullptr) {
 		snprintf(
 			buffer,
@@ -560,6 +559,7 @@ void printCraftInfo(uint listPosition, const char* callsign, const char* name, u
 			"ITEM #%u: Invalid\n",
 			listPosition
 		);
+		Serial.print(buffer);
 		return;
 	}
 
@@ -721,6 +721,7 @@ void freeSemaphoreItem(CraftQueueItem*& infoBuffer) {
 			MAX_ITEMS,
 			DevUtils::termColor("reset")
 		);
+		if (FileUtils::config.debugUtils.showSerial) Serial.print(semaphoreStatusMessage);
 		infoBuffer = nullptr;
 
 		if (freeListMutex != nullptr) {
