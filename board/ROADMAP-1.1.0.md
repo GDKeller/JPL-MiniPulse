@@ -44,7 +44,7 @@ Items sourced from [codebase-analysis.md](codebase-analysis.md) and review findi
 | 24 | Fix SpacecraftData write-then-read | A3 | MED | OPT | DONE |
 | 25 | Reduce semaphore hold time | P5 | MED | OPT | DONE |
 | 27 | Optimize boot sequence | P7 | MED | OPT | DONE |
-| 29 | Serial output gating | S9 | LOW | CLEAN | TODO |
+| 29 | Serial output gating | S9 | LOW | CLEAN | DONE |
 
 ## Long-Term — Future Releases
 

@@ -365,23 +365,23 @@ static int letterSpacing = 9;
 */
 
 void update_started() {
-	Serial.println("CALLBACK:  HTTP update process started");
+	if (FileUtils::config.debugUtils.showSerial) Serial.println("CALLBACK:  HTTP update process started");
 }
 
 void update_finished() {
-	Serial.println("CALLBACK:  HTTP update process finished");
+	if (FileUtils::config.debugUtils.showSerial) Serial.println("CALLBACK:  HTTP update process finished");
 }
 
 void update_progress(int cur, int total) {
-	Serial.printf("CALLBACK:  HTTP update process at %d of %d bytes...\n", cur, total);
+	if (FileUtils::config.debugUtils.showSerial) Serial.printf("CALLBACK:  HTTP update process at %d of %d bytes...\n", cur, total);
 }
 
 void update_error(int err) {
-	Serial.printf("CALLBACK:  HTTP update fatal error code %d\n", err);
+	if (FileUtils::config.debugUtils.showSerial) Serial.printf("CALLBACK:  HTTP update fatal error code %d\n", err);
 }
 
 void setupOtaUpdate() {
-	Serial.println("Setting up OTA update...");
+	if (FileUtils::config.debugUtils.showSerial) Serial.println("Setting up OTA update...");
 	httpUpdate.onStart(update_started);
 	httpUpdate.onEnd(update_finished);
 	httpUpdate.onProgress(update_progress);
@@ -402,7 +402,7 @@ const char* getRemoteFirmwareVersion() {
 		if (showSerial) Serial.println("Remote version: " + latestVersion);
 		strncpy(buffer, latestVersion.c_str(), sizeof(buffer) - 1);
 	} else {
-		Serial.println("Failed to fetch remote version");
+		if (showSerial) Serial.println("Failed to fetch remote version");
 		buffer[0] = '\0';
 	}
 
@@ -468,7 +468,7 @@ void updateFirmwareOta() {
 	}
 
 	offset += snprintf(buffer + offset, sizeof(buffer) - offset, "OTA update complete\n--------\n\n");
-	Serial.print(buffer);
+	if (FileUtils::config.debugUtils.showSerial) Serial.print(buffer);
 }
 
 #pragma region -- ANIMATION UTILITIES
@@ -515,6 +515,7 @@ void feedWatchdog() {
 
 void printMeteorArray()
 {
+	if (!FileUtils::config.debugUtils.showSerial) return;
 
 	String printString = "\n---------------[ METEOR ARRAY ]---------------\n";
 
@@ -548,6 +549,8 @@ void printMeteorArray()
 
 void printCraftInfo(uint listPosition, const char* callsign, const char* name, uint nameLength, uint downSignal, uint upSignal)
 {
+	if (!FileUtils::config.debugUtils.showSerial) return;
+
 	char buffer[256];
 	// Serial.print()
 	if (callsign == nullptr || name == nullptr) {
@@ -594,6 +597,8 @@ String returnCraftInfo(uint listPosition, const char* callsign, const char* name
 }
 
 void printCurrentQueue(QueueHandle_t queue) {
+	if (!FileUtils::config.debugUtils.showSerial) return;
+
 	char buffer[1024]; // Create a buffer to hold the serial output
 	snprintf(
 		buffer,
@@ -655,6 +660,8 @@ void printCurrentQueue(QueueHandle_t queue) {
 }
 
 void printCurrentCraftBuffer() {
+	if (!FileUtils::config.debugUtils.showSerial) return;
+
 	Serial.print(
 		DevUtils::termColor("blue") +
 		"============= CURRENT DATA BUFFER =============" + DevUtils::termColor("reset") +
@@ -695,7 +702,7 @@ void freeSemaphoreItem(CraftQueueItem*& infoBuffer) {
 	if (xSemaphoreTake(freeListMutex, pdMS_TO_TICKS(500)) == pdTRUE) {
 
 		if (freeListTop + 1 >= MAX_ITEMS) {
-			Serial.println("Error: free list is full, cannot return item");
+			if (FileUtils::config.debugUtils.showSerial) Serial.println("Error: free list is full, cannot return item");
 			xSemaphoreGive(freeListMutex);
 			return;
 		}
@@ -734,7 +741,7 @@ void doWiFiManager()
 		if (portalActive) {
 			wm.process(); // do processing
 		} else {
-			Serial.print("\n\n----------STARTING CONFIG PORTAL\n\n");
+			if (FileUtils::config.debugUtils.showSerial) Serial.print("\n\n----------STARTING CONFIG PORTAL\n\n");
 			wm.setConfigPortalBlocking(false);
 			wm.startConfigPortal(FileUtils::config.wifiNetwork.apSSID, FileUtils::config.wifiNetwork.apPass);
 			portalRunning = true;
@@ -744,7 +751,7 @@ void doWiFiManager()
 		// Force Wifi portal when WiFi reset button is pressed
 		if (digitalRead(WIFI_RST) == LOW) {
 			if (!portalRunning) {
-				Serial.println("Button Pressed: Starting Config Portal");
+				if (FileUtils::config.debugUtils.showSerial) Serial.println("Button Pressed: Starting Config Portal");
 				wm.setConfigPortalBlocking(false);
 				wm.startConfigPortal(FileUtils::config.wifiNetwork.apSSID, FileUtils::config.wifiNetwork.apPass);
 				portalRunning = true;
@@ -759,22 +766,26 @@ void doWiFiManager()
 		}
 	}
 	catch (...) {
-		Serial.println("Error: doWiFiManager() failed");
-		dev.handleException();
+		if (FileUtils::config.debugUtils.showSerial) {
+			Serial.println("Error: doWiFiManager() failed");
+			dev.handleException();
+		}
 	}
 }
 
 void configPortalCallback() {
-	Serial.print(
-		"\n" +
-		DevUtils::termColor("green") +
-		"[CALLBACK] configPortalCallback fired" +
-		DevUtils::termColor("reset") + "\n\n");
+	if (FileUtils::config.debugUtils.showSerial)
+		Serial.print(
+			"\n" +
+			DevUtils::termColor("green") +
+			"[CALLBACK] configPortalCallback fired" +
+			DevUtils::termColor("reset") + "\n\n");
 	portalRunning = true;
 }
 
 void webServerCallback() {
-	Serial.print("\n" + DevUtils::termColor("blue") + "Web server started" + DevUtils::termColor("reset") + "\n\n");
+	if (FileUtils::config.debugUtils.showSerial)
+		Serial.print("\n" + DevUtils::termColor("blue") + "Web server started" + DevUtils::termColor("reset") + "\n\n");
 	portalRunning = true;
 
 	wm.server->on("/get-remote-version-number", HTTP_GET, []() {
@@ -879,81 +890,83 @@ String getParam(String name)
 }
 
 void saveParamsCallback() {
-	Serial.print("\n\n<--------- PORTAL FORM SUBMITTED --------->\n\n");
+	bool showSerial = FileUtils::config.debugUtils.showSerial;
+
+	if (showSerial) Serial.print("\n\n<--------- PORTAL FORM SUBMITTED --------->\n\n");
 
 	/* SHOW SERIAL - Set serial show config key from input */
 	// Get input value
 	String showSerialValue = getParam("show_serial");
-	Serial.print("---\nshow_serial input: " + showSerialValue + "\n");
+	if (showSerial) Serial.print("---\nshow_serial input: " + showSerialValue + "\n");
 
 	// Treat any non-empty, non-"0" value as true (handles "1", "on", etc.)
 	bool showSerialValueBool = (showSerialValue.length() > 0 && showSerialValue != "0");
-	Serial.print("show serial bool: " + String(showSerialValueBool) + "\n");
+	if (showSerial) Serial.print("show serial bool: " + String(showSerialValueBool) + "\n");
 
 	// Set program config
-	Serial.print("Previous config showSerial: " + String(FileUtils::config.debugUtils.showSerial) + "\n");
+	if (showSerial) Serial.print("Previous config showSerial: " + String(FileUtils::config.debugUtils.showSerial) + "\n");
 	FileUtils::config.debugUtils.showSerial = showSerialValueBool;
-	Serial.print("New config showSerial: " + String(FileUtils::config.debugUtils.showSerial) + "\n");
+	if (showSerial) Serial.print("New config showSerial: " + String(FileUtils::config.debugUtils.showSerial) + "\n");
 
 	// wm.setDebugOutput(showSerialValueBool); // Turn on/off WiFiManager debug output
 
 	// Set file config
 	FileUtils::writeConfigFileBool("showSerial", FileUtils::config.debugUtils.showSerial);
 	FileUtils::readFile("/config.json");
-	Serial.println();
+	if (showSerial) Serial.println();
 
 
 	/* SHOW DIAGNOSTICS - Set show diagnostics config key from input */
 	// Get input value
 	String showDiagnosticsValue = getParam("show_diagnostics");
-	Serial.print("---\nshow_diagnostics input: " + showDiagnosticsValue + "\n");
+	if (showSerial) Serial.print("---\nshow_diagnostics input: " + showDiagnosticsValue + "\n");
 
 	// Treat any non-empty, non-"0" value as true (handles "1", "on", etc.)
 	bool showDiagnosticsValueBool = (showDiagnosticsValue.length() > 0 && showDiagnosticsValue != "0");
-	Serial.print("show diagnostics bool: " + String(showDiagnosticsValueBool) + "\n");
+	if (showSerial) Serial.print("show diagnostics bool: " + String(showDiagnosticsValueBool) + "\n");
 
 	// Set program config
-	Serial.print("Previous config showDiagnostics: " + String(FileUtils::config.debugUtils.diagMeasure) + "\n");
+	if (showSerial) Serial.print("Previous config showDiagnostics: " + String(FileUtils::config.debugUtils.diagMeasure) + "\n");
 	FileUtils::config.debugUtils.diagMeasure = showDiagnosticsValueBool;
-	Serial.print("New config showDiagnostics: " + String(FileUtils::config.debugUtils.diagMeasure) + "\n");
+	if (showSerial) Serial.print("New config showDiagnostics: " + String(FileUtils::config.debugUtils.diagMeasure) + "\n");
 
 	// Set file config
 	FileUtils::writeConfigFileBool("diagMeasure", FileUtils::config.debugUtils.diagMeasure);
 	FileUtils::readFile("/config.json");
-	Serial.println();
+	if (showSerial) Serial.println();
 
 
 	/* FORCE ANIMATION TYPE - Set enabled flag and animation type from input */
 	// Get checkbox value
 	String forceAnimationEnabledValue = getParam("force_animation_enabled");
-	Serial.print("---\nforce_animation_enabled input: " + forceAnimationEnabledValue + "\n");
+	if (showSerial) Serial.print("---\nforce_animation_enabled input: " + forceAnimationEnabledValue + "\n");
 	forceAnimationType = (forceAnimationEnabledValue.length() > 0 && forceAnimationEnabledValue != "0");
-	Serial.println("forceAnimationType enabled: " + String(forceAnimationType));
+	if (showSerial) Serial.println("forceAnimationType enabled: " + String(forceAnimationType));
 
 	// Get number value
 	String forcedAnimationTypeValue = getParam("force_animation_type");
-	Serial.print("force_animation_type input: " + forcedAnimationTypeValue + "\n");
-	Serial.println("Previous forcedAnimationType: " + String(animate.forcedAnimationType));
+	if (showSerial) Serial.print("force_animation_type input: " + forcedAnimationTypeValue + "\n");
+	if (showSerial) Serial.println("Previous forcedAnimationType: " + String(animate.forcedAnimationType));
 	char* endPtr;
 	long rawAnimType = strtol(forcedAnimationTypeValue.c_str(), &endPtr, 10);
 	if (*endPtr != '\0') {
-		Serial.println("WARNING: force_animation_type parse failed, keeping previous value");
+		if (showSerial) Serial.println("WARNING: force_animation_type parse failed, keeping previous value");
 	} else {
 		animate.forcedAnimationType = (rawAnimType < 1) ? 1 : (rawAnimType > 5) ? 5 : (int)rawAnimType;
 	}
-	Serial.println("New forcedAnimationType: " + String(animate.forcedAnimationType));
+	if (showSerial) Serial.println("New forcedAnimationType: " + String(animate.forcedAnimationType));
 
 
 	/* BRIGHTNESS - Set brightness config key from input */
 	// Get input value
 	String brightnessValue = getParam("brightness");
-	Serial.print("---\nbrightness input: " + brightnessValue + "\n");
+	if (showSerial) Serial.print("---\nbrightness input: " + brightnessValue + "\n");
 
 	// Convert to int and clamp to 0-100% range
 	char* brightnessEndPtr;
 	long rawBrightness = strtol(brightnessValue.c_str(), &brightnessEndPtr, 10);
 	if (*brightnessEndPtr != '\0') {
-		Serial.println("WARNING: brightness parse failed, defaulting to 50%");
+		if (showSerial) Serial.println("WARNING: brightness parse failed, defaulting to 50%");
 		rawBrightness = 50;
 	}
 	int brightnessInt = (rawBrightness < 0) ? 0 : (rawBrightness > 100) ? 100 : (int)rawBrightness;
@@ -962,14 +975,14 @@ void saveParamsCallback() {
 	int brightnessMapped = MathHelpers::map(brightnessInt, 0, 100, 8, 160);
 
 	// Set program config (store hardware value)
-	Serial.print("Previous config brightness: " + String(FileUtils::config.displayLED.brightness) + "\n");
+	if (showSerial) Serial.print("Previous config brightness: " + String(FileUtils::config.displayLED.brightness) + "\n");
 	FileUtils::config.displayLED.brightness = brightnessMapped;
-	Serial.print("New config brightness: " + String(FileUtils::config.displayLED.brightness) + "\n");
+	if (showSerial) Serial.print("New config brightness: " + String(FileUtils::config.displayLED.brightness) + "\n");
 
 	// Set file config
 	FileUtils::writeConfigFileInt("brightness", FileUtils::config.displayLED.brightness);
 	FileUtils::readFile("/config.json");
-	Serial.print("\n");
+	if (showSerial) Serial.print("\n");
 
 	// Apply to LEDs
 	setGlobalBrightness(FileUtils::config.displayLED.brightness);
@@ -978,20 +991,20 @@ void saveParamsCallback() {
 	/* FORCE DUMMY DATA - Set forceDummyData config key from input */
 	// Get input value
 	String forceDummyDataInputValue = getParam("force_dummy_data");
-	Serial.print("---\nforceDummyData input: " + forceDummyDataInputValue + "\n");
+	if (showSerial) Serial.print("---\nforceDummyData input: " + forceDummyDataInputValue + "\n");
 
 	// Treat any non-empty, non-"0" value as true (handles "1", "on", etc.)
 	int forceDummyDataInt = (forceDummyDataInputValue.length() > 0 && forceDummyDataInputValue != "0") ? 1 : 0;
 
 	// Set program config
-	Serial.print("Previous config forceDummyData: " + String(FileUtils::config.wifiNetwork.forceDummyData) + "\n");
+	if (showSerial) Serial.print("Previous config forceDummyData: " + String(FileUtils::config.wifiNetwork.forceDummyData) + "\n");
 	FileUtils::config.wifiNetwork.forceDummyData = forceDummyDataInt;
-	Serial.print("New config forceDummyData: " + String(FileUtils::config.wifiNetwork.forceDummyData) + "\n");
+	if (showSerial) Serial.print("New config forceDummyData: " + String(FileUtils::config.wifiNetwork.forceDummyData) + "\n");
 
 	// Set file config
 	FileUtils::writeConfigFileBool("forceDummyData", FileUtils::config.wifiNetwork.forceDummyData);
 	FileUtils::readFile("/config.json");
-	Serial.println();
+	if (showSerial) Serial.println();
 
 	// Set forceDummyData
 	forceDummyData = FileUtils::config.wifiNetwork.forceDummyData;
@@ -1013,7 +1026,7 @@ void saveParamsCallback() {
 	param_force_animation_type.~WiFiManagerParameter();
 	new (&param_force_animation_type) WiFiManagerParameter("force_animation_type", "Animation Type (1-5)", String(animate.forcedAnimationType).c_str(), 1, "type='number' min='1' max='5' step='1'");
 
-	Serial.print("\n<--------- END PORTAL FORM CALLBACK --------->\n\n");
+	if (showSerial) Serial.print("\n<--------- END PORTAL FORM CALLBACK --------->\n\n");
 }
 
 #pragma endregion -- END WIFIMANAGER HANDLING
@@ -1084,7 +1097,7 @@ void doLetterRegions(char theLetter, int regionStart, int startingPixel)
 	// Check if characterWidth is zero, if so, return from the function to avoid division by zero
 	if (characterWidth == 0) {
 		characterWidth = 5;
-		Serial.println("Error: characterWidth is zero - setting to 5");
+		if (FileUtils::config.debugUtils.showSerial) Serial.println("Error: characterWidth is zero - setting to 5");
 		// return;
 	}
 
@@ -2334,16 +2347,18 @@ void parseData(const char* payload)
 				DevUtils::termColor("reset")
 			);
 			Serial.print(xmlErrorBuffer);
+			dev.handleException();
 		}
-		dev.handleException();
 		return;
 	}
 
 	/* Find XML elements */
 	XMLNode* root = xmlDocument.RootElement();
 	if (!root) {
-		if (showSerial) Serial.println("XML has no root element");
-		dev.handleException();
+		if (showSerial) {
+			Serial.println("XML has no root element");
+			dev.handleException();
+		}
 		return;
 	}
 	XMLElement* timestamp = root->FirstChildElement("timestamp");
@@ -2359,13 +2374,13 @@ void parseData(const char* payload)
 		bool poolAvailable = (freeListTop >= 0);
 		xSemaphoreGive(freeListMutex);
 		if (!poolAvailable) {
-			Serial.println("No free items in queue item pool");
+			if (showSerial) Serial.println("No free items in queue item pool");
 			feedWatchdog();
 			parseCounter++;
 			return;
 		}
 	} else {
-		Serial.println("Phase 1: freeListMutex timeout — parse cycle skipped");
+		if (showSerial) Serial.println("Phase 1: freeListMutex timeout — parse cycle skipped");
 		feedWatchdog();
 		parseCounter++;
 		return;
@@ -2699,8 +2714,10 @@ void parseData(const char* payload)
 				}
 
 				catch (...) {
-					Serial.println("Exception in parse loop");
-					dev.handleException();
+					if (showSerial) {
+						Serial.println("Exception in parse loop");
+						dev.handleException();
+					}
 					feedWatchdog();
 					parseCounter++;
 					return;
@@ -2717,12 +2734,12 @@ void parseData(const char* payload)
 			newCraft = assignValuesToCraftSemaphore(&tempNewCraft);
 			xSemaphoreGive(freeListMutex);
 		} else {
-			Serial.println("Phase 3: freeListMutex timeout — validated craft lost");
+			if (showSerial) Serial.println("Phase 3: freeListMutex timeout — validated craft lost");
 		}
 		if (newCraft != nullptr) {
 			sendCraftToQueue(newCraft);
 		} else {
-			Serial.println("Pool allocation failed — validated craft lost");
+			if (showSerial) Serial.println("Pool allocation failed — validated craft lost");
 		}
 	}
 
@@ -2786,8 +2803,10 @@ char* generateFetchUrl() {
 		}
 	}
 	catch (...) {
-		Serial.println("Error: generateFetchUrl() failed");
-		dev.handleException();
+		if (FileUtils::config.debugUtils.showSerial) {
+			Serial.println("Error: generateFetchUrl() failed");
+			dev.handleException();
+		}
 	}
 	return fetchUrl;
 }
@@ -2808,8 +2827,10 @@ bool handleHttpResponse(uint16_t httpResponseCode) {
 			return true;
 		}
 		catch (...) {
-			Serial.println("Error: handleHttpResponse() failed");
-			dev.handleException();
+			if (FileUtils::config.debugUtils.showSerial) {
+				Serial.println("Error: handleHttpResponse() failed");
+				dev.handleException();
+			}
 			return false;
 		}
 	}
@@ -2857,7 +2878,7 @@ bool fetchHTTPData(const String& url, char* buffer, size_t bufferSize) {
 					String res = http.getString();
 
 					if (res == nullptr or res.length() == 0 or res == "") {
-						Serial.print("Error: API response is empty\n");
+						if (showSerial) Serial.print("Error: API response is empty\n");
 						http.end();
 						return false;
 					}
@@ -2878,7 +2899,7 @@ bool fetchHTTPData(const String& url, char* buffer, size_t bufferSize) {
 						Serial.println("[fetchHTTPData] XML data copied to buffer (" + String(res.length()) + " bytes)");
 				}
 				catch (...) {
-					Serial.print("Error getting string from API response\n");
+					if (showSerial) Serial.print("Error getting string from API response\n");
 					http.end();
 					return false;
 				}
@@ -2892,8 +2913,10 @@ bool fetchHTTPData(const String& url, char* buffer, size_t bufferSize) {
 			}
 		}
 		catch (...) {
-			Serial.println("Error: fetchHTTPData() failed");
-			dev.handleException();
+			if (showSerial) {
+				Serial.println("Error: fetchHTTPData() failed");
+				dev.handleException();
+			}
 			http.end();
 			vTaskDelay(pdMS_TO_TICKS(100));
 		}
@@ -2908,7 +2931,7 @@ void fetchData() {
 
 	const bool showSerial = FileUtils::config.debugUtils.showSerial;
 
-	if (FileUtils::config.debugUtils.testCores == true) {
+	if (showSerial && FileUtils::config.debugUtils.testCores == true) {
 		Serial.print("fetchData() running on core " + String(xPortGetCoreID()) + "\n\n");
 	}
 
@@ -3046,12 +3069,12 @@ void fetchData() {
 	feedWatchdog();
 
 	if (!isWiFiConnected() && wm.getWiFiIsSaved() == true) {
-		Serial.print("Trying to reconnect to WiFi \"" + String(wm.getWiFiSSID()) + "\"\n");
+		if (showSerial) Serial.print("Trying to reconnect to WiFi \"" + String(wm.getWiFiSSID()) + "\"\n");
 
 		bool res = wm.autoConnect(FileUtils::config.wifiNetwork.apSSID, FileUtils::config.wifiNetwork.apPass);
 
 		if (!res) { // Wifi connection failed
-			Serial.print(
+			if (showSerial) Serial.print(
 				DevUtils::termColor("red") +
 				"Failed to reconnect to WiFi" +
 				DevUtils::termColor("reset"));
@@ -3067,7 +3090,7 @@ void fetchData() {
 				connectedNetwork != nullptr ? connectedNetwork : "NULL",
 				DevUtils::termColor("reset")
 			);
-			Serial.print(successStringBuffer);
+			if (showSerial) Serial.print(successStringBuffer);
 			MDNS.begin(mdnsHostname); // Restart mDNS after reconnect
 		}
 	}
@@ -3111,8 +3134,10 @@ void getData(void* parameter) {
 			}
 		}
 		catch (...) {
-			Serial.println("Error: getData() failed");
-			dev.handleException();
+			if (FileUtils::config.debugUtils.showSerial) {
+				Serial.println("Error: getData() failed");
+				dev.handleException();
+			}
 		}
 
 		vTaskDelay(pdMS_TO_TICKS(100)); // delay for 100 milliseconds to allow other tasks to run
@@ -3156,19 +3181,23 @@ void setup()
 		Serial.print("└────────────────────────────────┘\n\n");
 
 		FileUtils::initConfigFile();
-		Serial.print("Config loaded\n\n");
-		FileUtils::printAllConfigFileKeys();
+		bool showSerial = FileUtils::config.debugUtils.showSerial;
+		if (showSerial) Serial.print("Config loaded\n\n");
+		if (showSerial) FileUtils::printAllConfigFileKeys();
 
 		// if (FileUtils::config.wifiNetwork.apPass != nullptr) {
 		// 	Serial.print("password: " + String(FileUtils::config.wifiNetwork.apPass) + "\n");
 		// } else {
 		// 	Serial.print("password: NULL\n");
 		// }
-		Serial.print("serverName: " + String(FileUtils::config.wifiNetwork.serverName) + "\n\n");
+		if (showSerial) Serial.print("serverName: " + String(FileUtils::config.wifiNetwork.serverName) + "\n\n");
 	} else {
 		Serial.println("An Error has occurred while mounting LittleFS filesystem");
 		Serial.println("Using default config, settings will not be saved");
 	}
+
+	// showSerial is now available for the rest of setup()
+	const bool setupShowSerial = FileUtils::config.debugUtils.showSerial;
 
 	// Reset settings - wipe stored credentials for testing
 	// wm.resetSettings();
@@ -3181,7 +3210,7 @@ void setup()
 	wm.setDebugOutput(false);
 	Serial.setDebugOutput(false);
 
-	if (FileUtils::config.debugUtils.testCores == true) {
+	if (setupShowSerial && FileUtils::config.debugUtils.testCores == true) {
 		Serial.print("setup() running on core " + String(xPortGetCoreID()) + "\n\n");
 	}
 
@@ -3296,7 +3325,7 @@ void setup()
 		"Existing WiFi credentials: %s\n",
 		wm.getWiFiIsSaved() ? "TRUE" : "FALSE"
 	);
-	Serial.print(existingWifiBuffer);
+	if (setupShowSerial) Serial.print(existingWifiBuffer);
 
 	if (wm.getWiFiIsSaved() == true) {
 		char ssidBuffer[256];
@@ -3306,7 +3335,7 @@ void setup()
 			"Connecting to WiFi network %s...\n",
 			wm.getWiFiSSID().c_str()
 		);
-		Serial.print(ssidBuffer);
+		if (setupShowSerial) Serial.print(ssidBuffer);
 
 		bool res;
 		res = wm.autoConnect(FileUtils::config.wifiNetwork.apSSID, FileUtils::config.wifiNetwork.apPass);
@@ -3315,7 +3344,7 @@ void setup()
 		{
 			char failureStringBuffer[256];
 			snprintf(failureStringBuffer, sizeof(failureStringBuffer), "%sFailed to connect to WiFi%s\n", DevUtils::termColor("red"), DevUtils::termColor("reset"));
-			Serial.print(failureStringBuffer);
+			if (setupShowSerial) Serial.print(failureStringBuffer);
 		} else // Wifi connection successful
 		{
 			String deviceIP = WiFi.localIP().toString();
@@ -3330,23 +3359,23 @@ void setup()
 				deviceIP != nullptr ? deviceIP : "NULL",
 				deviceLocalWifi != nullptr ? deviceLocalWifi : "NULL"
 			);
-			Serial.print(successStringBuffer);
+			if (setupShowSerial) Serial.print(successStringBuffer);
 		}
 
 	} else {
-		Serial.print("Use the WiFi access portal for configuration\n\n");
+		if (setupShowSerial) Serial.print("Use the WiFi access portal for configuration\n\n");
 	}
-	Serial.print("WiFi Status: " + wm.getWLStatusString() + "\n\n");
+	if (setupShowSerial) Serial.print("WiFi Status: " + wm.getWLStatusString() + "\n\n");
 
 	// Start mDNS responder so device is reachable at <hostname>.local
 	if (MDNS.begin(mdnsHostname)) {
-		Serial.printf("mDNS responder started: http://%s.local\n", mdnsHostname);
+		if (setupShowSerial) Serial.printf("mDNS responder started: http://%s.local\n", mdnsHostname);
 	} else {
-		Serial.println("WARNING: mDNS responder failed to start");
+		if (setupShowSerial) Serial.println("WARNING: mDNS responder failed to start");
 	}
 
 	// Start the web portal anyways for settings
-	Serial.print("Starting local WiFi access point for configuration...\n");
+	if (setupShowSerial) Serial.print("Starting local WiFi access point for configuration...\n");
 
 	delay(250); // Brief stabilization for WiFi (WiFiManager has its own timeouts)
 
@@ -3358,15 +3387,17 @@ void setup()
 			wm.startConfigPortal(FileUtils::config.wifiNetwork.apSSID);
 		}
 	} else {
-		Serial.print("No SSID set for access point\n");
+		if (setupShowSerial) Serial.print("No SSID set for access point\n");
 		wm.startConfigPortal();
 	}
 
 	feedWatchdog();
 	delay(250); // Brief stabilization for portal startup
 
-	const char* apPassword = FileUtils::config.wifiNetwork.apPass;
-	DevUtils::SerialBanners::printWiFiConfigBanner(apPassword, wm); // Display Wifi config portal connection info
+	if (setupShowSerial) {
+		const char* apPassword = FileUtils::config.wifiNetwork.apPass;
+		DevUtils::SerialBanners::printWiFiConfigBanner(apPassword, wm); // Display Wifi config portal connection info
+	}
 
 
 
@@ -3438,7 +3469,7 @@ void loop() {
 	bool diagMeasureEnabled = FileUtils::config.debugUtils.diagMeasure;
 
 	// Check core test
-	if (testCoresEnabled && currentMillis - lastTime > 4000 && currentMillis - lastTime < 4500) {
+	if (showSerial && testCoresEnabled && currentMillis - lastTime > 4000 && currentMillis - lastTime < 4500) {
 		Serial.printf("loop() running on core: %d\n", xPortGetCoreID());
 	}
 
@@ -3507,8 +3538,10 @@ void loop() {
 		}
 	}
 	catch (...) {
-		Serial.print("Error: loop() getting new data failed\n");
-		dev.handleException();
+		if (showSerial) {
+			Serial.print("Error: loop() getting new data failed\n");
+			dev.handleException();
+		}
 	}
 
 	// Update All LED Animations
@@ -3518,8 +3551,8 @@ void loop() {
 	catch (...) {
 		if (showSerial) {
 			Serial.print("Error: updateAnimation() failed\n");
+			dev.handleException();
 		}
-		dev.handleException();
 	}
 
 	// Serial display diagnostics for plotter

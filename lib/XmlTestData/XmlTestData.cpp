@@ -2,6 +2,7 @@
 #include <FS.h>
 #include <LittleFS.h>
 #include <DevUtils.h>
+#include <FileUtils.h>
 
 static const char XML_DATA_DIR[] = "/xml_data";
 
@@ -248,11 +249,12 @@ static const XmlFileEntry xmlFiles[] = {
 static const size_t xmlFileCount = sizeof(xmlFiles) / sizeof(xmlFiles[0]);
 
 void XmlTestData::init() {
-    Serial.println("Initializing XML test data...");
+    bool showSerial = FileUtils::config.debugUtils.showSerial;
+    if (showSerial) Serial.println("Initializing XML test data...");
 
     if (!LittleFS.exists(XML_DATA_DIR)) {
         if (!LittleFS.mkdir(XML_DATA_DIR)) {
-            Serial.printf("%sFailed to create %s — skipping seed%s\n",
+            if (showSerial) Serial.printf("%sFailed to create %s — skipping seed%s\n",
                 DevUtils::termColor("red").c_str(), XML_DATA_DIR,
                 DevUtils::termColor("reset").c_str());
             return;
@@ -265,26 +267,27 @@ void XmlTestData::init() {
         seedFileIfMissing(path, xmlFiles[i].data);
     }
 
-    Serial.println("XML test data ready");
+    if (showSerial) Serial.println("XML test data ready");
 }
 
 void XmlTestData::seedFileIfMissing(const char* path, const char* data) {
+    bool showSerial = FileUtils::config.debugUtils.showSerial;
     if (LittleFS.exists(path)) {
         // Guard against partial writes from power loss — re-seed empty/corrupt files
         File check = LittleFS.open(path, "r");
         if (check && check.size() > 0) {
             check.close();
-            Serial.printf("  %s exists, skipping\n", path);
+            if (showSerial) Serial.printf("  %s exists, skipping\n", path);
             return;
         }
         if (check) check.close();
-        Serial.printf("  %s exists but is empty/corrupt, re-seeding\n", path);
+        if (showSerial) Serial.printf("  %s exists but is empty/corrupt, re-seeding\n", path);
     }
 
-    Serial.printf("  Seeding %s...\n", path);
+    if (showSerial) Serial.printf("  Seeding %s...\n", path);
     File file = LittleFS.open(path, "w");
     if (!file) {
-        Serial.printf("%sFailed to create %s%s\n",
+        if (showSerial) Serial.printf("%sFailed to create %s%s\n",
             DevUtils::termColor("red").c_str(), path,
             DevUtils::termColor("reset").c_str());
         return;
@@ -294,16 +297,17 @@ void XmlTestData::seedFileIfMissing(const char* path, const char* data) {
     // so file.print() works directly with PROGMEM pointers.
     file.print(data);
     file.close();
-    Serial.printf("  Seeded %s (%u bytes)\n", path, (unsigned)strlen(data));
+    if (showSerial) Serial.printf("  Seeded %s (%u bytes)\n", path, (unsigned)strlen(data));
 }
 
 bool XmlTestData::loadFile(const char* filename, char* buffer, size_t bufferSize) {
+    bool showSerial = FileUtils::config.debugUtils.showSerial;
     char path[64];
     snprintf(path, sizeof(path), "%s/%s.xml", XML_DATA_DIR, filename);
 
     File file = LittleFS.open(path, "r");
     if (!file) {
-        Serial.printf("%sFailed to open %s%s\n",
+        if (showSerial) Serial.printf("%sFailed to open %s%s\n",
             DevUtils::termColor("red").c_str(), path,
             DevUtils::termColor("reset").c_str());
         return false;
@@ -311,7 +315,7 @@ bool XmlTestData::loadFile(const char* filename, char* buffer, size_t bufferSize
 
     size_t fileSize = file.size();
     if (fileSize >= bufferSize) {
-        Serial.printf("%s%s too large (%u bytes, buffer %u)%s\n",
+        if (showSerial) Serial.printf("%s%s too large (%u bytes, buffer %u)%s\n",
             DevUtils::termColor("red").c_str(), path,
             (unsigned)fileSize, (unsigned)bufferSize,
             DevUtils::termColor("reset").c_str());
@@ -323,7 +327,7 @@ bool XmlTestData::loadFile(const char* filename, char* buffer, size_t bufferSize
     file.close();
 
     if (bytesRead != fileSize) {
-        Serial.printf("%sShort read on %s (%u of %u bytes)%s\n",
+        if (showSerial) Serial.printf("%sShort read on %s (%u of %u bytes)%s\n",
             DevUtils::termColor("red").c_str(), path,
             (unsigned)bytesRead, (unsigned)fileSize,
             DevUtils::termColor("reset").c_str());
@@ -331,7 +335,7 @@ bool XmlTestData::loadFile(const char* filename, char* buffer, size_t bufferSize
     }
 
     buffer[bytesRead] = '\0';
-    Serial.printf("Loaded %s (%u bytes)\n", path, (unsigned)bytesRead);
+    if (showSerial) Serial.printf("Loaded %s (%u bytes)\n", path, (unsigned)bytesRead);
     return true;
 }
 

@@ -4,15 +4,16 @@ DynamicJsonDocument SpacecraftData::spacecraftNamesJson(5120);
 DynamicJsonDocument SpacecraftData::spacecraftBlacklistJson(1024);
 
 void SpacecraftData::loadJson(const char* firmwareVersion) {
-    Serial.println("Initializing spacecraft data...");
+    bool showSerial = FileUtils::config.debugUtils.showSerial;
+    if (showSerial) Serial.println("Initializing spacecraft data...");
     populateNamesInMemory();
     populateBlacklistInMemory();
 
     if (shouldWriteFiles(firmwareVersion)) {
-        Serial.println("Firmware version changed — writing spacecraft data to flash");
+        if (showSerial) Serial.println("Firmware version changed — writing spacecraft data to flash");
         writeFilesToFlash(firmwareVersion);
     } else {
-        Serial.println("Spacecraft data unchanged — skipping flash writes");
+        if (showSerial) Serial.println("Spacecraft data unchanged — skipping flash writes");
     }
 }
 
@@ -127,28 +128,29 @@ bool SpacecraftData::shouldWriteFiles(const char* firmwareVersion) {
 }
 
 void SpacecraftData::writeFilesToFlash(const char* firmwareVersion) {
+    bool showSerial = FileUtils::config.debugUtils.showSerial;
     FileUtils::createDir("spacecraft_data");
 
     // Write names.json
     File namesFile = LittleFS.open("/spacecraft_data/names.json", "w");
     if (namesFile) {
         if (serializeJson(spacecraftNamesJson, namesFile) == 0) {
-            Serial.print(DevUtils::termColor("red") + "Failed to write names.json" + DevUtils::termColor("reset") + "\n");
+            if (showSerial) Serial.print(DevUtils::termColor("red") + "Failed to write names.json" + DevUtils::termColor("reset") + "\n");
         }
         namesFile.close();
     } else {
-        Serial.print(DevUtils::termColor("red") + "Failed to open names.json for writing" + DevUtils::termColor("reset") + "\n");
+        if (showSerial) Serial.print(DevUtils::termColor("red") + "Failed to open names.json for writing" + DevUtils::termColor("reset") + "\n");
     }
 
     // Write blacklist.json
     File blacklistFile = LittleFS.open("/spacecraft_data/blacklist.json", "w");
     if (blacklistFile) {
         if (serializeJson(spacecraftBlacklistJson, blacklistFile) == 0) {
-            Serial.print(DevUtils::termColor("red") + "Failed to write blacklist.json" + DevUtils::termColor("reset") + "\n");
+            if (showSerial) Serial.print(DevUtils::termColor("red") + "Failed to write blacklist.json" + DevUtils::termColor("reset") + "\n");
         }
         blacklistFile.close();
     } else {
-        Serial.print(DevUtils::termColor("red") + "Failed to open blacklist.json for writing" + DevUtils::termColor("reset") + "\n");
+        if (showSerial) Serial.print(DevUtils::termColor("red") + "Failed to open blacklist.json for writing" + DevUtils::termColor("reset") + "\n");
     }
 
     // Write version marker
@@ -157,10 +159,10 @@ void SpacecraftData::writeFilesToFlash(const char* firmwareVersion) {
         versionFile.print(firmwareVersion);
         versionFile.close();
     } else {
-        Serial.print(DevUtils::termColor("red") + "Failed to write version.txt" + DevUtils::termColor("reset") + "\n");
+        if (showSerial) Serial.print(DevUtils::termColor("red") + "Failed to write version.txt" + DevUtils::termColor("reset") + "\n");
     }
 
-    Serial.print(DevUtils::termColor("green") + "Spacecraft data written to flash" + DevUtils::termColor("reset") + "\n");
+    if (showSerial) Serial.print(DevUtils::termColor("green") + "Spacecraft data written to flash" + DevUtils::termColor("reset") + "\n");
 }
 
 /* Check Name */
