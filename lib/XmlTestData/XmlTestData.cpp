@@ -247,7 +247,7 @@ static const XmlFileEntry xmlFiles[] = {
 
 static const size_t xmlFileCount = sizeof(xmlFiles) / sizeof(xmlFiles[0]);
 
-void XmlTestData::init(const char* firmwareVersion) {
+void XmlTestData::init() {
     Serial.println("Initializing XML test data...");
 
     if (!LittleFS.exists(XML_DATA_DIR)) {
@@ -259,46 +259,13 @@ void XmlTestData::init(const char* firmwareVersion) {
         }
     }
 
-    bool reseed = shouldReseed(firmwareVersion);
-    if (reseed) {
-        Serial.println("  Firmware version changed — re-seeding XML data");
-    }
-
     for (size_t i = 0; i < xmlFileCount; i++) {
         char path[64];
         snprintf(path, sizeof(path), "%s/%s.xml", XML_DATA_DIR, xmlFiles[i].filename);
         seedFileIfMissing(path, xmlFiles[i].data);
     }
 
-    if (reseed) {
-        writeVersionMarker(firmwareVersion);
-    }
-
     Serial.println("XML test data ready");
-}
-
-bool XmlTestData::shouldReseed(const char* firmwareVersion) {
-    File versionFile = LittleFS.open("/xml_data/version.txt", "r");
-    if (!versionFile) {
-        return true; // No version file — first boot or fresh flash
-    }
-
-    String storedVersion = versionFile.readStringUntil('\n');
-    versionFile.close();
-
-    if (storedVersion.length() == 0) {
-        return true;
-    }
-
-    return strcmp(storedVersion.c_str(), firmwareVersion) != 0;
-}
-
-void XmlTestData::writeVersionMarker(const char* firmwareVersion) {
-    File versionFile = LittleFS.open("/xml_data/version.txt", "w");
-    if (versionFile) {
-        versionFile.print(firmwareVersion);
-        versionFile.close();
-    }
 }
 
 void XmlTestData::seedFileIfMissing(const char* path, const char* data) {

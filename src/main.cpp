@@ -3370,7 +3370,7 @@ void setup()
 	setupOtaUpdate();		   // Setup OTA update
 
 	SpacecraftData::loadJson(currentFirmwareVersion);
-	XmlTestData::init(currentFirmwareVersion);
+	XmlTestData::init();
 
 	/* Assign config to global state variables */
 	characterWidth = FileUtils::config.textTypography.characterWidth;
