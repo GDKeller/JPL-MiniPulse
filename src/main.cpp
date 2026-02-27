@@ -2340,8 +2340,13 @@ void parseData(const char* payload)
 	}
 
 	/* Find XML elements */
-	XMLNode* root = xmlDocument.RootElement();					  // Find document root node
-	XMLElement* timestamp = root->FirstChildElement("timestamp"); // Find XML timestamp element
+	XMLNode* root = xmlDocument.RootElement();
+	if (!root) {
+		if (showSerial) Serial.println("XML has no root element");
+		dev.handleException();
+		return;
+	}
+	XMLElement* timestamp = root->FirstChildElement("timestamp");
 
 
 	/* Phase 1 — Brief lock: check pool availability (microseconds) */
