@@ -1,4 +1,4 @@
-const char* currentFirmwareVersion = "1.1.1"; // Current firmware version
+const char* currentFirmwareVersion = "1.1.2"; // Current firmware version
 const char* githubApiUrl = "https://api.github.com/repos/GDKeller/JPL-MiniPulse/releases/latest";
 const char* firmwareBinaryUrl = "https://github.com/GDKeller/JPL-MiniPulse/releases/latest/download/firmware.bin";
 
@@ -99,7 +99,6 @@ volatile bool forceDummyData = false;
 bool forceAnimationType = false;
 uint8_t noTargetFoundCounter = 0;  // Keeps track of how many times target is not found
 uint8_t retryDataFetchCounter = 0; // Keeps track of how many times data fetch failed
-uint8_t retryDataFetchLimit = 3;  // After dummy data is used this many times, try to get actual data again
 const int maxHttpRetries = 3;
 bool dataStarted = false;
 // char fetchUrl[64];	// Fixed memory for DSN XML fetch URL - random number is appended when used to prevent caching
@@ -146,6 +145,7 @@ WiFiManagerParameter param_brightness;		   // global param ( for non blocking w 
 // WiFiManagerParameter field_global_fps;
 WiFiManagerParameter param_separator;
 WiFiManagerParameter param_force_dummy_data;
+WiFiManagerParameter param_unique_hostname;
 WiFiManagerParameter param_show_serial;
 WiFiManagerParameter param_show_diagnostics;
 WiFiManagerParameter param_force_animation_enabled;
@@ -1154,6 +1154,37 @@ void saveParamsCallback() {
 	forceDummyData = FileUtils::config.wifiNetwork.forceDummyData;
 
 
+	/* UNIQUE HOSTNAME - Set uniqueHostname config key from input */
+	// Get input value
+	String uniqueHostnameValue = getParam("unique_hostname");
+	if (showSerial) Serial.print("---\nunique_hostname input: " + uniqueHostnameValue + "\n");
+
+	// Treat any non-empty, non-"0" value as true (handles "1", "on", etc.)
+	bool uniqueHostnameBool = (uniqueHostnameValue.length() > 0 && uniqueHostnameValue != "0");
+	if (showSerial) Serial.print("unique hostname bool: " + String(uniqueHostnameBool) + "\n");
+
+	// Set program config
+	if (showSerial) Serial.print("Previous config uniqueHostname: " + String(FileUtils::config.miscellaneous.uniqueHostname) + "\n");
+	FileUtils::config.miscellaneous.uniqueHostname = uniqueHostnameBool;
+	if (showSerial) Serial.print("New config uniqueHostname: " + String(FileUtils::config.miscellaneous.uniqueHostname) + "\n");
+
+	// Set file config
+	FileUtils::writeConfigFileBool("uniqueHostname", FileUtils::config.miscellaneous.uniqueHostname);
+	FileUtils::readFile("/config.json");
+	if (showSerial) Serial.println();
+
+	// Update mDNS hostname to reflect new setting
+	uint8_t macAddr[6];
+	WiFi.macAddress(macAddr);
+	if (FileUtils::config.miscellaneous.uniqueHostname) {
+		snprintf(mdnsHostname, sizeof(mdnsHostname), "minipulse-%02x%02x", macAddr[4], macAddr[5]);
+	} else {
+		strlcpy(mdnsHostname, "minipulse", sizeof(mdnsHostname));
+	}
+	MDNS.begin(mdnsHostname);
+	if (showSerial) Serial.print("mDNS hostname updated to: " + String(mdnsHostname) + "\n");
+
+
 	// Re-initialize checkbox params so subsequent portal loads render correctly.
 	// WiFiManager's doParamSave overwrites _value with "" for unchecked boxes,
 	// which breaks the next submission. Reconstructing restores value="1" and
@@ -1169,6 +1200,8 @@ void saveParamsCallback() {
 	new (&param_force_animation_enabled) WiFiManagerParameter("force_animation_enabled", "Force Animation Type", "1", 1, forceAnimationType ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
 	param_force_animation_type.~WiFiManagerParameter();
 	new (&param_force_animation_type) WiFiManagerParameter("force_animation_type", "Animation Type (1-5)", String(animate.forcedAnimationType).c_str(), 1, "type='number' min='1' max='5' step='1'");
+	param_unique_hostname.~WiFiManagerParameter();
+	new (&param_unique_hostname) WiFiManagerParameter("unique_hostname", "Unique hostname (MAC suffix)", "1", 1, FileUtils::config.miscellaneous.uniqueHostname ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
 
 	if (showSerial) Serial.print("\n<--------- END PORTAL FORM CALLBACK --------->\n\n");
 }
@@ -2795,17 +2828,14 @@ void parseData(const char* payload)
 								if (isValidCraftQueueItem(&tempNewCraft)) {
 									// SUCCESS — target validated, defer pool pop to Phase 3
 									craftValidated = true;
+									breakParseLoop = true;
+									parseCounter = 0;
 									if (usingDummyData == true) {
-										if (parseCounter >= retryDataFetchLimit) {
-											parseCounter = 0;
-											breakParseLoop = true;
-											targetCount = 0;
-											dishCount = 0;
-											stationCount = 0;
-										}
+										// Advance counters so next cycle picks a different craft
+										targetCount = t + 1;
+										dishCount = d;
+										stationCount = s;
 									} else {
-										parseCounter = 0;
-										breakParseLoop = true;
 										targetCount = t;
 										dishCount = d;
 										stationCount = s;
@@ -3098,8 +3128,6 @@ void fetchData() {
 
 	bool dataFetched = false;
 
-	bool parseLimitReached = parseCounter >= retryDataFetchLimit;
-
 	if (!forceDummyData && isWiFiConnected()) {
 		String url = generateFetchUrl();
 
@@ -3192,18 +3220,10 @@ void fetchData() {
 			Serial.print(dataStatusBuffer);
 		}
 
-		// Load from LittleFS, with caching to avoid re-reading the same file each cycle.
-		// Falls back to compiled-in PROGMEM safety net if LittleFS read fails.
-		static const char* cachedDummyFile = nullptr;
+		// Copy directly from PROGMEM — avoids LittleFS I/O and guarantees known-good data.
 		const char* currentDummyFile = dummyXmlFile; // snapshot volatile once
-		if (cachedDummyFile != currentDummyFile) {
-			if (XmlTestData::loadFile(currentDummyFile, xmlDataBuffer, sizeof(xmlDataBuffer))) {
-				cachedDummyFile = currentDummyFile;
-			} else {
-				strlcpy(xmlDataBuffer, XmlTestData::getFallbackData(), sizeof(xmlDataBuffer));
-				cachedDummyFile = nullptr; // don't cache failure — retry next cycle
-			}
-		}
+		const char* progmemData = XmlTestData::getProgmemData(currentDummyFile);
+		strlcpy(xmlDataBuffer, progmemData ? progmemData : XmlTestData::getFallbackData(), sizeof(xmlDataBuffer));
 		parseData(xmlDataBuffer);
 	}
 
@@ -3410,10 +3430,14 @@ void setup()
 	/* WIFI MANAGER SETUP */
 	WiFi.mode(WIFI_AP_STA);  // explicitly set mode, esp defaults to STA+AP
 
-	// Generate unique hostname from last 2 bytes of MAC address
+	// Generate hostname — plain "minipulse" by default, MAC-suffixed when uniqueHostname is enabled
 	uint8_t mac[6];
 	WiFi.macAddress(mac);
-	snprintf(mdnsHostname, sizeof(mdnsHostname), "minipulse-%02x%02x", mac[4], mac[5]);
+	if (FileUtils::config.miscellaneous.uniqueHostname) {
+		snprintf(mdnsHostname, sizeof(mdnsHostname), "minipulse-%02x%02x", mac[4], mac[5]);
+	} else {
+		strlcpy(mdnsHostname, "minipulse", sizeof(mdnsHostname));
+	}
 
 	wm.setCountry("US");	  // setting wifi country seems to improve OSX soft ap connectivity
 	wm.setConfigPortalBlocking(false);
@@ -3462,6 +3486,9 @@ void setup()
 
 	new (&param_force_dummy_data) WiFiManagerParameter("force_dummy_data", "Force placeholder data", "1", 1, FileUtils::config.wifiNetwork.forceDummyData ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
 	wm.addParameter(&param_force_dummy_data);
+
+	new (&param_unique_hostname) WiFiManagerParameter("unique_hostname", "Unique hostname (MAC suffix)", "1", 1, FileUtils::config.miscellaneous.uniqueHostname ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
+	wm.addParameter(&param_unique_hostname);
 
 	wm.setCustomHeadElement(portalHeadHtml);
 
