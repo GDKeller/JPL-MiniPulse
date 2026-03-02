@@ -1,4 +1,4 @@
-const char* currentFirmwareVersion = "1.1.2"; // Current firmware version
+const char* currentFirmwareVersion = "1.1.3"; // Current firmware version
 const char* githubApiUrl = "https://api.github.com/repos/GDKeller/JPL-MiniPulse/releases/latest";
 const char* firmwareBinaryUrl = "https://github.com/GDKeller/JPL-MiniPulse/releases/latest/download/firmware.bin";
 
@@ -93,7 +93,7 @@ const char* volatile dummyXmlFile = "fallback";
 */
 
 #pragma region -- DATA FETCHING STATE VARS
-bool otaUpdateTriggered = false; // Flag to indicate OTA update has been triggered
+volatile bool otaUpdateTriggered = false; // volatile: written by web portal (Core 1), read by getData task (Core 0)
 bool usingDummyData = false; // If true, use dummy data instead of actual data
 volatile bool forceDummyData = false;
 bool forceAnimationType = false;
@@ -526,18 +526,88 @@ bool checkFirmwareUpdateAvailable() {
 	return isNewerVersion(latestVersion, currentFirmwareVersion);
 }
 
+void feedWatchdog(); // Forward declaration — defined in DEV UTILITIES region
+
+// Manually follows HTTP redirects using a fresh TLS context per hop.
+// This sidesteps the WiFiClientSecure reuse bug in HTTPClient::setURL()
+// which prevents SSL cleanup between redirect hops, causing "connection refused"
+// on the second redirect (GitHub → versioned URL → CDN).
+String resolveRedirectUrl(const char* url) {
+	bool showSerial = FileUtils::config.debugUtils.showSerial;
+	String currentUrl = url;
+	const int maxRedirects = 5;
+
+	for (int i = 0; i < maxRedirects; i++) {
+		feedWatchdog();
+		WiFiClientSecure* client = new WiFiClientSecure();
+		client->setInsecure();
+
+		HTTPClient http;
+		http.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
+		http.setTimeout(10000);
+
+		if (!http.begin(*client, currentUrl)) {
+			if (showSerial) Serial.printf("Redirect resolve: failed to begin connection for %s\n", currentUrl.c_str());
+			http.end();
+			delete client;
+			return "";
+		}
+
+		http.addHeader("User-Agent", "JPL-MiniPulse-ESP32");
+		int httpCode = http.GET();
+
+		if (httpCode >= 300 && httpCode < 400) {
+			String location = http.header("Location");
+			if (showSerial) Serial.printf("Redirect %d: %d -> %s\n", i + 1, httpCode, location.c_str());
+			http.end();
+			delete client;
+
+			if (location.length() == 0) {
+				if (showSerial) Serial.println("Redirect resolve: empty Location header");
+				return "";
+			}
+			currentUrl = location;
+		} else {
+			http.end();
+			delete client;
+			if (httpCode == HTTP_CODE_OK) {
+				if (showSerial) Serial.printf("Resolved final URL: %s\n", currentUrl.c_str());
+				return currentUrl;
+			}
+			if (showSerial) Serial.printf("Redirect resolve: HTTP %d at %s\n", httpCode, currentUrl.c_str());
+			return "";
+		}
+	}
+
+	if (showSerial) Serial.println("Redirect resolve: exceeded max redirects");
+	return "";
+}
+
 void updateFirmwareOta() {
-	if (!checkFirmwareUpdateAvailable()) return;
 	bool showSerial = FileUtils::config.debugUtils.showSerial;
 
 	if (showSerial) Serial.println("\n--------\nAttempting firmware update from GitHub...");
 
+	// Pause getData task to free heap during OTA
+	otaUpdateTriggered = true;
+	vTaskDelay(pdMS_TO_TICKS(500));
+
+	// Resolve redirects manually to avoid WiFiClientSecure TLS reuse bug
+	String resolvedUrl = resolveRedirectUrl(firmwareBinaryUrl);
+	if (resolvedUrl.length() == 0) {
+		if (showSerial) Serial.println(">> Failed to resolve firmware download URL");
+		otaUpdateTriggered = false;
+		return;
+	}
+
 	WiFiClientSecure secureClient;
 	secureClient.setInsecure();
 
-	httpUpdate.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
+	// No redirect following needed — resolvedUrl points directly to CDN
+	feedWatchdog();
+	httpUpdate.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
 
-	t_httpUpdate_return ret = httpUpdate.update(secureClient, firmwareBinaryUrl);
+	t_httpUpdate_return ret = httpUpdate.update(secureClient, resolvedUrl);
 
 	switch (ret) {
 		case HTTP_UPDATE_FAILED:
@@ -555,6 +625,8 @@ void updateFirmwareOta() {
 			break;
 	}
 
+	// On success, ESP32 reboots — this only runs on failure
+	otaUpdateTriggered = false;
 	if (showSerial) Serial.println("OTA update complete\n--------\n");
 }
 
@@ -913,13 +985,17 @@ void webServerCallback() {
 		});
 
 	wm.server->on("/trigger-firmware-update", HTTP_GET, []() {
-		bool updateAvailable = checkFirmwareUpdateAvailable();
-		updateFirmwareOta();
-		if (updateAvailable) {
-			wm.server->send(200, "text/plain", "New firmware available, updating...");
-		} else {
-			wm.server->send(200, "text/plain", "Firmware is up to date");
+		if (otaUpdateTriggered) {
+			wm.server->send(409, "text/plain", "OTA update already in progress");
+			return;
 		}
+		if (!checkFirmwareUpdateAvailable()) {
+			wm.server->send(200, "text/plain", "Firmware is up to date");
+			return;
+		}
+		// Send response before OTA — successful update reboots the device
+		wm.server->send(200, "text/plain", "New firmware available, updating...");
+		updateFirmwareOta();
 		});
 
 	wm.server->on("/hostname", HTTP_GET, []() {
