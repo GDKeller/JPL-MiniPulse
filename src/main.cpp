@@ -145,6 +145,7 @@ WiFiManagerParameter param_brightness;		   // global param ( for non blocking w 
 // WiFiManagerParameter field_global_fps;
 WiFiManagerParameter param_separator;
 WiFiManagerParameter param_force_dummy_data;
+WiFiManagerParameter param_unique_hostname;
 WiFiManagerParameter param_show_serial;
 WiFiManagerParameter param_show_diagnostics;
 WiFiManagerParameter param_force_animation_enabled;
@@ -1153,6 +1154,37 @@ void saveParamsCallback() {
 	forceDummyData = FileUtils::config.wifiNetwork.forceDummyData;
 
 
+	/* UNIQUE HOSTNAME - Set uniqueHostname config key from input */
+	// Get input value
+	String uniqueHostnameValue = getParam("unique_hostname");
+	if (showSerial) Serial.print("---\nunique_hostname input: " + uniqueHostnameValue + "\n");
+
+	// Treat any non-empty, non-"0" value as true (handles "1", "on", etc.)
+	bool uniqueHostnameBool = (uniqueHostnameValue.length() > 0 && uniqueHostnameValue != "0");
+	if (showSerial) Serial.print("unique hostname bool: " + String(uniqueHostnameBool) + "\n");
+
+	// Set program config
+	if (showSerial) Serial.print("Previous config uniqueHostname: " + String(FileUtils::config.miscellaneous.uniqueHostname) + "\n");
+	FileUtils::config.miscellaneous.uniqueHostname = uniqueHostnameBool;
+	if (showSerial) Serial.print("New config uniqueHostname: " + String(FileUtils::config.miscellaneous.uniqueHostname) + "\n");
+
+	// Set file config
+	FileUtils::writeConfigFileBool("uniqueHostname", FileUtils::config.miscellaneous.uniqueHostname);
+	FileUtils::readFile("/config.json");
+	if (showSerial) Serial.println();
+
+	// Update mDNS hostname to reflect new setting
+	uint8_t macAddr[6];
+	WiFi.macAddress(macAddr);
+	if (FileUtils::config.miscellaneous.uniqueHostname) {
+		snprintf(mdnsHostname, sizeof(mdnsHostname), "minipulse-%02x%02x", macAddr[4], macAddr[5]);
+	} else {
+		strlcpy(mdnsHostname, "minipulse", sizeof(mdnsHostname));
+	}
+	MDNS.begin(mdnsHostname);
+	if (showSerial) Serial.print("mDNS hostname updated to: " + String(mdnsHostname) + "\n");
+
+
 	// Re-initialize checkbox params so subsequent portal loads render correctly.
 	// WiFiManager's doParamSave overwrites _value with "" for unchecked boxes,
 	// which breaks the next submission. Reconstructing restores value="1" and
@@ -1168,6 +1200,8 @@ void saveParamsCallback() {
 	new (&param_force_animation_enabled) WiFiManagerParameter("force_animation_enabled", "Force Animation Type", "1", 1, forceAnimationType ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
 	param_force_animation_type.~WiFiManagerParameter();
 	new (&param_force_animation_type) WiFiManagerParameter("force_animation_type", "Animation Type (1-5)", String(animate.forcedAnimationType).c_str(), 1, "type='number' min='1' max='5' step='1'");
+	param_unique_hostname.~WiFiManagerParameter();
+	new (&param_unique_hostname) WiFiManagerParameter("unique_hostname", "Unique hostname (MAC suffix)", "1", 1, FileUtils::config.miscellaneous.uniqueHostname ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
 
 	if (showSerial) Serial.print("\n<--------- END PORTAL FORM CALLBACK --------->\n\n");
 }
@@ -3396,10 +3430,14 @@ void setup()
 	/* WIFI MANAGER SETUP */
 	WiFi.mode(WIFI_AP_STA);  // explicitly set mode, esp defaults to STA+AP
 
-	// Generate unique hostname from last 2 bytes of MAC address
+	// Generate hostname — plain "minipulse" by default, MAC-suffixed when uniqueHostname is enabled
 	uint8_t mac[6];
 	WiFi.macAddress(mac);
-	snprintf(mdnsHostname, sizeof(mdnsHostname), "minipulse-%02x%02x", mac[4], mac[5]);
+	if (FileUtils::config.miscellaneous.uniqueHostname) {
+		snprintf(mdnsHostname, sizeof(mdnsHostname), "minipulse-%02x%02x", mac[4], mac[5]);
+	} else {
+		strlcpy(mdnsHostname, "minipulse", sizeof(mdnsHostname));
+	}
 
 	wm.setCountry("US");	  // setting wifi country seems to improve OSX soft ap connectivity
 	wm.setConfigPortalBlocking(false);
@@ -3448,6 +3486,9 @@ void setup()
 
 	new (&param_force_dummy_data) WiFiManagerParameter("force_dummy_data", "Force placeholder data", "1", 1, FileUtils::config.wifiNetwork.forceDummyData ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
 	wm.addParameter(&param_force_dummy_data);
+
+	new (&param_unique_hostname) WiFiManagerParameter("unique_hostname", "Unique hostname (MAC suffix)", "1", 1, FileUtils::config.miscellaneous.uniqueHostname ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
+	wm.addParameter(&param_unique_hostname);
 
 	wm.setCustomHeadElement(portalHeadHtml);
 

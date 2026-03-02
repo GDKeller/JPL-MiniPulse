@@ -49,8 +49,9 @@ FileUtils::Config FileUtils::config = {
 		10000 // timerDelay
 	},
 	{ // miscellaneous
-		0,   // colorTheme
-		true // useApprovedOnly
+		0,    // colorTheme
+		true, // useApprovedOnly
+		false // uniqueHostname
 	}
 };
 
@@ -320,6 +321,8 @@ void FileUtils::setConfigValuesFromFile(File configFile) {
 			FileUtils::config.displayLED.brightness = kv.value().as<int>();
 		} else if (kv.key() == "useApprovedOnly") {
 			FileUtils::config.miscellaneous.useApprovedOnly = kv.value().as<bool>();
+		} else if (kv.key() == "uniqueHostname") {
+			FileUtils::config.miscellaneous.uniqueHostname = kv.value().as<bool>();
 		}
 	}
 }
@@ -470,6 +473,8 @@ void FileUtils::updateMiscellaneousField(const char* key, const JsonVariant& val
 		config.miscellaneous.colorTheme = value;
 	} else if (strcmp(key, "useApprovedOnly") == 0) {
 		config.miscellaneous.useApprovedOnly = value;
+	} else if (strcmp(key, "uniqueHostname") == 0) {
+		config.miscellaneous.uniqueHostname = value;
 	} else {
 		if (config.debugUtils.showSerial) Serial.println("Key not found in Miscellaneous struct");
 	}

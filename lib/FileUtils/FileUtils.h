@@ -88,6 +88,7 @@ class FileUtils {
     struct Miscellaneous {
         int colorTheme;
         bool useApprovedOnly;
+        bool uniqueHostname;
     };
 
     struct Config {
