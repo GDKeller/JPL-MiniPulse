@@ -1313,7 +1313,7 @@ no changes added to commit (use "git add" and/or "git commit -a")
 ```
 </details></tool-use>
 
-_**Agent (claude-opus-4-6 2026-03-02 21:32:09Z)**_
+_**Agent (claude-opus-4-6 2026-03-02 21:32:34Z)**_
 
 <tool-use data-tool-type="shell" data-tool-name="Bash"><details>
 <summary>Tool use: **Bash**</summary>
@@ -1325,4 +1325,246 @@ chore: update specstory conversation history
 EOF
 )" && git push
 ```
+
+```text
+[develop/1.1.3 b2d86cb] chore: update specstory conversation history
+ 1 file changed, 70 insertions(+), 1 deletion(-)
+To https://github.com/GDKeller/JPL-MiniPulse.git
+   05828a2..b2d86cb  develop/1.1.3 -> develop/1.1.3
+```
 </details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 21:32:38Z)**_
+
+It keeps growing as we talk. The recursive nature of documenting the documentation.
+
+---
+
+_**User (2026-03-02 21:35:07Z)**_
+
+give me release notes
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 21:35:10Z)**_
+
+<think><details><summary>Thought Process</summary>
+The user wants release notes for version 1.1.3. Let me look at what changed since the last release to write comprehensive release notes.
+</details></think>
+
+_**Agent (claude-opus-4-6 2026-03-02 21:35:16Z)**_
+
+## v1.1.3 Release Notes
+
+### OTA Firmware Update Fix
+
+Fixed a critical issue where over-the-air firmware updates would fail with "connection refused" errors during download.
+
+**Root cause:** The ESP32 Arduino `WiFiClientSecure` library has a bug where TLS session state isn't properly cleaned up between HTTP redirect hops when using `HTTPClient::setURL()`. GitHub's firmware download URL redirects through multiple hops (GitHub → versioned URL → CDN), and the stale TLS context caused the connection to fail on the second redirect.
+
+**Fix:** OTA updates now manually resolve the full redirect chain using a fresh TLS context per hop before downloading, bypassing the bug entirely.
+
+### Additional improvements
+- getData task is now paused during OTA to free heap for the download
+- Web portal guards against triggering duplicate concurrent OTA updates
+- HTTP response is sent to the client before OTA begins (successful updates reboot the device, so the response would never arrive otherwise)
+- `otaUpdateTriggered` flag marked `volatile` for correct cross-core visibility between the web server (Core 1) and data fetching task (Core 0)
+
+---
+
+_**User (2026-03-02 21:37:41Z)**_
+
+ok so now we need to do version bumps for 1.1.4 and 1.1.5 so we can test
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 21:37:45Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Check recent commits
+
+`git log --oneline -3`
+
+```text
+b2d86cb chore: update specstory conversation history
+05828a2 chore: add specstory conversation history
+768b290 fix(ota): resolve TLS reuse bug with manual redirect following
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 21:37:51Z)**_
+
+Just to clarify — you want two separate tagged releases (1.1.4 and 1.1.5) with only the version bump, so you can test the OTA update chain (e.g. device on 1.1.3 updates to 1.1.4, then 1.1.4 to 1.1.5)? Or something different?
+
+---
+
+_**User (2026-03-02 21:38:05Z)**_
+
+yes
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 21:38:12Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/src/main.cpp has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 21:38:28Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Build release for 1.1.4
+
+`~/.platformio/penv/bin/pio run -e release 2>&1 | tail -5`
+
+```text
+Environment    Status    Duration
+-------------  --------  ------------
+release        SUCCESS   00:00:11.347
+========================= 1 succeeded in 00:00:11.347 =========================
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 21:38:49Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Commit and push 1.1.4 version bump
+
+```bash
+git add src/main.cpp && git commit -m "$(cat <<'EOF'
+chore: bump version to 1.1.4 for OTA testing
+EOF
+)" && git push
+```
+
+```text
+[develop/1.1.3 6b6e5d1] chore: bump version to 1.1.4 for OTA testing
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+To https://github.com/GDKeller/JPL-MiniPulse.git
+   b2d86cb..6b6e5d1  develop/1.1.3 -> develop/1.1.3
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 21:38:52Z)**_
+
+Now 1.1.5.
+
+_**Agent (claude-opus-4-6 2026-03-02 21:38:53Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/src/main.cpp has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 21:39:08Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Build release for 1.1.5
+
+`~/.platformio/penv/bin/pio run -e release 2>&1 | tail -5`
+
+```text
+Environment    Status    Duration
+-------------  --------  ------------
+release        SUCCESS   00:00:10.659
+========================= 1 succeeded in 00:00:10.659 =========================
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 21:39:56Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Commit and push 1.1.5 version bump
+
+```bash
+git add src/main.cpp && git commit -m "$(cat <<'EOF'
+chore: bump version to 1.1.5 for OTA testing
+EOF
+)" && git push
+```
+
+```text
+[develop/1.1.3 18c2e3a] chore: bump version to 1.1.5 for OTA testing
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+To https://github.com/GDKeller/JPL-MiniPulse.git
+   6b6e5d1..18c2e3a  develop/1.1.3 -> develop/1.1.3
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 21:40:00Z)**_
+
+Both builds pass and are pushed. You'll need to create GitHub releases for each with the `firmware.bin` attached:
+
+- **1.1.4** — tag from commit `6b6e5d1`
+- **1.1.5** — tag from commit `18c2e3a`
+
+Want me to create the releases and upload the binaries via `gh`, or are you doing that manually?
+
+---
+
+_**User (2026-03-02 21:40:33Z)**_
+
+um did you do those on thie 1.1.3 branch?
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 21:40:40Z)**_
+
+
+
+Yeah, I did — they're all on `develop/1.1.3`. That's not ideal. Want me to create separate branches for each (`develop/1.1.4`, `develop/1.1.5`), or since these are just test releases, would you prefer to just tag and release directly from the commits on this branch?
+
+---
+
+_**User (2026-03-02 21:41:18Z)**_
+
+change it back to 1.1.3 on this branch. i'll just do the version bumps on the main branch myself
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 21:41:23Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/src/main.cpp has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 21:41:47Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Commit and push version revert
+
+```bash
+git add src/main.cpp && git commit -m "$(cat <<'EOF'
+chore: revert version back to 1.1.3
+EOF
+)" && git push
+```
+
+```text
+[develop/1.1.3 2680ee4] chore: revert version back to 1.1.3
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+To https://github.com/GDKeller/JPL-MiniPulse.git
+   18c2e3a..2680ee4  develop/1.1.3 -> develop/1.1.3
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 21:41:51Z)**_
+
+Done, back to `1.1.3` on this branch. Sorry about the mess.
