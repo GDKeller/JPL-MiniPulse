@@ -528,41 +528,39 @@ bool checkFirmwareUpdateAvailable() {
 
 void feedWatchdog(); // Forward declaration — defined in DEV UTILITIES region
 
-// Manually follows HTTP redirects using a fresh TLS context per hop.
-// This sidesteps the WiFiClientSecure reuse bug in HTTPClient::setURL()
-// which prevents SSL cleanup between redirect hops, causing "connection refused"
-// on the second redirect (GitHub → versioned URL → CDN).
-String resolveRedirectUrl(const char* url) {
+// Follows HTTP redirects manually using a fresh TLS context per hop.
+// ESP32's HTTPClient has a bug where WiFiClientSecure TLS state isn't cleaned
+// up between redirect hops, causing connection failures on cross-host redirects.
+// Returns the final URL that responds with 200, or "" on failure.
+String resolveRedirects(const char* url) {
 	bool showSerial = FileUtils::config.debugUtils.showSerial;
 	String currentUrl = url;
 	const int maxRedirects = 5;
 
 	for (int i = 0; i < maxRedirects; i++) {
 		feedWatchdog();
-		WiFiClientSecure* client = new WiFiClientSecure();
-		client->setInsecure();
+		WiFiClientSecure client;
+		client.setInsecure();
 
 		HTTPClient http;
 		http.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
 		http.setTimeout(10000);
 
-		if (!http.begin(*client, currentUrl)) {
-			if (showSerial) Serial.printf("Redirect resolve: failed to begin connection for %s\n", currentUrl.c_str());
+		if (!http.begin(client, currentUrl)) {
+			if (showSerial) Serial.printf("Redirect resolve: begin failed for %s\n", currentUrl.c_str());
 			http.end();
-			delete client;
 			return "";
 		}
 
 		http.addHeader("User-Agent", "JPL-MiniPulse-ESP32");
 		const char* collectHeaders[] = {"Location"};
 		http.collectHeaders(collectHeaders, 1);
-		int httpCode = http.GET();
+		int httpCode = http.sendRequest("HEAD");
 
 		if (httpCode >= 300 && httpCode < 400) {
 			String location = http.header("Location");
 			if (showSerial) Serial.printf("Redirect %d: %d -> %s\n", i + 1, httpCode, location.c_str());
 			http.end();
-			delete client;
 
 			if (location.length() == 0) {
 				if (showSerial) Serial.println("Redirect resolve: empty Location header");
@@ -571,9 +569,8 @@ String resolveRedirectUrl(const char* url) {
 			currentUrl = location;
 		} else {
 			http.end();
-			delete client;
 			if (httpCode == HTTP_CODE_OK) {
-				if (showSerial) Serial.printf("Resolved final URL: %s\n", currentUrl.c_str());
+				if (showSerial) Serial.printf("Resolved final URL (%d chars)\n", currentUrl.length());
 				return currentUrl;
 			}
 			if (showSerial) Serial.printf("Redirect resolve: HTTP %d at %s\n", httpCode, currentUrl.c_str());
@@ -594,42 +591,84 @@ void updateFirmwareOta() {
 	otaUpdateTriggered = true;
 	vTaskDelay(pdMS_TO_TICKS(500));
 
-	// Resolve redirects manually to avoid WiFiClientSecure TLS reuse bug
-	String resolvedUrl = resolveRedirectUrl(firmwareBinaryUrl);
-	if (resolvedUrl.length() == 0) {
+	// Resolve all redirects manually to get the direct CDN download URL
+	String directUrl = resolveRedirects(firmwareBinaryUrl);
+	if (directUrl.length() == 0) {
 		if (showSerial) Serial.println(">> Failed to resolve firmware download URL");
 		otaUpdateTriggered = false;
 		return;
 	}
 
-	WiFiClientSecure secureClient;
-	secureClient.setInsecure();
+	if (showSerial) Serial.printf("Free heap before OTA download: %u bytes\n", ESP.getFreeHeap());
 
-	// No redirect following needed — resolvedUrl points directly to CDN
+	// Download and flash firmware manually (bypasses httpUpdate which has
+	// its own URL handling issues with long CDN URLs)
 	feedWatchdog();
-	httpUpdate.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
+	WiFiClientSecure client;
+	client.setInsecure();
 
-	t_httpUpdate_return ret = httpUpdate.update(secureClient, resolvedUrl);
+	HTTPClient http;
+	http.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
+	http.setTimeout(30000);
 
-	switch (ret) {
-		case HTTP_UPDATE_FAILED:
-			if (showSerial) Serial.printf(">> HTTP_UPDATE_FAILED Error (%d): %s\n",
-				httpUpdate.getLastError(), httpUpdate.getLastErrorString().c_str());
-			break;
-		case HTTP_UPDATE_NO_UPDATES:
-			if (showSerial) Serial.println(">> HTTP_UPDATE_NO_UPDATES");
-			break;
-		case HTTP_UPDATE_OK:
-			if (showSerial) Serial.println(">> HTTP_UPDATE_OK");
-			break;
-		default:
-			if (showSerial) Serial.println(">> HTTP_UPDATE Unknown result");
-			break;
+	if (!http.begin(client, directUrl)) {
+		if (showSerial) Serial.println(">> Failed to begin firmware download connection");
+		http.end();
+		otaUpdateTriggered = false;
+		return;
 	}
 
-	// On success, ESP32 reboots — this only runs on failure
-	otaUpdateTriggered = false;
-	if (showSerial) Serial.println("OTA update complete\n--------\n");
+	http.addHeader("User-Agent", "JPL-MiniPulse-ESP32");
+	int httpCode = http.GET();
+
+	if (httpCode != HTTP_CODE_OK) {
+		if (showSerial) Serial.printf(">> Firmware download failed: HTTP %d\n", httpCode);
+		http.end();
+		otaUpdateTriggered = false;
+		return;
+	}
+
+	int contentLength = http.getSize();
+	if (showSerial) Serial.printf("Firmware size: %d bytes\n", contentLength);
+
+	if (contentLength <= 0) {
+		if (showSerial) Serial.println(">> Server did not report firmware size");
+		http.end();
+		otaUpdateTriggered = false;
+		return;
+	}
+
+	if (!Update.begin(contentLength)) {
+		if (showSerial) Serial.printf(">> Update.begin failed: %s\n", Update.errorString());
+		http.end();
+		otaUpdateTriggered = false;
+		return;
+	}
+
+	if (showSerial) Serial.println("Downloading firmware...");
+
+	WiFiClient& stream = http.getStream();
+	size_t written = Update.writeStream(stream);
+
+	if (written != (size_t)contentLength) {
+		if (showSerial) Serial.printf(">> Written %u of %d bytes: %s\n", written, contentLength, Update.errorString());
+		Update.abort();
+		http.end();
+		otaUpdateTriggered = false;
+		return;
+	}
+
+	if (!Update.end()) {
+		if (showSerial) Serial.printf(">> Update.end failed: %s\n", Update.errorString());
+		http.end();
+		otaUpdateTriggered = false;
+		return;
+	}
+
+	http.end();
+
+	if (showSerial) Serial.println(">> Firmware update successful, rebooting...");
+	ESP.restart();
 }
 
 #pragma region -- ANIMATION UTILITIES

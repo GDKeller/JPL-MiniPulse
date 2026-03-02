@@ -1568,3 +1568,2069 @@ To https://github.com/GDKeller/JPL-MiniPulse.git
 _**Agent (claude-opus-4-6 2026-03-02 21:41:51Z)**_
 
 Done, back to `1.1.3` on this branch. Sorry about the mess.
+
+---
+
+_**User (2026-03-02 21:47:36Z)**_
+
+so 1.1.3 is the version we need to distribute on kellerdigital right?
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 21:47:41Z)**_
+
+I don't have context on what kellerdigital is or how you distribute firmware there. Is that your website/distribution platform? What does the current distribution process look like?
+
+---
+
+_**User (2026-03-02 21:54:15Z)**_
+
+ughhhhhhhhh on v1.1.3 the update to v1.1.5 is still failing: --------
+Attempting firmware update from GitHub...
+Redirect 1: 302 -> 
+Redirect resolve: empty Location header
+>> Failed to resolve firmware download URL
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 21:54:25Z)**_
+
+<think><details><summary>Thought Process</summary>
+The user is reporting that the OTA update is failing because the redirect response has an empty Location header. Let me think about what could cause this.
+
+The issue is in `resolveRedirectUrl` - when it gets a 302 redirect, the Location header is coming back empty. This could be because:
+
+1. The `Location` header name is case-sensitive and the server returns it differently
+2. `HTTPClient` needs to be told which headers to collect before making the request (this is a known ESP32 HTTPClient behavior - you need to call `http.collectHeaders()` to tell it which headers to track)
+
+That's almost certainly the issue. 
+
+The ESP32 HTTPClient doesn't automatically collect response headers - I need to explicitly register which headers to track using `collectHeaders()` before making the request. I'm setting up an array with the header names I want to capture and calling `collectHeaders()` with that array before the GET request, which should fix the empty Location header problem.
+</details></think>
+
+_**Agent (claude-opus-4-6 2026-03-02 21:54:25Z)**_
+
+Classic ESP32 `HTTPClient` gotcha — it doesn't collect response headers by default. You need to explicitly tell it which headers to track with `collectHeaders()` before the request, otherwise `http.header("Location")` always returns empty.
+
+_**Agent (claude-opus-4-6 2026-03-02 21:54:26Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+   540→	for (int i = 0; i < maxRedirects; i++) {
+   541→		feedWatchdog();
+   542→		WiFiClientSecure* client = new WiFiClientSecure();
+   543→		client->setInsecure();
+   544→
+   545→		HTTPClient http;
+   546→		http.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
+   547→		http.setTimeout(10000);
+   548→
+   549→		if (!http.begin(*client, currentUrl)) {
+   550→			if (showSerial) Serial.printf("Redirect resolve: failed to begin connection for %s\n", currentUrl.c_str());
+   551→			http.end();
+   552→			delete client;
+   553→			return "";
+   554→		}
+   555→
+   556→		http.addHeader("User-Agent", "JPL-MiniPulse-ESP32");
+   557→		int httpCode = http.GET();
+   558→
+   559→		if (httpCode >= 300 && httpCode < 400) {
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 21:54:31Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/src/main.cpp has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 21:54:45Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Build release to verify
+
+`~/.platformio/penv/bin/pio run -e release 2>&1 | tail -5`
+
+```text
+Environment    Status    Duration
+-------------  --------  ------------
+release        SUCCESS   00:00:11.119
+========================= 1 succeeded in 00:00:11.119 =========================
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 21:55:47Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Commit and push the fix
+
+```bash
+git add src/main.cpp && git commit -m "$(cat <<'EOF'
+fix(ota): collect Location header before reading redirect response
+EOF
+)" && git push
+```
+
+```text
+The user doesn't want to proceed with this tool use. The tool use was rejected (eg. if it was a file edit, the new_string was NOT written to the file). STOP what you are doing and wait for the user to tell you how to proceed.
+```
+</details></tool-use>
+
+---
+
+_**User (2026-03-02 21:55:47Z)**_
+
+[Request interrupted by user for tool use]
+
+_**User (2026-03-02 21:56:04Z)**_
+
+switch to the 1.1.3 branch to fix this. we'll "overwrite" the releases on gh
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 21:56:11Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Stash current changes
+
+`git stash`
+
+```text
+Saved working directory and index state WIP on main: 4ccb5b6 chore: version bump to 1.1.5 for OTA testing
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 21:56:14Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Switch to develop/1.1.3 branch
+
+`git checkout develop/1.1.3`
+
+```text
+Switched to branch 'develop/1.1.3'
+M	.specstory/history/2026-03-02_21-21-26Z-is-this-the-conversation.md
+Your branch is up to date with 'origin/develop/1.1.3'.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 21:56:18Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+   554→		}
+   555→
+   556→		http.addHeader("User-Agent", "JPL-MiniPulse-ESP32");
+   557→		int httpCode = http.GET();
+   558→
+   559→		if (httpCode >= 300 && httpCode < 400) {
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 21:56:22Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/src/main.cpp has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 21:56:38Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Build release to verify
+
+`~/.platformio/penv/bin/pio run -e release 2>&1 | tail -5`
+
+```text
+Environment    Status    Duration
+-------------  --------  ------------
+release        SUCCESS   00:00:10.867
+========================= 1 succeeded in 00:00:10.867 =========================
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 21:56:41Z)**_
+
+Build passes. Ready to commit and push — this will update the PR. Want me to go ahead?
+
+---
+
+_**User (2026-03-02 21:58:13Z)**_
+
+are you suer this is the only change we need to make
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 21:58:32Z)**_
+
+<think><details><summary>Thought Process</summary>
+The user is asking me to double-check if `collectHeaders` is the only fix needed. Let me think about this more carefully.
+
+The issue is that ESP32's HTTPClient doesn't collect response headers by default. You need to call `collectHeaders()` to tell it which headers to track. Without this, `http.header("Location")` returns an empty string.
+
+But let me also think about whether there could be other issues:
+
+1. The `collectHeaders` fix - yes, this is definitely needed. Without it, `http.header("Location")` will always return empty.
+
+2. Are there any other potential issues with the redirect resolution?
+   - The User-Agent header is set correctly
+   - The timeout is reasonable
+   - The cleanup (http.end() + delete client) is correct
+   - The loop logic is correct
+
+3. What about the actual `httpUpdate.update()` call after resolving? The `secureClient` is stack-allocated there, which should be fine since it's used immediately.
+
+4. One thing I should check - is the `http.header()` method case-sensitive? On ESP32, the HTTPClient header matching is case-insensitive, so "Location" vs "location" shouldn't matter.
+
+I think the `collectHeaders` fix is indeed the only change needed. Everything else looks solid - the headers are being set properly, the timeout is reasonable, cleanup is handled correctly, and the loop logic for following redirects is sound. The case-insensitivity of header matching on ESP32 means that shouldn't be a concern either.
+
+Now I'm wondering whether HEAD requests would be more efficient than GET for resolving redirects, since we only need the headers and not the response body. Using GET means we'd download the entire firmware binary on the final hop just to get the URL, which seems wasteful. Though actually, we return the URL as soon as we get a 200 response and call `http.end()` to close the connection, so the body shouldn't be fully consumed. But the server might still start transmitting it before the connection closes.
+
+HEAD would be cleaner since it only returns headers, but some CDNs might not support it reliably or could return different status codes. GET is the safer choice for redirect following, and since we're not actually reading the body, the `collectHeaders` fix alone should resolve the issue—the symptom of the missing Location header matches perfectly with headers not being collected.
+</details></think>
+
+_**Agent (claude-opus-4-6 2026-03-02 21:58:36Z)**_
+
+Good call to double-check. Let me think through the full flow:
+
+1. **Empty Location header** — directly explained by missing `collectHeaders()`. ESP32 `HTTPClient` silently returns `""` for any header you don't opt into collecting. This is the fix.
+
+2. **After redirect resolution** — `httpUpdate.update()` gets a direct CDN URL with no redirects, and `WiFiClientSecure` is freshly created on the stack. That path should be fine.
+
+3. **HEAD vs GET** — We're using GET to follow redirects, which means on the final 200 hop we'd start receiving the binary body before `http.end()` closes the connection. It's wasteful but not broken. If you wanted to optimize, we could use `http.sendRequest("HEAD")` instead of `http.GET()` since we only need headers. But that's an optimization, not a bug.
+
+The `collectHeaders` fix is the only change needed to address the failure you're seeing. Want me to commit it?
+
+---
+
+_**User (2026-03-02 21:59:14Z)**_
+
+yes
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 22:02:04Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Commit and push the collectHeaders fix
+
+```bash
+git add src/main.cpp && git commit -m "$(cat <<'EOF'
+fix(ota): collect Location header before reading redirect response
+EOF
+)" && git push
+```
+
+```text
+[develop/1.1.3 8c89c98] fix(ota): collect Location header before reading redirect response
+ 1 file changed, 2 insertions(+)
+To https://github.com/GDKeller/JPL-MiniPulse.git
+   a20db52..8c89c98  develop/1.1.3 -> develop/1.1.3
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:02:08Z)**_
+
+Pushed. PR #5 is updated with the fix.
+
+---
+
+_**User (2026-03-02 22:09:10Z)**_
+
+um PR #5 has been merged
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 22:09:14Z)**_
+
+Ah, right. Want me to open a new PR for this fix?
+
+---
+
+_**User (2026-03-02 22:09:21Z)**_
+
+yes
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 22:09:25Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Check commits ahead of main
+
+`git log --oneline main..develop/1.1.3`
+
+```text
+8c89c98 fix(ota): collect Location header before reading redirect response
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:10:34Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Create new PR for the collectHeaders fix
+
+```bash
+gh pr create --title "fix(ota): collect Location header for redirect resolution" --body "$(cat <<'EOF'
+## Summary
+- ESP32 `HTTPClient` requires explicit `collectHeaders()` before response headers can be read
+- Without this, `http.header("Location")` always returns empty, causing redirect resolution to fail immediately
+
+## Test plan
+- [ ] Trigger OTA update and verify redirects are followed successfully
+- [ ] Verify firmware downloads and installs from resolved CDN URL
+EOF
+)" --base main
+```
+
+```text
+Warning: 1 uncommitted change
+https://github.com/GDKeller/JPL-MiniPulse/pull/6
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:10:38Z)**_
+
+PR #6 is up: https://github.com/GDKeller/JPL-MiniPulse/pull/6
+
+---
+
+_**User (2026-03-02 22:12:31Z)**_
+
+why isnt the version change to 1.1.3 in the PR?
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 22:12:35Z)**_
+
+<think><details><summary>Thought Process</summary>
+The user is asking why the version change to 1.1.3 isn't in the PR. Let me check what's on main vs this branch for the version line.
+</details></think>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:12:36Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Check diff between main and this branch
+
+`git diff main..develop/1.1.3 -- src/main.cpp | head -30`
+
+```text
+diff --git a/src/main.cpp b/src/main.cpp
+index abb80ae..023a644 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -1,4 +1,4 @@
+-const char* currentFirmwareVersion = "1.1.5"; // Current firmware version
++const char* currentFirmwareVersion = "1.1.3"; // Current firmware version
+ const char* githubApiUrl = "https://api.github.com/repos/GDKeller/JPL-MiniPulse/releases/latest";
+ const char* firmwareBinaryUrl = "https://github.com/GDKeller/JPL-MiniPulse/releases/latest/download/firmware.bin";
+ 
+@@ -554,6 +554,8 @@ String resolveRedirectUrl(const char* url) {
+ 		}
+ 
+ 		http.addHeader("User-Agent", "JPL-MiniPulse-ESP32");
++		const char* collectHeaders[] = {"Location"};
++		http.collectHeaders(collectHeaders, 1);
+ 		int httpCode = http.GET();
+ 
+ 		if (httpCode >= 300 && httpCode < 400) {
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:12:41Z)**_
+
+It is in the diff — main is at `1.1.5` (from your version bumps) and this branch has `1.1.3`. So the PR actually shows a version *downgrade* from 1.1.5 to 1.1.3, which probably isn't what you want.
+
+You might want to set the version on this branch to whatever the next release should be (1.1.6?), or revert main back to 1.1.3 first. What's your preference?
+
+---
+
+_**User (2026-03-02 22:14:28Z)**_
+
+i want to revert back to 1.1.3. its just not commited
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 22:14:31Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Check stash for the earlier changes
+
+`git stash list`
+
+```text
+stash@{0}: WIP on main: 4ccb5b6 chore: version bump to 1.1.5 for OTA testing
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:14:37Z)**_
+
+That stash has the `collectHeaders` fix on main, but main is still at 1.1.5. You said you'd handle the version bumps on main yourself — do you want me to switch to main, revert the version back to 1.1.3, and commit that? Then the PR diff would just be the `collectHeaders` fix.
+
+---
+
+_**User (2026-03-02 22:14:52Z)**_
+
+cant we bump it in the PR?
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 22:14:56Z)**_
+
+
+
+Right — just bump this branch to 1.1.5 to match main, then the PR diff will only show the `collectHeaders` fix.
+
+_**Agent (claude-opus-4-6 2026-03-02 22:14:57Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+<tool_use_error>File has not been read yet. Read it first before writing to it.</tool_use_error>
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:15:01Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+     1→const char* currentFirmwareVersion = "1.1.3"; // Current firmware version
+     2→const char* githubApiUrl = "https://api.github.com/repos/GDKeller/JPL-MiniPulse/releases/latest";
+     3→const char* firmwareBinaryUrl = "https://github.com/GDKeller/JPL-MiniPulse/releases/latest/download/firmware.bin";
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:15:05Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/src/main.cpp has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:15:21Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Build to verify
+
+`~/.platformio/penv/bin/pio run -e release 2>&1 | tail -5`
+
+```text
+Environment    Status    Duration
+-------------  --------  ------------
+release        SUCCESS   00:00:11.757
+========================= 1 succeeded in 00:00:11.757 =========================
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:15:38Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Amend commit to include version match and force push
+
+`git add src/main.cpp && git commit --amend --no-edit && git push --force-with-lease`
+
+```text
+[develop/1.1.3 3673049] fix(ota): collect Location header before reading redirect response
+ Date: Mon Mar 2 14:02:03 2026 -0800
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+To https://github.com/GDKeller/JPL-MiniPulse.git
+ + 8c89c98...3673049 develop/1.1.3 -> develop/1.1.3 (forced update)
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:15:42Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Verify PR diff is now just the collectHeaders fix
+
+`git diff main..develop/1.1.3 -- src/main.cpp`
+
+```text
+diff --git a/src/main.cpp b/src/main.cpp
+index abb80ae..654949b 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -554,6 +554,8 @@ String resolveRedirectUrl(const char* url) {
+ 		}
+ 
+ 		http.addHeader("User-Agent", "JPL-MiniPulse-ESP32");
++		const char* collectHeaders[] = {"Location"};
++		http.collectHeaders(collectHeaders, 1);
+ 		int httpCode = http.GET();
+ 
+ 		if (httpCode >= 300 && httpCode < 400) {
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:15:45Z)**_
+
+Clean — PR #6 now shows only the `collectHeaders` fix, no version noise.
+
+---
+
+_**User (2026-03-02 22:16:49Z)**_
+
+wait what? the version should be 1.1.3 in the code that's getting merged into main
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 22:16:53Z)**_
+
+<think><details><summary>Thought Process</summary>
+The user wants the version to be 1.1.3, not 1.1.5. They want to revert main back to 1.1.3 as well. So the PR should change the version from 1.1.5 (on main) back to 1.1.3, AND include the collectHeaders fix.
+
+Let me set this branch back to 1.1.3.
+</details></think>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:16:55Z)**_
+
+You're right, sorry — I was thinking about it backwards. You want main to go back to 1.1.3 too, since 1.1.4/1.1.5 were just test bumps.
+
+_**Agent (claude-opus-4-6 2026-03-02 22:16:59Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/src/main.cpp has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:17:59Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Amend to revert version to 1.1.3 and push
+
+`git add src/main.cpp && git commit --amend --no-edit && git push --force-with-lease`
+
+```text
+[develop/1.1.3 c6c4767] fix(ota): collect Location header before reading redirect response
+ Date: Mon Mar 2 14:02:03 2026 -0800
+ 1 file changed, 2 insertions(+)
+To https://github.com/GDKeller/JPL-MiniPulse.git
+ + 3673049...c6c4767 develop/1.1.3 -> develop/1.1.3 (forced update)
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:18:03Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Verify PR diff
+
+`git diff main..develop/1.1.3 -- src/main.cpp`
+
+```text
+diff --git a/src/main.cpp b/src/main.cpp
+index abb80ae..023a644 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -1,4 +1,4 @@
+-const char* currentFirmwareVersion = "1.1.5"; // Current firmware version
++const char* currentFirmwareVersion = "1.1.3"; // Current firmware version
+ const char* githubApiUrl = "https://api.github.com/repos/GDKeller/JPL-MiniPulse/releases/latest";
+ const char* firmwareBinaryUrl = "https://github.com/GDKeller/JPL-MiniPulse/releases/latest/download/firmware.bin";
+ 
+@@ -554,6 +554,8 @@ String resolveRedirectUrl(const char* url) {
+ 		}
+ 
+ 		http.addHeader("User-Agent", "JPL-MiniPulse-ESP32");
++		const char* collectHeaders[] = {"Location"};
++		http.collectHeaders(collectHeaders, 1);
+ 		int httpCode = http.GET();
+ 
+ 		if (httpCode >= 300 && httpCode < 400) {
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:18:08Z)**_
+
+PR #6 now reverts the version back to 1.1.3 and adds the `collectHeaders` fix.
+
+---
+
+_**User (2026-03-02 22:19:04Z)**_
+
+why doesn the PR show a line change for the version number? 
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 22:19:41Z)**_
+
+<think><details><summary>Thought Process</summary>
+The user is right - the PR on GitHub only shows the `collectHeaders` change (+2 lines) but not the version number change from 1.1.5 to 1.1.3. But when I ran `git diff main..develop/1.1.3` locally, it showed the version change.
+
+Let me think about why this could happen... The PR was created from the `develop/1.1.3` branch against `main`. The GitHub PR diff shows the merge base, not a direct diff. If the version change from 1.1.3 to 1.1.5 was done on main after the branch point, and the branch was created before those changes, then the merge base might already have 1.1.3... 
+
+
+Actually, I think I see the issue now - GitHub's three-dot diff is showing only the changes unique to the feature branch since it diverged from main, whereas my local two-dot diff included everything. The `develop/1.1.3` branch was created from `develop/1.1.2`, which split off from main before the version bumps to 1.1.4 and 1.1.5 happened on main directly.
+
+Wait, let me reconsider the sequence of events. I bumped the versions on `develop/1.1.3`, the user asked me to revert back to 1.1.3, I did that, and then they said they'd handle the version bumps on main themselves. But looking at the stash message mentioning "version bump to 1.1.5 for OTA testing," it seems like the user may have already started those bumps on main.
+
+The issue is understanding what GitHub's three-dot diff will actually show. If the merge base between main and `develop/1.1.3` is at a point where the version was still 1.1.2, then any version changes on main after that branch point would show up in the three-dot diff. But I need to think through exactly when the branch diverged and what the version state was at that point. and develop/1.1.3 changed it to 1.1.3, while main changed it to 1.1.5, then the three-dot diff would show the change from 1.1.2 to 1.1.3 (changes on the branch since divergence).
+
+But the PR only shows +2 lines (the collectHeaders change). So maybe GitHub isn't showing the version change because... hmm.
+
+Actually wait - PR #5 was already merged. PR #5 included the version bump to 1.1.3 and all the OTA changes. So main already has version 1.1.3 from PR #5. Then the user bumped main to 1.1.4 and 1.1.5 for testing.
+
+So the merge base would be after PR #5 was merged (which has 1.1.3). Then on main, the user bumped to 1.1.5. On the branch, the version stayed at 1.1.3 since it hasn't changed relative to the merge base. That's why GitHub's three-dot diff doesn't show the version as modified—the branch never touched that line. When this PR merges, the version stays at 1.1.5 on main, which means the user won't get the version revert to 1.1.3 they're expecting. So git would actually keep 1.1.5 since the branch never explicitly changed the version from the merge base—the bump to 1.1.5 happened only on main. I need to tell the user that merging won't revert the version, and they'll either need to revert it on main first or rebase this branch so the version change shows up in the diff. Let me rebase on main to make the version change explicit.
+</details></think>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:19:43Z)**_
+
+That's because GitHub uses a three-way merge diff. The version bumps to 1.1.4/1.1.5 were done on main *after* this branch diverged. From the branch's perspective, it never changed the version — it's been 1.1.3 since the merge base.
+
+This means **merging this PR will NOT revert the version to 1.1.3** — git will keep main's 1.1.5 since the branch didn't touch that line.
+
+We need to rebase on current main so the version revert shows up as an explicit change.
+
+_**Agent (claude-opus-4-6 2026-03-02 22:20:06Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Rebase develop/1.1.3 onto current main
+
+`git fetch origin main && git rebase origin/main`
+
+```text
+Exit code 1
+From https://github.com/GDKeller/JPL-MiniPulse
+ * branch            main       -> FETCH_HEAD
+error: cannot rebase: You have unstaged changes.
+error: Please commit or stash them.
+
+From https://github.com/GDKeller/JPL-MiniPulse
+ * branch            main       -> FETCH_HEAD
+error: cannot rebase: You have unstaged changes.
+error: Please commit or stash them.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:21:21Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Stash changes and rebase onto main
+
+`git stash && git rebase origin/main`
+
+```text
+Saved working directory and index state WIP on develop/1.1.3: c6c4767 fix(ota): collect Location header before reading redirect response
+Rebasing (1/1)[KSuccessfully rebased and updated refs/heads/develop/1.1.3.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:21:28Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Verify diff now includes version change
+
+`git diff origin/main..develop/1.1.3 -- src/main.cpp | head -20`
+
+```text
+diff --git a/src/main.cpp b/src/main.cpp
+index abb80ae..654949b 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -554,6 +554,8 @@ String resolveRedirectUrl(const char* url) {
+ 		}
+ 
+ 		http.addHeader("User-Agent", "JPL-MiniPulse-ESP32");
++		const char* collectHeaders[] = {"Location"};
++		http.collectHeaders(collectHeaders, 1);
+ 		int httpCode = http.GET();
+ 
+ 		if (httpCode >= 300 && httpCode < 400) {
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:21:35Z)**_
+
+<think><details><summary>Thought Process</summary>
+Hmm, the rebase didn't cause a conflict on the version line. That means after the rebase, the version line on this branch is now 1.1.5 (from main), not 1.1.3. The commit only added the collectHeaders lines, and since the version wasn't changed in the commit itself (it was changed in an earlier commit that was already merged via PR #5), the rebase just replayed the collectHeaders fix on top of main's 1.1.5.
+
+So I need to explicitly change the version back to 1.1.3 on this branch now.
+</details></think>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:21:35Z)**_
+
+The rebase replayed the commit on top of main's 1.1.5, so the version is still 1.1.5 on this branch now. I need to explicitly change it.
+
+_**Agent (claude-opus-4-6 2026-03-02 22:21:36Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+     1→const char* currentFirmwareVersion = "1.1.5"; // Current firmware version
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:21:42Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/src/main.cpp has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:21:53Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Amend commit to include version revert
+
+`git add src/main.cpp && git commit --amend --no-edit`
+
+```text
+[develop/1.1.3 ca94814] fix(ota): collect Location header before reading redirect response
+ Date: Mon Mar 2 14:02:03 2026 -0800
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:21:57Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Verify diff now shows both changes
+
+`git diff origin/main..develop/1.1.3 -- src/main.cpp`
+
+```text
+diff --git a/src/main.cpp b/src/main.cpp
+index abb80ae..023a644 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -1,4 +1,4 @@
+-const char* currentFirmwareVersion = "1.1.5"; // Current firmware version
++const char* currentFirmwareVersion = "1.1.3"; // Current firmware version
+ const char* githubApiUrl = "https://api.github.com/repos/GDKeller/JPL-MiniPulse/releases/latest";
+ const char* firmwareBinaryUrl = "https://github.com/GDKeller/JPL-MiniPulse/releases/latest/download/firmware.bin";
+ 
+@@ -554,6 +554,8 @@ String resolveRedirectUrl(const char* url) {
+ 		}
+ 
+ 		http.addHeader("User-Agent", "JPL-MiniPulse-ESP32");
++		const char* collectHeaders[] = {"Location"};
++		http.collectHeaders(collectHeaders, 1);
+ 		int httpCode = http.GET();
+ 
+ 		if (httpCode >= 300 && httpCode < 400) {
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:22:01Z)**_
+
+Now both changes show. Force pushing to update the PR.
+
+_**Agent (claude-opus-4-6 2026-03-02 22:22:12Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Force push rebased branch
+
+`git push --force-with-lease`
+
+```text
+To https://github.com/GDKeller/JPL-MiniPulse.git
+ + c6c4767...ca94814 develop/1.1.3 -> develop/1.1.3 (forced update)
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:22:16Z)**_
+
+PR #6 should now show both the version revert to 1.1.3 and the `collectHeaders` fix.
+
+---
+
+_**User (2026-03-02 22:24:43Z)**_
+
+ok i'm just gonna switch to main and do builds of 1.1.4 but not actually commit them
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 22:24:47Z)**_
+
+
+
+Sounds good — you just need the `firmware.bin` artifacts to upload to GitHub releases for testing. Go for it.
+
+---
+
+_**User (2026-03-02 22:33:58Z)**_
+
+Version check HTTP code: 200
+Remote version (tag): v1.1.5
+
+--------
+Attempting firmware update from GitHub...
+Redirect 1: 302 -> https://github.com/GDKeller/JPL-MiniPulse/releases/download/v1.1.5/firmware.bin
+Redirect 2: 302 -> https://release-assets.githubusercontent.com/github-production-release-asset/710218354/71d66919-9c37-48f0-91b9-448a8a1954cc?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-03-02T23%3A28%3A42Z&rscd=attachment%3B+filename%3Dfirmware.bin&rsct=application%2Foctet-stream&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-03-02T22%3A27%3A57Z&ske=2026-03-02T23%3A28%3A42Z&sks=b&skv=2018-11-09&sig=E7JQsefxZ5WGhurCEJL7qqUfM7L4z9x9v5X%2FThDTMc8%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc3MjQ5MTExNiwibmJmIjoxNzcyNDkwODE2LCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.DPI58YCUWQnuEhfotaCmAjrcl7noyJgk7Wpytnu9rHU&response-content-disposition=attachment%3B%20filename%3Dfirmware.bin&response-content-type=application%2Foctet-stream
+Resolved final URL: https://release-assets.githubusercontent.com/github-production-release-asset/710218354/71d66919-9c37-48f0-91b9-448a8a1954cc?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-03-02T23%3A28%3A42Z&rscd=attachment%3B+filename%3Dfirmware.bin&rsct=application%2Foctet-stream&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-03-02T22%3A27%3A57Z&ske=2026-03-02T23%3A28%3A42Z&sks=b&skv=2018-11-09&sig=E7JQsefxZ5WGhurCEJL7qqUfM7L4z9x9v5X%2FThDTMc8%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc3MjQ5MTExNiwibmJmIjoxNzcyNDkwODE2LCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.DPI58YCUWQnuEhfotaCmAjrcl7noyJgk7Wpytnu9rHU&response-content-disposition=attachment%3B%20filename%3Dfirmware.bin&response-content-type=application%2Foctet-stream
+Guru Meditation Error: Core  1 panic'ed (LoadProhibited). Exception was unhandled.
+
+Core  1 register dump:
+PC      : 0x400f45a6  PS      : 0x00060130  A0      : 0x800d49ea  A1      : 0x3ffb1ba0
+A2      : 0x3ffb1bfc  A3      : 0x00000000  A4      : 0x39de47c0  A5      : 0x3ffb1b5c
+A6      : 0x3ffcceb0  A7      : 0x3fffede4  A8      : 0x800fa00a  A9      : 0x3ffb1b80
+A10     : 0x3ffe5034  A11     : 0x3ffb1bcc  A12     : 0x0000038f  A13     : 0x0000003f
+A14     : 0x3ffb1b20  A15     : 0x00000008  SAR     : 0x0000001d  EXCCAUSE: 0x0000001c
+EXCVADDR: 0x0000003c  LBEG    : 0x4008c331  LEND    : 0x4008c341  LCOUNT  : 0xffffff1d
+
+
+Backtrace: 0x400f45a3:0x3ffb1ba0 0x400d49e7:0x3ffb1bc0 0x400db531:0x3ffb1ce0 0x400db70f:0x3ffb1da0 0x400e0a7e:0x3ffb1dd0 0x400e0b89:0x3ffb1df0 0x400e0c66:0x3ffb1e30 0x400e0e05:0x3ffb1ea0 0x400e91e6:0x3ffb1ef0 0x400e93e7:0x3ffb1f50 0x400d52ed:0x3ffb1f70 0x400d86cb:0x3ffb20c0 0x400fc881:0x3ffb2290    
+
+
+
+
+ELF file SHA256: 71ad126d55e1e5b6
+
+Rebooting...
+ets Jul 29 2019 12:21:46
+
+rst:0xc (SW_CPU_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:1
+load:0x3fff0030,len:1344
+load:0x40078000,len:13836
+load:0x40080400,len:3608
+entry 0x400805f0
+
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 22:35:18Z)**_
+
+<think><details><summary>Thought Process</summary>
+The redirect resolution is working now - it successfully followed the redirects and got the final CDN URL. But then it crashes with a Guru Meditation Error (LoadProhibited) when trying to actually download the firmware using `httpUpdate.update()`.
+
+The crash is on Core 1 with EXCVADDR: 0x0000003c which looks like a null pointer dereference (dereferencing a struct member at offset 0x3c from a null pointer).
+
+Let me think about what could cause this. The `updateFirmwareOta()` function:
+1. Sets `otaUpdateTriggered = true`
+2. Delays 500ms
+
+
+3. Resolves the redirect URL (this works now)
+4. Creates a stack-allocated `WiFiClientSecure secureClient`
+5. Calls `httpUpdate.update(secureClient, resolvedUrl)`
+
+The resolved URL is enormous with all those query parameters, and I'm wondering if heap exhaustion could be the culprit - the String holding that massive URL plus the memory demands of the HTTP connection and TLS buffers might be overwhelming the ESP32's available memory.
+
+Though the redirect resolution already completed multiple HTTPS connections successfully and freed them, so by the time we reach `httpUpdate.update()` there should be breathing room. The URL's special characters shouldn't cause issues either. Looking at the crash address 0x0000003c though - that's a low address suggesting a null pointer dereference with an offset, which points toward either the stack-allocated `secureClient` getting corrupted or an internal state problem in `httpUpdate`.
+
+The real issue might be that `httpUpdate` is a global instance previously configured with redirect flags, and when it calls `update()` it creates its own internal `HTTPClient`. The CDN URL length could be problematic, or this could be a heap fragmentation issue. More likely though - the `resolveRedirectUrl` function is allocating and deallocating `WiFiClientSecure` objects on the heap, which could be leaving the memory in a fragile state for the subsequent firmware download.
+
+I'm considering a few potential fixes: using HEAD requests instead of GET to reduce memory usage during redirect resolution, checking for stack overflow since the callback runs on Core 1 with potentially limited stack space, or investigating whether the resolved URL itself is just too large to handle properly.
+
+The core issue seems to be that creating multiple `WiFiClientSecure` objects for each redirect hop fragments the heap, and by the time `httpUpdate.update()` needs to allocate its own buffers, there's not enough contiguous memory available, causing a silent failure and null pointer crash.
+
+A simpler solution might be to avoid creating fresh client objects for each redirect entirely—either by reusing a single client across hops or by handling redirects differently altogether. The real problem is that `resolveRedirectUrl` allocates temporary TLS buffers on the heap that get freed, causing fragmentation before the actual firmware update tries to allocate its own buffers. I'm considering a few approaches: freeing the String early won't help since we need it for the update call, reusing a single WiFiClientSecure defeats the purpose of avoiding the TLS bug, or we could try freeing other resources to improve heap availability—maybe pausing the getData task isn't enough.
+
+Actually, I'm realizing the original issue was specifically the TLS reuse within a single HTTPClient session across multiple redirects, not necessarily the heap fragmentation itself. What if instead of resolving all redirects upfront, I just resolve enough to get past the problematic redirect chain, or use httpUpdate with redirect following on a URL that's already been partially resolved?
+
+But that feels fragile. Let me reconsider the crash from a different angle - the EXCVADDR value of 0x3c suggests we're dereferencing a null pointer and accessing a member at offset 60, which could be happening inside WiFiClientSecure or HTTPClient when they're trying to access cleaned-up state. The question is whether httpUpdate is internally calling something like setURL that's accessing stale memory, or if the secureClient object itself is getting corrupted on the stack.
+
+I'm wondering if the real issue is stack pressure in the web server callback task. The updateFirmwareOta function is running on Core 1 with a default 8KB stack, and we're allocating a lot there - the String for the resolved URL alone takes up significant heap space, plus WiFiClientSecure is a large object with SSL context pointers and internal buffers that could easily consume 100+ bytes on the stack.
+
+But actually, looking at that LoadProhibited crash at 0x3c - that's a null pointer dereference. The HTTPClient might be failing silently during the TLS handshake and returning a null client, which then crashes on subsequent operations. Or more likely, that massive 700+ character CDN URL is overflowing some internal buffer in HTTPClient that wasn't designed for URLs that long. Let me check the available heap before calling `httpUpdate.update()`, and consider switching to manual firmware updates with `Update.h` instead of relying on `httpUpdate`. Or maybe the real fix is simpler—adding `yield()` calls to let the heap consolidate after resolving the redirect. I'm also wondering if the issue is that when we call `http.GET()` on the final CDN URL, the server starts streaming the binary, and even though we clean up the connection, something isn't being released properly before we make the new `httpUpdate` connection.
+
+Looking at the actual code flow: we're creating a secure client, disabling redirect following, then passing it to `httpUpdate.update()` with the resolved URL. The HTTPUpdate library internally creates an HTTPClient, connects, and starts reading the response into flash. The crash might be happening because the CDN host has strict SNI or TLS requirements that fail in a way that corrupts the heap or causes a memory issue.
+
+But wait—I'm realizing the real problem might be simpler. We call `setInsecure()` before `update()`, which is correct, but I need to trace through the heap usage more carefully. The ESP32 has about 230KB free heap after static allocation. Each TLS connection uses 16-32KB, and we're creating multiple clients during the redirect resolution phase. Once `resolveRedirectUrl` returns and those clients are freed, we should have enough space for the final download client, but maybe there's fragmentation or the heap isn't being released properly.
+
+The most practical fix would be to either log the free heap before calling `httpUpdate.update()` to confirm this is memory-related, or switch to HEAD requests during redirect resolution to avoid downloading response bodies and reduce peak memory usage. The second option seems like the quickest win. I should also mention that using HEAD requests instead of GET for following redirects would minimize heap pressure by skipping unnecessary body downloads—only the headers are needed to track the redirect chain.
+</details></think>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:35:22Z)**_
+
+The redirect resolution is working perfectly now — both hops resolved correctly. But then it crashes with a `LoadProhibited` (null pointer dereference at offset 0x3c) when `httpUpdate.update()` tries to run.
+
+This is almost certainly heap exhaustion/fragmentation. The redirect resolver allocated and freed 2 separate `WiFiClientSecure` TLS contexts (~16-32KB each) on the heap. By the time `httpUpdate.update()` tries to allocate its own TLS buffers, the heap is too fragmented for a contiguous allocation, it gets a null pointer, and crashes.
+
+Two things we can do:
+
+1. **Quick diagnostic** — add `ESP.getFreeHeap()` logging before the update call to confirm
+2. **Fix** — use HEAD requests instead of GET in the redirect resolver. Right now it's doing full GET requests on each hop, which means on the final 200 it starts downloading the entire firmware binary before we abort. HEAD only fetches headers, dramatically reducing peak memory.
+
+Want me to make both changes?
+
+---
+
+_**User (2026-03-02 22:36:24Z)**_
+
+yes
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 22:36:29Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+   535→String resolveRedirectUrl(const char* url) {
+   536→	bool showSerial = FileUtils::config.debugUtils.showSerial;
+   537→	String currentUrl = url;
+   538→	const int maxRedirects = 5;
+   539→
+   540→	for (int i = 0; i < maxRedirects; i++) {
+   541→		feedWatchdog();
+   542→		WiFiClientSecure* client = new WiFiClientSecure();
+   543→		client->setInsecure();
+   544→
+   545→		HTTPClient http;
+   546→		http.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
+   547→		http.setTimeout(10000);
+   548→
+   549→		if (!http.begin(*client, currentUrl)) {
+   550→			if (showSerial) Serial.printf("Redirect resolve: failed to begin connection for %s\n", currentUrl.c_str());
+   551→			http.end();
+   552→			delete client;
+   553→			return "";
+   554→		}
+   555→
+   556→		http.addHeader("User-Agent", "JPL-MiniPulse-ESP32");
+   557→		const char* collectHeaders[] = {"Location"};
+   558→		http.collectHeaders(collectHeaders, 1);
+   559→		int httpCode = http.GET();
+   560→
+   561→		if (httpCode >= 300 && httpCode < 400) {
+   562→			String location = http.header("Location");
+   563→			if (showSerial) Serial.printf("Redirect %d: %d -> %s\n", i + 1, httpCode, location.c_str());
+   564→			http.end();
+   565→			delete client;
+   566→
+   567→			if (location.length() == 0) {
+   568→				if (showSerial) Serial.println("Redirect resolve: empty Location header");
+   569→				return "";
+   570→			}
+   571→			currentUrl = location;
+   572→		} else {
+   573→			http.end();
+   574→			delete client;
+   575→			if (httpCode == HTTP_CODE_OK) {
+   576→				if (showSerial) Serial.printf("Resolved final URL: %s\n", currentUrl.c_str());
+   577→				return currentUrl;
+   578→			}
+   579→			if (showSerial) Serial.printf("Redirect resolve: HTTP %d at %s\n", httpCode, currentUrl.c_str());
+   580→			return "";
+   581→		}
+   582→	}
+   583→
+   584→	if (showSerial) Serial.println("Redirect resolve: exceeded max redirects");
+   585→	return "";
+   586→}
+   587→
+   588→void updateFirmwareOta() {
+   589→	bool showSerial = FileUtils::config.debugUtils.showSerial;
+   590→
+   591→	if (showSerial) Serial.println("\n--------\nAttempting firmware update from GitHub...");
+   592→
+   593→	// Pause getData task to free heap during OTA
+   594→	otaUpdateTriggered = true;
+   595→	vTaskDelay(pdMS_TO_TICKS(500));
+   596→
+   597→	// Resolve redirects manually to avoid WiFiClientSecure TLS reuse bug
+   598→	String resolvedUrl = resolveRedirectUrl(firmwareBinaryUrl);
+   599→	if (resolvedUrl.length() == 0) {
+   600→		if (showSerial) Serial.println(">> Failed to resolve firmware download URL");
+   601→		otaUpdateTriggered = false;
+   602→		return;
+   603→	}
+   604→
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:36:32Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+   604→
+   605→	WiFiClientSecure secureClient;
+   606→	secureClient.setInsecure();
+   607→
+   608→	// No redirect following needed — resolvedUrl points directly to CDN
+   609→	feedWatchdog();
+   610→	httpUpdate.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
+   611→
+   612→	t_httpUpdate_return ret = httpUpdate.update(secureClient, resolvedUrl);
+   613→
+   614→	switch (ret) {
+   615→		case HTTP_UPDATE_FAILED:
+   616→			if (showSerial) Serial.printf(">> HTTP_UPDATE_FAILED Error (%d): %s\n",
+   617→				httpUpdate.getLastError(), httpUpdate.getLastErrorString().c_str());
+   618→			break;
+   619→		case HTTP_UPDATE_NO_UPDATES:
+   620→			if (showSerial) Serial.println(">> HTTP_UPDATE_NO_UPDATES");
+   621→			break;
+   622→		case HTTP_UPDATE_OK:
+   623→			if (showSerial) Serial.println(">> HTTP_UPDATE_OK");
+   624→			break;
+   625→		default:
+   626→			if (showSerial) Serial.println(">> HTTP_UPDATE Unknown result");
+   627→			break;
+   628→	}
+   629→
+   630→	// On success, ESP32 reboots — this only runs on failure
+   631→	otaUpdateTriggered = false;
+   632→	if (showSerial) Serial.println("OTA update complete\n--------\n");
+   633→}
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:36:41Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/src/main.cpp has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:36:47Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/src/main.cpp has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:37:03Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Build to verify
+
+`~/.platformio/penv/bin/pio run -e release 2>&1 | tail -5`
+
+```text
+Environment    Status    Duration
+-------------  --------  ------------
+release        SUCCESS   00:00:10.716
+========================= 1 succeeded in 00:00:10.716 =========================
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:37:08Z)**_
+
+Build passes. Changes:
+- `http.GET()` → `http.sendRequest("HEAD")` in the redirect resolver — only fetches headers, no body download
+- Added free heap logging before `httpUpdate.update()`
+
+Want me to commit this, or flash it first to test?
+
+---
+
+_**User (2026-03-02 22:42:41Z)**_
+
+
+============= CURRENT DATA BUFFER =============
+ITEM #0: (SOHO) Solar Heliospheric Observatory [30] [↓ Sig Dn: 4] [↑ Sig Up: 3]
+===============================================
+
+Semaphore freed: SOHO [5/5]
+ ★★★ ANIMATE: [Solar Heliospheric Observatory] (↓) 4 | (↑) 3 
+·.·.·.·.·.·★ (↓) Rate Class: 4 | Type: 0
+·.·.·.·.·.·★ (↑) Rate Class: 3 | Type: 0
+Version check HTTP code: 200
+Remote version (tag): v1.1.5
+
+--------
+Attempting firmware update from GitHub...
+Redirect 1: 302 -> https://github.com/GDKeller/JPL-MiniPulse/releases/download/v1.1.5/firmware.bin
+Redirect 2: 302 -> https://release-assets.githubusercontent.com/github-production-release-asset/710218354/71d66919-9c37-48f0-91b9-448a8a1954cc?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-03-02T23%3A34%3A54Z&rscd=attachment%3B+filename%3Dfirmware.bin&rsct=application%2Foctet-stream&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-03-02T22%3A34%3A28Z&ske=2026-03-02T23%3A34%3A54Z&sks=b&skv=2018-11-09&sig=onKmspMeHQ8JwwpkYQBCJQR4OGQ6r1XIXZJmWKJotYA%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc3MjQ5MTU1NSwibmJmIjoxNzcyNDkxMjU1LCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.rCoT_vcDE5pA3P9Tlbk22AqrwMbt6dOPuQY4xfU2eSU&response-content-disposition=attachment%3B%20filename%3Dfirmware.bin&response-content-type=application%2Foctet-stream
+Resolved final URL: https://release-assets.githubusercontent.com/github-production-release-asset/710218354/71d66919-9c37-48f0-91b9-448a8a1954cc?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-03-02T23%3A34%3A54Z&rscd=attachment%3B+filename%3Dfirmware.bin&rsct=application%2Foctet-stream&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-03-02T22%3A34%3A28Z&ske=2026-03-02T23%3A34%3A54Z&sks=b&skv=2018-11-09&sig=onKmspMeHQ8JwwpkYQBCJQR4OGQ6r1XIXZJmWKJotYA%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc3MjQ5MTU1NSwibmJmIjoxNzcyNDkxMjU1LCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.rCoT_vcDE5pA3P9Tlbk22AqrwMbt6dOPuQY4xfU2eSU&response-content-disposition=attachment%3B%20filename%3Dfirmware.bin&response-content-type=application%2Foctet-stream
+Free heap before OTA: 100988 bytes
+CALLBACK:  HTTP update process started
+>> HTTP_UPDATE_FAILED Error (0): 
+OTA update complete
+--------
+
+ ★★★ ANIMATE: [Solar Heliospheric Observatory] (↓) 4 | (↑) 3 
+·.·.·.·.·.·★ (↓) Rate Class: 4 | Type: 0
+·.·.·.·.·.·★ (↑) Rate Class: 3 | Type: 0
+
+
+   ┌─────────────────────────────┐
+───│          FETCH DATA         │───
+   └─────────────────────────────┘
+WiFi Connected
+192.168.1.245 on PlanetExpress
+URL: https://eyes.nasa.gov/dsn/data/dsn.xml?r=359169044
+HTTP response received:200
+Getting string from API response...
+[fetchHTTPData] XML data copied to buffer (6325 bytes)
+Data Fetch: Success 
+ + 17s --- Using live data 
+Data Parse attempts: 1
+
+XML Parsed Succcessfully
+
+=== freeListMutex [5/5] ===
+ [0]
+ [1]
+ [2]
+ [3]
+>[4] SOHO
+
+
+───────────────────────────────────────────────────────────────────
+  Parse Counters -- Station: 0 | Dish: 2 | Target: 1 | Signal: 0
+───────────────────────────────────────────────────────────────────
+
+>>> Checking names lookup for MMS2...
+Found spacecraft name for MMS2
+Validated: (MMS2) Magneto MultiScale 2
+>>> Finding signals for MMS2
+No signals found for MMS2
+DSN is blacklisted, skipping...
+ ★★★ ANIMATE: [Solar Heliospheric Observatory] (↓) 4 | (↑) 3 
+·.·.·.·.·.·★ (↓) Rate Class: 4 | Type: 0
+·.·.·.·.·.·★ (↑) Rate Class: 3 | Type: 0
+>>> Checking names lookup for JNO...
+Found spacecraft name for JNO
+Validated: (JNO) Juno Jupiter
+>>> Finding signals for JNO
+Validated: (JNO) Juno Jupiter
+
+>>--------=> Sending to queue >>--------=>
+ITEM #0: (JNO) Juno Jupiter [12] [↓ Sig Dn: 3] [↑ Sig Up: 3]
+----------------------------------------
+[+] JNO added to queue
+
+(* END fetchData *)
+
+WiFi Connected
+
+
+   ┌─────────────────────────────┐
+───│          FETCH DATA         │───
+   └─────────────────────────────┘
+WiFi Connected
+192.168.1.245 on PlanetExpress
+URL: https://eyes.nasa.gov/dsn/data/dsn.xml?r=972392377
+HTTP response received:200
+Getting string from API response...
+[fetchHTTPData] XML data copied to buffer (6323 bytes)
+Data Fetch: Success 
+ + 12s --- Using live data 
+Data Parse attempts: 1
+
+XML Parsed Succcessfully
+
+=== freeListMutex [4/5] ===
+ [0]
+ [1]
+ [2]
+>[3]
+
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 22:44:13Z)**_
+
+<think><details><summary>Thought Process</summary>
+Good news: no more crash! The HEAD request fix worked - heap is at ~100KB which is enough. But the update itself is failing:
+
+```
+Free heap before OTA: 100988 bytes
+CALLBACK:  HTTP update process started
+>> HTTP_UPDATE_FAILED Error (0): 
+OTA update complete
+```
+
+Error code 0 with an empty error string. The update process started (the callback fired) but then failed immediately.
+
+Let me think about what could cause this. `httpUpdate.update()` internally:
+1. Creates an HTTPClient
+2. Connects to the URL
+3. GETs the firmware
+4. Checks the Content-Length and Content-Type
+
+
+5. Writes the firmware to flash
+
+Error code 0 is strange - I'm looking at the HTTPUpdate error codes defined in the library to understand what this means. The codes are mostly negative values like -100 for insufficient space, -101 for missing size headers, -102 for file not found, and so on.
+
+Since 0 doesn't match any of these defined errors, it likely means the HTTP request itself failed before getting a proper response - maybe a connection drop or the HTTPClient returning 0 when there's no response at all.
+
+I'm realizing the signed URL token might have expired between when it was generated during the HEAD request and when the actual download happens, or the CDN could be rejecting the request for another reason.
+
+Looking at the token timestamps in the URL, the expiry is about an hour after the start time, so it shouldn't have expired yet. The URL came from GitHub's redirect response to a HEAD request, and when httpUpdate tries to GET it, the CDN should serve the binary. But I'm wondering if the CDN handles HEAD and GET requests differently - maybe it generates different signed URLs depending on the request method.
+
+Actually, let me reconsider. The error code 0 with an empty string suggests the HTTP connection itself failed rather than a specific protocol error. Looking at how the ESP32 HTTPUpdate code handles the GET request, a return value of 0 or negative means the connection failed entirely. With 100KB of free heap available, there should be enough memory for TLS buffers and HTTP overhead, but maybe something else is constraining the connection.
+
+The CDN URL is massive at over 700 characters, which could be causing issues when HTTPClient tries to parse it and extract the host and path. I'm wondering if the problem is that HTTPUpdate's internal HTTPClient doesn't set a User-Agent header by default, and GitHub's CDN might be rejecting requests without one. Or it could be something simpler—the connection is just failing outright, possibly due to the URL length or some other network-level issue.
+
+Now I'm tracing through the redirect chain to understand what's actually happening when the firmware update tries to fetch from GitHub.
+
+The device first hits the latest release endpoint, gets redirected to the versioned URL, then to the CDN—and I'm checking whether the HEAD request to verify the CDN URL might be invalidating the signed token before the actual GET request happens. Azure Blob Storage typically doesn't have this issue, but it's worth considering. More pressing is figuring out what Error (0) actually indicates in the ESP32's HTTPUpdate library.
+
+Looking at the update handler code, I see that HTTPClient::GET() returns the HTTP status code on success, but negative error codes on failure—so a 0 return would indicate a connection or transmission failure rather than a successful response.
+
+The real problem might be that the CDN URL with its encoded characters and length is causing parsing issues when passed to http.begin(). I'm wondering if there's a way to avoid the full redirect chain—maybe resolve up to the CDN URL itself (stopping at the last 302 before the final 200 response) and let HTTPUpdate handle just that final hop with redirect following enabled, rather than trying to process the entire chain at once. the TLS reuse bug only triggers on the second redirect within a session, so if I manually resolve the first redirect and let httpUpdate handle just the one remaining redirect, it should avoid the issue entirely. This would also mean I don't have to deal with the unwieldy CDN URL at all. The simplest fix might be to pass the versioned URL directly to httpUpdate with `HTTPC_FORCE_FOLLOW_REDIRECTS` enabled, letting it handle that single hop on its own.
+
+But wait—I'm already returning the CDN URL from `resolveRedirectUrl` (the one that gets the 200 response), so httpUpdate should be able to fetch it directly without any redirects. The real question is why httpUpdate fails with error 0 when trying to GET that CDN URL. It could be the query string parameters—maybe the `&` characters or encoded characters are causing parsing issues in HTTPClient's `begin()` method, or possibly getting double-encoded somewhere.
+
+Let me think about the diagnostic approach differently. Instead of trying to debug why the final CDN URL fails, what if I resolve just the first redirect and pass that to httpUpdate with `HTTPC_FORCE_FOLLOW_REDIRECTS`? That way it only needs to follow one more redirect, which should avoid triggering the TLS reuse bug. The original chain is three hops, so I'd be reducing it to just two. I need to reconsider whether pre-resolving the first redirect actually helps. The real issue is that HTTPClient's setURL() doesn't properly clean up the SSL context when switching hosts during a redirect. Since the second redirect goes from github.com to a different CDN host, that host switch would still trigger the bug even if I resolve the first hop beforehand. So I'm back to needing a different approach entirely.
+
+Now I'm looking at what happens when httpUpdate actually tries to fetch from the resolved CDN URL. With 100KB of free heap available and a valid URL that responds to HEAD requests, the failure at error (0) suggests httpUpdate's update() method is performing additional checks beyond what a simple GET would do.
+
+Examining the HTTPUpdate source...
+
+Continuing to trace through the URL parsing logic...
+
+I'm wondering if the real issue is that HEAD requests and GET requests to the CDN might behave differently—maybe the HEAD returns success but a GET would hit a redirect or need specific headers. Rather than keep debugging httpUpdate's internals, I should just add detailed logging to see what's actually happening when we hit that URL, then consider bypassing httpUpdate entirely and handling the OTA manually with the Update library instead.
+
+But first, let me test a simpler theory: if I resolve just the first redirect manually and pass the versioned GitHub URL to httpUpdate with HTTPC_FORCE_FOLLOW_REDIRECTS, it would only need to follow one more redirect. Since that would be the first redirect in a fresh session, the TLS cleanup bug might not trigger yet—the stale context issue only appears on the second redirect within the same session. If this works, it's much cleaner than the full manual OTA approach.
+
+Though I'm second-guessing myself on the exact mechanism—the bug might still hit even on a single redirect if it's about not cleaning up SSL context when switching hosts. Let me just suggest we try this approach and fall back to manual OTA if it doesn't work.
+</details></think>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:44:14Z)**_
+
+No more crash — 100KB free heap is plenty. But now `httpUpdate.update()` fails with error (0) and empty string, which means the HTTP connection itself failed. This is likely because the CDN URL is massive (~700 chars) and something in httpUpdate's internal URL parsing chokes on it.
+
+Different approach: instead of resolving ALL redirects to get the monster CDN URL, let's resolve only the **first** redirect and pass the shorter versioned URL to httpUpdate with `HTTPC_FORCE_FOLLOW_REDIRECTS`. The TLS reuse bug caused "connection refused on the **second** redirect" — with only one redirect remaining, it shouldn't trigger.
+
+_**Agent (claude-opus-4-6 2026-03-02 22:44:16Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+   529→void feedWatchdog(); // Forward declaration — defined in DEV UTILITIES region
+   530→
+   531→// Manually follows HTTP redirects using a fresh TLS context per hop.
+   532→// This sidesteps the WiFiClientSecure reuse bug in HTTPClient::setURL()
+   533→// which prevents SSL cleanup between redirect hops, causing "connection refused"
+   534→// on the second redirect (GitHub → versioned URL → CDN).
+   535→String resolveRedirectUrl(const char* url) {
+   536→	bool showSerial = FileUtils::config.debugUtils.showSerial;
+   537→	String currentUrl = url;
+   538→	const int maxRedirects = 5;
+   539→
+   540→	for (int i = 0; i < maxRedirects; i++) {
+   541→		feedWatchdog();
+   542→		WiFiClientSecure* client = new WiFiClientSecure();
+   543→		client->setInsecure();
+   544→
+   545→		HTTPClient http;
+   546→		http.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
+   547→		http.setTimeout(10000);
+   548→
+   549→		if (!http.begin(*client, currentUrl)) {
+   550→			if (showSerial) Serial.printf("Redirect resolve: failed to begin connection for %s\n", currentUrl.c_str());
+   551→			http.end();
+   552→			delete client;
+   553→			return "";
+   554→		}
+   555→
+   556→		http.addHeader("User-Agent", "JPL-MiniPulse-ESP32");
+   557→		const char* collectHeaders[] = {"Location"};
+   558→		http.collectHeaders(collectHeaders, 1);
+   559→		int httpCode = http.sendRequest("HEAD");
+   560→
+   561→		if (httpCode >= 300 && httpCode < 400) {
+   562→			String location = http.header("Location");
+   563→			if (showSerial) Serial.printf("Redirect %d: %d -> %s\n", i + 1, httpCode, location.c_str());
+   564→			http.end();
+   565→			delete client;
+   566→
+   567→			if (location.length() == 0) {
+   568→				if (showSerial) Serial.println("Redirect resolve: empty Location header");
+   569→				return "";
+   570→			}
+   571→			currentUrl = location;
+   572→		} else {
+   573→			http.end();
+   574→			delete client;
+   575→			if (httpCode == HTTP_CODE_OK) {
+   576→				if (showSerial) Serial.printf("Resolved final URL: %s\n", currentUrl.c_str());
+   577→				return currentUrl;
+   578→			}
+   579→			if (showSerial) Serial.printf("Redirect resolve: HTTP %d at %s\n", httpCode, currentUrl.c_str());
+   580→			return "";
+   581→		}
+   582→	}
+   583→
+   584→	if (showSerial) Serial.println("Redirect resolve: exceeded max redirects");
+   585→	return "";
+   586→}
+   587→
+   588→void updateFirmwareOta() {
+   589→	bool showSerial = FileUtils::config.debugUtils.showSerial;
+   590→
+   591→	if (showSerial) Serial.println("\n--------\nAttempting firmware update from GitHub...");
+   592→
+   593→	// Pause getData task to free heap during OTA
+   594→	otaUpdateTriggered = true;
+   595→	vTaskDelay(pdMS_TO_TICKS(500));
+   596→
+   597→	// Resolve redirects manually to avoid WiFiClientSecure TLS reuse bug
+   598→	String resolvedUrl = resolveRedirectUrl(firmwareBinaryUrl);
+   599→	if (resolvedUrl.length() == 0) {
+   600→		if (showSerial) Serial.println(">> Failed to resolve firmware download URL");
+   601→		otaUpdateTriggered = false;
+   602→		return;
+   603→	}
+   604→
+   605→	if (showSerial) Serial.printf("Free heap before OTA: %u bytes\n", ESP.getFreeHeap());
+   606→
+   607→	WiFiClientSecure secureClient;
+   608→	secureClient.setInsecure();
+   609→
+   610→	// No redirect following needed — resolvedUrl points directly to CDN
+   611→	feedWatchdog();
+   612→	httpUpdate.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
+   613→
+   614→	t_httpUpdate_return ret = httpUpdate.update(secureClient, resolvedUrl);
+   615→
+   616→	switch (ret) {
+   617→		case HTTP_UPDATE_FAILED:
+   618→			if (showSerial) Serial.printf(">> HTTP_UPDATE_FAILED Error (%d): %s\n",
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:44:20Z)**_
+
+Now I'll simplify `resolveRedirectUrl` to only follow one hop, and let httpUpdate handle the remaining redirect.
+
+_**Agent (claude-opus-4-6 2026-03-02 22:44:29Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/src/main.cpp has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:44:33Z)**_
+
+Now update `updateFirmwareOta` to use the new function and re-enable redirect following for httpUpdate.
+
+_**Agent (claude-opus-4-6 2026-03-02 22:44:38Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/src/main.cpp has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:44:54Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Build to verify
+
+`~/.platformio/penv/bin/pio run -e release 2>&1 | tail -5`
+
+```text
+Environment    Status    Duration
+-------------  --------  ------------
+release        SUCCESS   00:00:10.667
+========================= 1 succeeded in 00:00:10.667 =========================
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:45:01Z)**_
+
+Build passes. The approach is now:
+
+1. **`resolveFirstRedirect`** — resolves just the first hop (latest → versioned URL) using a stack-allocated `WiFiClientSecure` and HEAD request. No heap-allocated TLS contexts.
+2. **`httpUpdate.update`** — gets the short versioned URL, follows the single remaining redirect (versioned → CDN) itself. Only one redirect = TLS reuse bug doesn't trigger.
+
+Flash and test?
+
+---
+
+_**User (2026-03-02 22:50:25Z)**_
+
+WiFi Connected
+ ★★★ ANIMATE: [Solar Heliospheric Observatory] (↓) 4 | (↑) 3 
+·.·.·.·.·.·★ (↓) Rate Class: 4 | Type: 0
+·.·.·.·.·.·★ (↑) Rate Class: 3 | Type: 0
+Version check HTTP code: 200
+Remote version (tag): v1.1.5
+
+--------
+Attempting firmware update from GitHub...
+Redirect: 302 -> https://github.com/GDKeller/JPL-MiniPulse/releases/download/v1.1.5/firmware.bin
+Free heap before OTA: 97228 bytes
+CALLBACK:  HTTP update process started
+>> HTTP_UPDATE_FAILED Error (0): 
+OTA update complete
+--------
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 22:52:01Z)**_
+
+<think><details><summary>Thought Process</summary>
+Same error - `HTTP_UPDATE_FAILED Error (0)` with empty string. So the TLS reuse bug triggers even on the first redirect within an HTTPClient session. The issue isn't about the second redirect in a chain — it's about any redirect that changes the TLS host.
+
+So `HTTPC_FORCE_FOLLOW_REDIRECTS` within httpUpdate is broken for cross-host redirects period. Not just on the second hop.
+
+That means we need to go back to resolving ALL redirects manually and passing the final CDN URL directly. But the previous attempt with the full CDN URL also failed with error (0).
+
+So the issue with the full CDN URL approach wasn't the TLS reuse bug — it was something else. 
+
+The CDN URL might be causing problems within httpUpdate itself, either because it's too long or because httpUpdate handles it differently. Rather than debug that further, I should bypass httpUpdate entirely and use the Update library directly — resolve all the redirects manually, then stream the final response directly into the Update API.
+
+But wait, I need to understand what error code 0 actually means in ESP32's HTTPClient. Let me check the error definitions to see what that return value indicates. the HTTP code or error code gets stored, but if `http.begin()` fails before that point, `_lastError` stays at 0 with no message. The CDN URL at ~700 characters might be hitting a URL length limit during parsing, or the versioned GitHub URL could be failing for similar reasons.
+
+Looking at the actual httpUpdate implementation...
+
+Examining the update function signature...
+
+So when `http.begin(client, url)` fails, it returns `HTTP_UPDATE_FAILED` without setting an error code, which explains why `getLastError()` returns 0. The issue must be in how `begin()` parses or validates the URL itself.
+
+Looking at the parsing logic, it checks for the protocol delimiter and extracts the host, but for a standard HTTPS URL like the firmware download link, this should work fine. I'm wondering if there's a memory or WiFiClientSecure issue at play here.
+
+Actually, let me sidestep this entirely and implement OTA manually using the Update library directly. We've already confirmed the redirect chain resolves correctly and we have enough heap space, so bypassing httpUpdate should work.
+
+The approach would be: resolve all redirects to get the final CDN URL, make our own HTTP GET request to that URL, and stream the response directly into the Update library. But wait—I'm noticing something odd. When we passed the fully resolved CDN URL to httpUpdate, we got error (0), and when we passed the versioned URL after one redirect, we also got error (0). Both fail at the same point inside httpUpdate's `http.begin()` call.
+
+This makes me think the problem might be with how the WiFiClientSecure object is being handled when passed to httpUpdate. Maybe `setInsecure()` doesn't work properly when the client is passed by reference, or there's something about the stack-allocated client that's causing issues. Let me check what the original working code looked like before we started making changes.
+
+The old code was using the original firmware URL directly with httpUpdate, and while it failed with "connection refused" on the second redirect, it at least got past `http.begin()` and was actually making connections and following redirects. Now we're passing a different URL format, but both String and const char* should work with httpUpdate's signature, so that shouldn't be the issue.
+
+Wait, I'm realizing the local WiFiClientSecure in `resolveFirstRedirect` gets destroyed when the function returns, so that's not leaving any lingering connection state that would affect the later httpUpdate call.
+
+Let me reconsider whether there's a deeper issue with the TLS stack or mbedtls context not being properly cleaned up between requests. Actually, I should just look at what the log is actually showing rather than speculating about internal state issues.
+
+The callback fired, which means `handleUpdate()` was reached and the HTTP GET succeeded with a 200 response. The `onStart` callback gets invoked early in the process, before `Update.begin()` is called. Let me trace through exactly when this happens in the ESP32 HTTPUpdate implementation. Setting up HTTP headers with device information...
+
+Now I'm seeing the flow of the update process: the HTTP GET request succeeds and returns a 200 status code, which triggers the start callback, but then something fails afterward when trying to read the response size and content.
+
+The callback firing confirms that the HTTP connection and redirect handling worked, but the issue might be that `http.getSize()` returns 0 or -1, or `Update.begin()` fails to initialize with the response data. I'm wondering if the problem is actually with how the HTTP/1.0 connection handles the response body after following redirects—maybe the content isn't being read properly even though the status code was successful.
+
+Looking at the error handling logic...
+
+Examining the error handling flow...
+
+I'm realizing the root cause might be different—the HTTP/1.0 requirement means if the server sends chunked transfer encoding without a Content-Length header, `http.getSize()` returns -1, which could explain why the update fails with error code 0. The function returns an empty string when `_lastError` is 0, which suggests the error code itself might not be getting set properly—the Update object might be failing silently without recording what went wrong. Since this device was doing OTA successfully before, the partition table should be fine, so the issue likely traces back to `Update.begin()` failing for a reason that isn't being captured in the error state. I'm realizing the HTTP_UPDATE_FAILED error with a 0 error code might mean begin() failed before the http object was properly initialized, so _lastError never got set. Given how many issues we've hit with httpUpdate, I should probably just recommend switching to manual OTA using the Update library directly—we already know the redirect resolution works and this gives us complete control over the process. I'm wondering if the CDN isn't returning a Content-Length header properly, especially since httpUpdate forces HTTP/1.0 which some CDNs might not handle well. At this point, implementing manual OTA handling seems like the most reliable approach.
+</details></think>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:52:05Z)**_
+
+Same error, but important detail: `CALLBACK: HTTP update process started` fired. That means `http.begin()` and `http.GET()` actually succeeded inside httpUpdate — it got a 200 response. The failure happens *after* that, during the actual flash write. Error (0) means httpUpdate's internal `_lastError` was never set, which points to a failure path that doesn't properly report the error.
+
+httpUpdate is fighting us at every turn. Let's bypass it entirely and do the OTA manually with the `Update` library. We know the redirect resolution works — we just need to download the binary and write it to flash ourselves.
+
+_**Agent (claude-opus-4-6 2026-03-02 22:52:06Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+   529→void feedWatchdog(); // Forward declaration — defined in DEV UTILITIES region
+   530→
+   531→// Resolves the first redirect hop using a fresh TLS context.
+   532→// GitHub's release download redirects through 3 hops (latest → versioned → CDN).
+   533→// WiFiClientSecure has a TLS reuse bug that crashes on the second redirect within
+   534→// a single HTTPClient session. We resolve the first hop manually so httpUpdate
+   535→// only needs to follow one remaining redirect.
+   536→String resolveFirstRedirect(const char* url) {
+   537→	bool showSerial = FileUtils::config.debugUtils.showSerial;
+   538→
+   539→	feedWatchdog();
+   540→	WiFiClientSecure client;
+   541→	client.setInsecure();
+   542→
+   543→	HTTPClient http;
+   544→	http.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
+   545→	http.setTimeout(10000);
+   546→
+   547→	if (!http.begin(client, url)) {
+   548→		if (showSerial) Serial.printf("Redirect resolve: failed to begin connection for %s\n", url);
+   549→		http.end();
+   550→		return "";
+   551→	}
+   552→
+   553→	http.addHeader("User-Agent", "JPL-MiniPulse-ESP32");
+   554→	const char* collectHeaders[] = {"Location"};
+   555→	http.collectHeaders(collectHeaders, 1);
+   556→	int httpCode = http.sendRequest("HEAD");
+   557→
+   558→	if (httpCode >= 300 && httpCode < 400) {
+   559→		String location = http.header("Location");
+   560→		if (showSerial) Serial.printf("Redirect: %d -> %s\n", httpCode, location.c_str());
+   561→		http.end();
+   562→		return location;
+   563→	}
+   564→
+   565→	if (showSerial) Serial.printf("Redirect resolve: expected redirect, got HTTP %d\n", httpCode);
+   566→	http.end();
+   567→	return "";
+   568→}
+   569→
+   570→void updateFirmwareOta() {
+   571→	bool showSerial = FileUtils::config.debugUtils.showSerial;
+   572→
+   573→	if (showSerial) Serial.println("\n--------\nAttempting firmware update from GitHub...");
+   574→
+   575→	// Pause getData task to free heap during OTA
+   576→	otaUpdateTriggered = true;
+   577→	vTaskDelay(pdMS_TO_TICKS(500));
+   578→
+   579→	// Resolve first redirect manually to avoid WiFiClientSecure TLS reuse bug.
+   580→	// The bug crashes on the second redirect within one HTTPClient session.
+   581→	// By resolving the first hop ourselves, httpUpdate only follows one redirect.
+   582→	String versionedUrl = resolveFirstRedirect(firmwareBinaryUrl);
+   583→	if (versionedUrl.length() == 0) {
+   584→		if (showSerial) Serial.println(">> Failed to resolve firmware download URL");
+   585→		otaUpdateTriggered = false;
+   586→		return;
+   587→	}
+   588→
+   589→	if (showSerial) Serial.printf("Free heap before OTA: %u bytes\n", ESP.getFreeHeap());
+   590→
+   591→	WiFiClientSecure secureClient;
+   592→	secureClient.setInsecure();
+   593→
+   594→	// httpUpdate follows the one remaining redirect (versioned → CDN)
+   595→	feedWatchdog();
+   596→	httpUpdate.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
+   597→
+   598→	t_httpUpdate_return ret = httpUpdate.update(secureClient, versionedUrl);
+   599→
+   600→	switch (ret) {
+   601→		case HTTP_UPDATE_FAILED:
+   602→			if (showSerial) Serial.printf(">> HTTP_UPDATE_FAILED Error (%d): %s\n",
+   603→				httpUpdate.getLastError(), httpUpdate.getLastErrorString().c_str());
+   604→			break;
+   605→		case HTTP_UPDATE_NO_UPDATES:
+   606→			if (showSerial) Serial.println(">> HTTP_UPDATE_NO_UPDATES");
+   607→			break;
+   608→		case HTTP_UPDATE_OK:
+   609→			if (showSerial) Serial.println(">> HTTP_UPDATE_OK");
+   610→			break;
+   611→		default:
+   612→			if (showSerial) Serial.println(">> HTTP_UPDATE Unknown result");
+   613→			break;
+   614→	}
+   615→
+   616→	// On success, ESP32 reboots — this only runs on failure
+   617→	otaUpdateTriggered = false;
+   618→	if (showSerial) Serial.println("OTA update complete\n--------\n");
+   619→}
+   620→
+   621→#pragma region -- ANIMATION UTILITIES
+   622→
+   623→uint8_t fpsInMs = 1000 / fpsRate;
+   624→bool meteorTailDecay = true;
+   625→bool meteorTailRandom = true;
+   626→
+   627→// State counters to enable fractional animation speeds
+   628→// These all start at 1 and get incremented during animation update
+   629→uint8_t counterHalfSpeed = 1;
+   630→uint8_t counterThirdSpeed = 1;
+   631→uint8_t counterQuarterSpeed = 1;
+   632→uint8_t counterEighthSpeed = 1;
+   633→
+   634→// Keeps track of current animation state
+   635→static bool nameScrollDone = true;
+   636→static bool animationInProgress = false;
+   637→static bool animationTypeSetDown = false;
+   638→static bool animationTypeSetUp = false;
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:52:10Z)**_
+
+Now let me also check what OTA callbacks are set up.
+
+_**Agent (claude-opus-4-6 2026-03-02 22:52:11Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+   415→
+   416→void update_started() {
+   417→	if (FileUtils::config.debugUtils.showSerial) Serial.println("CALLBACK:  HTTP update process started");
+   418→}
+   419→
+   420→void update_finished() {
+   421→	if (FileUtils::config.debugUtils.showSerial) Serial.println("CALLBACK:  HTTP update process finished");
+   422→}
+   423→
+   424→void update_progress(int cur, int total) {
+   425→	if (FileUtils::config.debugUtils.showSerial) Serial.printf("CALLBACK:  HTTP update process at %d of %d bytes...\n", cur, total);
+   426→}
+   427→
+   428→void update_error(int err) {
+   429→	if (FileUtils::config.debugUtils.showSerial) Serial.printf("CALLBACK:  HTTP update fatal error code %d\n", err);
+   430→}
+   431→
+   432→void setupOtaUpdate() {
+   433→	if (FileUtils::config.debugUtils.showSerial) Serial.println("Setting up OTA update...");
+   434→	httpUpdate.onStart(update_started);
+   435→	httpUpdate.onEnd(update_finished);
+   436→	httpUpdate.onProgress(update_progress);
+   437→	httpUpdate.onError(update_error);
+   438→}
+   439→
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:52:15Z)**_
+
+Now I'll replace the redirect resolution and `updateFirmwareOta` with a full manual approach — resolve all redirects, then download and flash with the `Update` library directly.
+
+_**Agent (claude-opus-4-6 2026-03-02 22:52:39Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/src/main.cpp has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:52:55Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Build to verify
+
+`~/.platformio/penv/bin/pio run -e release 2>&1 | tail -10`
+
+```text
+esptool.py v4.9.0
+Creating esp32 image...
+Merged 27 ELF sections
+Successfully created esp32 image.
+========================= [SUCCESS] Took 10.68 seconds =========================
+
+Environment    Status    Duration
+-------------  --------  ------------
+release        SUCCESS   00:00:10.678
+========================= 1 succeeded in 00:00:10.678 =========================
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:53:02Z)**_
+
+Build passes. The new approach:
+
+1. **`resolveRedirects`** — same as before, follows all redirects with HEAD requests using fresh TLS per hop
+2. **Manual OTA** — makes its own HTTP GET to the resolved CDN URL, streams the response directly into `Update.writeStream()`, then calls `ESP.restart()` on success
+3. **No httpUpdate at all** — bypasses the library entirely, with proper error reporting at each step
+
+Every failure path logs the specific error and resets `otaUpdateTriggered`. Flash and test?
+
+---
+
+_**User (2026-03-02 22:59:36Z)**_
+
+i actually wonder if i was testing the updated build before... i just did a build and the "date created" on the firmware.bin wasnt updated. i had to delete the release/ dir for it to be the right time
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 22:59:43Z)**_
+
+<think><details><summary>Thought Process</summary>
+The user is saying that PlatformIO wasn't rebuilding the firmware.bin because it thought nothing changed. They had to delete the build directory for a fresh build. This is a common PlatformIO issue where incremental builds don't always catch changes, or the .bin file timestamp doesn't update when only linking changes.
+
+This means their previous test results might have been from stale firmware - they may have been flashing the same old binary each time! That would explain why the same errors kept appearing.
+
+Let me suggest they do a clean build and test.
+</details></think>
+
+_**Agent (claude-opus-4-6 2026-03-02 22:59:45Z)**_
+
+That's a really important catch. PlatformIO's incremental build might not have been regenerating the `.bin` — meaning you could have been flashing the **same stale firmware** for some of these tests. The earlier `collectHeaders` fix and the HEAD-vs-GET change might have never actually been on the device.
+
+Do a clean build and test:
+
+_**Agent (claude-opus-4-6 2026-03-02 23:00:08Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Clean build release environment
+
+`~/.platformio/penv/bin/pio run -e release -t clean && ~/.platformio/penv/bin/pio run -e release 2>&1 | tail -10`
+
+```text
+Processing release (platform: espressif32; board: esp32dev; framework: arduino)
+--------------------------------------------------------------------------------
+Verbose mode can be enabled via `-v, --verbose` option
+Removing .pio/build/release
+Done cleaning
+========================= [SUCCESS] Took 0.65 seconds =========================
+
+Environment    Status    Duration
+-------------  --------  ------------
+release        SUCCESS   00:00:00.653
+========================= 1 succeeded in 00:00:00.653 =========================
+esptool.py v4.9.0
+Creating esp32 image...
+Merged 27 ELF sections
+Successfully created esp32 image.
+========================= [SUCCESS] Took 20.35 seconds =========================
+
+Environment    Status    Duration
+-------------  --------  ------------
+release        SUCCESS   00:00:20.350
+========================= 1 succeeded in 00:00:20.350 =========================
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 23:00:12Z)**_
+
+Clean build done. Flash this one and let's see what happens — it's possible the earlier approaches actually worked fine and you were just testing stale firmware.
+
+---
+
+_**User (2026-03-02 23:04:36Z)**_
+
+WiFi Connected
+Version check HTTP code: 200
+Remote version (tag): v1.1.5
+
+--------
+Attempting firmware update from GitHub...
+Redirect 1: 302 -> https://github.com/GDKeller/JPL-MiniPulse/releases/download/v1.1.5/firmware.bin
+Guru Meditation Error: Core  1 panic'ed (LoadProhibited). Exception was unhandled.
+
+Core  1 register dump:
+PC      : 0x4008c331  PS      : 0x00060130  A0      : 0x801a9f00  A1      : 0x3ffb1610
+A2      : 0x00000000  A3      : 0xfffffffc  A4      : 0x000000ff  A5      : 0x0000ff00
+A6      : 0x00ff0000  A7      : 0xff000000  A8      : 0x00000000  A9      : 0x3ffb1a4b
+A10     : 0x3ffb1a48  A11     : 0x3ffb1811  A12     : 0x00000003  A13     : 0x3ffccf50
+A14     : 0x00000000  A15     : 0x3ffeedc4  SAR     : 0x00000004  EXCCAUSE: 0x0000001c
+EXCVADDR: 0x00000000  LBEG    : 0x4008c331  LEND    : 0x4008c341  LCOUNT  : 0xffffffff
+
+
+Backtrace: 0x4008c32e:0x3ffb1610 0x401a9efd:0x3ffb1620 0x401b106a:0x3ffb1930 0x401b10a6:0x3ffb19c0 0x400f91ea:0x3ffb1a00 0x400db311:0x3ffb1aa0 0x400db54b:0x3ffb1c20 0x400db963:0x3ffb1da0 0x400e14aa:0x3ffb1dd0 0x400e15b5:0x3ffb1df0 0x400e1692:0x3ffb1e30 0x400e1831:0x3ffb1ea0 0x400e9c06:0x3ffb1ef0 0x400e9e07:0x3ffb1f50 0x400d4f25:0x3ffb1f70 0x400d830f:0x3ffb20c0 0x400fc199:0x3ffb2290
+
+
+
+
+ELF file SHA256: d6c8bdbba320ac0c
+
+Rebooting...
+ets Jul 29 2019 12:21:46
+
+rst:0xc (SW_CPU_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:1
+load:0x3fff0030,len:1344
+load:0x40078000,len:13836
+load:0x40080400,len:3608
+entry 0x400805f0 this message happened on the build before my last message, where you changed to write directly into Update.writeStreams()
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 23:04:45Z)**_
+
+<think><details><summary>Thought Process</summary>
+OK so the user is clarifying that this crash happened on the build BEFORE the last changes (the manual OTA approach). This was the build with `resolveFirstRedirect` that only resolved one hop. The crash is at `EXCVADDR: 0x00000000` — a null pointer dereference — after only the first redirect was resolved.
+
+So this crash is from the "resolve first redirect only" approach. It crashed during the second redirect within httpUpdate's session, which confirms the TLS reuse bug triggers even on the FIRST redirect within a session (not just the second).
+
+But the important thing is: the user hasn't tested the LATEST build yet (the manual OTA approach). 
+
+They're just providing this as context. I should acknowledge what they've shared and ask them to test the latest build to see if the manual OTA approach actually fixes the issue.
+</details></think>
+
+_**Agent (claude-opus-4-6 2026-03-02 23:04:46Z)**_
+
+Got it — so that crash is from the `resolveFirstRedirect` + httpUpdate build, confirming the TLS reuse bug triggers on **any** cross-host redirect within httpUpdate, not just the second. Good to know.
+
+Have you flashed and tested the latest build yet (the manual `Update.writeStream` approach)?
+
+---
+
+_**User (2026-03-02 23:05:36Z)**_
+
+i believe so but let me go ahead and do that. i am doing a new build manually myself from this point
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 23:05:41Z)**_
+
+
+
+Sounds good. Just make sure to clean first (`pio run -e release -t clean`) given the stale build issue you found earlier.
+
+---
+
+_**User (2026-03-02 23:26:37Z)**_
+
+looks like it worked: Version check HTTP code: 200
+Remote version (tag): v1.1.5
+
+--------
+Attempting firmware update from GitHub...
+Redirect 1: 302 -> https://github.com/GDKeller/JPL-MiniPulse/releases/download/v1.1.5/firmware.bin
+Redirect 2: 302 -> https://release-assets.githubusercontent.com/github-production-release-asset/710218354/71d66919-9c37-48f0-91b9-448a8a1954cc?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-03-03T00%3A11%3A52Z&rscd=attachment%3B+filename%3Dfirmware.bin&rsct=application%2Foctet-stream&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-03-02T23%3A11%3A15Z&ske=2026-03-03T00%3A11%3A52Z&sks=b&skv=2018-11-09&sig=maweWWnWEgeUNr1S5zdSqtcOo4QCddKiOKGLR55CTbM%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc3MjQ5NDE5OSwibmJmIjoxNzcyNDkzODk5LCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.THqkHxBAV8VGsYk-TyCLOYVLx68TebiEBqfBnZ8ZNRs&response-content-disposition=attachment%3B%20filename%3Dfirmware.bin&response-content-type=application%2Foctet-stream
+Resolved final URL (902 chars)
+Free heap before OTA download: 102800 bytes
+Firmware size: 1493488 bytes
+Downloading firmware...
+>> Firmware update successful, rebooting...
+ets Jul 29 2019 12:21:46
+
+rst:0xc (SW_CPU_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:1
+load:0x3fff0030,len:1344
+load:0x40078000,len:13836
+load:0x40080400,len:3608
+entry 0x400805f0
+
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 23:26:43Z)**_
+
+
+
+OTA working end to end. Redirects resolved, 1.49MB firmware downloaded and flashed, clean reboot.
+
+Ready to commit and update PR #6 when you are.
+
+---
+
+_**User (2026-03-02 23:28:10Z)**_
+
+if a device gets multiple versions behind, will this still cause an issue?
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 23:28:17Z)**_
+
+
+
+No — the redirect chain is the same regardless of how far behind the device is. `firmwareBinaryUrl` always points to `/releases/latest/download/firmware.bin`, which redirects to whatever the latest release is. The redirect chain is always:
+
+1. `/releases/latest/download/firmware.bin` → `/releases/download/vX.Y.Z/firmware.bin`
+2. → CDN URL
+
+We resolve all hops manually with fresh TLS contexts, so it doesn't matter if the device is 1 version behind or 50. It always jumps straight to the latest release in one OTA.
+
+The only thing to watch for is if a future firmware binary grows large enough to exceed the OTA partition size — but that's a separate constraint unrelated to versioning.
+
+---
+
+_**User (2026-03-02 23:28:38Z)**_
+
+how close are we to that now?
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 23:28:45Z)**_
+
+
+
+From the build output:
+
+```
+Flash: [========  ]  75.6% (used 1486889 bytes from 1966080 bytes)
+```
+
+The firmware is ~1.49MB and the flash partition allows ~1.97MB. That's **~480KB of headroom** (24.4% remaining).
+
+But OTA partitions are typically half the total flash since ESP32 keeps two copies (current + update). Let me check the partition table.
+
+_**Agent (claude-opus-4-6 2026-03-02 23:28:48Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Grep"><details>
+<summary>Tool use: **Grep**</summary>
+ path `./platformio.ini` pattern `partition|partitions`
+
+```text
+17:board_build.partitions = min_spiffs.csv
+39:board_build.partitions = min_spiffs.csv
+59:board_build.partitions = huge_app.csv
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 23:29:48Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Show min_spiffs partition table
+
+`find ~/.platformio -name "min_spiffs.csv" 2>/dev/null | head -1 | xargs cat`
+
+```text
+# Name,   Type, SubType, Offset,  Size, Flags
+nvs,      data, nvs,     0x9000,  0x5000,
+otadata,  data, ota,     0xe000,  0x2000,
+app0,     app,  ota_0,   0x10000, 0x1E0000,
+app1,     app,  ota_1,   0x1F0000,0x1E0000,
+spiffs,   data, spiffs,  0x3D0000,0x20000,
+coredump, data, coredump,0x3F0000,0x10000,
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 23:29:54Z)**_
+
+Each OTA partition is **0x1E0000 = 1,966,080 bytes** (~1.97MB). Your firmware is **1,486,889 bytes** — so you have **479KB left** before OTA would fail.
+
+You're fine for now, but at 75.6% it's worth keeping an eye on. If you ever get close, the `min_spiffs` partition is only 128KB — you could reclaim some by switching to a custom partition layout that shrinks or removes SPIFFS/coredump.
+
+---
+
+_**User (2026-03-02 23:30:33Z)**_
+
+ok i dont think we'll have to worry about that any time soon
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 23:30:37Z)**_
+
+
+
+Agreed. Ready to commit when you are.
+
+---
+
+_**User (2026-03-02 23:52:38Z)**_
+
+<command-message>commit-commands:commit</command-message>
+<command-name>/commit-commands:commit</command-name>
+
+_**User (2026-03-02 23:52:38Z)**_
+
+## Context
+
+- Current git status: On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   .specstory/history/2026-03-02_21-21-26Z-is-this-the-conversation.md
+	modified:   src/main.cpp
+
+no changes added to commit (use "git add" and/or "git commit -a")
+- Current git diff (staged and unstaged changes): <persisted-output>
+Output too large (99.8KB). Full output saved to: /Users/grant/.claude/projects/-Users-grant-code-JPL-MiniPulse/43518dfc-88c9-4d58-a61d-b905ab175226/tool-results/bmxll4zoe.txt
+
+Preview (first 2KB):
+diff --git a/.specstory/history/2026-03-02_21-21-26Z-is-this-the-conversation.md b/.specstory/history/2026-03-02_21-21-26Z-is-this-the-conversation.md
+index ed27cf6..3e88f33 100644
+--- a/.specstory/history/2026-03-02_21-21-26Z-is-this-the-conversation.md
++++ b/.specstory/history/2026-03-02_21-21-26Z-is-this-the-conversation.md
+@@ -1568,3 +1568,1979 @@ To https://github.com/GDKeller/JPL-MiniPulse.git
+ _**Agent (claude-opus-4-6 2026-03-02 21:41:51Z)**_
+ 
+ Done, back to `1.1.3` on this branch. Sorry about the mess.
++
++---
++
++_**User (2026-03-02 21:47:36Z)**_
++
++so 1.1.3 is the version we need to distribute on kellerdigital right?
++
++---
++
++_**Agent (claude-opus-4-6 2026-03-02 21:47:41Z)**_
++
++I don't have context on what kellerdigital is or how you distribute firmware there. Is that your website/distribution platform? What does the current distribution process look like?
++
++---
++
++_**User (2026-03-02 21:54:15Z)**_
++
++ughhhhhhhhh on v1.1.3 the update to v1.1.5 is still failing: --------
++Attempting firmware update from GitHub...
++Redirect 1: 302 -> 
++Redirect resolve: empty Location header
++>> Failed to resolve firmware download URL
++
++---
++
++_**Agent (claude-opus-4-6 2026-03-02 21:54:25Z)**_
++
++<think><details><summary>Thought Process</summary>
++The user is reporting that the OTA update is failing because the redirect response has an empty Location header. Let me think about what could cause this.
++
++The issue is in `resolveRedirectUrl` - when it gets a 302 redirect, the Location header is coming back empty. This could be because:
++
++1. The `Location` header name is case-sensitive and the server returns it differently
++2. `HTTPClient` needs to be told which headers to collect before making the request (this is a known ESP32 HTTPClient behavior - you need to call `http.collectHeaders()` to tell it which headers to track)
++
++That's almost certainly the issue. 
++
+...
+</persisted-output>
+- Current branch: main
+- Recent commits: 21e3f38 Merge pull request #6 from GDKeller/develop/1.1.3
+ca94814 fix(ota): collect Location header before reading redirect response
+4ccb5b6 chore: version bump to 1.1.5 for OTA testing
+39ea9a4 chore: version bump for testing
+140aafc Merge branch 'develop/1.1.3'
+a20db52 chore: update specstory history
+2680ee4 chore: revert version back to 1.1.3
+18c2e3a chore: bump version to 1.1.5 for OTA testing
+6b6e5d1 chore: bump version to 1.1.4 for OTA testing
+1ce48c3 Merge pull request #5 from GDKeller/develop/1.1.3
+
+## Your task
+
+Based on the above changes, create a single git commit.
+
+You have the capability to call multiple tools in a single response. Stage and create the commit using a single message. Do not use any other tools or do anything else. Do not send any other text or messages besides these tool calls.
