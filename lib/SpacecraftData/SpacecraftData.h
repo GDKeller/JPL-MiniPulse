@@ -25,6 +25,7 @@ class SpacecraftData
     static const char* callsignToName(const char* key);
     static bool checkBlacklist(const char* callsign);
     static bool checkApproved(const char* callsign);
+    static DynamicJsonDocument spacecraftNamesJson;
 
     private:
     static void populateNamesInMemory();
@@ -33,7 +34,6 @@ class SpacecraftData
     static bool shouldWriteFiles(const char* firmwareVersion);
     static void writeFilesToFlash(const char* firmwareVersion);
 
-    static DynamicJsonDocument spacecraftNamesJson;
     static DynamicJsonDocument spacecraftBlacklistJson;
     static DynamicJsonDocument spacecraftApprovedJson;
 };

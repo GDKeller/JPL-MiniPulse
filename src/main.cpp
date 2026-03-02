@@ -1,4 +1,4 @@
-const char* currentFirmwareVersion = "1.1.0-rc.17"; // Current firmware version
+const char* currentFirmwareVersion = "1.1.0-rc.20"; // Current firmware version
 const char* githubApiUrl = "https://api.github.com/repos/GDKeller/JPL-MiniPulse/releases/latest";
 const char* firmwareBinaryUrl = "https://github.com/GDKeller/JPL-MiniPulse/releases/latest/download/firmware.bin";
 
@@ -34,6 +34,9 @@ const char* firmwareBinaryUrl = "https://github.com/GDKeller/JPL-MiniPulse/relea
 
 
 #pragma endregion -- END LIBRARIES
+
+bool firmwareCheckDone = false;
+String cachedFirmwareStatus = "";
 
 #pragma region -- NAMESPACES
 using namespace tinyxml2; // XML parser
@@ -216,23 +219,45 @@ const char* portalHeadHtml = R"---(
 		</style>
 		<div>
 			<div style="display: inline-block; border: 1px solid gray;padding:5px 20px;">
-				<p id="firmwareStatus" style="margin-top:0; white-space:pre-line;"></p>
+				<p id="firmwareStatus" style="margin-top:0; white-space:pre-line;">Checking for updates...</p>
 				<p id="updateResponse"></p>
-				<button id="updateButton">Update Firmware</button>
+				<button id="checkUpdateButton" style="display:none;">Check for Updates</button>
+				<button id="updateButton" style="display:none;">Update Firmware</button>
 			</div>
 		</div>
 		<script>
 			document.addEventListener('DOMContentLoaded', function() {
-				fetch('/get-latest-version-number')
-				.then(function (response) {
-					return response.text();
-				})
-				.then(function (text) {
+				function handleFirmwareStatus(text) {
 					document.getElementById("firmwareStatus").textContent = text;
-					console.log(text);
-				})
+					document.getElementById("checkUpdateButton").style.display = "";
+					if (text.indexOf("Update available: true") !== -1) {
+						document.getElementById("updateButton").style.display = "";
+					} else {
+						document.getElementById("updateButton").style.display = "none";
+					}
+				}
+
+				fetch('/get-latest-version-number')
+				.then(function (response) { return response.text(); })
+				.then(function (text) { handleFirmwareStatus(text); })
 				.catch(function (error) {
+					document.getElementById("firmwareStatus").textContent = "Version check failed";
+					document.getElementById("checkUpdateButton").style.display = "";
 					console.error('Firmware version fetch failed:', error);
+				});
+
+				document.getElementById("checkUpdateButton").addEventListener('click', function() {
+					document.getElementById("firmwareStatus").textContent = "Checking for updates...";
+					document.getElementById("checkUpdateButton").style.display = "none";
+					document.getElementById("updateButton").style.display = "none";
+					fetch('/check-firmware-update')
+					.then(function (response) { return response.text(); })
+					.then(function (text) { handleFirmwareStatus(text); })
+					.catch(function (error) {
+						document.getElementById("firmwareStatus").textContent = "Version check failed";
+						document.getElementById("checkUpdateButton").style.display = "";
+						console.error('Firmware check failed:', error);
+					});
 				});
 
 				// Display device hostname at top of every page
@@ -253,8 +278,28 @@ const char* portalHeadHtml = R"---(
 					console.error('Hostname fetch failed:', error);
 				});
 
+				// Hide duplicate SSID subtitle (WM renders it as a second heading after the title)
+				var headings = document.querySelectorAll('.wrap > h1, .wrap > h3');
+				if (headings.length > 1) headings[1].style.display = 'none';
+
 				// Rename "Setup" button to "Options" on portal home
 				document.querySelectorAll('form[action="/param"] button').forEach(function(b) { b.textContent = 'Options'; });
+
+				// Add "Spacecraft" button after "Options" on portal home
+				var optionsForm = document.querySelector('form[action="/param"]');
+				if (optionsForm) {
+					var refBtn = optionsForm.querySelector('button');
+					var scForm = document.createElement('form');
+					scForm.action = '/spacecraft';
+					scForm.method = 'get';
+					scForm.style.marginTop = '12px';
+					var scBtn = document.createElement('button');
+					scBtn.type = 'submit';
+					scBtn.textContent = 'Spacecraft';
+					if (refBtn) scBtn.className = refBtn.className;
+					scForm.appendChild(scBtn);
+					optionsForm.parentNode.insertBefore(scForm, optionsForm.nextSibling);
+				}
 
 				// Wrap each label+input pair in a flex container
 				document.querySelectorAll('form label[for]').forEach(function(label) {
@@ -838,13 +883,32 @@ void webServerCallback() {
 		});
 
 	wm.server->on("/get-latest-version-number", HTTP_GET, []() {
-		const char* remoteFirmwareVersion = getRemoteFirmwareVersion();
-		bool updateAvailable = checkFirmwareUpdateAvailable();
-		const char* updateAvailableText = updateAvailable ? "true" : "false";
-		String response = "Current version: " + String(currentFirmwareVersion) + "\nRemote Version: " + String(remoteFirmwareVersion) + "\nUpdate available: " + String(updateAvailableText);
+		if (!firmwareCheckDone) {
+			const char* remoteVersion = getRemoteFirmwareVersion();
+			if (strlen(remoteVersion) > 0) {
+				bool updateAvailable = isNewerVersion(remoteVersion, currentFirmwareVersion);
+				const char* updateAvailableText = updateAvailable ? "true" : "false";
+				cachedFirmwareStatus = "Current version: " + String(currentFirmwareVersion) + "\nRemote Version: " + String(remoteVersion) + "\nUpdate available: " + String(updateAvailableText);
+				firmwareCheckDone = true;
+			} else {
+				cachedFirmwareStatus = "Current version: " + String(currentFirmwareVersion) + "\nVersion check failed";
+			}
+		}
+		wm.server->send(200, "text/plain", cachedFirmwareStatus);
+		});
 
-		wm.server->send(200, "text/plain", response);
-
+	wm.server->on("/check-firmware-update", HTTP_GET, []() {
+		const char* remoteVersion = getRemoteFirmwareVersion();
+		if (strlen(remoteVersion) > 0) {
+			bool updateAvailable = isNewerVersion(remoteVersion, currentFirmwareVersion);
+			const char* updateAvailableText = updateAvailable ? "true" : "false";
+			cachedFirmwareStatus = "Current version: " + String(currentFirmwareVersion) + "\nRemote Version: " + String(remoteVersion) + "\nUpdate available: " + String(updateAvailableText);
+			firmwareCheckDone = true;
+		} else {
+			cachedFirmwareStatus = "Current version: " + String(currentFirmwareVersion) + "\nVersion check failed";
+			firmwareCheckDone = false;
+		}
+		wm.server->send(200, "text/plain", cachedFirmwareStatus);
 		});
 
 	wm.server->on("/trigger-firmware-update", HTTP_GET, []() {
@@ -860,6 +924,43 @@ void webServerCallback() {
 	wm.server->on("/hostname", HTTP_GET, []() {
 		wm.server->send(200, "text/plain", String(mdnsHostname) + ".local");
 		});
+
+	wm.server->on("/spacecraft", HTTP_GET, []() {
+		bool priorityOnly = FileUtils::config.miscellaneous.useApprovedOnly;
+		String html;
+		html.reserve(14000); // Pre-allocate to avoid heap fragmentation from repeated realloc
+		html = "<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width,initial-scale=1'>";
+		html += "<style>";
+		html += "body{font-family:sans-serif;background:#1a1a2e;color:#eee;margin:0;padding:16px;}";
+		html += "h1{font-size:1.3em;margin-bottom:4px;}";
+		html += "p.mode{opacity:0.6;font-size:0.85em;margin-top:0;}";
+		html += "table{width:100%;border-collapse:collapse;margin-top:12px;}";
+		html += "th,td{text-align:left;padding:6px 10px;border-bottom:1px solid #333;}";
+		html += "th{opacity:0.6;font-size:0.85em;text-transform:uppercase;}";
+		html += "tr.dimmed{opacity:0.3;}";
+		html += "a.back{display:inline-block;margin-top:16px;color:#5b9bd5;text-decoration:none;}";
+		html += "</style></head><body>";
+		html += "<h1>Recognized Spacecraft</h1>";
+		html += priorityOnly
+			? "<p class='mode'>Displaying high-priority missions only &mdash; others are recognized but hidden</p>"
+			: "<p class='mode'>Displaying all recognized spacecraft</p>";
+		html += "<table><tr><th>Callsign</th><th>Name</th></tr>";
+
+		JsonObject names = SpacecraftData::spacecraftNamesJson.as<JsonObject>();
+		for (JsonPair kv : names) {
+			const char* callsign = kv.key().c_str();
+			if (SpacecraftData::checkBlacklist(callsign)) continue;
+			bool isPriority = SpacecraftData::checkApproved(callsign);
+			bool dimmed = priorityOnly && !isPriority;
+			html += dimmed ? "<tr class='dimmed'>" : "<tr>";
+			html += "<td>" + String(callsign) + "</td><td>" + String(kv.value().as<const char*>()) + "</td></tr>";
+		}
+
+		html += "</table>";
+		html += "<a class='back' href='/'>&#8592; Back</a>";
+		html += "</body></html>";
+		wm.server->send(200, "text/html", html);
+	});
 }
 
 void setColorTheme(uint8_t colorTheme)
@@ -3329,7 +3430,7 @@ void setup()
 	// wm.setPreSaveConfigCallback(saveParamsCallback);
 	// wm.setPreSaveParamsCallback(saveParamsCallback);
 	wm.setSaveParamsCallback(saveParamsCallback);
-	std::vector<const char*> menu = { "wifi", "info", "param", "sep", "restart" };
+	std::vector<const char*> menu = { "wifi", "param", "info", "sep", "restart" };
 	wm.setMenu(menu);
 
 	// set dark theme
