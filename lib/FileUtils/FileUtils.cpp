@@ -49,7 +49,8 @@ FileUtils::Config FileUtils::config = {
 		10000 // timerDelay
 	},
 	{ // miscellaneous
-		0 // colorTheme
+		0,   // colorTheme
+		true // useApprovedOnly
 	}
 };
 
@@ -317,6 +318,8 @@ void FileUtils::setConfigValuesFromFile(File configFile) {
 			FileUtils::config.debugUtils.diagMeasure = kv.value().as<int>();
 		} else if (kv.key() == "brightness") {
 			FileUtils::config.displayLED.brightness = kv.value().as<int>();
+		} else if (kv.key() == "useApprovedOnly") {
+			FileUtils::config.miscellaneous.useApprovedOnly = kv.value().as<bool>();
 		}
 	}
 }
@@ -465,6 +468,8 @@ void FileUtils::updateTimersDelaysField(const char* key, const JsonVariant& valu
 void FileUtils::updateMiscellaneousField(const char* key, const JsonVariant& value) {
 	if (strcmp(key, "colorTheme") == 0) {
 		config.miscellaneous.colorTheme = value;
+	} else if (strcmp(key, "useApprovedOnly") == 0) {
+		config.miscellaneous.useApprovedOnly = value;
 	} else {
 		if (config.debugUtils.showSerial) Serial.println("Key not found in Miscellaneous struct");
 	}

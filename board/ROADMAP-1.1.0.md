@@ -1,6 +1,6 @@
 # Roadmap — v1.1.0
 
-Current dev version: **1.1.0-12**
+Current dev version: **1.1.0-rc.16**
 
 Items sourced from [codebase-analysis.md](codebase-analysis.md) and review findings (2026-02-20). Deferred items moved to [BACKLOG.md](BACKLOG.md).
 
@@ -59,10 +59,11 @@ Items sourced from [codebase-analysis.md](codebase-analysis.md) and review findi
 |---|-------|-----|------|------|--------|
 | 37 | Binary up signal logic | [PLAN](PLAN-binary-upsignal.md) | MED | FIX | DONE — `fe3f7fc` |
 | 38 | Clean up placeholder rate system (after #37) | — | LOW | CLEAN | DONE |
-| 40 | GitHub-based OTA firmware updates | [PLAN](PLAN-github-ota.md) | MED | FEAT | TODO |
+| 40 | GitHub-based OTA firmware updates | [PLAN](PLAN-github-ota.md) | MED | FEAT | DONE — `222092f` |
 | 41 | Remote spacecraft data (fetch + cache from GitHub) | [PLAN](PLAN-remote-spacecraft-data.md) | HIGH | FEAT | TODO |
-| 42 | Full vs restricted spacecraft list setting | [PLAN](PLAN-remote-spacecraft-data.md) | MED | FEAT | TODO |
-| 43 | Update recognized spacecraft callsigns | — | LOW | FIX | TODO |
+| 42 | Full vs restricted spacecraft list setting (portal UI) | [PLAN](PLAN-remote-spacecraft-data.md) | MED | FEAT | TODO |
+| 43 | Update recognized spacecraft callsigns | — | LOW | FIX | DONE |
+| 44 | Approved spacecraft filtering (`useApprovedOnly` config) | — | MED | FEAT | DONE |
 
 ---
 
@@ -75,3 +76,5 @@ Items sourced from [codebase-analysis.md](codebase-analysis.md) and review findi
 | 1.1.0-3 | 2026-02-19 | Performance optimizations: replaced std::map in termColor(), added 30 FPS frame limiter with heap/fragmentation diagnostics, eliminated LittleFS round-trip in data fetch. |
 | 1.1.0-11 | 2026-02-24 | Binary up signal detection (#37): simplified from rate-based to binary. Hoisted inline constants to file scope (meteorTimingTable, animationTypeCanSpiralTable, portalHeadHtml, maxHttpRetries). Removed redundant inner_leds_size and animationId variables. |
 | 1.1.0-12 | 2026-02-24 | Removed placeholder rate system (#38): deleted getPlaceholderRate(), spacecraftPlaceholderRatesJson (6KB), and all placeholder_rates.json file operations from SpacecraftData. |
+| 1.1.0-16 | 2026-03-02 | GitHub OTA (#40): replaced kellerdigital.com OTA with GitHub Releases over HTTPS. Added WiFiClientSecure, semver comparison (isNewerVersion), stream-based JSON parsing for version check, httpUpdate redirect following. Gated all serial output behind showSerial. |
+| 1.1.0-17 | 2026-03-02 | Approved spacecraft filtering (#44): added `useApprovedOnly` config flag (default true), approved callsign allowlist (44 craft), filtering in XML parse loop. Portal UI toggle deferred to #42. |

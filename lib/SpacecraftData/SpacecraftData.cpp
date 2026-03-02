@@ -1,13 +1,15 @@
 #include <SpacecraftData.h>
 
-DynamicJsonDocument SpacecraftData::spacecraftNamesJson(5120);
+DynamicJsonDocument SpacecraftData::spacecraftNamesJson(8192);
 DynamicJsonDocument SpacecraftData::spacecraftBlacklistJson(1024);
+DynamicJsonDocument SpacecraftData::spacecraftApprovedJson(2048);
 
 void SpacecraftData::loadJson(const char* firmwareVersion) {
     bool showSerial = FileUtils::config.debugUtils.showSerial;
     if (showSerial) Serial.println("Initializing spacecraft data...");
     populateNamesInMemory();
     populateBlacklistInMemory();
+    populateApprovedInMemory();
 
     if (shouldWriteFiles(firmwareVersion)) {
         if (showSerial) Serial.println("Firmware version changed — writing spacecraft data to flash");
@@ -19,82 +21,120 @@ void SpacecraftData::loadJson(const char* firmwareVersion) {
 
 void SpacecraftData::populateNamesInMemory() {
     spacecraftNamesJson.clear();
-    spacecraftNamesJson["ACE"] = "Advanced Composition Explorer";
-    spacecraftNamesJson["PLC"] = "Akatsuki";
-    spacecraftNamesJson["ARGO"] = "ArgoMoon";
+
+    // Spacecraft (alphabetical by callsign)
+    spacecraftNamesJson["ACE"] = "Adv Composition Explorer";
+    spacecraftNamesJson["AGM1"] = "Griffin Lander";
+    spacecraftNamesJson["AIRS"] = "AIRS";
+    spacecraftNamesJson["B101"] = "Blue Moon 1 SN1";
+    spacecraftNamesJson["B102"] = "Blue Moon 1 SN2";
+    spacecraftNamesJson["BEPI"] = "BepiColombo";
     spacecraftNamesJson["BIOS"] = "BioSentinel";
-    spacecraftNamesJson["CAPS"] = "Capstone";
-    spacecraftNamesJson["CHDR"] = "Chandra Xray Observatory";
-    spacecraftNamesJson["CH2"] = "Chandrayaan 2";
-    spacecraftNamesJson["CUE3"] = "CU Earth Escape Explorer";
-    spacecraftNamesJson["CuSP"] = "CubeSat-Observation of Solar Particles";
-    spacecraftNamesJson["DART"] = "DART";
-    spacecraftNamesJson["unknown10"] = "Dragonfly";
-    spacecraftNamesJson["DSCO"] = "Deep Space Climate Observatory";
-    spacecraftNamesJson["EMM"] = "Emirates Mars Mission";
-    spacecraftNamesJson["EQUL"] = "EQUilibriUm Lunar-Earth Spacecraft";
+    spacecraftNamesJson["CAPS"] = "CAPSTONE";
+    spacecraftNamesJson["CGO"] = "Carruthers Observatory";
+    spacecraftNamesJson["CHDR"] = "Chandra Xray";
+    spacecraftNamesJson["CMA"] = "Caltech Apophis";
+    spacecraftNamesJson["DAVINCI"] = "DAVINCI";
+    spacecraftNamesJson["DFLY"] = "Dragonfly";
+    spacecraftNamesJson["DSCO"] = "DSCOVR";
+    spacecraftNamesJson["EM2"] = "Artemis Orion 2";
+    spacecraftNamesJson["EM3"] = "Artemis Orion 3";
+    spacecraftNamesJson["EMM"] = "Emirates Mars";
+    spacecraftNamesJson["ERO"] = "Earth Return Orb";
+    spacecraftNamesJson["ESCB"] = "EscaPADE Blue";
+    spacecraftNamesJson["ESCG"] = "EscaPADE Gold";
+    spacecraftNamesJson["EUCL"] = "Euclid";
     spacecraftNamesJson["EURC"] = "Europa Clipper";
-    spacecraftNamesJson["RSP"] = "ExoMars Rover";
-    spacecraftNamesJson["GAIA"] = "Gaia";
-    spacecraftNamesJson["GTL"] = "Geotail";
+    spacecraftNamesJson["EUS1"] = "Explor Upper Stage";
+    spacecraftNamesJson["GWP"] = "Lunar Gateway";
+    spacecraftNamesJson["HERA"] = "Hera";
+    spacecraftNamesJson["HST"] = "Hubble";
     spacecraftNamesJson["HYB2"] = "Hayabusa 2";
-    spacecraftNamesJson["EM1"] = "Artemis 1";
-    spacecraftNamesJson["EM2"] = "Artemis 2";
-    spacecraftNamesJson["EM3"] = "Artemis 3";
-    spacecraftNamesJson["NSYT"] = "InSight";
+    spacecraftNamesJson["IM3"] = "Intuitive Mach 3";
+    spacecraftNamesJson["IM4"] = "Intuitive Mach 4";
+    spacecraftNamesJson["IMAP"] = "IMAP";
+    spacecraftNamesJson["INTG"] = "INTEGRAL";
+    spacecraftNamesJson["JNO"] = "Juno Jupiter";
+    spacecraftNamesJson["JUICE"] = "JUICE";
     spacecraftNamesJson["JWST"] = "James Webb Space Telescope";
-    spacecraftNamesJson["JNO"] = "Juno";
-    spacecraftNamesJson["KPLO"] = "Korea Pathfinder Lunar Orbiter";
-    spacecraftNamesJson["LICI"] = "LICIA Cube";
-    spacecraftNamesJson["LND1"] = "Lunar Node 1";
+    spacecraftNamesJson["KPLO"] = "Danuri Korea";
+    spacecraftNamesJson["LEMS"] = "Lunar Monitor Stn";
+    spacecraftNamesJson["LEV1"] = "Lunar Excur Veh";
+    spacecraftNamesJson["LRO"] = "Lunar Recon Orbiter";
+    spacecraftNamesJson["LTV"] = "Lunar Terrain Veh";
     spacecraftNamesJson["LUCY"] = "Lucy";
-    spacecraftNamesJson["LFL"] = "Lunar Flashlight";
-    spacecraftNamesJson["HMAP"] = "Lunar Hydrogen Mapper";
-    spacecraftNamesJson["LRO"] = "Lunar Reconnaissance Orbiter";
-    spacecraftNamesJson["MMS1"] = "Magnetospheric MultiScale Formation Flyer 1";
-    spacecraftNamesJson["MMS2"] = "Magnetospheric MultiScale Formation Flyer 2";
-    spacecraftNamesJson["MMS3"] = "Magnetospheric MultiScale Formation Flyer 3";
-    spacecraftNamesJson["MMS4"] = "Magnetospheric MultiScale Formation Flyer 4";
+    spacecraftNamesJson["LUPX"] = "LUPEX";
     spacecraftNamesJson["M01O"] = "Mars Odyssey";
-    spacecraftNamesJson["M20"] = "Mars 2020";
-    spacecraftNamesJson["MVN"] = "MAVEN";
+    spacecraftNamesJson["M20"] = "Mars Perseverance";
+    spacecraftNamesJson["MAX"] = "Multi Asteroid Exp";
     spacecraftNamesJson["MEX"] = "Mars Express";
+    spacecraftNamesJson["MMS1"] = "Magneto MultiScale 1";
+    spacecraftNamesJson["MMS2"] = "Magneto MultiScale 2";
+    spacecraftNamesJson["MMS3"] = "Magneto MultiScale 3";
+    spacecraftNamesJson["MMS4"] = "Magneto MultiScale 4";
+    spacecraftNamesJson["MMX"] = "Martian Moons Exp";
     spacecraftNamesJson["MOM"] = "Mars Orbiter";
-    spacecraftNamesJson["MRO"] = "Mars Reconnaissance Orbiter";
-    spacecraftNamesJson["MSL"] = "Curiosity";
-    spacecraftNamesJson["MLI"] = "Morehead Lunar Ice Cube";
-    spacecraftNamesJson["NEAS"] = "Near Earth Asteroid Scout";
-    spacecraftNamesJson["NHPC"] = "New Horizons";
-    spacecraftNamesJson["ORX"] = "OSIRIS REx";
-    spacecraftNamesJson["OMOT"] = "OMOTENASHI";
-    spacecraftNamesJson["PSYC"] = "Psyche";
-    spacecraftNamesJson["SOHO"] = "Solar and Heliospheric Observatory";
+    spacecraftNamesJson["MRO"] = "Mars Recon Orbiter";
+    spacecraftNamesJson["MSL"] = "Mars Curiosity";
+    spacecraftNamesJson["MVN"] = "MAVEN";
+    spacecraftNamesJson["NEOS"] = "NEO Surveyor";
+    spacecraftNamesJson["NHPC"] = "New Horizons Pluto";
+    spacecraftNamesJson["ORACLE-P"] = "Oracle P";
+    spacecraftNamesJson["ORX"] = "OSIRIS APEX";
+    spacecraftNamesJson["PLC"] = "Akatsuki";
+    spacecraftNamesJson["PSYC"] = "Psyche Asteroid";
+    spacecraftNamesJson["RFM"] = "Rosalind Franklin";
+    spacecraftNamesJson["RLVM"] = "Rocket Lab Venus";
+    spacecraftNamesJson["RST"] = "Roman Telescope";
+    spacecraftNamesJson["SMAP"] = "SMAP";
+    spacecraftNamesJson["SOHO"] = "Solar Heliospheric Observatory";
+    spacecraftNamesJson["SOLAR"] = "SOLAR";
+    spacecraftNamesJson["SOLO"] = "Solar Orbiter";
     spacecraftNamesJson["SPP"] = "Parker Solar Probe";
+    spacecraftNamesJson["SRBB"] = "SunRISE Bebop";
+    spacecraftNamesJson["SRED"] = "SunRISE Edward";
+    spacecraftNamesJson["SREI"] = "SunRISE Ein";
+    spacecraftNamesJson["SRFY"] = "SunRISE Faye";
+    spacecraftNamesJson["SRJT"] = "SunRISE Jet";
+    spacecraftNamesJson["SRL"] = "Sample Return Lndr";
+    spacecraftNamesJson["SRSP"] = "SunRISE Spike";
     spacecraftNamesJson["STA"] = "STEREO A";
-    spacecraftNamesJson["TESS"] = "Transiting Exoplanet Survey Satellite";
-    spacecraftNamesJson["TGO"] = "ExoMars Trace Gas Orbiter";
-    spacecraftNamesJson["THB"] = "THEMIS B";
-    spacecraftNamesJson["THC"] = "THEMIS C";
-    spacecraftNamesJson["TM"] = "TeamMiles";
+    spacecraftNamesJson["SWFO"] = "SWFO L1";
+    spacecraftNamesJson["SX01"] = "Starship Uncrewed";
+    spacecraftNamesJson["SX02"] = "Starship Crewed";
+    spacecraftNamesJson["TESS"] = "TESS Exoplanet Survey";
+    spacecraftNamesJson["TGO"] = "ExoMars TGO";
+    spacecraftNamesJson["THB"] = "Themis B";
+    spacecraftNamesJson["THC"] = "Themis C";
+    spacecraftNamesJson["VERITAS"] = "VERITAS";
     spacecraftNamesJson["VGR1"] = "Voyager 1";
     spacecraftNamesJson["VGR2"] = "Voyager 2";
+    spacecraftNamesJson["VPR"] = "VIPER";
     spacecraftNamesJson["WIND"] = "Wind";
-    spacecraftNamesJson["SWFO"] = "SOLAR 1";
     spacecraftNamesJson["XMM"] = "XMM Newton";
+
+    // Blacklist / utility (alphabetical by callsign)
     spacecraftNamesJson["ATOT"] = "Advanced Tracking and Observational Techniques";
-    spacecraftNamesJson["EGS"] = "EVN and Global Sevices";
+    spacecraftNamesJson["DSSR"] = "DSN Solar System Radar";
+    spacecraftNamesJson["EGS"] = "European and Global VLBI Systems";
     spacecraftNamesJson["GBRA"] = "Ground Based Radio Astronomy";
     spacecraftNamesJson["GSSR"] = "Goldstone Solar System Radar";
     spacecraftNamesJson["GVRT"] = "Goldstone Apple Valley Radio Telescope";
+    spacecraftNamesJson["HCRA"] = "Host Country Radio Astronomy";
+    spacecraftNamesJson["RFC"] = "Reference Frame Calibration";
     spacecraftNamesJson["SGP"] = "Space Geodesy Program";
-    spacecraftNamesJson["TDR6"] = "Tracking and Data Relay Satellites (TDRS)";
-    spacecraftNamesJson["TDR7"] = "Tracking and Data Relay Satellites (TDRS)";
-    spacecraftNamesJson["TDR8"] = "Tracking and Data Relay Satellites (TDRS)";
-    spacecraftNamesJson["TDR9"] = "Tracking and Data Relay Satellites (TDRS)";
-    spacecraftNamesJson["TD10"] = "Tracking and Data Relay Satellites (TDRS)";
-    spacecraftNamesJson["TD11"] = "Tracking and Data Relay Satellites (TDRS)";
-    spacecraftNamesJson["TD12"] = "Tracking and Data Relay Satellites (TDRS)";
-    spacecraftNamesJson["TD13"] = "Tracking and Data Relay Satellites (TDRS)";
+
+    // TDRS (numerical order)
+    spacecraftNamesJson["TDR6"] = "TDRS 6";
+    spacecraftNamesJson["TDR7"] = "TDRS 7";
+    spacecraftNamesJson["TDR8"] = "TDRS 8";
+    spacecraftNamesJson["TDR9"] = "TDRS 9";
+    spacecraftNamesJson["TD10"] = "TDRS 10";
+    spacecraftNamesJson["TD11"] = "TDRS 11";
+    spacecraftNamesJson["TD12"] = "TDRS 12";
+    spacecraftNamesJson["TD13"] = "TDRS 13";
+
+    // Test rates
     spacecraftNamesJson["Rate1"] = "Test Rate 1";
     spacecraftNamesJson["Rate2"] = "Test Rate 2";
     spacecraftNamesJson["Rate3"] = "Test Rate 3";
@@ -105,10 +145,13 @@ void SpacecraftData::populateNamesInMemory() {
 
 void SpacecraftData::populateBlacklistInMemory() {
     spacecraftBlacklistJson.clear();
-    spacecraftBlacklistJson["TEST"] = true;
     spacecraftBlacklistJson["DSN"] = true;
-    spacecraftBlacklistJson["RFC(VLBI)"] = true;
+    spacecraftBlacklistJson["DSSR"] = true;
     spacecraftBlacklistJson["GO19"] = true;
+    spacecraftBlacklistJson["HCRA"] = true;
+    spacecraftBlacklistJson["RFC"] = true;
+    spacecraftBlacklistJson["RFC(VLBI)"] = true;
+    spacecraftBlacklistJson["TEST"] = true;
 }
 
 bool SpacecraftData::shouldWriteFiles(const char* firmwareVersion) {
@@ -200,22 +243,89 @@ const char* SpacecraftData::callsignToName(const char* key) {
 /* Check Blacklist */
 bool SpacecraftData::checkBlacklist(const char* key) {
     bool showSerial = FileUtils::config.debugUtils.showSerial;
-    bool isBlacklisted = spacecraftBlacklistJson[key] != nullptr; // If the key is not null, it is blacklisted
+    bool isBlacklisted = spacecraftBlacklistJson[key] != nullptr;
 
-    if (showSerial) {
+    if (showSerial && isBlacklisted) {
         char buffer[128];
-        if (isBlacklisted) {
-            snprintf(
-                buffer,
-                sizeof(buffer),
-                "%s%s is blacklisted, skipping...%s\n",
-                DevUtils::termColor("purple"),
-                key,
-                DevUtils::termColor("reset")
-            );
-            Serial.print(buffer);
-        }
+        snprintf(
+            buffer,
+            sizeof(buffer),
+            "%s%s is blacklisted, skipping...%s\n",
+            DevUtils::termColor("purple"),
+            key,
+            DevUtils::termColor("reset")
+        );
+        Serial.print(buffer);
     }
 
     return isBlacklisted;
+}
+
+/* Check Approved */
+bool SpacecraftData::checkApproved(const char* key) {
+    bool showSerial = FileUtils::config.debugUtils.showSerial;
+    bool isApproved = spacecraftApprovedJson[key] != nullptr;
+
+    if (showSerial && !isApproved) {
+        char buffer[128];
+        snprintf(
+            buffer,
+            sizeof(buffer),
+            "%s%s is not approved, skipping...%s\n",
+            DevUtils::termColor("purple"),
+            key,
+            DevUtils::termColor("reset")
+        );
+        Serial.print(buffer);
+    }
+
+    return isApproved;
+}
+
+void SpacecraftData::populateApprovedInMemory() {
+    spacecraftApprovedJson.clear();
+    spacecraftApprovedJson["ACE"] = true;
+    spacecraftApprovedJson["BEPI"] = true;
+    spacecraftApprovedJson["BIOS"] = true;
+    spacecraftApprovedJson["CAPS"] = true;
+    spacecraftApprovedJson["CGO"] = true;
+    spacecraftApprovedJson["CHDR"] = true;
+    spacecraftApprovedJson["DSCO"] = true;
+    spacecraftApprovedJson["EMM"] = true;
+    spacecraftApprovedJson["ESCB"] = true;
+    spacecraftApprovedJson["ESCG"] = true;
+    spacecraftApprovedJson["EURC"] = true;
+    spacecraftApprovedJson["HYB2"] = true;
+    spacecraftApprovedJson["IMAP"] = true;
+    spacecraftApprovedJson["JNO"] = true;
+    spacecraftApprovedJson["JWST"] = true;
+    spacecraftApprovedJson["KPLO"] = true;
+    spacecraftApprovedJson["LRO"] = true;
+    spacecraftApprovedJson["LUCY"] = true;
+    spacecraftApprovedJson["M01O"] = true;
+    spacecraftApprovedJson["M20"] = true;
+    spacecraftApprovedJson["MEX"] = true;
+    spacecraftApprovedJson["MMS1"] = true;
+    spacecraftApprovedJson["MMS2"] = true;
+    spacecraftApprovedJson["MMS3"] = true;
+    spacecraftApprovedJson["MMS4"] = true;
+    spacecraftApprovedJson["MRO"] = true;
+    spacecraftApprovedJson["MSL"] = true;
+    spacecraftApprovedJson["MVN"] = true;
+    spacecraftApprovedJson["NHPC"] = true;
+    spacecraftApprovedJson["ORX"] = true;
+    spacecraftApprovedJson["PSYC"] = true;
+    spacecraftApprovedJson["SOHO"] = true;
+    spacecraftApprovedJson["SOLAR"] = true;
+    spacecraftApprovedJson["SPP"] = true;
+    spacecraftApprovedJson["STA"] = true;
+    spacecraftApprovedJson["SWFO"] = true;
+    spacecraftApprovedJson["TESS"] = true;
+    spacecraftApprovedJson["TGO"] = true;
+    spacecraftApprovedJson["THB"] = true;
+    spacecraftApprovedJson["THC"] = true;
+    spacecraftApprovedJson["VGR1"] = true;
+    spacecraftApprovedJson["VGR2"] = true;
+    spacecraftApprovedJson["WIND"] = true;
+    spacecraftApprovedJson["XMM"] = true;
 }

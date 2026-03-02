@@ -6213,3 +6213,4522 @@ dd5d8a0 chore: add specstory conversation history
 Based on the above changes, create a single git commit.
 
 You have the capability to call multiple tools in a single response. Stage and create the commit using a single message. Do not use any other tools or do anything else. Do not send any other text or messages besides these tool calls.
+
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 11:29:59Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Stage main.cpp and specstory changes
+
+`git add src/main.cpp .specstory/history/2026-03-02_08-59-53Z-we-need-to-continue.md`
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:30:04Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Commit GitHub OTA implementation
+
+```bash
+git commit -m "$(cat <<'EOF'
+feat(ota): replace kellerdigital.com OTA with GitHub Releases over HTTPS
+EOF
+)"
+```
+
+```text
+[feature/ota-and-remote-data 222092f] feat(ota): replace kellerdigital.com OTA with GitHub Releases over HTTPS
+ 2 files changed, 3350 insertions(+), 42 deletions(-)
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:30:07Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Verify commit succeeded
+
+`git status`
+
+```text
+On branch feature/ota-and-remote-data
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   .specstory/history/2026-03-02_08-59-53Z-we-need-to-continue.md
+
+no changes added to commit (use "git add" and/or "git commit -a")
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:30:10Z)**_
+
+Committed as `222092f` — `feat(ota): replace kellerdigital.com OTA with GitHub Releases over HTTPS`
+
+---
+
+_**User (2026-03-02 11:30:55Z)**_
+
+update the ROADMAP doc
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 11:30:58Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Glob"><details>
+<summary>Tool use: **Glob**</summary>
+ pattern `**/ROADMAP*`
+
+```text
+/Users/grant/code/JPL-MiniPulse/board/ROADMAP-1.1.0.md
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:31:01Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./board/ROADMAP-1.1.0.md`
+
+```text
+     1→# Roadmap — v1.1.0
+     2→
+     3→Current dev version: **1.1.0-12**
+     4→
+     5→Items sourced from [codebase-analysis.md](codebase-analysis.md) and review findings (2026-02-20). Deferred items moved to [BACKLOG.md](BACKLOG.md).
+     6→
+     7→**Risk** = how much code changes. LOW = 1-5 lines, MED = 10-50 lines, HIGH = 50+ lines or structural.
+     8→**Type**: FIX = bug/correctness, OPT = performance optimization, SEC = security, CLEAN = code hygiene/nice-to-have.
+     9→
+    10→---
+    11→
+    12→## Immediate — Critical Bugs + Security
+    13→
+    14→| # | Issue | Ref | Risk | Type | Status |
+    15→|---|-------|-----|------|------|--------|
+    16→| 1 | Queue created after task | CQ1 | LOW | FIX | DONE — `dd8c388` |
+    17→| 2 | `==` instead of `=` on semaphore flag | CQ2 | LOW | FIX | DONE — `dd8c388` |
+    18→| 3 | Queue sends pointer-to-pointer | CQ3 | LOW | FIX | DONE — `dd8c388` |
+    19→| 4 | Pool allocator reads wrong index | CQ4 | MED | FIX | DONE — `dd8c388`, `f097b40` |
+    20→| 5 | `isWiFiConnected` missing `()` | CQ5 | LOW | FIX | DONE — `dd8c388` |
+    21→
+    22→## Short-Term — Next Sprint
+    23→
+    24→| # | Issue | Ref | Risk | Type | Status |
+    25→|---|-------|-----|------|------|--------|
+    26→| 9 | `randomTypeAny` uninitialized | CQ6 | LOW | FIX | DONE — `b4bae67` |
+    27→| 10 | `freeSemaphoreItem` dangling pointer | CQ7 | LOW | FIX | DONE — `b4bae67` |
+    28→| 11 | `colorTheme` global shadows config | CQ9 | LOW | FIX | DONE — `b4bae67` |
+    29→| 12 | `firstStartupAnimation` logic inverted | CQ10 | LOW | FIX | DONE — `b4bae67`, `e446cb4` |
+    30→| 13 | `strncpy` null-termination | CQ11 | LOW | FIX | DONE — `b4bae67` |
+    31→| 14 | Pin dependency versions | S7 | LOW | SEC | DONE |
+    32→| 15 | Portal input validation | S5 | MED | SEC | DONE (already secure) |
+    33→| 16 | `innerHTML` to `textContent` | S10 | LOW | SEC | DONE (already uses textContent) |
+    34→| 39 | Add `.catch()` to firmware version fetch | RF4 | LOW | FIX | DONE |
+    35→| 18 | Eliminate LittleFS round-trip | P2 | MED | OPT | DONE — `3c57fcc` |
+    36→| 19 | Add frame rate limiter | P3 | MED | OPT | DONE — `85870c9` |
+    37→| 20 | Replace `std::map` in `termColor()` | P4 | MED | OPT | DONE — `7f74634` |
+    38→
+    39→## Medium-Term — Next Month
+    40→
+    41→| # | Issue | Ref | Risk | Type | Status |
+    42→|---|-------|-----|------|------|--------|
+    43→| 23 | Remove commented-out code | A5 | MED | CLEAN | TODO |
+    44→| 24 | Fix SpacecraftData write-then-read | A3 | MED | OPT | DONE |
+    45→| 25 | Reduce semaphore hold time | P5 | MED | OPT | DONE |
+    46→| 27 | Optimize boot sequence | P7 | MED | OPT | DONE |
+    47→| 29 | Serial output gating | S9 | LOW | CLEAN | DONE |
+    48→
+    49→## Long-Term — Future Releases
+    50→
+    51→| # | Issue | Ref | Risk | Type | Status |
+    52→|---|-------|-----|------|------|--------|
+    53→| 35 | Move font data to PROGMEM | A3 | MED | OPT | TODO |
+    54→| 36 | Batch config file writes | A2 | MED | CLEAN | TODO |
+    55→
+    56→## Additional v1.1.0 Work
+    57→
+    58→| # | Issue | Ref | Risk | Type | Status |
+    59→|---|-------|-----|------|------|--------|
+    60→| 37 | Binary up signal logic | [PLAN](PLAN-binary-upsignal.md) | MED | FIX | DONE — `fe3f7fc` |
+    61→| 38 | Clean up placeholder rate system (after #37) | — | LOW | CLEAN | DONE |
+    62→| 40 | GitHub-based OTA firmware updates | [PLAN](PLAN-github-ota.md) | MED | FEAT | TODO |
+    63→| 41 | Remote spacecraft data (fetch + cache from GitHub) | [PLAN](PLAN-remote-spacecraft-data.md) | HIGH | FEAT | TODO |
+    64→| 42 | Full vs restricted spacecraft list setting | [PLAN](PLAN-remote-spacecraft-data.md) | MED | FEAT | TODO |
+    65→| 43 | Update recognized spacecraft callsigns | — | LOW | FIX | TODO |
+    66→
+    67→---
+    68→
+    69→## Dev Version Log
+    70→
+    71→| Version | Date | Summary |
+    72→|---------|------|---------|
+    73→| 1.1.0-1 | 2026-02-19 | Fixed 5 critical bugs (CQ1–CQ5). OTA WiFi flashing confirmed working. |
+    74→| 1.1.0-2 | 2026-02-19 | Fixed 5 short-term code quality issues (CQ6–CQ11). Rewrote pool allocator to fix duplicates/leaks. Fixed display timer reset. Added boot banner color reset. |
+    75→| 1.1.0-3 | 2026-02-19 | Performance optimizations: replaced std::map in termColor(), added 30 FPS frame limiter with heap/fragmentation diagnostics, eliminated LittleFS round-trip in data fetch. |
+    76→| 1.1.0-11 | 2026-02-24 | Binary up signal detection (#37): simplified from rate-based to binary. Hoisted inline constants to file scope (meteorTimingTable, animationTypeCanSpiralTable, portalHeadHtml, maxHttpRetries). Removed redundant inner_leds_size and animationId variables. |
+    77→| 1.1.0-12 | 2026-02-24 | Removed placeholder rate system (#38): deleted getPlaceholderRate(), spacecraftPlaceholderRatesJson (6KB), and all placeholder_rates.json file operations from SpacecraftData. |
+    78→
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:31:11Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/board/ROADMAP-1.1.0.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:31:11Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/board/ROADMAP-1.1.0.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:35:01Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/board/ROADMAP-1.1.0.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:35:05Z)**_
+
+Updated the roadmap:
+- Dev version bumped to **1.1.0-16**
+- Item #40 (GitHub OTA) marked **DONE** with commit `222092f`
+- Added dev version log entry for 1.1.0-16 summarizing the changes
+
+---
+
+_**User (2026-03-02 11:57:37Z)**_
+
+whats the proper semver string for the current version? its basically 1.1.0 release candidate 16
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 11:57:45Z)**_
+
+
+
+That would be `1.1.0-rc.16` in proper semver. The format is:
+
+```
+1.1.0-rc.16
+```
+
+Per the semver spec, pre-release identifiers go after a hyphen, and `rc.16` uses dot-separated identifiers — `rc` (release candidate) and `16` (the build number).
+
+Worth noting: `isNewerVersion()` as written only parses `major.minor.patch` — it would stop at the `-` and treat `1.1.0-rc.16` as `1.1.0`. That's actually fine for the OTA use case (the GitHub release tags will be clean semver like `1.1.0`, `1.1.1`), but the `currentFirmwareVersion` display string in the portal would show the full `1.1.0-rc.16`.
+
+Want me to update it?
+
+---
+
+_**User (2026-03-02 12:00:53Z)**_
+
+yes
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 12:00:57Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Grep"><details>
+<summary>Tool use: **Grep**</summary>
+ path `./src/main.cpp` pattern `currentFirmwareVersion`
+
+```text
+1:const char* currentFirmwareVersion = "1.1.0-16"; // Current firmware version
+464:	return isNewerVersion(latestVersion, currentFirmwareVersion);
+828:		String response = "Current version: " + String(currentFirmwareVersion) + "\nRemote Version: " + String(remoteFirmwareVersion) + "\nUpdate available: " + String(updateAvailableText);
+3188:	Serial.print("VERSION: " + String(currentFirmwareVersion) + "\n\n");
+3434:	SpacecraftData::loadJson(currentFirmwareVersion);
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 12:01:00Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+<tool_use_error>File has been modified since read, either by the user or by a linter. Read it again before attempting to write it.</tool_use_error>
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 12:01:03Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+     1→const char* currentFirmwareVersion = "1.1.0-16"; // Current firmware version
+     2→const char* githubApiUrl = "https://api.github.com/repos/GDKeller/JPL-MiniPulse/releases/latest";
+     3→const char* firmwareBinaryUrl = "https://github.com/GDKeller/JPL-MiniPulse/releases/latest/download/firmware.bin";
+     4→
+     5→#pragma region -- LIBRARIES
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 12:01:08Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/src/main.cpp has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 12:01:11Z)**_
+
+Done. Version string is now `1.1.0-rc.16`.
+
+---
+
+_**User (2026-03-02 12:03:09Z)**_
+
+lets update the hard-coded spacecraft list. the newest dated .csv should have everything
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 12:03:13Z)**_
+
+<think><details><summary>Thought Process</summary>
+The user wants to update the hard-coded spacecraft list using the newest CSV file. Let me find the CSV files and the spacecraft list in the codebase.
+</details></think>
+
+_**Agent (claude-opus-4-6 2026-03-02 12:03:14Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Glob"><details>
+<summary>Tool use: **Glob**</summary>
+ pattern `**/*.csv`
+
+```text
+/Users/grant/code/JPL-MiniPulse/scripts/.venv/lib/python3.10/site-packages/numpy/_core/tests/data/umath-validation-set-log2.csv
+/Users/grant/code/JPL-MiniPulse/scripts/.venv/lib/python3.10/site-packages/numpy/_core/tests/data/umath-validation-set-arcsinh.csv
+/Users/grant/code/JPL-MiniPulse/scripts/.venv/lib/python3.10/site-packages/numpy/_core/tests/data/umath-validation-set-arctanh.csv
+/Users/grant/code/JPL-MiniPulse/scripts/.venv/lib/python3.10/site-packages/numpy/_core/tests/data/umath-validation-set-sin.csv
+/Users/grant/code/JPL-MiniPulse/scripts/.venv/lib/python3.10/site-packages/numpy/_core/tests/data/umath-validation-set-cos.csv
+/Users/grant/code/JPL-MiniPulse/scripts/.venv/lib/python3.10/site-packages/numpy/_core/tests/data/umath-validation-set-cbrt.csv
+/Users/grant/code/JPL-MiniPulse/scripts/.venv/lib/python3.10/site-packages/numpy/_core/tests/data/umath-validation-set-arctan.csv
+/Users/grant/code/JPL-MiniPulse/scripts/.venv/lib/python3.10/site-packages/numpy/_core/tests/data/umath-validation-set-cosh.csv
+/Users/grant/code/JPL-MiniPulse/scripts/.venv/lib/python3.10/site-packages/numpy/_core/tests/data/umath-validation-set-expm1.csv
+/Users/grant/code/JPL-MiniPulse/scripts/.venv/lib/python3.10/site-packages/numpy/_core/tests/data/umath-validation-set-sinh.csv
+/Users/grant/code/JPL-MiniPulse/scripts/.venv/lib/python3.10/site-packages/numpy/_core/tests/data/umath-validation-set-tanh.csv
+/Users/grant/code/JPL-MiniPulse/scripts/.venv/lib/python3.10/site-packages/numpy/_core/tests/data/umath-validation-set-log10.csv
+/Users/grant/code/JPL-MiniPulse/scripts/.venv/lib/python3.10/site-packages/numpy/_core/tests/data/umath-validation-set-arcsin.csv
+/Users/grant/code/JPL-MiniPulse/scripts/.venv/lib/python3.10/site-packages/numpy/_core/tests/data/umath-validation-set-arccos.csv
+/Users/grant/code/JPL-MiniPulse/scripts/.venv/lib/python3.10/site-packages/numpy/_core/tests/data/umath-validation-set-log1p.csv
+/Users/grant/code/JPL-MiniPulse/scripts/.venv/lib/python3.10/site-packages/numpy/_core/tests/data/umath-validation-set-log.csv
+/Users/grant/code/JPL-MiniPulse/scripts/.venv/lib/python3.10/site-packages/numpy/_core/tests/data/umath-validation-set-exp2.csv
+/Users/grant/code/JPL-MiniPulse/scripts/.venv/lib/python3.10/site-packages/numpy/_core/tests/data/umath-validation-set-arccosh.csv
+/Users/grant/code/JPL-MiniPulse/scripts/.venv/lib/python3.10/site-packages/numpy/_core/tests/data/umath-validation-set-tan.csv
+/Users/grant/code/JPL-MiniPulse/scripts/.venv/lib/python3.10/site-packages/numpy/_core/tests/data/umath-validation-set-exp.csv
+/Users/grant/code/JPL-MiniPulse/scripts/.venv/lib/python3.10/site-packages/numpy/random/tests/data/philox-testset-1.csv
+/Users/grant/code/JPL-MiniPulse/scripts/.venv/lib/python3.10/site-packages/numpy/random/tests/data/philox-testset-2.csv
+/Users/grant/code/JPL-MiniPulse/scripts/.venv/lib/python3.10/site-packages/numpy/random/tests/data/sfc64-testset-1.csv
+/Users/grant/code/JPL-MiniPulse/scripts/.venv/lib/python3.10/site-packages/numpy/random/tests/data/sfc64-testset-2.csv
+/Users/grant/code/JPL-MiniPulse/scripts/.venv/lib/python3.10/site-packages/numpy/random/tests/data/mt19937-testset-2.csv
+/Users/grant/code/JPL-MiniPulse/scripts/.venv/lib/python3.10/site-packages/numpy/random/tests/data/mt19937-testset-1.csv
+/Users/grant/code/JPL-MiniPulse/scripts/.venv/lib/python3.10/site-packages/numpy/random/tests/data/pcg64-testset-1.csv
+/Users/grant/code/JPL-MiniPulse/scripts/.venv/lib/python3.10/site-packages/numpy/random/tests/data/pcg64-testset-2.csv
+/Users/grant/code/JPL-MiniPulse/scripts/.venv/lib/python3.10/site-packages/numpy/random/tests/data/pcg64dxsm-testset-1.csv
+/Users/grant/code/JPL-MiniPulse/scripts/.venv/lib/python3.10/site-packages/numpy/random/tests/data/pcg64dxsm-testset-2.csv
+/Users/grant/code/JPL-MiniPulse/scripts/data/spacecraft_list.csv
+/Users/grant/code/JPL-MiniPulse/scripts/data/timeseries_20260122_020846.csv
+/Users/grant/code/JPL-MiniPulse/scripts/data/timeseries_20260122_020904.csv
+/Users/grant/code/JPL-MiniPulse/scripts/data/timeseries_20260122_021121.csv
+/Users/grant/code/JPL-MiniPulse/scripts/data/timeseries_20260122_035430.csv
+/Users/grant/code/JPL-MiniPulse/scripts/data/timeseries_20260123_035619.csv
+/Users/grant/code/JPL-MiniPulse/data_reference/MiniPulse Craft List Jan 2026 - spacecraft_list.csv
+/Users/grant/code/JPL-MiniPulse/data_reference/minipulse_list_2025-02-26.csv
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 12:03:15Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Grep"><details>
+<summary>Tool use: **Grep**</summary>
+ path `./` pattern `spacecraft.*callsign|callsign.*spacecraft|recognized.*craft|craft.*list`
+
+```text
+Found 15 files limit: 15, offset: 0
+.specstory/history/2026-03-02_08-59-53Z-we-need-to-continue.md
+src/main.cpp
+board/ROADMAP-1.1.0.md
+.specstory/history/2026-02-27_12-07-44Z-command-name-clear-command.md
+.specstory/history/2026-02-27_09-59-01Z-command-name-clear-command.md
+lib/XmlTestData/XmlTestData.cpp
+lib/SpacecraftData/SpacecraftData.cpp
+.specstory/history/2026-02-26_14-33-06Z-command-message-commit-commands.md
+.specstory/history/2026-02-26_14-15-14Z-command-name-clear-command.md
+.specstory/history/2026-02-26_12-31-08Z-command-message-commit-commands.md
+lib/SpacecraftData/SpacecraftData.h
+.specstory/history/2026-02-24_23-55-29Z-merge-to-develop-1.md
+.specstory/history/2026-02-24_20-59-20Z-command-name-clear-command.md
+.specstory/history/2026-02-25_01-58-47Z-implement-the-following-plan.md
+.specstory/history/2026-02-25_00-55-32Z-implement-the-following-plan.md
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 12:03:18Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./data_reference/minipulse_list_2025-02-26.csv`
+
+```text
+     1→Callsign,Approved,MiniPulse Display Name,Full Name,Alt Name,Agency,New,Status,Type,Mission URL
+     2→ACE,TRUE,Adv Composition Explorer,Advanced Composition Explorer,,NASA/GSFC,no,,spacecraft,https://science.nasa.gov/mission/ace/
+     3→AGM1,FALSE,Griffin Lander,Griffin Lander,,Astrobotic/NASA,yes,,spacecraft,
+     4→AIRS,FALSE,AIRS,Atmospheric Infrared Sounder,,NASA/JPL,yes,,spacecraft,https://airs.jpl.nasa.gov/
+     5→ARGO,FALSE,ArgoMoon,ArgoMoon,,ASI,no,Ended,removed,
+     6→ATOT,FALSE,n/a,Advanced Tracking and Observational Techniques,,NASA/DSN,no,Ended,blacklist,
+     7→B101,FALSE,Blue Moon 1 SN1,Blue Moon Mark 1 SN1,,Blue Origin/NASA,yes,,spacecraft,
+     8→B102,FALSE,Blue Moon 1 SN2,Blue Moon Mark 1 SN2,,Blue Origin/NASA,yes,,spacecraft,
+     9→BEPI,TRUE,BepiColombo,Bepi-Columbo,,ESA/JAXA,yes,,spacecraft,https://www.esa.int/Science_Exploration/Space_Science/BepiColombo
+    10→BIOS,TRUE,BioSentinel,BioSentinel,,NASA/ARC,no,,spacecraft,https://www.nasa.gov/ames-engineering/spaceflight-division/biosentinel/
+    11→CAPS,TRUE,CAPSTONE,Cislunar Autonomous Positioning System Technology Operations and Navigation Experiment (CAPSTONE),,NASA,no,,spacecraft,https://www.nasa.gov/mission/capstone/ https://advancedspace.com/capstone/
+    12→CGO,TRUE,Carruthers Observatory,Global Lyman-alpha Imagers of the Dynamic Exosphere (Carruthers Geocorona Observatory),,UCB/NASA,yes,,spacecraft,https://science.nasa.gov/mission/carruthers-geocorona-observatory/
+    13→CH2,FALSE,Chandrayaan 2,Chandrayaan 2,,ISRO,no,Ended,removed,
+    14→CHDR,TRUE,Chandra Xray,Chandra X Ray Observatory,,NASA,no,,spacecraft,
+    15→CMA,FALSE,Caltech Apophis,Caltech Mission to Apophis,,Caltech/NASA,yes,,spacecraft,
+    16→CUE3,FALSE,CU Earth Escape,CU Earth Escape Explorer,,CU Boulder,no,,removed,
+    17→CuSP,FALSE,CuSP,CubeSat Observation of Solar Particles,,SwRI,no,,removed,
+    18→DART,FALSE,DART,Double Asteroid Redirection Test (DART),,NASA/APL,no,,removed,
+    19→DAVINCI,FALSE,DAVINCI,DAVINCI,,NASA/GSFC,yes,,spacecraft,
+    20→DFLY,FALSE,Dragonfly,Dragonfly,,NASA/APL,yes,,spacecraft,
+    21→DSCO,TRUE,DSCOVR,Deep Space Climate Observatory (DSCOVR),,NOAA/NASA,no,,spacecraft,
+    22→DSSR,FALSE,n/a,DSN Solar System Radar,,NASA/DSN,yes,,blacklist,
+    23→EGS,FALSE,n/a,European and Global VLBI Systems,,ESA,no,,blacklist,
+    24→EM1,FALSE,Artemis 1,Artemis 1,,NASA,no,,removed,
+    25→EM2,FALSE,Artemis Orion 2,Orion 2,,NASA,no,,spacecraft,https://www.nasa.gov/reference/orion-spacecraft/
+    26→EM3,FALSE,Artemis Orion 3,Orion 3,,NASA,no,,spacecraft,https://www.nasa.gov/reference/orion-spacecraft/
+    27→EMM,TRUE,Emirates Mars,Emirate Mars Mission,,UAE/MBRSC,no,,spacecraft,
+    28→EQUL,FALSE,EQUULEUS,EQUilibriUm Lunar Earth Spacecraft,,JAXA,no,,removed,
+    29→ERO,FALSE,Earth Return Orb,Earth Return Orbiter (ERO),,ESA,yes,,spacecraft,
+    30→ESCB,TRUE,EscaPADE Blue,Escape and Plasma Acceleration and Dynamics Explorers (EscaPADE) Blue,,UCB/NASA,yes,,spacecraft,
+    31→ESCG,TRUE,EscaPADE Gold,Escape and Plasma Acceleration and Dynamics Explorers (EscaPADE) Gold,,UCB/NASA,yes,,spacecraft,
+    32→EUCL,FALSE,Euclid,Euclid,,ESA,yes,,spacecraft,
+    33→EURC,TRUE,Europa Clipper,Europa Clipper,,NASA/JPL,no,,spacecraft,
+    34→EUS1,FALSE,Explor Upper Stage,Exploration Upper Stage (EUS) 1,,NASA,yes,,spacecraft,
+    35→GAIA,FALSE,Gaia,Gaia,,ESA,no,,removed,
+    36→GBRA,FALSE,n/a,Ground Based Radio Astronomy,,NASA/DSN,no,,blacklist,
+    37→GSSR,FALSE,n/a,Goldstone Solar System Radar,,NASA/JPL,no,,blacklist,
+    38→GTL,FALSE,Geotail,Geotail,,JAXA/NASA,no,,removed,
+    39→GVRT,FALSE,n/a,Goldstone Apple Valley Radio Telescope,,NASA/JPL,no,,blacklist,
+    40→GWP,FALSE,Lunar Gateway,Gateway (GWP),,NASA,yes,,spacecraft,
+    41→HCRA,FALSE,n/a,Host Country Radio Astronomy,,NASA/DSN,yes,,blacklist,
+    42→HERA,FALSE,Hera,Hera,,ESA,yes,,spacecraft,
+    43→HMAP,FALSE,Lunar H Mapper,Lunar Hydrogen Mapper,,ASU,no,,removed,
+    44→HST,FALSE,Hubble,Hubble,,NASA/ESA,yes,,spacecraft,
+    45→HYB2,TRUE,Hayabusa 2,Hayabusa 2,,JAXA,no,,spacecraft,
+    46→IM3,FALSE,Intuitive Mach 3,Intuitive Machines 3 (PRISM),,Intuitive Machines,yes,,spacecraft,
+    47→IM4,FALSE,Intuitive Mach 4,Intuitive Machines 4,,Intuitive Machines,yes,,spacecraft,
+    48→IMAP,TRUE,IMAP,Interstellar Mapping and Acceleration Probe,,Princeton/NASA,yes,,spacecraft,
+    49→INTG,FALSE,INTEGRAL,International Gamma Ray Astrophysics Laboratory (INTEGRAL),,ESA,yes,,spacecraft,
+    50→JNO,TRUE,Juno Jupiter,Juno,,NASA/JPL,no,,spacecraft,https://science.nasa.gov/mission/juno/
+    51→JUICE,FALSE,JUICE,Jupiter Icy Moons Explorer,,ESA,yes,,spacecraft,https://astrobiology.nasa.gov/missions/juice/
+    52→JWST,TRUE,James Webb Space Telescope,James Webb Space Telescope,,NASA/ESA/CSA,no,,spacecraft,
+    53→KPLO,TRUE,Danuri Korea,Korea Pathfinder Lunar Orbiter,Danuri,KARI,no,,spacecraft,
+    54→LEMS,FALSE,Lunar Monitor Stn,Lunar Exploration Monitoring Station (LMA3),,Lockheed/NASA,yes,,spacecraft,
+    55→LEV1,FALSE,Lunar Excur Veh,Lunar Excursion Vehicle (LEV1),,JAXA,yes,,spacecraft,
+    56→LFL,FALSE,Lunar Flashlight,Lunar Flashlight,,NASA/JPL,no,,removed,
+    57→LICI,FALSE,LICIA Cube,LICIA Cube,,ASI,no,,removed,
+    58→LND1,FALSE,Lunar Node 1,Lunar Node 1,,NASA,no,,removed,
+    59→LRO,TRUE,Lunar Recon Orbiter,Lunar Reconnaisance Orbiter,,NASA,no,,spacecraft,
+    60→LTV,FALSE,Lunar Terrain Veh,Lunar Terrain Vehicles (LTV),,NASA,yes,,spacecraft,
+    61→LUCY,TRUE,Lucy,Lucy,,NASA,no,,spacecraft,https://science.nasa.gov/mission/lucy/
+    62→LUPX,FALSE,LUPEX,Lunar Polar Exploration Mission (LUPEX),,JAXA/ISRO,yes,,spacecraft,
+    63→M01O,TRUE,Mars Odyssey,Mars '01 Odyssey,,NASA/JPL,no,,spacecraft,
+    64→M20,TRUE,Mars Perseverance,Mars 2020 Perseverance Rover,,NASA/JPL,no,,spacecraft,
+    65→MAX,FALSE,Multi Asteroid Exp,Multi Asteroid Explorer (MAX),,DLR,yes,,spacecraft,
+    66→MEX,TRUE,Mars Express,Mars Express Orbiter,,ESA,no,,spacecraft,
+    67→MLI,FALSE,Morehead Lunar,Morehead Lunar Ice Cube,,Morehead State,no,,removed,
+    68→MMS1,TRUE,Magneto MultiScale 1,Magnetospheric MultiScale Formation Flyer 1,,NASA,no,,spacecraft,https://mms.gsfc.nasa.gov/
+    69→MMS2,TRUE,Magneto MultiScale 2,Magnetospheric MultiScale Formation Flyer 2,,NASA,no,,spacecraft,https://mms.gsfc.nasa.gov/
+    70→MMS3,TRUE,Magneto MultiScale 3,Magnetospheric MultiScale Formation Flyer 3,,NASA,no,,spacecraft,https://mms.gsfc.nasa.gov/
+    71→MMS4,TRUE,Magneto MultiScale 4,Magnetospheric MultiScale Formation Flyer 4,,NASA,no,,spacecraft,https://mms.gsfc.nasa.gov/
+    72→MMX,FALSE,Martian Moons Exp,Martian Moons eXploration (MMX),,JAXA,yes,,spacecraft,
+    73→MOM,FALSE,Mars Orbiter,Mars Orbiter Mission,,ISRO,no,,spacecraft,
+    74→MRO,TRUE,Mars Recon Orbiter,Mars Reconnaissance Orbiter,,NASA/JPL,no,,spacecraft,
+    75→MSL,TRUE,Mars Curiosity,Mars Science Laboratory (MSL Curiosity),,NASA/JPL,no,,spacecraft,
+    76→MVN,TRUE,MAVEN,Mars Atmosphere and Volatile EvolutioN,,NASA/GSFC,no,,spacecraft,
+    77→NEAS,FALSE,NEA Scout,Near Earth Asteroid Scout,,NASA/MSFC,no,,removed,
+    78→NEOS,FALSE,NEO Surveyor,Near Earth Object Surveyor,,NASA/JPL,yes,,spacecraft,
+    79→NHPC,TRUE,New Horizons Pluto,New Horizon Pluto Charon,,NASA/APL,no,,spacecraft,
+    80→NSYT,FALSE,InSight,InSight,,NASA/JPL,no,,removed,
+    81→OMOT,FALSE,OMOTENASHI,OMOTENASHI,,JAXA,no,,removed,
+    82→ORACLE-P,FALSE,Oracle P,Oracle P,,NASA,yes,,spacecraft,
+    83→ORX,TRUE,OSIRIS APEX,Origins Spectral Interpretation Resource Identification Security Regolith Explorer,,NASA/GSFC,no,,spacecraft,
+    84→PLC,FALSE,Akatsuki,Akatsuki/Planet C,,JAXA,no,,spacecraft,
+    85→PSYC,TRUE,Psyche Asteroid,Psyche,,NASA/JPL,no,,spacecraft,https://science.nasa.gov/mission/psyche/
+    86→RFC,FALSE,n/a,Reference Frame Calibration,,NASA/DSN,yes,,blacklist,
+    87→RFM,FALSE,Rosalind Franklin,Rosalind Franklin,,ESA,yes,,spacecraft,
+    88→RLVM,FALSE,Rocket Lab Venus,Rocket Lab Venus Mission,,Rocket Lab,yes,,spacecraft,
+    89→RSP,FALSE,ExoMars Rover,ExoMars Rover (Rosalind Franklin),,ESA,no,,removed,
+    90→RST,FALSE,Roman Telescope,Roman Space Telscope (RST),,NASA/GSFC,yes,,spacecraft,
+    91→SGP,FALSE,n/a,Space Geodesy Program,,NASA,no,,blacklist,
+    92→SMAP,FALSE,SMAP,Soil Moisture Active/Passive (SMAP),,NASA/JPL,yes,,spacecraft,
+    93→SOHO,TRUE,Solar Heliospheric Observatory,Solar and Heliospheric Observatory ,,ESA/NASA,no,,spacecraft,
+    94→SOLAR,TRUE,SOLAR,Space Weather Observations at L1 to Advance Readiness,SWFO-L1,NASA/GSFC,yes,,spacecraft,
+    95→SWFO,TRUE,SWFO L1,Space Weather Follow On–Lagrange 1,SOLAR,NASA/GSFC,yes,,spacecraft,
+    96→SOLO,FALSE,Solar Orbiter,Solar Orbiter,,ESA/NASA,yes,,spacecraft,
+    97→SPP,TRUE,Parker Solar Probe,Parker Solar Probe,,NASA/APL,no,,spacecraft,
+    98→SRBB,FALSE,SunRISE Bebop,Sun Radio Interferometer Space Experiment (SunRISE) Bebop,,NASA/JPL,yes,,spacecraft,
+    99→SRED,FALSE,SunRISE Edward,Sun Radio Interferometer Space Experiment (SunRISE) Edward,,NASA/JPL,yes,,spacecraft,
+   100→SREI,FALSE,SunRISE Ein,Sun Radio Interferometer Space Experiment (SunRISE) Ein,,NASA/JPL,yes,,spacecraft,
+   101→SRFY,FALSE,SunRISE Faye,Sun Radio Interferometer Space Experiment (SunRISE) Faye,,NASA/JPL,yes,,spacecraft,
+   102→SRJT,FALSE,SunRISE Jet,Sun Radio Interferometer Space Experiment (SunRISE) Jet,,NASA/JPL,yes,,spacecraft,
+   103→SRL,FALSE,Sample Return Lndr,Sample Return Lander (SRL),,NASA/JPL,yes,,spacecraft,
+   104→SRSP,FALSE,SunRISE Spike,Sun Radio Interferometer Space Experiment (SunRISE) Spike,,NASA/JPL,yes,,spacecraft,
+   105→STA,TRUE,STEREO A,Solar TErrestrial RElations Observatory Ahead (STEREO A),,NASA,no,,spacecraft,
+   106→SX01,FALSE,Starship Uncrewed,SpaceX Starship Lander Uncrewed,,SpaceX/NASA,yes,,spacecraft,
+   107→SX02,FALSE,Starship Crewed,SpaceX Starship Lander Crewed,,SpaceX/NASA,yes,,spacecraft,
+   108→TD10,FALSE,TDRS 10,TDRS 10,,NASA,no,,spacecraft,
+   109→TD11,FALSE,TDRS 11,TDRS 11,,NASA,no,,spacecraft,
+   110→TD12,FALSE,TDRS 12,TDRS 12,,NASA,no,,spacecraft,
+   111→TD13,FALSE,TDRS 13,TDRS 13,,NASA,no,,spacecraft,
+   112→TDR6,FALSE,TDRS 6,TDRS 6,,NASA,no,,spacecraft,
+   113→TDR7,FALSE,TDRS 7,TDRS 7,,NASA,no,,spacecraft,
+   114→TDR8,FALSE,TDRS 8,TDRS 8,,NASA,no,,spacecraft,
+   115→TDR9,FALSE,TDRS 9,TDRS 9,,NASA,no,,spacecraft,
+   116→TESS,TRUE,TESS Exoplanet Survey,Transiting Exoplanet Survey Satellite,,NASA,no,,spacecraft,
+   117→TGO,TRUE,ExoMars TGO,ExoMars Trace Gas Observatory,,ESA,no,,spacecraft,https://science.nasa.gov/mission/tgo/
+   118→THB,TRUE,Themis B,"Acceleration, Reconnection, Turbulence and Electrodynamics of Moon's Interaction with the Sun B",ARTEMIS-P1,NASA,no,,spacecraft,
+   119→THC,TRUE,Themis C,"Acceleration, Reconnection, Turbulence and Electrodynamics of Moon's Interaction with the Sun C",ARTEMIS-P2,NASA,no,,spacecraft,
+   120→TM,FALSE,TeamMiles,TeamMiles,,Miles Space,no,,removed,
+   121→VERITAS,FALSE,VERITAS,VERITAS,,NASA/JPL,yes,,spacecraft,
+   122→VGR1,TRUE,Voyager 1,Voyager 1,,NASA/JPL,no,,spacecraft,
+   123→VGR2,TRUE,Voyager 2,Voyager 2,,NASA/JPL,no,,spacecraft,
+   124→VPR,FALSE,VIPER,VIPER/Lunar Volatiles Science (LVS),,NASA/ARC,yes,,spacecraft,
+   125→WIND,TRUE,Wind,Wind,,NASA,no,,spacecraft,https://wind.nasa.gov/
+   126→XMM,TRUE,XMM Newton,X-ray Multi-Mirror Mission Newton,,ESA,no,,spacecraft,https://science.nasa.gov/mission/xmm-newton/
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 12:03:19Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./data_reference/MiniPulse Craft List Jan 2026 - spacecraft_list.csv`
+
+```text
+     1→Callsign,Approved,MiniPulse Display Name,Full Name,Alt Name,Agency,New,Status,Type,Mission URL
+     2→ACE,TRUE,ACE,Advanced Composition Explorer,,NASA/GSFC,no,,spacecraft,https://science.nasa.gov/mission/ace/
+     3→AGM1,FALSE,Griffin Lander,Griffin Lander,,Astrobotic/NASA,yes,,spacecraft,
+     4→AIRS,FALSE,AIRS,Atmospheric Infrared Sounder,,NASA/JPL,yes,,spacecraft,https://airs.jpl.nasa.gov/
+     5→ARGO,FALSE,ArgoMoon,ArgoMoon,,ASI,no,Ended,removed,
+     6→ATOT,FALSE,n/a,Advanced Tracking and Observational Techniques,,NASA/DSN,no,Ended,blacklist,
+     7→B101,FALSE,Blue Moon 1 SN1,Blue Moon Mark 1 SN1,,Blue Origin/NASA,yes,,spacecraft,
+     8→B102,FALSE,Blue Moon 1 SN2,Blue Moon Mark 1 SN2,,Blue Origin/NASA,yes,,spacecraft,
+     9→BEPI,TRUE,BepiColombo,Bepi-Columbo,,ESA/JAXA,yes,,spacecraft,https://www.esa.int/Science_Exploration/Space_Science/BepiColombo
+    10→BIOS,TRUE,BioSentinel,BioSentinel,,NASA/ARC,no,,spacecraft,https://www.nasa.gov/ames-engineering/spaceflight-division/biosentinel/
+    11→CAPS,TRUE,CAPSTONE,Cislunar Autonomous Positioning System Technology Operations and Navigation Experiment (CAPSTONE),,NASA,no,,spacecraft,https://www.nasa.gov/mission/capstone/ https://advancedspace.com/capstone/
+    12→CGO,TRUE,Carruthers Observatory,Global Lyman-alpha Imagers of the Dynamic Exosphere (Carruthers Geocorona Observatory),,UCB/NASA,yes,,spacecraft,https://science.nasa.gov/mission/carruthers-geocorona-observatory/
+    13→CH2,FALSE,Chandrayaan 2,Chandrayaan 2,,ISRO,no,Ended,removed,
+    14→CHDR,TRUE,Chandra,Chandra X Ray Observatory,,NASA,no,,spacecraft,
+    15→CMA,FALSE,Caltech Apophis,Caltech Mission to Apophis,,Caltech/NASA,yes,,spacecraft,
+    16→CUE3,FALSE,CU Earth Escape,CU Earth Escape Explorer,,CU Boulder,no,,removed,
+    17→CuSP,FALSE,CuSP,CubeSat Observation of Solar Particles,,SwRI,no,,removed,
+    18→DART,FALSE,DART,Double Asteroid Redirection Test (DART),,NASA/APL,no,,removed,
+    19→DAVINCI,FALSE,DAVINCI,DAVINCI,,NASA/GSFC,yes,,spacecraft,
+    20→DFLY,FALSE,Dragonfly,Dragonfly,,NASA/APL,yes,,spacecraft,
+    21→DSCO,TRUE,DSCOVR,Deep Space Climate Observatory (DSCOVR),,NOAA/NASA,no,,spacecraft,
+    22→DSSR,FALSE,n/a,DSN Solar System Radar,,NASA/DSN,yes,,blacklist,
+    23→EGS,FALSE,n/a,European and Global VLBI Systems,,ESA,no,,blacklist,
+    24→EM1,FALSE,Artemis 1,Artemis 1,,NASA,no,,removed,
+    25→EM2,FALSE,Orion 2,Orion 2,,NASA,no,,spacecraft,https://www.nasa.gov/reference/orion-spacecraft/
+    26→EM3,FALSE,Orion 3,Orion 3,,NASA,no,,spacecraft,https://www.nasa.gov/reference/orion-spacecraft/
+    27→EMM,TRUE,Emirates Mars,Emirate Mars Mission,,UAE/MBRSC,no,,spacecraft,
+    28→EQUL,FALSE,EQUULEUS,EQUilibriUm Lunar Earth Spacecraft,,JAXA,no,,removed,
+    29→ERO,FALSE,Earth Return Orb,Earth Return Orbiter (ERO),,ESA,yes,,spacecraft,
+    30→ESCB,TRUE,EscaPADE Blue,Escape and Plasma Acceleration and Dynamics Explorers (EscaPADE) Blue,,UCB/NASA,yes,,spacecraft,
+    31→ESCG,TRUE,EscaPADE Gold,Escape and Plasma Acceleration and Dynamics Explorers (EscaPADE) Gold,,UCB/NASA,yes,,spacecraft,
+    32→EUCL,FALSE,Euclid,Euclid,,ESA,yes,,spacecraft,
+    33→EURC,TRUE,Europa Clipper,Europa Clipper,,NASA/JPL,no,,spacecraft,
+    34→EUS1,FALSE,Explor Upper Stage,Exploration Upper Stage (EUS) 1,,NASA,yes,,spacecraft,
+    35→GAIA,FALSE,Gaia,Gaia,,ESA,no,,removed,
+    36→GBRA,FALSE,n/a,Ground Based Radio Astronomy,,NASA/DSN,no,,blacklist,
+    37→GSSR,FALSE,n/a,Goldstone Solar System Radar,,NASA/JPL,no,,blacklist,
+    38→GTL,FALSE,Geotail,Geotail,,JAXA/NASA,no,,removed,
+    39→GVRT,FALSE,n/a,Goldstone Apple Valley Radio Telescope,,NASA/JPL,no,,blacklist,
+    40→GWP,FALSE,Lunar Gateway,Gateway (GWP),,NASA,yes,,spacecraft,
+    41→HCRA,FALSE,n/a,Host Country Radio Astronomy,,NASA/DSN,yes,,blacklist,
+    42→HERA,FALSE,Hera,Hera,,ESA,yes,,spacecraft,
+    43→HMAP,FALSE,Lunar H Mapper,Lunar Hydrogen Mapper,,ASU,no,,removed,
+    44→HST,FALSE,Hubble,Hubble,,NASA/ESA,yes,,spacecraft,
+    45→HYB2,TRUE,Hayabusa 2,Hayabusa 2,,JAXA,no,,spacecraft,
+    46→IM3,FALSE,Intuitive Mach 3,Intuitive Machines 3 (PRISM),,Intuitive Machines,yes,,spacecraft,
+    47→IM4,FALSE,Intuitive Mach 4,Intuitive Machines 4,,Intuitive Machines,yes,,spacecraft,
+    48→IMAP,TRUE,IMAP,Interstellar Mapping and Acceleration Probe,,Princeton/NASA,yes,,spacecraft,
+    49→INTG,FALSE,INTEGRAL,International Gamma Ray Astrophysics Laboratory (INTEGRAL),,ESA,yes,,spacecraft,
+    50→JNO,TRUE,Juno,Juno,,NASA/JPL,no,,spacecraft,https://science.nasa.gov/mission/juno/
+    51→JUICE,FALSE,JUICE,Jupiter Icy Moons Explorer,,ESA,yes,,spacecraft,https://astrobiology.nasa.gov/missions/juice/
+    52→JWST,TRUE,JWST,James Webb Space Telescope,,NASA/ESA/CSA,no,,spacecraft,
+    53→KPLO,TRUE,Danuri,Korea Pathfinder Lunar Orbiter,Danuri,KARI,no,,spacecraft,
+    54→LEMS,FALSE,Lunar Monitor Stn,Lunar Exploration Monitoring Station (LMA3),,Lockheed/NASA,yes,,spacecraft,
+    55→LEV1,FALSE,Lunar Excur Veh,Lunar Excursion Vehicle (LEV1),,JAXA,yes,,spacecraft,
+    56→LFL,FALSE,Lunar Flashlight,Lunar Flashlight,,NASA/JPL,no,,removed,
+    57→LICI,FALSE,LICIA Cube,LICIA Cube,,ASI,no,,removed,
+    58→LND1,FALSE,Lunar Node 1,Lunar Node 1,,NASA,no,,removed,
+    59→LRO,TRUE,Lunar Recon Orbiter,Lunar Reconnaisance Orbiter,,NASA,no,,spacecraft,
+    60→LTV,FALSE,Lunar Terrain Veh,Lunar Terrain Vehicles (LTV),,NASA,yes,,spacecraft,
+    61→LUCY,TRUE,Lucy,Lucy,,NASA,no,,spacecraft,https://science.nasa.gov/mission/lucy/
+    62→LUPX,FALSE,LUPEX,Lunar Polar Exploration Mission (LUPEX),,JAXA/ISRO,yes,,spacecraft,
+    63→M01O,TRUE,Mars Odyssey,Mars '01 Odyssey,,NASA/JPL,no,,spacecraft,
+    64→M20,TRUE,Perseverance,Mars 2020 Perseverance Rover,,NASA/JPL,no,,spacecraft,
+    65→MAX,FALSE,Multi Asteroid Exp,Multi Asteroid Explorer (MAX),,DLR,yes,,spacecraft,
+    66→MEX,TRUE,Mars Express,Mars Express Orbiter,,ESA,no,,spacecraft,
+    67→MLI,FALSE,Morehead Lunar,Morehead Lunar Ice Cube,,Morehead State,no,,removed,
+    68→MMS1,TRUE,Magneto MultiScale 1,Magnetospheric MultiScale Formation Flyer 1,,NASA,no,,spacecraft,https://mms.gsfc.nasa.gov/
+    69→MMS2,TRUE,Magneto MultiScale 2,Magnetospheric MultiScale Formation Flyer 2,,NASA,no,,spacecraft,https://mms.gsfc.nasa.gov/
+    70→MMS3,TRUE,Magneto MultiScale 3,Magnetospheric MultiScale Formation Flyer 3,,NASA,no,,spacecraft,https://mms.gsfc.nasa.gov/
+    71→MMS4,TRUE,Magneto MultiScale 4,Magnetospheric MultiScale Formation Flyer 4,,NASA,no,,spacecraft,https://mms.gsfc.nasa.gov/
+    72→MMX,FALSE,Martian Moons Exp,Martian Moons eXploration (MMX),,JAXA,yes,,spacecraft,
+    73→MOM,FALSE,Mars Orbiter,Mars Orbiter Mission,,ISRO,no,,spacecraft,
+    74→MRO,TRUE,Mars Recon Orbiter,Mars Reconnaissance Orbiter,,NASA/JPL,no,,spacecraft,
+    75→MSL,TRUE,Curiosity,Mars Science Laboratory (MSL Curiosity),,NASA/JPL,no,,spacecraft,
+    76→MVN,TRUE,MAVEN,Mars Atmosphere and Volatile EvolutioN,,NASA/GSFC,no,,spacecraft,
+    77→NEAS,FALSE,NEA Scout,Near Earth Asteroid Scout,,NASA/MSFC,no,,removed,
+    78→NEOS,FALSE,NEO Surveyor,Near Earth Object Surveyor,,NASA/JPL,yes,,spacecraft,
+    79→NHPC,TRUE,New Horizons,New Horizon Pluto Charon,,NASA/APL,no,,spacecraft,
+    80→NSYT,FALSE,InSight,InSight,,NASA/JPL,no,,removed,
+    81→OMOT,FALSE,OMOTENASHI,OMOTENASHI,,JAXA,no,,removed,
+    82→ORACLE-P,FALSE,Oracle P,Oracle P,,NASA,yes,,spacecraft,
+    83→ORX,TRUE,OSIRIS APEX,Origins Spectral Interpretation Resource Identification Security Regolith Explorer,,NASA/GSFC,no,,spacecraft,
+    84→PLC,FALSE,Akatsuki,Akatsuki/Planet C,,JAXA,no,,spacecraft,
+    85→PSYC,TRUE,Psyche,Psyche,,NASA/JPL,no,,spacecraft,https://science.nasa.gov/mission/psyche/
+    86→RFC,FALSE,n/a,Reference Frame Calibration,,NASA/DSN,yes,,blacklist,
+    87→RFM,FALSE,Rosalind Franklin,Rosalind Franklin,,ESA,yes,,spacecraft,
+    88→RLVM,FALSE,Rocket Lab Venus,Rocket Lab Venus Mission,,Rocket Lab,yes,,spacecraft,
+    89→RSP,FALSE,ExoMars Rover,ExoMars Rover (Rosalind Franklin),,ESA,no,,removed,
+    90→RST,FALSE,Roman Telescope,Roman Space Telscope (RST),,NASA/GSFC,yes,,spacecraft,
+    91→SGP,FALSE,n/a,Space Geodesy Program,,NASA,no,,blacklist,
+    92→SMAP,FALSE,SMAP,Soil Moisture Active/Passive (SMAP),,NASA/JPL,yes,,spacecraft,
+    93→SOHO,TRUE,Solar Heliospheric Observatory,Solar and Heliospheric Observatory ,,ESA/NASA,no,,spacecraft,
+    94→SOLAR,TRUE,SOLAR,Space Weather Observations at L1 to Advance Readiness,SWFO-L1,NASA/GSFC,yes,,spacecraft,
+    95→SWFO,FALSE,SWFO L1,Space Weather Follow On–Lagrange 1,SOLAR,NASA/GSFC,yes,,spacecraft,
+    96→SOLO,FALSE,Solar Orbiter,Solar Orbiter,,ESA/NASA,yes,,spacecraft,
+    97→SPP,TRUE,Parker Solar Probe,Parker Solar Probe,,NASA/APL,no,,spacecraft,
+    98→SRBB,FALSE,SunRISE Bebop,Sun Radio Interferometer Space Experiment (SunRISE) Bebop,,NASA/JPL,yes,,spacecraft,
+    99→SRED,FALSE,SunRISE Edward,Sun Radio Interferometer Space Experiment (SunRISE) Edward,,NASA/JPL,yes,,spacecraft,
+   100→SREI,FALSE,SunRISE Ein,Sun Radio Interferometer Space Experiment (SunRISE) Ein,,NASA/JPL,yes,,spacecraft,
+   101→SRFY,FALSE,SunRISE Faye,Sun Radio Interferometer Space Experiment (SunRISE) Faye,,NASA/JPL,yes,,spacecraft,
+   102→SRJT,FALSE,SunRISE Jet,Sun Radio Interferometer Space Experiment (SunRISE) Jet,,NASA/JPL,yes,,spacecraft,
+   103→SRL,FALSE,Sample Return Lndr,Sample Return Lander (SRL),,NASA/JPL,yes,,spacecraft,
+   104→SRSP,FALSE,SunRISE Spike,Sun Radio Interferometer Space Experiment (SunRISE) Spike,,NASA/JPL,yes,,spacecraft,
+   105→STA,TRUE,STEREO A,Solar TErrestrial RElations Observatory Ahead (STEREO A),,NASA,no,,spacecraft,
+   106→SX01,FALSE,Starship Uncrewed,SpaceX Starship Lander Uncrewed,,SpaceX/NASA,yes,,spacecraft,
+   107→SX02,FALSE,Starship Crewed,SpaceX Starship Lander Crewed,,SpaceX/NASA,yes,,spacecraft,
+   108→TD10,FALSE,TDRS 10,TDRS 10,,NASA,no,,spacecraft,
+   109→TD11,FALSE,TDRS 11,TDRS 11,,NASA,no,,spacecraft,
+   110→TD12,FALSE,TDRS 12,TDRS 12,,NASA,no,,spacecraft,
+   111→TD13,FALSE,TDRS 13,TDRS 13,,NASA,no,,spacecraft,
+   112→TDR6,FALSE,TDRS 6,TDRS 6,,NASA,no,,spacecraft,
+   113→TDR7,FALSE,TDRS 7,TDRS 7,,NASA,no,,spacecraft,
+   114→TDR8,FALSE,TDRS 8,TDRS 8,,NASA,no,,spacecraft,
+   115→TDR9,FALSE,TDRS 9,TDRS 9,,NASA,no,,spacecraft,
+   116→TESS,TRUE,TESS,Transiting Exoplanet Survey Satellite,,NASA,no,,spacecraft,
+   117→TGO,TRUE,ExoMars TGO,ExoMars Trace Gas Observatory,,ESA,no,,spacecraft,https://science.nasa.gov/mission/tgo/
+   118→THB,TRUE,Themis B,"Acceleration, Reconnection, Turbulence and Electrodynamics of Moon's Interaction with the Sun B",ARTEMIS-P1,NASA,no,,spacecraft,
+   119→THC,TRUE,Themis C,"Acceleration, Reconnection, Turbulence and Electrodynamics of Moon's Interaction with the Sun C",ARTEMIS-P2,NASA,no,,spacecraft,
+   120→TM,FALSE,TeamMiles,TeamMiles,,Miles Space,no,,removed,
+   121→VERITAS,FALSE,VERITAS,VERITAS,,NASA/JPL,yes,,spacecraft,
+   122→VGR1,TRUE,Voyager 1,Voyager 1,,NASA/JPL,no,,spacecraft,
+   123→VGR2,TRUE,Voyager 2,Voyager 2,,NASA/JPL,no,,spacecraft,
+   124→VPR,FALSE,VIPER,VIPER/Lunar Volatiles Science (LVS),,NASA/ARC,yes,,spacecraft,
+   125→WIND,TRUE,Wind,Wind,,NASA,no,,spacecraft,https://wind.nasa.gov/
+   126→XMM,TRUE,XMM Newton,X-ray Multi-Mirror Mission Newton,,ESA,no,,spacecraft,https://science.nasa.gov/mission/xmm-newton/
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 12:03:20Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Grep"><details>
+<summary>Tool use: **Grep**</summary>
+ path `./lib/SpacecraftData` pattern `spacecraftNames|knownCraft|craftList|spacecraft_names`
+
+```text
+lib/SpacecraftData/SpacecraftData.h:34:    static DynamicJsonDocument spacecraftNamesJson;
+lib/SpacecraftData/SpacecraftData.cpp:3:DynamicJsonDocument SpacecraftData::spacecraftNamesJson(5120);
+lib/SpacecraftData/SpacecraftData.cpp:21:    spacecraftNamesJson.clear();
+lib/SpacecraftData/SpacecraftData.cpp:22:    spacecraftNamesJson["ACE"] = "Advanced Composition Explorer";
+lib/SpacecraftData/SpacecraftData.cpp:23:    spacecraftNamesJson["PLC"] = "Akatsuki";
+lib/SpacecraftData/SpacecraftData.cpp:24:    spacecraftNamesJson["ARGO"] = "ArgoMoon";
+lib/SpacecraftData/SpacecraftData.cpp:25:    spacecraftNamesJson["BIOS"] = "BioSentinel";
+lib/SpacecraftData/SpacecraftData.cpp:26:    spacecraftNamesJson["CAPS"] = "Capstone";
+lib/SpacecraftData/SpacecraftData.cpp:27:    spacecraftNamesJson["CHDR"] = "Chandra Xray Observatory";
+lib/SpacecraftData/SpacecraftData.cpp:28:    spacecraftNamesJson["CH2"] = "Chandrayaan 2";
+lib/SpacecraftData/SpacecraftData.cpp:29:    spacecraftNamesJson["CUE3"] = "CU Earth Escape Explorer";
+lib/SpacecraftData/SpacecraftData.cpp:30:    spacecraftNamesJson["CuSP"] = "CubeSat-Observation of Solar Particles";
+lib/SpacecraftData/SpacecraftData.cpp:31:    spacecraftNamesJson["DART"] = "DART";
+lib/SpacecraftData/SpacecraftData.cpp:32:    spacecraftNamesJson["unknown10"] = "Dragonfly";
+lib/SpacecraftData/SpacecraftData.cpp:33:    spacecraftNamesJson["DSCO"] = "Deep Space Climate Observatory";
+lib/SpacecraftData/SpacecraftData.cpp:34:    spacecraftNamesJson["EMM"] = "Emirates Mars Mission";
+lib/SpacecraftData/SpacecraftData.cpp:35:    spacecraftNamesJson["EQUL"] = "EQUilibriUm Lunar-Earth Spacecraft";
+lib/SpacecraftData/SpacecraftData.cpp:36:    spacecraftNamesJson["EURC"] = "Europa Clipper";
+lib/SpacecraftData/SpacecraftData.cpp:37:    spacecraftNamesJson["RSP"] = "ExoMars Rover";
+lib/SpacecraftData/SpacecraftData.cpp:38:    spacecraftNamesJson["GAIA"] = "Gaia";
+lib/SpacecraftData/SpacecraftData.cpp:39:    spacecraftNamesJson["GTL"] = "Geotail";
+lib/SpacecraftData/SpacecraftData.cpp:40:    spacecraftNamesJson["HYB2"] = "Hayabusa 2";
+lib/SpacecraftData/SpacecraftData.cpp:41:    spacecraftNamesJson["EM1"] = "Artemis 1";
+lib/SpacecraftData/SpacecraftData.cpp:42:    spacecraftNamesJson["EM2"] = "Artemis 2";
+lib/SpacecraftData/SpacecraftData.cpp:43:    spacecraftNamesJson["EM3"] = "Artemis 3";
+lib/SpacecraftData/SpacecraftData.cpp:44:    spacecraftNamesJson["NSYT"] = "InSight";
+lib/SpacecraftData/SpacecraftData.cpp:45:    spacecraftNamesJson["JWST"] = "James Webb Space Telescope";
+lib/SpacecraftData/SpacecraftData.cpp:46:    spacecraftNamesJson["JNO"] = "Juno";
+lib/SpacecraftData/SpacecraftData.cpp:47:    spacecraftNamesJson["KPLO"] = "Korea Pathfinder Lunar Orbiter";
+lib/SpacecraftData/SpacecraftData.cpp:48:    spacecraftNamesJson["LICI"] = "LICIA Cube";
+lib/SpacecraftData/SpacecraftData.cpp:49:    spacecraftNamesJson["LND1"] = "Lunar Node 1";
+lib/SpacecraftData/SpacecraftData.cpp:50:    spacecraftNamesJson["LUCY"] = "Lucy";
+lib/SpacecraftData/SpacecraftData.cpp:51:    spacecraftNamesJson["LFL"] = "Lunar Flashlight";
+lib/SpacecraftData/SpacecraftData.cpp:52:    spacecraftNamesJson["HMAP"] = "Lunar Hydrogen Mapper";
+lib/SpacecraftData/SpacecraftData.cpp:53:    spacecraftNamesJson["LRO"] = "Lunar Reconnaissance Orbiter";
+lib/SpacecraftData/SpacecraftData.cpp:54:    spacecraftNamesJson["MMS1"] = "Magnetospheric MultiScale Formation Flyer 1";
+lib/SpacecraftData/SpacecraftData.cpp:55:    spacecraftNamesJson["MMS2"] = "Magnetospheric MultiScale Formation Flyer 2";
+lib/SpacecraftData/SpacecraftData.cpp:56:    spacecraftNamesJson["MMS3"] = "Magnetospheric MultiScale Formation Flyer 3";
+lib/SpacecraftData/SpacecraftData.cpp:57:    spacecraftNamesJson["MMS4"] = "Magnetospheric MultiScale Formation Flyer 4";
+lib/SpacecraftData/SpacecraftData.cpp:58:    spacecraftNamesJson["M01O"] = "Mars Odyssey";
+lib/SpacecraftData/SpacecraftData.cpp:59:    spacecraftNamesJson["M20"] = "Mars 2020";
+lib/SpacecraftData/SpacecraftData.cpp:60:    spacecraftNamesJson["MVN"] = "MAVEN";
+lib/SpacecraftData/SpacecraftData.cpp:61:    spacecraftNamesJson["MEX"] = "Mars Express";
+lib/SpacecraftData/SpacecraftData.cpp:62:    spacecraftNamesJson["MOM"] = "Mars Orbiter";
+lib/SpacecraftData/SpacecraftData.cpp:63:    spacecraftNamesJson["MRO"] = "Mars Reconnaissance Orbiter";
+lib/SpacecraftData/SpacecraftData.cpp:64:    spacecraftNamesJson["MSL"] = "Curiosity";
+lib/SpacecraftData/SpacecraftData.cpp:65:    spacecraftNamesJson["MLI"] = "Morehead Lunar Ice Cube";
+lib/SpacecraftData/SpacecraftData.cpp:66:    spacecraftNamesJson["NEAS"] = "Near Earth Asteroid Scout";
+lib/SpacecraftData/SpacecraftData.cpp:67:    spacecraftNamesJson["NHPC"] = "New Horizons";
+lib/SpacecraftData/SpacecraftData.cpp:68:    spacecraftNamesJson["ORX"] = "OSIRIS REx";
+lib/SpacecraftData/SpacecraftData.cpp:69:    spacecraftNamesJson["OMOT"] = "OMOTENASHI";
+lib/SpacecraftData/SpacecraftData.cpp:70:    spacecraftNamesJson["PSYC"] = "Psyche";
+lib/SpacecraftData/SpacecraftData.cpp:71:    spacecraftNamesJson["SOHO"] = "Solar and Heliospheric Observatory";
+lib/SpacecraftData/SpacecraftData.cpp:72:    spacecraftNamesJson["SPP"] = "Parker Solar Probe";
+lib/SpacecraftData/SpacecraftData.cpp:73:    spacecraftNamesJson["STA"] = "STEREO A";
+lib/SpacecraftData/SpacecraftData.cpp:74:    spacecraftNamesJson["TESS"] = "Transiting Exoplanet Survey Satellite";
+lib/SpacecraftData/SpacecraftData.cpp:75:    spacecraftNamesJson["TGO"] = "ExoMars Trace Gas Orbiter";
+lib/SpacecraftData/SpacecraftData.cpp:76:    spacecraftNamesJson["THB"] = "THEMIS B";
+lib/SpacecraftData/SpacecraftData.cpp:77:    spacecraftNamesJson["THC"] = "THEMIS C";
+lib/SpacecraftData/SpacecraftData.cpp:78:    spacecraftNamesJson["TM"] = "TeamMiles";
+lib/SpacecraftData/SpacecraftData.cpp:79:    spacecraftNamesJson["VGR1"] = "Voyager 1";
+lib/SpacecraftData/SpacecraftData.cpp:80:    spacecraftNamesJson["VGR2"] = "Voyager 2";
+lib/SpacecraftData/SpacecraftData.cpp:81:    spacecraftNamesJson["WIND"] = "Wind";
+lib/SpacecraftData/SpacecraftData.cpp:82:    spacecraftNamesJson["SWFO"] = "SOLAR 1";
+lib/SpacecraftData/SpacecraftData.cpp:83:    spacecraftNamesJson["XMM"] = "XMM Newton";
+lib/SpacecraftData/SpacecraftData.cpp:84:    spacecraftNamesJson["ATOT"] = "Advanced Tracking and Observational Techniques";
+lib/SpacecraftData/SpacecraftData.cpp:85:    spacecraftNamesJson["EGS"] = "EVN and Global Sevices";
+lib/SpacecraftData/SpacecraftData.cpp:86:    spacecraftNamesJson["GBRA"] = "Ground Based Radio Astronomy";
+lib/SpacecraftData/SpacecraftData.cpp:87:    spacecraftNamesJson["GSSR"] = "Goldstone Solar System Radar";
+lib/SpacecraftData/SpacecraftData.cpp:88:    spacecraftNamesJson["GVRT"] = "Goldstone Apple Valley Radio Telescope";
+lib/SpacecraftData/SpacecraftData.cpp:89:    spacecraftNamesJson["SGP"] = "Space Geodesy Program";
+lib/SpacecraftData/SpacecraftData.cpp:90:    spacecraftNamesJson["TDR6"] = "Tracking and Data Relay Satellites (TDRS)";
+lib/SpacecraftData/SpacecraftData.cpp:91:    spacecraftNamesJson["TDR7"] = "Tracking and Data Relay Satellites (TDRS)";
+lib/SpacecraftData/SpacecraftData.cpp:92:    spacecraftNamesJson["TDR8"] = "Tracking and Data Relay Satellites (TDRS)";
+lib/SpacecraftData/SpacecraftData.cpp:93:    spacecraftNamesJson["TDR9"] = "Tracking and Data Relay Satellites (TDRS)";
+lib/SpacecraftData/SpacecraftData.cpp:94:    spacecraftNamesJson["TD10"] = "Tracking and Data Relay Satellites (TDRS)";
+lib/SpacecraftData/SpacecraftData.cpp:95:    spacecraftNamesJson["TD11"] = "Tracking and Data Relay Satellites (TDRS)";
+lib/SpacecraftData/SpacecraftData.cpp:96:    spacecraftNamesJson["TD12"] = "Tracking and Data Relay Satellites (TDRS)";
+lib/SpacecraftData/SpacecraftData.cpp:97:    spacecraftNamesJson["TD13"] = "Tracking and Data Relay Satellites (TDRS)";
+lib/SpacecraftData/SpacecraftData.cpp:98:    spacecraftNamesJson["Rate1"] = "Test Rate 1";
+lib/SpacecraftData/SpacecraftData.cpp:99:    spacecraftNamesJson["Rate2"] = "Test Rate 2";
+lib/SpacecraftData/SpacecraftData.cpp:100:    spacecraftNamesJson["Rate3"] = "Test Rate 3";
+lib/SpacecraftData/SpacecraftData.cpp:101:    spacecraftNamesJson["Rate4"] = "Test Rate 4";
+lib/SpacecraftData/SpacecraftData.cpp:102:    spacecraftNamesJson["Rate5"] = "Test Rate 5";
+lib/SpacecraftData/SpacecraftData.cpp:103:    spacecraftNamesJson["Rate6"] = "Test Rate 6";
+lib/SpacecraftData/SpacecraftData.cpp:137:        if (serializeJson(spacecraftNamesJson, namesFile) == 0) {
+lib/SpacecraftData/SpacecraftData.cpp:185:    if (spacecraftNamesJson.containsKey(key)) {
+lib/SpacecraftData/SpacecraftData.cpp:188:        const char* spacecraftName = spacecraftNamesJson[key];
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 12:03:39Z)**_
+
+<think><details><summary>Thought Process</summary>
+OK, so I need to understand the structure. The two CSVs are almost identical. The newest one is `minipulse_list_2025-02-26.csv` (though the date says 2025, it's probably 2026 based on the project timeline). Let me check the dates.
+
+Wait, the filename says `2025-02-26` but the Jan 2026 one says "MiniPulse Craft List Jan 2026". Let me check which is actually newer. The user said "the newest dated .csv" — `minipulse_list_2025-02-26.csv` has a later date format in the filename. But wait, 2025-02-26 is older than Jan 2026... unless it's actually 2026-02-26 and just has a typo. 
+
+Given the project timeline where everything's happening in Feb 2026, that filename is almost certainly `2026-02-26` with a typo. Now I'm comparing the two CSVs to see which one's more current. The Feb file has SWFO and SOLAR both marked as approved, while the Jan file has a different set of entries.
+
+Looking at the display names, the Feb file uses more descriptive versions like "Adv Composition Explorer" for ACE and "Juno Jupiter" for JNO, whereas the Jan file keeps them shorter. The Feb file also shows SWFO as approved=TRUE, which aligns with what the user said about the newest dated CSV having everything. The filename's likely a typo for 2026-02-26 based on the project timeline.
+
+Now I need to check what's in the hard-coded spacecraft list against the CSV entries. The CSV only contains approved spacecraft entries, but the hard-coded list mixes regular spacecraft with blacklist and utility entries, so I should examine the full structure to understand what needs updating.
+</details></think>
+
+_**Agent (claude-opus-4-6 2026-03-02 12:03:39Z)**_
+
+Now let me see the full SpacecraftData.cpp to understand the blacklist handling.
+
+_**Agent (claude-opus-4-6 2026-03-02 12:03:39Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./lib/SpacecraftData/SpacecraftData.cpp`
+
+```text
+     1→#include <SpacecraftData.h>
+     2→
+     3→DynamicJsonDocument SpacecraftData::spacecraftNamesJson(5120);
+     4→DynamicJsonDocument SpacecraftData::spacecraftBlacklistJson(1024);
+     5→
+     6→void SpacecraftData::loadJson(const char* firmwareVersion) {
+     7→    bool showSerial = FileUtils::config.debugUtils.showSerial;
+     8→    if (showSerial) Serial.println("Initializing spacecraft data...");
+     9→    populateNamesInMemory();
+    10→    populateBlacklistInMemory();
+    11→
+    12→    if (shouldWriteFiles(firmwareVersion)) {
+    13→        if (showSerial) Serial.println("Firmware version changed — writing spacecraft data to flash");
+    14→        writeFilesToFlash(firmwareVersion);
+    15→    } else {
+    16→        if (showSerial) Serial.println("Spacecraft data unchanged — skipping flash writes");
+    17→    }
+    18→}
+    19→
+    20→void SpacecraftData::populateNamesInMemory() {
+    21→    spacecraftNamesJson.clear();
+    22→    spacecraftNamesJson["ACE"] = "Advanced Composition Explorer";
+    23→    spacecraftNamesJson["PLC"] = "Akatsuki";
+    24→    spacecraftNamesJson["ARGO"] = "ArgoMoon";
+    25→    spacecraftNamesJson["BIOS"] = "BioSentinel";
+    26→    spacecraftNamesJson["CAPS"] = "Capstone";
+    27→    spacecraftNamesJson["CHDR"] = "Chandra Xray Observatory";
+    28→    spacecraftNamesJson["CH2"] = "Chandrayaan 2";
+    29→    spacecraftNamesJson["CUE3"] = "CU Earth Escape Explorer";
+    30→    spacecraftNamesJson["CuSP"] = "CubeSat-Observation of Solar Particles";
+    31→    spacecraftNamesJson["DART"] = "DART";
+    32→    spacecraftNamesJson["unknown10"] = "Dragonfly";
+    33→    spacecraftNamesJson["DSCO"] = "Deep Space Climate Observatory";
+    34→    spacecraftNamesJson["EMM"] = "Emirates Mars Mission";
+    35→    spacecraftNamesJson["EQUL"] = "EQUilibriUm Lunar-Earth Spacecraft";
+    36→    spacecraftNamesJson["EURC"] = "Europa Clipper";
+    37→    spacecraftNamesJson["RSP"] = "ExoMars Rover";
+    38→    spacecraftNamesJson["GAIA"] = "Gaia";
+    39→    spacecraftNamesJson["GTL"] = "Geotail";
+    40→    spacecraftNamesJson["HYB2"] = "Hayabusa 2";
+    41→    spacecraftNamesJson["EM1"] = "Artemis 1";
+    42→    spacecraftNamesJson["EM2"] = "Artemis 2";
+    43→    spacecraftNamesJson["EM3"] = "Artemis 3";
+    44→    spacecraftNamesJson["NSYT"] = "InSight";
+    45→    spacecraftNamesJson["JWST"] = "James Webb Space Telescope";
+    46→    spacecraftNamesJson["JNO"] = "Juno";
+    47→    spacecraftNamesJson["KPLO"] = "Korea Pathfinder Lunar Orbiter";
+    48→    spacecraftNamesJson["LICI"] = "LICIA Cube";
+    49→    spacecraftNamesJson["LND1"] = "Lunar Node 1";
+    50→    spacecraftNamesJson["LUCY"] = "Lucy";
+    51→    spacecraftNamesJson["LFL"] = "Lunar Flashlight";
+    52→    spacecraftNamesJson["HMAP"] = "Lunar Hydrogen Mapper";
+    53→    spacecraftNamesJson["LRO"] = "Lunar Reconnaissance Orbiter";
+    54→    spacecraftNamesJson["MMS1"] = "Magnetospheric MultiScale Formation Flyer 1";
+    55→    spacecraftNamesJson["MMS2"] = "Magnetospheric MultiScale Formation Flyer 2";
+    56→    spacecraftNamesJson["MMS3"] = "Magnetospheric MultiScale Formation Flyer 3";
+    57→    spacecraftNamesJson["MMS4"] = "Magnetospheric MultiScale Formation Flyer 4";
+    58→    spacecraftNamesJson["M01O"] = "Mars Odyssey";
+    59→    spacecraftNamesJson["M20"] = "Mars 2020";
+    60→    spacecraftNamesJson["MVN"] = "MAVEN";
+    61→    spacecraftNamesJson["MEX"] = "Mars Express";
+    62→    spacecraftNamesJson["MOM"] = "Mars Orbiter";
+    63→    spacecraftNamesJson["MRO"] = "Mars Reconnaissance Orbiter";
+    64→    spacecraftNamesJson["MSL"] = "Curiosity";
+    65→    spacecraftNamesJson["MLI"] = "Morehead Lunar Ice Cube";
+    66→    spacecraftNamesJson["NEAS"] = "Near Earth Asteroid Scout";
+    67→    spacecraftNamesJson["NHPC"] = "New Horizons";
+    68→    spacecraftNamesJson["ORX"] = "OSIRIS REx";
+    69→    spacecraftNamesJson["OMOT"] = "OMOTENASHI";
+    70→    spacecraftNamesJson["PSYC"] = "Psyche";
+    71→    spacecraftNamesJson["SOHO"] = "Solar and Heliospheric Observatory";
+    72→    spacecraftNamesJson["SPP"] = "Parker Solar Probe";
+    73→    spacecraftNamesJson["STA"] = "STEREO A";
+    74→    spacecraftNamesJson["TESS"] = "Transiting Exoplanet Survey Satellite";
+    75→    spacecraftNamesJson["TGO"] = "ExoMars Trace Gas Orbiter";
+    76→    spacecraftNamesJson["THB"] = "THEMIS B";
+    77→    spacecraftNamesJson["THC"] = "THEMIS C";
+    78→    spacecraftNamesJson["TM"] = "TeamMiles";
+    79→    spacecraftNamesJson["VGR1"] = "Voyager 1";
+    80→    spacecraftNamesJson["VGR2"] = "Voyager 2";
+    81→    spacecraftNamesJson["WIND"] = "Wind";
+    82→    spacecraftNamesJson["SWFO"] = "SOLAR 1";
+    83→    spacecraftNamesJson["XMM"] = "XMM Newton";
+    84→    spacecraftNamesJson["ATOT"] = "Advanced Tracking and Observational Techniques";
+    85→    spacecraftNamesJson["EGS"] = "EVN and Global Sevices";
+    86→    spacecraftNamesJson["GBRA"] = "Ground Based Radio Astronomy";
+    87→    spacecraftNamesJson["GSSR"] = "Goldstone Solar System Radar";
+    88→    spacecraftNamesJson["GVRT"] = "Goldstone Apple Valley Radio Telescope";
+    89→    spacecraftNamesJson["SGP"] = "Space Geodesy Program";
+    90→    spacecraftNamesJson["TDR6"] = "Tracking and Data Relay Satellites (TDRS)";
+    91→    spacecraftNamesJson["TDR7"] = "Tracking and Data Relay Satellites (TDRS)";
+    92→    spacecraftNamesJson["TDR8"] = "Tracking and Data Relay Satellites (TDRS)";
+    93→    spacecraftNamesJson["TDR9"] = "Tracking and Data Relay Satellites (TDRS)";
+    94→    spacecraftNamesJson["TD10"] = "Tracking and Data Relay Satellites (TDRS)";
+    95→    spacecraftNamesJson["TD11"] = "Tracking and Data Relay Satellites (TDRS)";
+    96→    spacecraftNamesJson["TD12"] = "Tracking and Data Relay Satellites (TDRS)";
+    97→    spacecraftNamesJson["TD13"] = "Tracking and Data Relay Satellites (TDRS)";
+    98→    spacecraftNamesJson["Rate1"] = "Test Rate 1";
+    99→    spacecraftNamesJson["Rate2"] = "Test Rate 2";
+   100→    spacecraftNamesJson["Rate3"] = "Test Rate 3";
+   101→    spacecraftNamesJson["Rate4"] = "Test Rate 4";
+   102→    spacecraftNamesJson["Rate5"] = "Test Rate 5";
+   103→    spacecraftNamesJson["Rate6"] = "Test Rate 6";
+   104→}
+   105→
+   106→void SpacecraftData::populateBlacklistInMemory() {
+   107→    spacecraftBlacklistJson.clear();
+   108→    spacecraftBlacklistJson["TEST"] = true;
+   109→    spacecraftBlacklistJson["DSN"] = true;
+   110→    spacecraftBlacklistJson["RFC(VLBI)"] = true;
+   111→    spacecraftBlacklistJson["GO19"] = true;
+   112→}
+   113→
+   114→bool SpacecraftData::shouldWriteFiles(const char* firmwareVersion) {
+   115→    File versionFile = LittleFS.open("/spacecraft_data/version.txt", "r");
+   116→    if (!versionFile) {
+   117→        return true; // File doesn't exist — first boot or fresh flash
+   118→    }
+   119→
+   120→    String storedVersion = versionFile.readStringUntil('\n');
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 12:04:56Z)**_
+
+<think><details><summary>Thought Process</summary>
+Now I understand the structure. The `spacecraftNamesJson` contains:1. Regular spacecraft (callsign → display name)
+2. Blacklist/utility entries (ATOT, EGS, GBRA, GSSR, GVRT, SGP)
+3. TDRS satellites (TDR6-TD13)
+4. Test rates (Rate1-Rate6)
+
+The `spacecraftBlacklistJson` contains a separate blacklist (TEST, DSN, RFC(VLBI), GO19).
+
+Now I need to use the newest CSV (`minipulse_list_2025-02-26.csv` — likely actually 2026-02-26) to update this list. 
+
+I'm comparing the CSV against the current code to identify which spacecraft need to be added, removed, or have their display names updated. The CSV marks entries as either `spacecraft`, `removed`, or `blacklist`, so I'll use that status along with the MiniPulse Display Name column to determine what changes are needed. I can already see that ARGO (ArgoMoon) is marked as removed in the CSV. I see there's a mismatch with the Dragonfly callsign in the code that needs to be corrected to DFLY, and I'm identifying several spacecraft that should be added to the dataset with their proper callsigns and classifications. Continuing through the mission mappings, I'm working through the rest of the spacecraft and mission names—handling the Intuitive vehicles, various space telescopes and explorers, lunar equipment, and Mars missions, noting which ones are already coded and which need to be added or skipped from the blacklist.
+
+Now I'm reconsidering whether the blacklist entries from the names JSON should actually be filtered out, since they appear in the CSV data too.  Looking at the existing setup, it seems like `spacecraftNamesJson` and `spacecraftBlacklistJson` serve different purposes — one provides display names while the other controls what gets filtered, so I should probably keep both lists separate and add the new blacklist entries from the CSV without duplicating them in the names mapping.
+
+For the update, I'll grab the newest CSV file, pull all the spacecraft entries (excluding removed ones), use their display names, and make sure the blacklist entries are properly represented in both places where needed.
+
+Now I'm deciding whether to keep or remove those Test Rate entries — they're not in the CSV and look like debug artifacts, but removing them might break something. Since the user specifically asked to update based on the CSV, I'll focus on that core task and leave the test entries as-is unless they cause issues.
+
+Let me compile the spacecraft list from the CSV, pulling all the entries that aren't marked as removed.
+
+Continuing through the spacecraft entries... Continuing through the spacecraft mappings, I'm working through the MMS constellation entries and then moving into Mars missions like MRO and MSL, plus some outer solar system probes. I notice I need to verify that MOM is still included since it's a valid spacecraft entry, and I'm catching myself mid-check on the OSIRIS-REx abbreviation which appears to be cut off. I'm continuing through the mission acronym mappings, working through the rest of the SunRISE spacecraft variants, the Starship configurations, the TDRS relay satellites, and starting on TESS.
+
+Now I'm mapping out more spacecraft and missions—the ExoMars orbiter, Themis variants, VERITAS, the Voyager probes, VIPER, Wind, and XMM Newton. I'm also noting which acronyms should be blacklisted because they're already covered by longer names in the database.
+
+Looking at the scope here, I'm expanding from about 82 entries to over 90 spacecraft, which means I need to increase the JSON document buffer from 5120 bytes to accommodate the extra data—each entry takes roughly 40-50 bytes with the key-value pairs and overhead, so I should have enough headroom at the current size but bumping it up provides a safety margin.
+
+The real approach is to pull the authoritative spacecraft data directly from the CSV file rather than maintaining a separate hard-coded list, then layer in the blacklist entries and test rates on top of that.
+
+Now I'm trying to understand the distinction between the two JSON objects — one maps callsigns to their display names, while the other explicitly filters out certain callsigns entirely. Let me trace through how these are actually being used in the code to see if the blacklist entries should exist in both places or just one. they're used...
+
+The CSV has entries marked as `blacklist` type. These should probably go in BOTH the names JSON (so they have a display name) AND the blacklist JSON (so they get filtered).
+
+Actually, looking at the current `spacecraftBlacklistJson`, it has TEST, DSN, RFC(VLBI), GO19 — but these aren't in the CSV at all. They might be callsigns that appear in the DSN data but aren't real spacecraft. And the CSV's blacklist entries (ATOT, EGS, GBRA, GSSR, GVRT, SGP) are NOT in the blacklist JSON but ARE in the names JSON.
+
+So the strategy is clear: use the CSV's Type column to determine where each entry goes. Spacecraft entries go to the names JSON, blacklist entries go to both JSONs, and removed entries get skipped entirely. I'll need to update `populateNamesInMemory()` to handle this, and I should preserve the existing blacklist entries that aren't in the CSV since they might be catching real DSN artifacts. The main priorities are removing entries marked as removed, adding new ones from the CSV, syncing the display names, fixing that `unknown10` to `DFLY` mapping, and making sure the blacklist entries are properly categorized. the blacklist entries in names JSON
+6. Add new blacklist entries to names JSON (DSSR, HCRA, RFC)
+7. Keep the Rate entries for now
+
+And for the blacklist, I'll add DSSR, HCRA, RFC to `spacecraftBlacklistJson` since they're new blacklist entries.
+
+Let me write this up. This is a big enough change that I should just rewrite `populateNamesInMemory()`.
+
+Actually, let me think about the DynamicJsonDocument size. Let me count the new entries:
+
+Spacecraft: ~80 entries
+Blacklist in names: ~9 entries  
+TDRS: 8 entries
+Test rates: 6 entries (keeping)
+Total: ~103 entries
+
+Each entry: key (avg 4 chars) + value (avg 18 chars) + JSON overhead ≈ 48 bytes
+Total: ~103 * 48 ≈ 4944 bytes
+
+5120 is cutting it close, so I'll bump the DynamicJsonDocument up to 8192 to safely accommodate the additional entries. Now I'll rewrite the replacement function, organizing the entries alphabetically by callsign to match the CSV order and grouping them into sections for spacecraft, blacklist/utility, TDRS, and test data.
+</details></think>
+
+_**Agent (claude-opus-4-6 2026-03-02 12:04:56Z)**_
+
+Now I have a clear picture. The newest CSV is `minipulse_list_2025-02-26.csv`. Let me compare it against the hard-coded list to identify all the changes needed.
+
+_**Agent (claude-opus-4-6 2026-03-02 12:07:18Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="Agent"><details>
+<summary>Tool use: **Agent**</summary>
+Update spacecraft list from CSV
+
+```text
+The build compiles successfully. Here is a summary of all changes made to `/Users/grant/code/JPL-MiniPulse/lib/SpacecraftData/SpacecraftData.cpp`:
+
+---
+
+**Line 3 -- DynamicJsonDocument size bump:**
+- Changed from `5120` to `8192` to accommodate the ~30+ new spacecraft entries.
+
+**`populateNamesInMemory()` (lines 20-142) -- Complete replacement of the function body:**
+
+Entries **removed** (19 total, all marked `removed` in CSV):
+- ARGO, CH2, CUE3, CuSP, DART, EQUL, GAIA, GTL, EM1, NSYT, LICI, LND1, LFL, HMAP, MLI, NEAS, OMOT, RSP, TM
+
+Callsign **fixed**:
+- `unknown10` changed to `DFLY` (Dragonfly's actual callsign)
+
+New spacecraft **added** (47 total):
+- AGM1, AIRS, B101, B102, BEPI, CGO, CMA, DAVINCI, DFLY, ERO, ESCB, ESCG, EUCL, EUS1, GWP, HERA, HST, IM3, IM4, IMAP, INTG, JUICE, LEMS, LEV1, LTV, LUPX, MAX, MMX, NEOS, ORACLE-P, RFM, RLVM, RST, SMAP, SOLAR, SOLO, SRBB, SRED, SREI, SRFY, SRJT, SRL, SRSP, SX01, SX02, VERITAS, VPR
+
+Display names **updated** to match CSV's "MiniPulse Display Name" column:
+- ACE: "Advanced Composition Explorer" -> "Adv Composition Explorer"
+- CAPS: "Capstone" -> "CAPSTONE"
+- CHDR: "Chandra Xray Observatory" -> "Chandra Xray"
+- DSCO: "Deep Space Climate Observatory" -> "DSCOVR"
+- EM2: "Artemis 2" -> "Artemis Orion 2"
+- EM3: "Artemis 3" -> "Artemis Orion 3"
+- EMM: "Emirates Mars Mission" -> "Emirates Mars"
+- JNO: "Juno" -> "Juno Jupiter"
+- KPLO: "Korea Pathfinder Lunar Orbiter" -> "Danuri Korea"
+- LRO: "Lunar Reconnaissance Orbiter" -> "Lunar Recon Orbiter"
+- M20: "Mars 2020" -> "Mars Perseverance"
+- MMS1-4: Long names shortened to "Magneto MultiScale 1-4"
+- MRO: "Mars Reconnaissance Orbiter" -> "Mars Recon Orbiter"
+- MSL: "Curiosity" -> "Mars Curiosity"
+- NHPC: "New Horizons" -> "New Horizons Pluto"
+- ORX: "OSIRIS REx" -> "OSIRIS APEX"
+- PSYC: "Psyche" -> "Psyche Asteroid"
+- SOHO: "Solar and Heliospheric Observatory" -> "Solar Heliospheric Observatory"
+- SWFO: "SOLAR 1" -> "SWFO L1"
+- TESS: "Transiting Exoplanet Survey Satellite" -> "TESS Exoplanet Survey"
+- TGO: "ExoMars Trace Gas Orbiter" -> "ExoMars TGO"
+- THB: "THEMIS B" -> "Themis B"
+- THC: "THEMIS C" -> "Themis C"
+- TDR6-TD13: All changed from "Tracking and Data Relay Satellites (TDRS)" to shorter "TDRS 6" through "TDRS 13"
+
+New **blacklist/utility names** added:
+- DSSR: "DSN Solar System Radar"
+- EGS: updated from "EVN and Global Sevices" to "European and Global VLBI Systems"
+- HCRA: "Host Country Radio Astronomy"
+- RFC: "Reference Frame Calibration"
+
+**Organization** -- all entries sorted alphabetically by callsign within four clearly commented sections: Spacecraft, Blacklist/utility, TDRS, and Test rates.
+
+**`populateBlacklistInMemory()` (lines 144-153) -- Updated:**
+- Added DSSR, HCRA, and RFC to the blacklist
+- Sorted all entries alphabetically
+- Retained existing entries (DSN, GO19, RFC(VLBI), TEST)
+
+**Build result:** SUCCESS -- 75.3% Flash, 27.5% RAM.
+agentId: a24c7e92f18f6359b (for resuming to continue this agent's work if needed)
+<usage>total_tokens: 42502
+tool_uses: 7
+duration_ms: 124814</usage>
+```
+</details></tool-use>
+
+_**Agent - sidechain (2026-03-02 12:05:13Z)**_
+
+Update the hard-coded spacecraft list in `lib/SpacecraftData/SpacecraftData.cpp` using the CSV at `data_reference/minipulse_list_2025-02-26.csv` as the authoritative source.
+
+**Read both files first**, then make these changes to `populateNamesInMemory()`:
+
+1. **REMOVE entries marked `removed` in the CSV**: ARGO, CH2, CUE3, CuSP, DART, EQUL, GAIA, GTL, EM1, NSYT, LICI, LND1, LFL, HMAP, MLI, NEAS, OMOT, RSP, TM
+
+2. **FIX the `unknown10` callsign** — change it to `DFLY` (Dragonfly's actual callsign)
+
+3. **ADD new spacecraft** from the CSV (type=`spacecraft`, not `removed`). Use the "MiniPulse Display Name" column for display names. New entries to add:
+   - AGM1, AIRS, B101, B102, BEPI, CGO, CMA, DAVINCI, DFLY (replacing unknown10), ERO, ESCB, ESCG, EUCL, EUS1, GWP, HERA, HST, IM3, IM4, IMAP, INTG, JUICE, LEMS, LEV1, LTV, LUPX, MAX, MMX, NEOS, ORACLE-P, RFM, RLVM, RST, SMAP, SOLAR, SOLO, SRBB, SRED, SREI, SRFY, SRJT, SRL, SRSP, SX01, SX02, VERITAS, VPR
+
+4. **UPDATE display names** to match the CSV's "MiniPulse Display Name" column. Key changes:
+   - ACE → "Adv Composition Explorer"
+   - CAPS → "CAPSTONE" 
+   - CHDR → "Chandra Xray"
+   - DSCO → "DSCOVR"
+   - EM2 → "Artemis Orion 2"
+   - EM3 → "Artemis Orion 3"
+   - EMM → "Emirates Mars"
+   - JNO → "Juno Jupiter"
+   - KPLO → "Danuri Korea"
+   - LRO → "Lunar Recon Orbiter"
+   - M20 → "Mars Perseverance"
+   - MRO → "Mars Recon Orbiter"
+   - MSL → "Mars Curiosity"
+   - NHPC → "New Horizons Pluto"
+   - ORX → "OSIRIS APEX"
+   - PSYC → "Psyche Asteroid"
+   - SOHO → "Solar Heliospheric Observatory"
+   - SWFO → "SWFO L1"
+   - TESS → "TESS Exoplanet Survey"
+   - TGO → "ExoMars TGO"
+   - THB → "Themis B"
+   - THC → "Themis C"
+   - TDR6-TD13 → "TDRS 6", "TDRS 7", etc (shorter names from CSV)
+
+5. **ADD new blacklist entries** to the names JSON: DSSR, HCRA, RFC (use display name "n/a" like the CSV shows — but actually these are already named in the existing code pattern, use their full names from the CSV's "Full Name" column)
+
+6. **Keep the Rate1-Rate6 test entries** — don't remove those
+
+7. **Bump the DynamicJsonDocument size** from 5120 to 8192 on line 3 since we're adding ~30+ new entries
+
+8. **Also update `populateBlacklistInMemory()`** — add DSSR, HCRA, and RFC to the blacklist JSON since they're type=`blacklist` in the CSV
+
+9. **Organize alphabetically by callsign** within each section (spacecraft, blacklist/utility, TDRS, test rates)
+
+**IMPORTANT conventions:**
+- Use tabs for indentation
+- Match the existing code style exactly
+- Use targeted Edit operations, not a full file rewrite — but since this is a near-complete replacement of the function body, a targeted edit replacing the whole function body is fine
+- After editing, run `~/.platformio/penv/bin/pio run -e release` to verify it compiles
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 12:05:16Z)**_
+
+
+
+I'll start by reading both files to understand the current state and the authoritative CSV data.
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 12:05:17Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./lib/SpacecraftData/SpacecraftData.cpp`
+
+```text
+     1→#include <SpacecraftData.h>
+     2→
+     3→DynamicJsonDocument SpacecraftData::spacecraftNamesJson(5120);
+     4→DynamicJsonDocument SpacecraftData::spacecraftBlacklistJson(1024);
+     5→
+     6→void SpacecraftData::loadJson(const char* firmwareVersion) {
+     7→    bool showSerial = FileUtils::config.debugUtils.showSerial;
+     8→    if (showSerial) Serial.println("Initializing spacecraft data...");
+     9→    populateNamesInMemory();
+    10→    populateBlacklistInMemory();
+    11→
+    12→    if (shouldWriteFiles(firmwareVersion)) {
+    13→        if (showSerial) Serial.println("Firmware version changed — writing spacecraft data to flash");
+    14→        writeFilesToFlash(firmwareVersion);
+    15→    } else {
+    16→        if (showSerial) Serial.println("Spacecraft data unchanged — skipping flash writes");
+    17→    }
+    18→}
+    19→
+    20→void SpacecraftData::populateNamesInMemory() {
+    21→    spacecraftNamesJson.clear();
+    22→    spacecraftNamesJson["ACE"] = "Advanced Composition Explorer";
+    23→    spacecraftNamesJson["PLC"] = "Akatsuki";
+    24→    spacecraftNamesJson["ARGO"] = "ArgoMoon";
+    25→    spacecraftNamesJson["BIOS"] = "BioSentinel";
+    26→    spacecraftNamesJson["CAPS"] = "Capstone";
+    27→    spacecraftNamesJson["CHDR"] = "Chandra Xray Observatory";
+    28→    spacecraftNamesJson["CH2"] = "Chandrayaan 2";
+    29→    spacecraftNamesJson["CUE3"] = "CU Earth Escape Explorer";
+    30→    spacecraftNamesJson["CuSP"] = "CubeSat-Observation of Solar Particles";
+    31→    spacecraftNamesJson["DART"] = "DART";
+    32→    spacecraftNamesJson["unknown10"] = "Dragonfly";
+    33→    spacecraftNamesJson["DSCO"] = "Deep Space Climate Observatory";
+    34→    spacecraftNamesJson["EMM"] = "Emirates Mars Mission";
+    35→    spacecraftNamesJson["EQUL"] = "EQUilibriUm Lunar-Earth Spacecraft";
+    36→    spacecraftNamesJson["EURC"] = "Europa Clipper";
+    37→    spacecraftNamesJson["RSP"] = "ExoMars Rover";
+    38→    spacecraftNamesJson["GAIA"] = "Gaia";
+    39→    spacecraftNamesJson["GTL"] = "Geotail";
+    40→    spacecraftNamesJson["HYB2"] = "Hayabusa 2";
+    41→    spacecraftNamesJson["EM1"] = "Artemis 1";
+    42→    spacecraftNamesJson["EM2"] = "Artemis 2";
+    43→    spacecraftNamesJson["EM3"] = "Artemis 3";
+    44→    spacecraftNamesJson["NSYT"] = "InSight";
+    45→    spacecraftNamesJson["JWST"] = "James Webb Space Telescope";
+    46→    spacecraftNamesJson["JNO"] = "Juno";
+    47→    spacecraftNamesJson["KPLO"] = "Korea Pathfinder Lunar Orbiter";
+    48→    spacecraftNamesJson["LICI"] = "LICIA Cube";
+    49→    spacecraftNamesJson["LND1"] = "Lunar Node 1";
+    50→    spacecraftNamesJson["LUCY"] = "Lucy";
+    51→    spacecraftNamesJson["LFL"] = "Lunar Flashlight";
+    52→    spacecraftNamesJson["HMAP"] = "Lunar Hydrogen Mapper";
+    53→    spacecraftNamesJson["LRO"] = "Lunar Reconnaissance Orbiter";
+    54→    spacecraftNamesJson["MMS1"] = "Magnetospheric MultiScale Formation Flyer 1";
+    55→    spacecraftNamesJson["MMS2"] = "Magnetospheric MultiScale Formation Flyer 2";
+    56→    spacecraftNamesJson["MMS3"] = "Magnetospheric MultiScale Formation Flyer 3";
+    57→    spacecraftNamesJson["MMS4"] = "Magnetospheric MultiScale Formation Flyer 4";
+    58→    spacecraftNamesJson["M01O"] = "Mars Odyssey";
+    59→    spacecraftNamesJson["M20"] = "Mars 2020";
+    60→    spacecraftNamesJson["MVN"] = "MAVEN";
+    61→    spacecraftNamesJson["MEX"] = "Mars Express";
+    62→    spacecraftNamesJson["MOM"] = "Mars Orbiter";
+    63→    spacecraftNamesJson["MRO"] = "Mars Reconnaissance Orbiter";
+    64→    spacecraftNamesJson["MSL"] = "Curiosity";
+    65→    spacecraftNamesJson["MLI"] = "Morehead Lunar Ice Cube";
+    66→    spacecraftNamesJson["NEAS"] = "Near Earth Asteroid Scout";
+    67→    spacecraftNamesJson["NHPC"] = "New Horizons";
+    68→    spacecraftNamesJson["ORX"] = "OSIRIS REx";
+    69→    spacecraftNamesJson["OMOT"] = "OMOTENASHI";
+    70→    spacecraftNamesJson["PSYC"] = "Psyche";
+    71→    spacecraftNamesJson["SOHO"] = "Solar and Heliospheric Observatory";
+    72→    spacecraftNamesJson["SPP"] = "Parker Solar Probe";
+    73→    spacecraftNamesJson["STA"] = "STEREO A";
+    74→    spacecraftNamesJson["TESS"] = "Transiting Exoplanet Survey Satellite";
+    75→    spacecraftNamesJson["TGO"] = "ExoMars Trace Gas Orbiter";
+    76→    spacecraftNamesJson["THB"] = "THEMIS B";
+    77→    spacecraftNamesJson["THC"] = "THEMIS C";
+    78→    spacecraftNamesJson["TM"] = "TeamMiles";
+    79→    spacecraftNamesJson["VGR1"] = "Voyager 1";
+    80→    spacecraftNamesJson["VGR2"] = "Voyager 2";
+    81→    spacecraftNamesJson["WIND"] = "Wind";
+    82→    spacecraftNamesJson["SWFO"] = "SOLAR 1";
+    83→    spacecraftNamesJson["XMM"] = "XMM Newton";
+    84→    spacecraftNamesJson["ATOT"] = "Advanced Tracking and Observational Techniques";
+    85→    spacecraftNamesJson["EGS"] = "EVN and Global Sevices";
+    86→    spacecraftNamesJson["GBRA"] = "Ground Based Radio Astronomy";
+    87→    spacecraftNamesJson["GSSR"] = "Goldstone Solar System Radar";
+    88→    spacecraftNamesJson["GVRT"] = "Goldstone Apple Valley Radio Telescope";
+    89→    spacecraftNamesJson["SGP"] = "Space Geodesy Program";
+    90→    spacecraftNamesJson["TDR6"] = "Tracking and Data Relay Satellites (TDRS)";
+    91→    spacecraftNamesJson["TDR7"] = "Tracking and Data Relay Satellites (TDRS)";
+    92→    spacecraftNamesJson["TDR8"] = "Tracking and Data Relay Satellites (TDRS)";
+    93→    spacecraftNamesJson["TDR9"] = "Tracking and Data Relay Satellites (TDRS)";
+    94→    spacecraftNamesJson["TD10"] = "Tracking and Data Relay Satellites (TDRS)";
+    95→    spacecraftNamesJson["TD11"] = "Tracking and Data Relay Satellites (TDRS)";
+    96→    spacecraftNamesJson["TD12"] = "Tracking and Data Relay Satellites (TDRS)";
+    97→    spacecraftNamesJson["TD13"] = "Tracking and Data Relay Satellites (TDRS)";
+    98→    spacecraftNamesJson["Rate1"] = "Test Rate 1";
+    99→    spacecraftNamesJson["Rate2"] = "Test Rate 2";
+   100→    spacecraftNamesJson["Rate3"] = "Test Rate 3";
+   101→    spacecraftNamesJson["Rate4"] = "Test Rate 4";
+   102→    spacecraftNamesJson["Rate5"] = "Test Rate 5";
+   103→    spacecraftNamesJson["Rate6"] = "Test Rate 6";
+   104→}
+   105→
+   106→void SpacecraftData::populateBlacklistInMemory() {
+   107→    spacecraftBlacklistJson.clear();
+   108→    spacecraftBlacklistJson["TEST"] = true;
+   109→    spacecraftBlacklistJson["DSN"] = true;
+   110→    spacecraftBlacklistJson["RFC(VLBI)"] = true;
+   111→    spacecraftBlacklistJson["GO19"] = true;
+   112→}
+   113→
+   114→bool SpacecraftData::shouldWriteFiles(const char* firmwareVersion) {
+   115→    File versionFile = LittleFS.open("/spacecraft_data/version.txt", "r");
+   116→    if (!versionFile) {
+   117→        return true; // File doesn't exist — first boot or fresh flash
+   118→    }
+   119→
+   120→    String storedVersion = versionFile.readStringUntil('\n');
+   121→    versionFile.close();
+   122→
+   123→    if (storedVersion.length() == 0) {
+   124→        return true; // Empty or corrupted file
+   125→    }
+   126→
+   127→    return strcmp(storedVersion.c_str(), firmwareVersion) != 0;
+   128→}
+   129→
+   130→void SpacecraftData::writeFilesToFlash(const char* firmwareVersion) {
+   131→    bool showSerial = FileUtils::config.debugUtils.showSerial;
+   132→    FileUtils::createDir("spacecraft_data");
+   133→
+   134→    // Write names.json
+   135→    File namesFile = LittleFS.open("/spacecraft_data/names.json", "w");
+   136→    if (namesFile) {
+   137→        if (serializeJson(spacecraftNamesJson, namesFile) == 0) {
+   138→            if (showSerial) Serial.print(DevUtils::termColor("red") + "Failed to write names.json" + DevUtils::termColor("reset") + "\n");
+   139→        }
+   140→        namesFile.close();
+   141→    } else {
+   142→        if (showSerial) Serial.print(DevUtils::termColor("red") + "Failed to open names.json for writing" + DevUtils::termColor("reset") + "\n");
+   143→    }
+   144→
+   145→    // Write blacklist.json
+   146→    File blacklistFile = LittleFS.open("/spacecraft_data/blacklist.json", "w");
+   147→    if (blacklistFile) {
+   148→        if (serializeJson(spacecraftBlacklistJson, blacklistFile) == 0) {
+   149→            if (showSerial) Serial.print(DevUtils::termColor("red") + "Failed to write blacklist.json" + DevUtils::termColor("reset") + "\n");
+   150→        }
+   151→        blacklistFile.close();
+   152→    } else {
+   153→        if (showSerial) Serial.print(DevUtils::termColor("red") + "Failed to open blacklist.json for writing" + DevUtils::termColor("reset") + "\n");
+   154→    }
+   155→
+   156→    // Write version marker
+   157→    File versionFile = LittleFS.open("/spacecraft_data/version.txt", "w");
+   158→    if (versionFile) {
+   159→        versionFile.print(firmwareVersion);
+   160→        versionFile.close();
+   161→    } else {
+   162→        if (showSerial) Serial.print(DevUtils::termColor("red") + "Failed to write version.txt" + DevUtils::termColor("reset") + "\n");
+   163→    }
+   164→
+   165→    if (showSerial) Serial.print(DevUtils::termColor("green") + "Spacecraft data written to flash" + DevUtils::termColor("reset") + "\n");
+   166→}
+   167→
+   168→/* Check Name */
+   169→const char* SpacecraftData::callsignToName(const char* key) {
+   170→    bool showSerial = FileUtils::config.debugUtils.showSerial;
+   171→
+   172→    if (showSerial) {
+   173→        char buffer[256];
+   174→        snprintf(
+   175→            buffer,
+   176→            sizeof(buffer),
+   177→            "%s>>> Checking names lookup for %s...%s\n",
+   178→            DevUtils::termColor("yellow"),
+   179→            key,
+   180→            DevUtils::termColor("reset")
+   181→        );
+   182→        Serial.print(buffer);
+   183→    }
+   184→
+   185→    if (spacecraftNamesJson.containsKey(key)) {
+   186→        if (showSerial)
+   187→            Serial.print(DevUtils::termColor("green") + "Found spacecraft name for " + String(key) + DevUtils::termColor("reset") + "\n");
+   188→        const char* spacecraftName = spacecraftNamesJson[key];
+   189→        return spacecraftName;
+   190→    }
+   191→
+   192→    if (showSerial) {
+   193→        Serial.print(DevUtils::termColor("red") + "Spacecraft name not found for " + String(key) + DevUtils::termColor("reset") + "\n");
+   194→    }
+   195→
+   196→    // Spacecraft name not found, return the callsign
+   197→    return key;
+   198→}
+   199→
+   200→/* Check Blacklist */
+   201→bool SpacecraftData::checkBlacklist(const char* key) {
+   202→    bool showSerial = FileUtils::config.debugUtils.showSerial;
+   203→    bool isBlacklisted = spacecraftBlacklistJson[key] != nullptr; // If the key is not null, it is blacklisted
+   204→
+   205→    if (showSerial) {
+   206→        char buffer[128];
+   207→        if (isBlacklisted) {
+   208→            snprintf(
+   209→                buffer,
+   210→                sizeof(buffer),
+   211→                "%s%s is blacklisted, skipping...%s\n",
+   212→                DevUtils::termColor("purple"),
+   213→                key,
+   214→                DevUtils::termColor("reset")
+   215→            );
+   216→            Serial.print(buffer);
+   217→        }
+   218→    }
+   219→
+   220→    return isBlacklisted;
+   221→}
+   222→
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 12:05:17Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./data_reference/minipulse_list_2025-02-26.csv`
+
+```text
+     1→Callsign,Approved,MiniPulse Display Name,Full Name,Alt Name,Agency,New,Status,Type,Mission URL
+     2→ACE,TRUE,Adv Composition Explorer,Advanced Composition Explorer,,NASA/GSFC,no,,spacecraft,https://science.nasa.gov/mission/ace/
+     3→AGM1,FALSE,Griffin Lander,Griffin Lander,,Astrobotic/NASA,yes,,spacecraft,
+     4→AIRS,FALSE,AIRS,Atmospheric Infrared Sounder,,NASA/JPL,yes,,spacecraft,https://airs.jpl.nasa.gov/
+     5→ARGO,FALSE,ArgoMoon,ArgoMoon,,ASI,no,Ended,removed,
+     6→ATOT,FALSE,n/a,Advanced Tracking and Observational Techniques,,NASA/DSN,no,Ended,blacklist,
+     7→B101,FALSE,Blue Moon 1 SN1,Blue Moon Mark 1 SN1,,Blue Origin/NASA,yes,,spacecraft,
+     8→B102,FALSE,Blue Moon 1 SN2,Blue Moon Mark 1 SN2,,Blue Origin/NASA,yes,,spacecraft,
+     9→BEPI,TRUE,BepiColombo,Bepi-Columbo,,ESA/JAXA,yes,,spacecraft,https://www.esa.int/Science_Exploration/Space_Science/BepiColombo
+    10→BIOS,TRUE,BioSentinel,BioSentinel,,NASA/ARC,no,,spacecraft,https://www.nasa.gov/ames-engineering/spaceflight-division/biosentinel/
+    11→CAPS,TRUE,CAPSTONE,Cislunar Autonomous Positioning System Technology Operations and Navigation Experiment (CAPSTONE),,NASA,no,,spacecraft,https://www.nasa.gov/mission/capstone/ https://advancedspace.com/capstone/
+    12→CGO,TRUE,Carruthers Observatory,Global Lyman-alpha Imagers of the Dynamic Exosphere (Carruthers Geocorona Observatory),,UCB/NASA,yes,,spacecraft,https://science.nasa.gov/mission/carruthers-geocorona-observatory/
+    13→CH2,FALSE,Chandrayaan 2,Chandrayaan 2,,ISRO,no,Ended,removed,
+    14→CHDR,TRUE,Chandra Xray,Chandra X Ray Observatory,,NASA,no,,spacecraft,
+    15→CMA,FALSE,Caltech Apophis,Caltech Mission to Apophis,,Caltech/NASA,yes,,spacecraft,
+    16→CUE3,FALSE,CU Earth Escape,CU Earth Escape Explorer,,CU Boulder,no,,removed,
+    17→CuSP,FALSE,CuSP,CubeSat Observation of Solar Particles,,SwRI,no,,removed,
+    18→DART,FALSE,DART,Double Asteroid Redirection Test (DART),,NASA/APL,no,,removed,
+    19→DAVINCI,FALSE,DAVINCI,DAVINCI,,NASA/GSFC,yes,,spacecraft,
+    20→DFLY,FALSE,Dragonfly,Dragonfly,,NASA/APL,yes,,spacecraft,
+    21→DSCO,TRUE,DSCOVR,Deep Space Climate Observatory (DSCOVR),,NOAA/NASA,no,,spacecraft,
+    22→DSSR,FALSE,n/a,DSN Solar System Radar,,NASA/DSN,yes,,blacklist,
+    23→EGS,FALSE,n/a,European and Global VLBI Systems,,ESA,no,,blacklist,
+    24→EM1,FALSE,Artemis 1,Artemis 1,,NASA,no,,removed,
+    25→EM2,FALSE,Artemis Orion 2,Orion 2,,NASA,no,,spacecraft,https://www.nasa.gov/reference/orion-spacecraft/
+    26→EM3,FALSE,Artemis Orion 3,Orion 3,,NASA,no,,spacecraft,https://www.nasa.gov/reference/orion-spacecraft/
+    27→EMM,TRUE,Emirates Mars,Emirate Mars Mission,,UAE/MBRSC,no,,spacecraft,
+    28→EQUL,FALSE,EQUULEUS,EQUilibriUm Lunar Earth Spacecraft,,JAXA,no,,removed,
+    29→ERO,FALSE,Earth Return Orb,Earth Return Orbiter (ERO),,ESA,yes,,spacecraft,
+    30→ESCB,TRUE,EscaPADE Blue,Escape and Plasma Acceleration and Dynamics Explorers (EscaPADE) Blue,,UCB/NASA,yes,,spacecraft,
+    31→ESCG,TRUE,EscaPADE Gold,Escape and Plasma Acceleration and Dynamics Explorers (EscaPADE) Gold,,UCB/NASA,yes,,spacecraft,
+    32→EUCL,FALSE,Euclid,Euclid,,ESA,yes,,spacecraft,
+    33→EURC,TRUE,Europa Clipper,Europa Clipper,,NASA/JPL,no,,spacecraft,
+    34→EUS1,FALSE,Explor Upper Stage,Exploration Upper Stage (EUS) 1,,NASA,yes,,spacecraft,
+    35→GAIA,FALSE,Gaia,Gaia,,ESA,no,,removed,
+    36→GBRA,FALSE,n/a,Ground Based Radio Astronomy,,NASA/DSN,no,,blacklist,
+    37→GSSR,FALSE,n/a,Goldstone Solar System Radar,,NASA/JPL,no,,blacklist,
+    38→GTL,FALSE,Geotail,Geotail,,JAXA/NASA,no,,removed,
+    39→GVRT,FALSE,n/a,Goldstone Apple Valley Radio Telescope,,NASA/JPL,no,,blacklist,
+    40→GWP,FALSE,Lunar Gateway,Gateway (GWP),,NASA,yes,,spacecraft,
+    41→HCRA,FALSE,n/a,Host Country Radio Astronomy,,NASA/DSN,yes,,blacklist,
+    42→HERA,FALSE,Hera,Hera,,ESA,yes,,spacecraft,
+    43→HMAP,FALSE,Lunar H Mapper,Lunar Hydrogen Mapper,,ASU,no,,removed,
+    44→HST,FALSE,Hubble,Hubble,,NASA/ESA,yes,,spacecraft,
+    45→HYB2,TRUE,Hayabusa 2,Hayabusa 2,,JAXA,no,,spacecraft,
+    46→IM3,FALSE,Intuitive Mach 3,Intuitive Machines 3 (PRISM),,Intuitive Machines,yes,,spacecraft,
+    47→IM4,FALSE,Intuitive Mach 4,Intuitive Machines 4,,Intuitive Machines,yes,,spacecraft,
+    48→IMAP,TRUE,IMAP,Interstellar Mapping and Acceleration Probe,,Princeton/NASA,yes,,spacecraft,
+    49→INTG,FALSE,INTEGRAL,International Gamma Ray Astrophysics Laboratory (INTEGRAL),,ESA,yes,,spacecraft,
+    50→JNO,TRUE,Juno Jupiter,Juno,,NASA/JPL,no,,spacecraft,https://science.nasa.gov/mission/juno/
+    51→JUICE,FALSE,JUICE,Jupiter Icy Moons Explorer,,ESA,yes,,spacecraft,https://astrobiology.nasa.gov/missions/juice/
+    52→JWST,TRUE,James Webb Space Telescope,James Webb Space Telescope,,NASA/ESA/CSA,no,,spacecraft,
+    53→KPLO,TRUE,Danuri Korea,Korea Pathfinder Lunar Orbiter,Danuri,KARI,no,,spacecraft,
+    54→LEMS,FALSE,Lunar Monitor Stn,Lunar Exploration Monitoring Station (LMA3),,Lockheed/NASA,yes,,spacecraft,
+    55→LEV1,FALSE,Lunar Excur Veh,Lunar Excursion Vehicle (LEV1),,JAXA,yes,,spacecraft,
+    56→LFL,FALSE,Lunar Flashlight,Lunar Flashlight,,NASA/JPL,no,,removed,
+    57→LICI,FALSE,LICIA Cube,LICIA Cube,,ASI,no,,removed,
+    58→LND1,FALSE,Lunar Node 1,Lunar Node 1,,NASA,no,,removed,
+    59→LRO,TRUE,Lunar Recon Orbiter,Lunar Reconnaisance Orbiter,,NASA,no,,spacecraft,
+    60→LTV,FALSE,Lunar Terrain Veh,Lunar Terrain Vehicles (LTV),,NASA,yes,,spacecraft,
+    61→LUCY,TRUE,Lucy,Lucy,,NASA,no,,spacecraft,https://science.nasa.gov/mission/lucy/
+    62→LUPX,FALSE,LUPEX,Lunar Polar Exploration Mission (LUPEX),,JAXA/ISRO,yes,,spacecraft,
+    63→M01O,TRUE,Mars Odyssey,Mars '01 Odyssey,,NASA/JPL,no,,spacecraft,
+    64→M20,TRUE,Mars Perseverance,Mars 2020 Perseverance Rover,,NASA/JPL,no,,spacecraft,
+    65→MAX,FALSE,Multi Asteroid Exp,Multi Asteroid Explorer (MAX),,DLR,yes,,spacecraft,
+    66→MEX,TRUE,Mars Express,Mars Express Orbiter,,ESA,no,,spacecraft,
+    67→MLI,FALSE,Morehead Lunar,Morehead Lunar Ice Cube,,Morehead State,no,,removed,
+    68→MMS1,TRUE,Magneto MultiScale 1,Magnetospheric MultiScale Formation Flyer 1,,NASA,no,,spacecraft,https://mms.gsfc.nasa.gov/
+    69→MMS2,TRUE,Magneto MultiScale 2,Magnetospheric MultiScale Formation Flyer 2,,NASA,no,,spacecraft,https://mms.gsfc.nasa.gov/
+    70→MMS3,TRUE,Magneto MultiScale 3,Magnetospheric MultiScale Formation Flyer 3,,NASA,no,,spacecraft,https://mms.gsfc.nasa.gov/
+    71→MMS4,TRUE,Magneto MultiScale 4,Magnetospheric MultiScale Formation Flyer 4,,NASA,no,,spacecraft,https://mms.gsfc.nasa.gov/
+    72→MMX,FALSE,Martian Moons Exp,Martian Moons eXploration (MMX),,JAXA,yes,,spacecraft,
+    73→MOM,FALSE,Mars Orbiter,Mars Orbiter Mission,,ISRO,no,,spacecraft,
+    74→MRO,TRUE,Mars Recon Orbiter,Mars Reconnaissance Orbiter,,NASA/JPL,no,,spacecraft,
+    75→MSL,TRUE,Mars Curiosity,Mars Science Laboratory (MSL Curiosity),,NASA/JPL,no,,spacecraft,
+    76→MVN,TRUE,MAVEN,Mars Atmosphere and Volatile EvolutioN,,NASA/GSFC,no,,spacecraft,
+    77→NEAS,FALSE,NEA Scout,Near Earth Asteroid Scout,,NASA/MSFC,no,,removed,
+    78→NEOS,FALSE,NEO Surveyor,Near Earth Object Surveyor,,NASA/JPL,yes,,spacecraft,
+    79→NHPC,TRUE,New Horizons Pluto,New Horizon Pluto Charon,,NASA/APL,no,,spacecraft,
+    80→NSYT,FALSE,InSight,InSight,,NASA/JPL,no,,removed,
+    81→OMOT,FALSE,OMOTENASHI,OMOTENASHI,,JAXA,no,,removed,
+    82→ORACLE-P,FALSE,Oracle P,Oracle P,,NASA,yes,,spacecraft,
+    83→ORX,TRUE,OSIRIS APEX,Origins Spectral Interpretation Resource Identification Security Regolith Explorer,,NASA/GSFC,no,,spacecraft,
+    84→PLC,FALSE,Akatsuki,Akatsuki/Planet C,,JAXA,no,,spacecraft,
+    85→PSYC,TRUE,Psyche Asteroid,Psyche,,NASA/JPL,no,,spacecraft,https://science.nasa.gov/mission/psyche/
+    86→RFC,FALSE,n/a,Reference Frame Calibration,,NASA/DSN,yes,,blacklist,
+    87→RFM,FALSE,Rosalind Franklin,Rosalind Franklin,,ESA,yes,,spacecraft,
+    88→RLVM,FALSE,Rocket Lab Venus,Rocket Lab Venus Mission,,Rocket Lab,yes,,spacecraft,
+    89→RSP,FALSE,ExoMars Rover,ExoMars Rover (Rosalind Franklin),,ESA,no,,removed,
+    90→RST,FALSE,Roman Telescope,Roman Space Telscope (RST),,NASA/GSFC,yes,,spacecraft,
+    91→SGP,FALSE,n/a,Space Geodesy Program,,NASA,no,,blacklist,
+    92→SMAP,FALSE,SMAP,Soil Moisture Active/Passive (SMAP),,NASA/JPL,yes,,spacecraft,
+    93→SOHO,TRUE,Solar Heliospheric Observatory,Solar and Heliospheric Observatory ,,ESA/NASA,no,,spacecraft,
+    94→SOLAR,TRUE,SOLAR,Space Weather Observations at L1 to Advance Readiness,SWFO-L1,NASA/GSFC,yes,,spacecraft,
+    95→SWFO,TRUE,SWFO L1,Space Weather Follow On–Lagrange 1,SOLAR,NASA/GSFC,yes,,spacecraft,
+    96→SOLO,FALSE,Solar Orbiter,Solar Orbiter,,ESA/NASA,yes,,spacecraft,
+    97→SPP,TRUE,Parker Solar Probe,Parker Solar Probe,,NASA/APL,no,,spacecraft,
+    98→SRBB,FALSE,SunRISE Bebop,Sun Radio Interferometer Space Experiment (SunRISE) Bebop,,NASA/JPL,yes,,spacecraft,
+    99→SRED,FALSE,SunRISE Edward,Sun Radio Interferometer Space Experiment (SunRISE) Edward,,NASA/JPL,yes,,spacecraft,
+   100→SREI,FALSE,SunRISE Ein,Sun Radio Interferometer Space Experiment (SunRISE) Ein,,NASA/JPL,yes,,spacecraft,
+   101→SRFY,FALSE,SunRISE Faye,Sun Radio Interferometer Space Experiment (SunRISE) Faye,,NASA/JPL,yes,,spacecraft,
+   102→SRJT,FALSE,SunRISE Jet,Sun Radio Interferometer Space Experiment (SunRISE) Jet,,NASA/JPL,yes,,spacecraft,
+   103→SRL,FALSE,Sample Return Lndr,Sample Return Lander (SRL),,NASA/JPL,yes,,spacecraft,
+   104→SRSP,FALSE,SunRISE Spike,Sun Radio Interferometer Space Experiment (SunRISE) Spike,,NASA/JPL,yes,,spacecraft,
+   105→STA,TRUE,STEREO A,Solar TErrestrial RElations Observatory Ahead (STEREO A),,NASA,no,,spacecraft,
+   106→SX01,FALSE,Starship Uncrewed,SpaceX Starship Lander Uncrewed,,SpaceX/NASA,yes,,spacecraft,
+   107→SX02,FALSE,Starship Crewed,SpaceX Starship Lander Crewed,,SpaceX/NASA,yes,,spacecraft,
+   108→TD10,FALSE,TDRS 10,TDRS 10,,NASA,no,,spacecraft,
+   109→TD11,FALSE,TDRS 11,TDRS 11,,NASA,no,,spacecraft,
+   110→TD12,FALSE,TDRS 12,TDRS 12,,NASA,no,,spacecraft,
+   111→TD13,FALSE,TDRS 13,TDRS 13,,NASA,no,,spacecraft,
+   112→TDR6,FALSE,TDRS 6,TDRS 6,,NASA,no,,spacecraft,
+   113→TDR7,FALSE,TDRS 7,TDRS 7,,NASA,no,,spacecraft,
+   114→TDR8,FALSE,TDRS 8,TDRS 8,,NASA,no,,spacecraft,
+   115→TDR9,FALSE,TDRS 9,TDRS 9,,NASA,no,,spacecraft,
+   116→TESS,TRUE,TESS Exoplanet Survey,Transiting Exoplanet Survey Satellite,,NASA,no,,spacecraft,
+   117→TGO,TRUE,ExoMars TGO,ExoMars Trace Gas Observatory,,ESA,no,,spacecraft,https://science.nasa.gov/mission/tgo/
+   118→THB,TRUE,Themis B,"Acceleration, Reconnection, Turbulence and Electrodynamics of Moon's Interaction with the Sun B",ARTEMIS-P1,NASA,no,,spacecraft,
+   119→THC,TRUE,Themis C,"Acceleration, Reconnection, Turbulence and Electrodynamics of Moon's Interaction with the Sun C",ARTEMIS-P2,NASA,no,,spacecraft,
+   120→TM,FALSE,TeamMiles,TeamMiles,,Miles Space,no,,removed,
+   121→VERITAS,FALSE,VERITAS,VERITAS,,NASA/JPL,yes,,spacecraft,
+   122→VGR1,TRUE,Voyager 1,Voyager 1,,NASA/JPL,no,,spacecraft,
+   123→VGR2,TRUE,Voyager 2,Voyager 2,,NASA/JPL,no,,spacecraft,
+   124→VPR,FALSE,VIPER,VIPER/Lunar Volatiles Science (LVS),,NASA/ARC,yes,,spacecraft,
+   125→WIND,TRUE,Wind,Wind,,NASA,no,,spacecraft,https://wind.nasa.gov/
+   126→XMM,TRUE,XMM Newton,X-ray Multi-Mirror Mission Newton,,ESA,no,,spacecraft,https://science.nasa.gov/mission/xmm-newton/
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 12:05:24Z)**_
+
+Now I have a clear picture of both files. Let me build the updated functions based on the CSV data. I'll replace the `populateNamesInMemory()` function body, update the JSON document size, and update `populateBlacklistInMemory()`.
+
+Let me organize the spacecraft alphabetically by callsign, separating into sections: spacecraft, blacklist/utility, TDRS, and test rates.
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 12:05:26Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/lib/SpacecraftData/SpacecraftData.cpp has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 12:05:29Z)**_
+
+Now replace the entire `populateNamesInMemory()` function body.
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 12:06:20Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/lib/SpacecraftData/SpacecraftData.cpp has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 12:06:23Z)**_
+
+Now update the `populateBlacklistInMemory()` function to add DSSR, HCRA, and RFC.
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 12:06:27Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/lib/SpacecraftData/SpacecraftData.cpp has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 12:06:29Z)**_
+
+Let me verify the final state of the file looks correct.
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 12:06:30Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./lib/SpacecraftData/SpacecraftData.cpp`
+
+```text
+     1→#include <SpacecraftData.h>
+     2→
+     3→DynamicJsonDocument SpacecraftData::spacecraftNamesJson(8192);
+     4→DynamicJsonDocument SpacecraftData::spacecraftBlacklistJson(1024);
+     5→
+     6→void SpacecraftData::loadJson(const char* firmwareVersion) {
+     7→    bool showSerial = FileUtils::config.debugUtils.showSerial;
+     8→    if (showSerial) Serial.println("Initializing spacecraft data...");
+     9→    populateNamesInMemory();
+    10→    populateBlacklistInMemory();
+    11→
+    12→    if (shouldWriteFiles(firmwareVersion)) {
+    13→        if (showSerial) Serial.println("Firmware version changed — writing spacecraft data to flash");
+    14→        writeFilesToFlash(firmwareVersion);
+    15→    } else {
+    16→        if (showSerial) Serial.println("Spacecraft data unchanged — skipping flash writes");
+    17→    }
+    18→}
+    19→
+    20→void SpacecraftData::populateNamesInMemory() {
+    21→    spacecraftNamesJson.clear();
+    22→
+    23→    // Spacecraft (alphabetical by callsign)
+    24→    spacecraftNamesJson["ACE"] = "Adv Composition Explorer";
+    25→    spacecraftNamesJson["AGM1"] = "Griffin Lander";
+    26→    spacecraftNamesJson["AIRS"] = "AIRS";
+    27→    spacecraftNamesJson["B101"] = "Blue Moon 1 SN1";
+    28→    spacecraftNamesJson["B102"] = "Blue Moon 1 SN2";
+    29→    spacecraftNamesJson["BEPI"] = "BepiColombo";
+    30→    spacecraftNamesJson["BIOS"] = "BioSentinel";
+    31→    spacecraftNamesJson["CAPS"] = "CAPSTONE";
+    32→    spacecraftNamesJson["CGO"] = "Carruthers Observatory";
+    33→    spacecraftNamesJson["CHDR"] = "Chandra Xray";
+    34→    spacecraftNamesJson["CMA"] = "Caltech Apophis";
+    35→    spacecraftNamesJson["DAVINCI"] = "DAVINCI";
+    36→    spacecraftNamesJson["DFLY"] = "Dragonfly";
+    37→    spacecraftNamesJson["DSCO"] = "DSCOVR";
+    38→    spacecraftNamesJson["EM2"] = "Artemis Orion 2";
+    39→    spacecraftNamesJson["EM3"] = "Artemis Orion 3";
+    40→    spacecraftNamesJson["EMM"] = "Emirates Mars";
+    41→    spacecraftNamesJson["ERO"] = "Earth Return Orb";
+    42→    spacecraftNamesJson["ESCB"] = "EscaPADE Blue";
+    43→    spacecraftNamesJson["ESCG"] = "EscaPADE Gold";
+    44→    spacecraftNamesJson["EUCL"] = "Euclid";
+    45→    spacecraftNamesJson["EURC"] = "Europa Clipper";
+    46→    spacecraftNamesJson["EUS1"] = "Explor Upper Stage";
+    47→    spacecraftNamesJson["GWP"] = "Lunar Gateway";
+    48→    spacecraftNamesJson["HERA"] = "Hera";
+    49→    spacecraftNamesJson["HST"] = "Hubble";
+    50→    spacecraftNamesJson["HYB2"] = "Hayabusa 2";
+    51→    spacecraftNamesJson["IM3"] = "Intuitive Mach 3";
+    52→    spacecraftNamesJson["IM4"] = "Intuitive Mach 4";
+    53→    spacecraftNamesJson["IMAP"] = "IMAP";
+    54→    spacecraftNamesJson["INTG"] = "INTEGRAL";
+    55→    spacecraftNamesJson["JNO"] = "Juno Jupiter";
+    56→    spacecraftNamesJson["JUICE"] = "JUICE";
+    57→    spacecraftNamesJson["JWST"] = "James Webb Space Telescope";
+    58→    spacecraftNamesJson["KPLO"] = "Danuri Korea";
+    59→    spacecraftNamesJson["LEMS"] = "Lunar Monitor Stn";
+    60→    spacecraftNamesJson["LEV1"] = "Lunar Excur Veh";
+    61→    spacecraftNamesJson["LRO"] = "Lunar Recon Orbiter";
+    62→    spacecraftNamesJson["LTV"] = "Lunar Terrain Veh";
+    63→    spacecraftNamesJson["LUCY"] = "Lucy";
+    64→    spacecraftNamesJson["LUPX"] = "LUPEX";
+    65→    spacecraftNamesJson["M01O"] = "Mars Odyssey";
+    66→    spacecraftNamesJson["M20"] = "Mars Perseverance";
+    67→    spacecraftNamesJson["MAX"] = "Multi Asteroid Exp";
+    68→    spacecraftNamesJson["MEX"] = "Mars Express";
+    69→    spacecraftNamesJson["MMS1"] = "Magneto MultiScale 1";
+    70→    spacecraftNamesJson["MMS2"] = "Magneto MultiScale 2";
+    71→    spacecraftNamesJson["MMS3"] = "Magneto MultiScale 3";
+    72→    spacecraftNamesJson["MMS4"] = "Magneto MultiScale 4";
+    73→    spacecraftNamesJson["MMX"] = "Martian Moons Exp";
+    74→    spacecraftNamesJson["MOM"] = "Mars Orbiter";
+    75→    spacecraftNamesJson["MRO"] = "Mars Recon Orbiter";
+    76→    spacecraftNamesJson["MSL"] = "Mars Curiosity";
+    77→    spacecraftNamesJson["MVN"] = "MAVEN";
+    78→    spacecraftNamesJson["NEOS"] = "NEO Surveyor";
+    79→    spacecraftNamesJson["NHPC"] = "New Horizons Pluto";
+    80→    spacecraftNamesJson["ORACLE-P"] = "Oracle P";
+    81→    spacecraftNamesJson["ORX"] = "OSIRIS APEX";
+    82→    spacecraftNamesJson["PLC"] = "Akatsuki";
+    83→    spacecraftNamesJson["PSYC"] = "Psyche Asteroid";
+    84→    spacecraftNamesJson["RFM"] = "Rosalind Franklin";
+    85→    spacecraftNamesJson["RLVM"] = "Rocket Lab Venus";
+    86→    spacecraftNamesJson["RST"] = "Roman Telescope";
+    87→    spacecraftNamesJson["SMAP"] = "SMAP";
+    88→    spacecraftNamesJson["SOHO"] = "Solar Heliospheric Observatory";
+    89→    spacecraftNamesJson["SOLAR"] = "SOLAR";
+    90→    spacecraftNamesJson["SOLO"] = "Solar Orbiter";
+    91→    spacecraftNamesJson["SPP"] = "Parker Solar Probe";
+    92→    spacecraftNamesJson["SRBB"] = "SunRISE Bebop";
+    93→    spacecraftNamesJson["SRED"] = "SunRISE Edward";
+    94→    spacecraftNamesJson["SREI"] = "SunRISE Ein";
+    95→    spacecraftNamesJson["SRFY"] = "SunRISE Faye";
+    96→    spacecraftNamesJson["SRJT"] = "SunRISE Jet";
+    97→    spacecraftNamesJson["SRL"] = "Sample Return Lndr";
+    98→    spacecraftNamesJson["SRSP"] = "SunRISE Spike";
+    99→    spacecraftNamesJson["STA"] = "STEREO A";
+   100→    spacecraftNamesJson["SWFO"] = "SWFO L1";
+   101→    spacecraftNamesJson["SX01"] = "Starship Uncrewed";
+   102→    spacecraftNamesJson["SX02"] = "Starship Crewed";
+   103→    spacecraftNamesJson["TESS"] = "TESS Exoplanet Survey";
+   104→    spacecraftNamesJson["TGO"] = "ExoMars TGO";
+   105→    spacecraftNamesJson["THB"] = "Themis B";
+   106→    spacecraftNamesJson["THC"] = "Themis C";
+   107→    spacecraftNamesJson["VERITAS"] = "VERITAS";
+   108→    spacecraftNamesJson["VGR1"] = "Voyager 1";
+   109→    spacecraftNamesJson["VGR2"] = "Voyager 2";
+   110→    spacecraftNamesJson["VPR"] = "VIPER";
+   111→    spacecraftNamesJson["WIND"] = "Wind";
+   112→    spacecraftNamesJson["XMM"] = "XMM Newton";
+   113→
+   114→    // Blacklist / utility (alphabetical by callsign)
+   115→    spacecraftNamesJson["ATOT"] = "Advanced Tracking and Observational Techniques";
+   116→    spacecraftNamesJson["DSSR"] = "DSN Solar System Radar";
+   117→    spacecraftNamesJson["EGS"] = "European and Global VLBI Systems";
+   118→    spacecraftNamesJson["GBRA"] = "Ground Based Radio Astronomy";
+   119→    spacecraftNamesJson["GSSR"] = "Goldstone Solar System Radar";
+   120→    spacecraftNamesJson["GVRT"] = "Goldstone Apple Valley Radio Telescope";
+   121→    spacecraftNamesJson["HCRA"] = "Host Country Radio Astronomy";
+   122→    spacecraftNamesJson["RFC"] = "Reference Frame Calibration";
+   123→    spacecraftNamesJson["SGP"] = "Space Geodesy Program";
+   124→
+   125→    // TDRS (numerical order)
+   126→    spacecraftNamesJson["TDR6"] = "TDRS 6";
+   127→    spacecraftNamesJson["TDR7"] = "TDRS 7";
+   128→    spacecraftNamesJson["TDR8"] = "TDRS 8";
+   129→    spacecraftNamesJson["TDR9"] = "TDRS 9";
+   130→    spacecraftNamesJson["TD10"] = "TDRS 10";
+   131→    spacecraftNamesJson["TD11"] = "TDRS 11";
+   132→    spacecraftNamesJson["TD12"] = "TDRS 12";
+   133→    spacecraftNamesJson["TD13"] = "TDRS 13";
+   134→
+   135→    // Test rates
+   136→    spacecraftNamesJson["Rate1"] = "Test Rate 1";
+   137→    spacecraftNamesJson["Rate2"] = "Test Rate 2";
+   138→    spacecraftNamesJson["Rate3"] = "Test Rate 3";
+   139→    spacecraftNamesJson["Rate4"] = "Test Rate 4";
+   140→    spacecraftNamesJson["Rate5"] = "Test Rate 5";
+   141→    spacecraftNamesJson["Rate6"] = "Test Rate 6";
+   142→}
+   143→
+   144→void SpacecraftData::populateBlacklistInMemory() {
+   145→    spacecraftBlacklistJson.clear();
+   146→    spacecraftBlacklistJson["DSN"] = true;
+   147→    spacecraftBlacklistJson["DSSR"] = true;
+   148→    spacecraftBlacklistJson["GO19"] = true;
+   149→    spacecraftBlacklistJson["HCRA"] = true;
+   150→    spacecraftBlacklistJson["RFC"] = true;
+   151→    spacecraftBlacklistJson["RFC(VLBI)"] = true;
+   152→    spacecraftBlacklistJson["TEST"] = true;
+   153→}
+   154→
+   155→bool SpacecraftData::shouldWriteFiles(const char* firmwareVersion) {
+   156→    File versionFile = LittleFS.open("/spacecraft_data/version.txt", "r");
+   157→    if (!versionFile) {
+   158→        return true; // File doesn't exist — first boot or fresh flash
+   159→    }
+   160→
+   161→    String storedVersion = versionFile.readStringUntil('\n');
+   162→    versionFile.close();
+   163→
+   164→    if (storedVersion.length() == 0) {
+   165→        return true; // Empty or corrupted file
+   166→    }
+   167→
+   168→    return strcmp(storedVersion.c_str(), firmwareVersion) != 0;
+   169→}
+   170→
+   171→void SpacecraftData::writeFilesToFlash(const char* firmwareVersion) {
+   172→    bool showSerial = FileUtils::config.debugUtils.showSerial;
+   173→    FileUtils::createDir("spacecraft_data");
+   174→
+   175→    // Write names.json
+   176→    File namesFile = LittleFS.open("/spacecraft_data/names.json", "w");
+   177→    if (namesFile) {
+   178→        if (serializeJson(spacecraftNamesJson, namesFile) == 0) {
+   179→            if (showSerial) Serial.print(DevUtils::termColor("red") + "Failed to write names.json" + DevUtils::termColor("reset") + "\n");
+   180→        }
+   181→        namesFile.close();
+   182→    } else {
+   183→        if (showSerial) Serial.print(DevUtils::termColor("red") + "Failed to open names.json for writing" + DevUtils::termColor("reset") + "\n");
+   184→    }
+   185→
+   186→    // Write blacklist.json
+   187→    File blacklistFile = LittleFS.open("/spacecraft_data/blacklist.json", "w");
+   188→    if (blacklistFile) {
+   189→        if (serializeJson(spacecraftBlacklistJson, blacklistFile) == 0) {
+   190→            if (showSerial) Serial.print(DevUtils::termColor("red") + "Failed to write blacklist.json" + DevUtils::termColor("reset") + "\n");
+   191→        }
+   192→        blacklistFile.close();
+   193→    } else {
+   194→        if (showSerial) Serial.print(DevUtils::termColor("red") + "Failed to open blacklist.json for writing" + DevUtils::termColor("reset") + "\n");
+   195→    }
+   196→
+   197→    // Write version marker
+   198→    File versionFile = LittleFS.open("/spacecraft_data/version.txt", "w");
+   199→    if (versionFile) {
+   200→        versionFile.print(firmwareVersion);
+   201→        versionFile.close();
+   202→    } else {
+   203→        if (showSerial) Serial.print(DevUtils::termColor("red") + "Failed to write version.txt" + DevUtils::termColor("reset") + "\n");
+   204→    }
+   205→
+   206→    if (showSerial) Serial.print(DevUtils::termColor("green") + "Spacecraft data written to flash" + DevUtils::termColor("reset") + "\n");
+   207→}
+   208→
+   209→/* Check Name */
+   210→const char* SpacecraftData::callsignToName(const char* key) {
+   211→    bool showSerial = FileUtils::config.debugUtils.showSerial;
+   212→
+   213→    if (showSerial) {
+   214→        char buffer[256];
+   215→        snprintf(
+   216→            buffer,
+   217→            sizeof(buffer),
+   218→            "%s>>> Checking names lookup for %s...%s\n",
+   219→            DevUtils::termColor("yellow"),
+   220→            key,
+   221→            DevUtils::termColor("reset")
+   222→        );
+   223→        Serial.print(buffer);
+   224→    }
+   225→
+   226→    if (spacecraftNamesJson.containsKey(key)) {
+   227→        if (showSerial)
+   228→            Serial.print(DevUtils::termColor("green") + "Found spacecraft name for " + String(key) + DevUtils::termColor("reset") + "\n");
+   229→        const char* spacecraftName = spacecraftNamesJson[key];
+   230→        return spacecraftName;
+   231→    }
+   232→
+   233→    if (showSerial) {
+   234→        Serial.print(DevUtils::termColor("red") + "Spacecraft name not found for " + String(key) + DevUtils::termColor("reset") + "\n");
+   235→    }
+   236→
+   237→    // Spacecraft name not found, return the callsign
+   238→    return key;
+   239→}
+   240→
+   241→/* Check Blacklist */
+   242→bool SpacecraftData::checkBlacklist(const char* key) {
+   243→    bool showSerial = FileUtils::config.debugUtils.showSerial;
+   244→    bool isBlacklisted = spacecraftBlacklistJson[key] != nullptr; // If the key is not null, it is blacklisted
+   245→
+   246→    if (showSerial) {
+   247→        char buffer[128];
+   248→        if (isBlacklisted) {
+   249→            snprintf(
+   250→                buffer,
+   251→                sizeof(buffer),
+   252→                "%s%s is blacklisted, skipping...%s\n",
+   253→                DevUtils::termColor("purple"),
+   254→                key,
+   255→                DevUtils::termColor("reset")
+   256→            );
+   257→            Serial.print(buffer);
+   258→        }
+   259→    }
+   260→
+   261→    return isBlacklisted;
+   262→}
+   263→
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 12:06:34Z)**_
+
+The file looks correct. Now let me run the build to verify it compiles.
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 12:06:47Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Build the release environment to verify compilation
+
+`~/.platformio/penv/bin/pio run -e release 2>&1`
+
+```text
+Processing release (platform: espressif32; board: esp32dev; framework: arduino)
+--------------------------------------------------------------------------------
+Verbose mode can be enabled via `-v, --verbose` option
+CONFIGURATION: https://docs.platformio.org/page/boards/espressif32/esp32dev.html
+PLATFORM: Espressif 32 (6.12.0) > Espressif ESP32 Dev Module
+HARDWARE: ESP32 240MHz, 320KB RAM, 4MB Flash
+DEBUG: Current (cmsis-dap) External (cmsis-dap, esp-bridge, esp-prog, iot-bus-jtag, jlink, minimodule, olimex-arm-usb-ocd, olimex-arm-usb-ocd-h, olimex-arm-usb-tiny-h, olimex-jtag-tiny, tumpa)
+PACKAGES: 
+ - framework-arduinoespressif32 @ 3.20017.241212+sha.dcc1105b 
+ - tool-esptoolpy @ 2.40900.250804 (4.9.0) 
+ - tool-openocd-esp32 @ 2.1100.20220706 (11.0) 
+ - toolchain-xtensa-esp32 @ 8.4.0+2021r2-patch5
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ soft
+Found 45 compatible libraries
+Scanning dependencies...
+Dependency Graph
+|-- ArduinoJson @ 6.21.5
+|-- WiFiManager @ 2.0.17+sha.d82d0a1
+|-- tinyxml2 @ 0.0.0+20260219085646.sha.1dee28e
+|-- FastLED @ 3.10.3
+|-- Animate
+|-- AnimationUtils
+|-- DevUtils
+|-- ESPmDNS @ 2.0.0
+|-- FS @ 2.0.0
+|-- FileUtils
+|-- HTTPClient @ 2.0.0
+|-- HTTPUpdate @ 2.0.0
+|-- LittleFS @ 2.0.0
+|-- MathHelpers
+|-- SpacecraftData
+|-- TextCharacters
+|-- WiFiClientSecure @ 2.0.0
+|-- XmlTestData
+Building in release mode
+Compiling .pio/build/release/src/main.cpp.o
+Compiling .pio/build/release/lib317/SpacecraftData/SpacecraftData.cpp.o
+Archiving .pio/build/release/lib317/libSpacecraftData.a
+Indexing .pio/build/release/lib317/libSpacecraftData.a
+Linking .pio/build/release/firmware.elf
+Retrieving maximum program size .pio/build/release/firmware.elf
+Checking size .pio/build/release/firmware.elf
+Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
+RAM:   [===       ]  27.5% (used 90248 bytes from 327680 bytes)
+Flash: [========  ]  75.3% (used 1479725 bytes from 1966080 bytes)
+Building .pio/build/release/firmware.bin
+esptool.py v4.9.0
+Creating esp32 image...
+Merged 27 ELF sections
+Successfully created esp32 image.
+========================= [SUCCESS] Took 10.60 seconds =========================
+
+Environment    Status    Duration
+-------------  --------  ------------
+release        SUCCESS   00:00:10.599
+========================= 1 succeeded in 00:00:10.599 =========================
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 12:07:17Z)**_
+
+The build compiles successfully. Here is a summary of all changes made to `/Users/grant/code/JPL-MiniPulse/lib/SpacecraftData/SpacecraftData.cpp`:
+
+---
+
+**Line 3 -- DynamicJsonDocument size bump:**
+- Changed from `5120` to `8192` to accommodate the ~30+ new spacecraft entries.
+
+**`populateNamesInMemory()` (lines 20-142) -- Complete replacement of the function body:**
+
+Entries **removed** (19 total, all marked `removed` in CSV):
+- ARGO, CH2, CUE3, CuSP, DART, EQUL, GAIA, GTL, EM1, NSYT, LICI, LND1, LFL, HMAP, MLI, NEAS, OMOT, RSP, TM
+
+Callsign **fixed**:
+- `unknown10` changed to `DFLY` (Dragonfly's actual callsign)
+
+New spacecraft **added** (47 total):
+- AGM1, AIRS, B101, B102, BEPI, CGO, CMA, DAVINCI, DFLY, ERO, ESCB, ESCG, EUCL, EUS1, GWP, HERA, HST, IM3, IM4, IMAP, INTG, JUICE, LEMS, LEV1, LTV, LUPX, MAX, MMX, NEOS, ORACLE-P, RFM, RLVM, RST, SMAP, SOLAR, SOLO, SRBB, SRED, SREI, SRFY, SRJT, SRL, SRSP, SX01, SX02, VERITAS, VPR
+
+Display names **updated** to match CSV's "MiniPulse Display Name" column:
+- ACE: "Advanced Composition Explorer" -> "Adv Composition Explorer"
+- CAPS: "Capstone" -> "CAPSTONE"
+- CHDR: "Chandra Xray Observatory" -> "Chandra Xray"
+- DSCO: "Deep Space Climate Observatory" -> "DSCOVR"
+- EM2: "Artemis 2" -> "Artemis Orion 2"
+- EM3: "Artemis 3" -> "Artemis Orion 3"
+- EMM: "Emirates Mars Mission" -> "Emirates Mars"
+- JNO: "Juno" -> "Juno Jupiter"
+- KPLO: "Korea Pathfinder Lunar Orbiter" -> "Danuri Korea"
+- LRO: "Lunar Reconnaissance Orbiter" -> "Lunar Recon Orbiter"
+- M20: "Mars 2020" -> "Mars Perseverance"
+- MMS1-4: Long names shortened to "Magneto MultiScale 1-4"
+- MRO: "Mars Reconnaissance Orbiter" -> "Mars Recon Orbiter"
+- MSL: "Curiosity" -> "Mars Curiosity"
+- NHPC: "New Horizons" -> "New Horizons Pluto"
+- ORX: "OSIRIS REx" -> "OSIRIS APEX"
+- PSYC: "Psyche" -> "Psyche Asteroid"
+- SOHO: "Solar and Heliospheric Observatory" -> "Solar Heliospheric Observatory"
+- SWFO: "SOLAR 1" -> "SWFO L1"
+- TESS: "Transiting Exoplanet Survey Satellite" -> "TESS Exoplanet Survey"
+- TGO: "ExoMars Trace Gas Orbiter" -> "ExoMars TGO"
+- THB: "THEMIS B" -> "Themis B"
+- THC: "THEMIS C" -> "Themis C"
+- TDR6-TD13: All changed from "Tracking and Data Relay Satellites (TDRS)" to shorter "TDRS 6" through "TDRS 13"
+
+New **blacklist/utility names** added:
+- DSSR: "DSN Solar System Radar"
+- EGS: updated from "EVN and Global Sevices" to "European and Global VLBI Systems"
+- HCRA: "Host Country Radio Astronomy"
+- RFC: "Reference Frame Calibration"
+
+**Organization** -- all entries sorted alphabetically by callsign within four clearly commented sections: Spacecraft, Blacklist/utility, TDRS, and Test rates.
+
+**`populateBlacklistInMemory()` (lines 144-153) -- Updated:**
+- Added DSSR, HCRA, and RFC to the blacklist
+- Sorted all entries alphabetically
+- Retained existing entries (DSN, GO19, RFC(VLBI), TEST)
+
+**Build result:** SUCCESS -- 75.3% Flash, 27.5% RAM.
+
+_**Agent (claude-opus-4-6 2026-03-02 12:07:22Z)**_
+
+Those are all IDE false positives — same as before. `ArduinoJson.h`, `Serial`, `LittleFS`, `FileUtils`, etc. are all provided by the ESP32 framework and PlatformIO libraries at build time, not visible to clangd. The actual PlatformIO build passed clean.
+
+Want me to commit these changes?
+
+---
+
+_**User (2026-03-02 12:13:54Z)**_
+
+i'm wondering if we should add keys for "approved" and "blacklisted" to the craft. the default mode should be to only show the "approved" craft (whitelist), but when we're able to add in the setting for approved/all craft, it will be any that are not blacklisted. the blacklist is an initial check for every callsign
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 12:14:17Z)**_
+
+<think><details><summary>Thought Process</summary>
+The user is thinking about restructuring the spacecraft data to have richer metadata per craft, rather than just callsign → display name. Currently:
+
+- `spacecraftNamesJson` = flat map of callsign → display name (includes everything)
+- `spacecraftBlacklistJson` = separate list of blacklisted callsigns
+
+The user wants:
+1. Each craft to have an "approved" flag and potentially a "blacklisted" flag
+2. Default mode: only show "approved" craft (the curated whitelist from the CSV's `Approved=TRUE` column)
+3. Future "show all" setting: show any craft that's NOT blacklisted
+
+
+4. Blacklist is always checked first (DSSR, HCRA, RFC, etc. — utility/non-spacecraft signals)
+
+The current flow filters out blacklisted callsigns first, then looks up display names. With the new structure, I'd consolidate this into a single metadata object per craft that tracks both approval status and blacklist status, so the filtering logic becomes simpler and more explicit.
+
+The challenge is memory — nesting the approval flag inside each spacecraft entry would bloat the JSON structure on the ESP32. I'm weighing whether to keep the names flat and add a separate approval registry instead.
+
+I think the cleanest approach is three separate documents: the main names mapping, a blacklist for filtering out non-spacecraft signals, and an approved list for the curated mode. The filtering then becomes straightforward — reject anything blacklisted, and in approved-only mode, only show craft that appear in the approved registry.
+
+The user seems to be thinking through whether we should restructure now, but I should present the options and get their input rather than just implementing. Looking at the CSV source, it already has the data we need — an `Approved` column for the whitelist and a `Type` column that marks blacklist entries — so the question is really just how to represent this in the codebase.
+
+I'll propose the simplest path: add a new `spacecraftApprovedJson` document alongside the existing structures, keeping it additive and minimal while setting us up for the future setting.
+</details></think>
+
+_**Agent (claude-opus-4-6 2026-03-02 12:14:23Z)**_
+
+Good thinking. The CSV already has this data — `Approved=TRUE/FALSE` and `Type=blacklist`. The question is how to represent it in the ESP32 code.
+
+The simplest approach that sets up for the future setting without a big refactor:
+
+**Keep the existing structure, add one new document:**
+
+| Document | Purpose | Check order |
+|----------|---------|-------------|
+| `spacecraftBlacklistJson` | Always filter out (utility signals, not real spacecraft) | 1st — always |
+| `spacecraftApprovedJson` | Curated whitelist (CSV `Approved=TRUE`) | 2nd — in default mode |
+| `spacecraftNamesJson` | Display name lookup for ALL known callsigns | Last — name resolution |
+
+**Filtering logic:**
+1. Blacklist check (always) → skip DSSR, HCRA, RFC, TEST, DSN, etc.
+2. If "approved only" mode (default): only show craft in `spacecraftApprovedJson`
+3. If "all" mode (future setting): show anything that passed the blacklist check
+4. Look up display name from `spacecraftNamesJson`
+
+This is additive — doesn't change existing structures, just adds `spacecraftApprovedJson` and a mode check. The names JSON already has all craft (approved and unapproved) since we just updated it from the full CSV.
+
+Want me to go ahead with this approach, or would you rather embed `approved` as a property on each craft entry (nested JSON objects instead of flat strings)?
+
+---
+
+_**User (2026-03-02 12:15:23Z)**_
+
+yes that makes sense
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 12:15:27Z)**_
+
+<tool-use data-tool-type="generic" data-tool-name="EnterPlanMode"><details>
+<summary>Tool use: **EnterPlanMode**</summary>
+
+```text
+Entered plan mode. You should now focus on exploring the codebase and designing an implementation approach.
+
+In plan mode, you should:
+1. Thoroughly explore the codebase to understand existing patterns
+2. Identify similar features and architectural approaches
+3. Consider multiple approaches and their trade-offs
+4. Use AskUserQuestion if you need to clarify the approach
+5. Design a concrete implementation strategy
+6. When ready, use ExitPlanMode to present your plan for approval
+
+Remember: DO NOT write or edit any files yet. This is a read-only exploration and planning phase.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 12:16:42Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="Agent"><details>
+<summary>Tool use: **Agent**</summary>
+Explore spacecraft data flow
+
+```text
+Excellent! Now I have a comprehensive understanding. Let me compile my findings into a detailed report.
+
+## Comprehensive Spacecraft Data Flow Analysis
+
+I've thoroughly explored the codebase and mapped out how spacecraft data flows through the system. Here are my detailed findings:
+
+### 1. SpacecraftData Class Structure
+
+**Location**: `/Users/grant/code/JPL-MiniPulse/lib/SpacecraftData/SpacecraftData.h` and `.cpp`
+
+**Public Methods:**
+- `loadJson(const char* firmwareVersion)` — Initializes spacecraft data on boot
+- `callsignToName(const char* key)` — **Callsign lookup function** that returns the human-readable name
+- `checkBlacklist(const char* callsign)` — **Blacklist filter function** that returns `true` if blacklisted
+
+**Private Members:**
+- `spacecraftNamesJson` — DynamicJsonDocument (8192 bytes) containing ~130 callsign-to-name mappings
+- `spacecraftBlacklistJson` — DynamicJsonDocument (1024 bytes) containing ~7 entries (DSN, DSSR, GO19, HCRA, RFC, RFC(VLBI), TEST)
+
+**How They Work:**
+- `callsignToName()` checks if the callsign exists in `spacecraftNamesJson` and returns the display name, or returns the callsign itself if not found (lines 226-238)
+- `checkBlacklist()` checks if the callsign is in `spacecraftBlacklistJson` using `spacecraftBlacklistJson[key] != nullptr` (line 244)
+
+---
+
+### 2. Callsign Flow in main.cpp
+
+**Entry Point**: XML parsing loop starting at line 2492
+
+The complete flow is:
+
+1. **XML Extraction** (line 2528):
+   ```cpp
+   const char* target = xmlTarget->Attribute("name");  // Get callsign from XML
+   ```
+
+2. **Validation Chain** (lines 2531-2545):
+   - Check if `target` is null
+   - Check if target length exceeds buffer size
+
+3. **BLACKLIST CHECK** (lines 2547-2555):
+   ```cpp
+   if (SpacecraftData::checkBlacklist(target) == true) {
+       // Skip this spacecraft entirely
+       t++;
+       continue;
+   }
+   ```
+
+4. **Copy Callsign** (lines 2559-2570):
+   ```cpp
+   strlcpy(tempNewCraft.callsignArray, target, callsignArrayLength);
+   tempNewCraft.callsign = tempNewCraft.callsignArray;
+   ```
+
+5. **NAME LOOKUP** (line 2573):
+   ```cpp
+   const char* name = SpacecraftData::callsignToName(target);
+   ```
+
+6. **Copy Name** (lines 2597-2610):
+   ```cpp
+   strlcpy(tempNewCraft.nameArray, name, 100);
+   tempNewCraft.name = tempNewCraft.nameArray;
+   tempNewCraft.nameLength = strlen(name);
+   ```
+
+7. **Find Signals** (line 2629):
+   ```cpp
+   FoundSignals foundSignals = findSignals(xmlDish, &tempNewCraft);
+   ```
+
+8. **Skip if No Signals** (lines 2632-2641):
+   If both down and up signals are zero, skip
+
+9. **Queue** (lines 2207-2216):
+   If valid, add to queue
+
+**Critical Decision Points:**
+- Line 2549: Blacklist filter (reject blacklisted)
+- Line 2573: Name lookup (display name)
+- Line 2629-2632: Signal detection (must have at least one signal)
+
+---
+
+### 3. Config/Settings System
+
+**Location**: `/Users/grant/code/JPL-MiniPulse/lib/FileUtils/FileUtils.h` and `.cpp`
+
+**Struct Hierarchy**:
+```
+FileUtils::Config
+├── DebugUtils (bool: testCores, showSerial, diagMeasure, disableWiFi, testLEDs)
+├── WifiNetwork (char arrays + bool forceDummyData, int retryDataFetchLimit)
+├── PinsHardware (7 int pins)
+├── DisplayLED (10 int LED/display settings)
+├── TextTypography (3 int settings)
+├── TimersDelays (1 int)
+└── Miscellaneous (1 int colorTheme)
+```
+
+**How Settings are Loaded**:
+1. Config file is JSON at `/config.json` (line 263)
+2. `setConfigValuesFromFile()` (line 295) deserializes JSON and maps keys to struct fields
+3. **Current example** (lines 314-320):
+   ```cpp
+   for (JsonPair kv : doc.as<JsonObject>()) {
+       if (kv.key() == "showSerial") {
+           FileUtils::config.debugUtils.showSerial = kv.value().as<bool>();
+       } else if (kv.key() == "diagMeasure") {
+           FileUtils::config.debugUtils.diagMeasure = kv.value().as<int>();
+       } else if (kv.key() == "brightness") {
+           FileUtils::config.displayLED.brightness = kv.value().as<int>();
+       }
+   }
+   ```
+
+**How Settings are Written**:
+- `writeConfigFileBool(const char* key, bool value)` (line 473) — reads JSON, updates, serializes back
+- `writeConfigFileInt(const char* key, int value)` (line 505)
+- `writeConfigFileString(const char* key, const char* value)` (line 546)
+
+**Update Functions** (for runtime changes):
+- `updateDebugUtilsField()` (line 356)
+- `updateWifiNetworkField()` (line 375)
+- `updateDisplayLEDField()` (line 412)
+- etc.
+
+---
+
+### 4. Key Data Structures
+
+**CraftQueueItem** (line 38-47 in header):
+```cpp
+struct CraftQueueItem {
+    char callsignArray[40];      // Raw callsign buffer
+    const char* callsign;        // Points to callsignArray
+    char nameArray[100];         // Raw display name buffer
+    const char* name;            // Points to nameArray
+    uint nameLength;
+    uint upSignal;
+    uint downSignal;
+};
+```
+
+---
+
+### 5. Where to Add Approved/Blacklist Filtering Logic
+
+Based on my analysis, here are the key integration points:
+
+**Option A: Extend SpacecraftData (Recommended)**
+- Add `checkApproved()` method alongside `checkBlacklist()`
+- Add `spacecraftApprovedJson` DynamicJsonDocument
+- Add `populateApprovedInMemory()` private method
+- Populate from hardcoded approved list or load from flash
+
+**Option B: Extend Config System**
+- Add a `WhitelistMode` struct to `FileUtils::Config`:
+  ```cpp
+  struct WhitelistMode {
+      bool enabled;
+      // Or add an array of approved callsigns
+  };
+  ```
+- Add to `setConfigValuesFromFile()` to load approved list from config.json
+- Load via `writeConfigFileString()` or similar
+
+**Option C: Hybrid Approach**
+- Add config flag in `WifiNetwork` struct: `bool useApprovedList` (similar to `forceDummyData`)
+- Load approved list in `SpacecraftData::loadJson()` if config flag is enabled
+- Implement both blacklist AND approved checks in main.cpp decision tree
+
+**Integration in main.cpp Decision Tree (after line 2549)**:
+```cpp
+// Current blacklist check
+if (SpacecraftData::checkBlacklist(target) == true) {
+    t++;
+    continue;
+}
+
+// NEW: Add approved list check if enabled
+if (FileUtils::config.wifiNetwork.useApprovedList) {
+    if (!SpacecraftData::checkApproved(target)) {
+        t++;
+        continue;
+    }
+}
+```
+
+---
+
+### 6. Critical Information Summary
+
+| Aspect | Location | Current Status |
+|--------|----------|-----------------|
+| **Callsign lookup** | `SpacecraftData::callsignToName()` line 210 | Maps callsign → display name |
+| **Blacklist check** | `SpacecraftData::checkBlacklist()` line 242 | Returns `true` if blacklisted |
+| **Decision point** | `main.cpp` line 2549 | Blacklist filter before proceeding |
+| **Config system** | `FileUtils::config` static instance | Loaded from `/config.json` on boot |
+| **Config loading** | `setConfigValuesFromFile()` line 295 | JSON deserialization with key mapping |
+| **Config persistence** | `writeConfigFileBool/Int/String()` | Writes to `/config.json` |
+| **Approved list comment** | `XmlTestData.cpp` line 9 | References "all approved spacecraft from minipulse_list" |
+
+The system is well-architected for adding filtering logic at multiple points. The blacklist is already implemented as a separate JSON document, making it straightforward to add an approved list in parallel.
+agentId: a7cbdd0826725d7de (for resuming to continue this agent's work if needed)
+<usage>total_tokens: 81226
+tool_uses: 16
+duration_ms: 64106</usage>
+```
+</details></tool-use>
+
+_**Agent - sidechain (2026-03-02 12:15:38Z)**_
+
+I need to understand how spacecraft data flows through the codebase — specifically how callsigns are looked up, filtered, and displayed. Explore:
+
+1. **SpacecraftData class** — `lib/SpacecraftData/SpacecraftData.h` and `lib/SpacecraftData/SpacecraftData.cpp`. Focus on:
+   - All public methods and members
+   - How `spacecraftNamesJson` and `spacecraftBlacklistJson` are used
+   - How callsign lookups work (which function looks up a name from a callsign?)
+   - How blacklist filtering works (where is the blacklist checked?)
+
+2. **Callsign usage in main.cpp** — Search for where spacecraft callsigns are processed from DSN XML data:
+   - Where does the code receive a callsign from the XML/DSN data?
+   - Where does it decide whether to display a craft or skip it?
+   - Where does it look up the display name?
+
+3. **The config/settings system** — `lib/FileUtils/FileUtils.h` and `.cpp`. Look for:
+   - How config settings are structured (the `config` struct)
+   - How new settings are added and persisted
+   - Any existing examples of boolean settings being added
+
+Be thorough — I need to understand all the places callsigns flow through so I know where to add the approved/blacklist filtering logic.
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-02 12:15:39Z)**_
+
+I'll conduct a thorough exploration of how spacecraft data flows through the codebase, focusing on callsign lookup, filtering, and the configuration system. Let me start with parallel searches.
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-02 12:15:39Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./lib/SpacecraftData/SpacecraftData.h`
+
+```text
+     1→/*
+     2→    Spacecraft Data
+     3→    Created by Grant Keller, November 2022
+     4→*/
+     5→
+     6→#ifndef ARDUINO_H
+     7→#include <ArduinoJson.h>
+     8→#endif
+     9→
+    10→#ifndef FILEUTILS_H
+    11→#include <FileUtils.h>
+    12→#endif
+    13→
+    14→#ifndef DEVUTILS_H
+    15→#include <DevUtils.h>
+    16→#endif
+    17→
+    18→#ifndef SPACECRAFTDATA_H
+    19→#define SPACECRAFTDATA_H
+    20→
+    21→class SpacecraftData
+    22→{
+    23→    public:
+    24→    static void loadJson(const char* firmwareVersion);
+    25→    static const char* callsignToName(const char* key);
+    26→    static bool checkBlacklist(const char* callsign);
+    27→
+    28→    private:
+    29→    static void populateNamesInMemory();
+    30→    static void populateBlacklistInMemory();
+    31→    static bool shouldWriteFiles(const char* firmwareVersion);
+    32→    static void writeFilesToFlash(const char* firmwareVersion);
+    33→
+    34→    static DynamicJsonDocument spacecraftNamesJson;
+    35→    static DynamicJsonDocument spacecraftBlacklistJson;
+    36→};
+    37→
+    38→struct CraftQueueItem
+    39→{
+    40→    char callsignArray[40] = { 0 };
+    41→    const char* callsign = &callsignArray[0];
+    42→    char nameArray[100] = { 0 };
+    43→    const char* name = &nameArray[0];
+    44→    uint nameLength = 0;
+    45→    uint upSignal = 0;
+    46→    uint downSignal = 0;
+    47→};
+    48→
+    49→#endif
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-02 12:15:40Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./lib/SpacecraftData/SpacecraftData.cpp`
+
+```text
+     1→#include <SpacecraftData.h>
+     2→
+     3→DynamicJsonDocument SpacecraftData::spacecraftNamesJson(8192);
+     4→DynamicJsonDocument SpacecraftData::spacecraftBlacklistJson(1024);
+     5→
+     6→void SpacecraftData::loadJson(const char* firmwareVersion) {
+     7→    bool showSerial = FileUtils::config.debugUtils.showSerial;
+     8→    if (showSerial) Serial.println("Initializing spacecraft data...");
+     9→    populateNamesInMemory();
+    10→    populateBlacklistInMemory();
+    11→
+    12→    if (shouldWriteFiles(firmwareVersion)) {
+    13→        if (showSerial) Serial.println("Firmware version changed — writing spacecraft data to flash");
+    14→        writeFilesToFlash(firmwareVersion);
+    15→    } else {
+    16→        if (showSerial) Serial.println("Spacecraft data unchanged — skipping flash writes");
+    17→    }
+    18→}
+    19→
+    20→void SpacecraftData::populateNamesInMemory() {
+    21→    spacecraftNamesJson.clear();
+    22→
+    23→    // Spacecraft (alphabetical by callsign)
+    24→    spacecraftNamesJson["ACE"] = "Adv Composition Explorer";
+    25→    spacecraftNamesJson["AGM1"] = "Griffin Lander";
+    26→    spacecraftNamesJson["AIRS"] = "AIRS";
+    27→    spacecraftNamesJson["B101"] = "Blue Moon 1 SN1";
+    28→    spacecraftNamesJson["B102"] = "Blue Moon 1 SN2";
+    29→    spacecraftNamesJson["BEPI"] = "BepiColombo";
+    30→    spacecraftNamesJson["BIOS"] = "BioSentinel";
+    31→    spacecraftNamesJson["CAPS"] = "CAPSTONE";
+    32→    spacecraftNamesJson["CGO"] = "Carruthers Observatory";
+    33→    spacecraftNamesJson["CHDR"] = "Chandra Xray";
+    34→    spacecraftNamesJson["CMA"] = "Caltech Apophis";
+    35→    spacecraftNamesJson["DAVINCI"] = "DAVINCI";
+    36→    spacecraftNamesJson["DFLY"] = "Dragonfly";
+    37→    spacecraftNamesJson["DSCO"] = "DSCOVR";
+    38→    spacecraftNamesJson["EM2"] = "Artemis Orion 2";
+    39→    spacecraftNamesJson["EM3"] = "Artemis Orion 3";
+    40→    spacecraftNamesJson["EMM"] = "Emirates Mars";
+    41→    spacecraftNamesJson["ERO"] = "Earth Return Orb";
+    42→    spacecraftNamesJson["ESCB"] = "EscaPADE Blue";
+    43→    spacecraftNamesJson["ESCG"] = "EscaPADE Gold";
+    44→    spacecraftNamesJson["EUCL"] = "Euclid";
+    45→    spacecraftNamesJson["EURC"] = "Europa Clipper";
+    46→    spacecraftNamesJson["EUS1"] = "Explor Upper Stage";
+    47→    spacecraftNamesJson["GWP"] = "Lunar Gateway";
+    48→    spacecraftNamesJson["HERA"] = "Hera";
+    49→    spacecraftNamesJson["HST"] = "Hubble";
+    50→    spacecraftNamesJson["HYB2"] = "Hayabusa 2";
+    51→    spacecraftNamesJson["IM3"] = "Intuitive Mach 3";
+    52→    spacecraftNamesJson["IM4"] = "Intuitive Mach 4";
+    53→    spacecraftNamesJson["IMAP"] = "IMAP";
+    54→    spacecraftNamesJson["INTG"] = "INTEGRAL";
+    55→    spacecraftNamesJson["JNO"] = "Juno Jupiter";
+    56→    spacecraftNamesJson["JUICE"] = "JUICE";
+    57→    spacecraftNamesJson["JWST"] = "James Webb Space Telescope";
+    58→    spacecraftNamesJson["KPLO"] = "Danuri Korea";
+    59→    spacecraftNamesJson["LEMS"] = "Lunar Monitor Stn";
+    60→    spacecraftNamesJson["LEV1"] = "Lunar Excur Veh";
+    61→    spacecraftNamesJson["LRO"] = "Lunar Recon Orbiter";
+    62→    spacecraftNamesJson["LTV"] = "Lunar Terrain Veh";
+    63→    spacecraftNamesJson["LUCY"] = "Lucy";
+    64→    spacecraftNamesJson["LUPX"] = "LUPEX";
+    65→    spacecraftNamesJson["M01O"] = "Mars Odyssey";
+    66→    spacecraftNamesJson["M20"] = "Mars Perseverance";
+    67→    spacecraftNamesJson["MAX"] = "Multi Asteroid Exp";
+    68→    spacecraftNamesJson["MEX"] = "Mars Express";
+    69→    spacecraftNamesJson["MMS1"] = "Magneto MultiScale 1";
+    70→    spacecraftNamesJson["MMS2"] = "Magneto MultiScale 2";
+    71→    spacecraftNamesJson["MMS3"] = "Magneto MultiScale 3";
+    72→    spacecraftNamesJson["MMS4"] = "Magneto MultiScale 4";
+    73→    spacecraftNamesJson["MMX"] = "Martian Moons Exp";
+    74→    spacecraftNamesJson["MOM"] = "Mars Orbiter";
+    75→    spacecraftNamesJson["MRO"] = "Mars Recon Orbiter";
+    76→    spacecraftNamesJson["MSL"] = "Mars Curiosity";
+    77→    spacecraftNamesJson["MVN"] = "MAVEN";
+    78→    spacecraftNamesJson["NEOS"] = "NEO Surveyor";
+    79→    spacecraftNamesJson["NHPC"] = "New Horizons Pluto";
+    80→    spacecraftNamesJson["ORACLE-P"] = "Oracle P";
+    81→    spacecraftNamesJson["ORX"] = "OSIRIS APEX";
+    82→    spacecraftNamesJson["PLC"] = "Akatsuki";
+    83→    spacecraftNamesJson["PSYC"] = "Psyche Asteroid";
+    84→    spacecraftNamesJson["RFM"] = "Rosalind Franklin";
+    85→    spacecraftNamesJson["RLVM"] = "Rocket Lab Venus";
+    86→    spacecraftNamesJson["RST"] = "Roman Telescope";
+    87→    spacecraftNamesJson["SMAP"] = "SMAP";
+    88→    spacecraftNamesJson["SOHO"] = "Solar Heliospheric Observatory";
+    89→    spacecraftNamesJson["SOLAR"] = "SOLAR";
+    90→    spacecraftNamesJson["SOLO"] = "Solar Orbiter";
+    91→    spacecraftNamesJson["SPP"] = "Parker Solar Probe";
+    92→    spacecraftNamesJson["SRBB"] = "SunRISE Bebop";
+    93→    spacecraftNamesJson["SRED"] = "SunRISE Edward";
+    94→    spacecraftNamesJson["SREI"] = "SunRISE Ein";
+    95→    spacecraftNamesJson["SRFY"] = "SunRISE Faye";
+    96→    spacecraftNamesJson["SRJT"] = "SunRISE Jet";
+    97→    spacecraftNamesJson["SRL"] = "Sample Return Lndr";
+    98→    spacecraftNamesJson["SRSP"] = "SunRISE Spike";
+    99→    spacecraftNamesJson["STA"] = "STEREO A";
+   100→    spacecraftNamesJson["SWFO"] = "SWFO L1";
+   101→    spacecraftNamesJson["SX01"] = "Starship Uncrewed";
+   102→    spacecraftNamesJson["SX02"] = "Starship Crewed";
+   103→    spacecraftNamesJson["TESS"] = "TESS Exoplanet Survey";
+   104→    spacecraftNamesJson["TGO"] = "ExoMars TGO";
+   105→    spacecraftNamesJson["THB"] = "Themis B";
+   106→    spacecraftNamesJson["THC"] = "Themis C";
+   107→    spacecraftNamesJson["VERITAS"] = "VERITAS";
+   108→    spacecraftNamesJson["VGR1"] = "Voyager 1";
+   109→    spacecraftNamesJson["VGR2"] = "Voyager 2";
+   110→    spacecraftNamesJson["VPR"] = "VIPER";
+   111→    spacecraftNamesJson["WIND"] = "Wind";
+   112→    spacecraftNamesJson["XMM"] = "XMM Newton";
+   113→
+   114→    // Blacklist / utility (alphabetical by callsign)
+   115→    spacecraftNamesJson["ATOT"] = "Advanced Tracking and Observational Techniques";
+   116→    spacecraftNamesJson["DSSR"] = "DSN Solar System Radar";
+   117→    spacecraftNamesJson["EGS"] = "European and Global VLBI Systems";
+   118→    spacecraftNamesJson["GBRA"] = "Ground Based Radio Astronomy";
+   119→    spacecraftNamesJson["GSSR"] = "Goldstone Solar System Radar";
+   120→    spacecraftNamesJson["GVRT"] = "Goldstone Apple Valley Radio Telescope";
+   121→    spacecraftNamesJson["HCRA"] = "Host Country Radio Astronomy";
+   122→    spacecraftNamesJson["RFC"] = "Reference Frame Calibration";
+   123→    spacecraftNamesJson["SGP"] = "Space Geodesy Program";
+   124→
+   125→    // TDRS (numerical order)
+   126→    spacecraftNamesJson["TDR6"] = "TDRS 6";
+   127→    spacecraftNamesJson["TDR7"] = "TDRS 7";
+   128→    spacecraftNamesJson["TDR8"] = "TDRS 8";
+   129→    spacecraftNamesJson["TDR9"] = "TDRS 9";
+   130→    spacecraftNamesJson["TD10"] = "TDRS 10";
+   131→    spacecraftNamesJson["TD11"] = "TDRS 11";
+   132→    spacecraftNamesJson["TD12"] = "TDRS 12";
+   133→    spacecraftNamesJson["TD13"] = "TDRS 13";
+   134→
+   135→    // Test rates
+   136→    spacecraftNamesJson["Rate1"] = "Test Rate 1";
+   137→    spacecraftNamesJson["Rate2"] = "Test Rate 2";
+   138→    spacecraftNamesJson["Rate3"] = "Test Rate 3";
+   139→    spacecraftNamesJson["Rate4"] = "Test Rate 4";
+   140→    spacecraftNamesJson["Rate5"] = "Test Rate 5";
+   141→    spacecraftNamesJson["Rate6"] = "Test Rate 6";
+   142→}
+   143→
+   144→void SpacecraftData::populateBlacklistInMemory() {
+   145→    spacecraftBlacklistJson.clear();
+   146→    spacecraftBlacklistJson["DSN"] = true;
+   147→    spacecraftBlacklistJson["DSSR"] = true;
+   148→    spacecraftBlacklistJson["GO19"] = true;
+   149→    spacecraftBlacklistJson["HCRA"] = true;
+   150→    spacecraftBlacklistJson["RFC"] = true;
+   151→    spacecraftBlacklistJson["RFC(VLBI)"] = true;
+   152→    spacecraftBlacklistJson["TEST"] = true;
+   153→}
+   154→
+   155→bool SpacecraftData::shouldWriteFiles(const char* firmwareVersion) {
+   156→    File versionFile = LittleFS.open("/spacecraft_data/version.txt", "r");
+   157→    if (!versionFile) {
+   158→        return true; // File doesn't exist — first boot or fresh flash
+   159→    }
+   160→
+   161→    String storedVersion = versionFile.readStringUntil('\n');
+   162→    versionFile.close();
+   163→
+   164→    if (storedVersion.length() == 0) {
+   165→        return true; // Empty or corrupted file
+   166→    }
+   167→
+   168→    return strcmp(storedVersion.c_str(), firmwareVersion) != 0;
+   169→}
+   170→
+   171→void SpacecraftData::writeFilesToFlash(const char* firmwareVersion) {
+   172→    bool showSerial = FileUtils::config.debugUtils.showSerial;
+   173→    FileUtils::createDir("spacecraft_data");
+   174→
+   175→    // Write names.json
+   176→    File namesFile = LittleFS.open("/spacecraft_data/names.json", "w");
+   177→    if (namesFile) {
+   178→        if (serializeJson(spacecraftNamesJson, namesFile) == 0) {
+   179→            if (showSerial) Serial.print(DevUtils::termColor("red") + "Failed to write names.json" + DevUtils::termColor("reset") + "\n");
+   180→        }
+   181→        namesFile.close();
+   182→    } else {
+   183→        if (showSerial) Serial.print(DevUtils::termColor("red") + "Failed to open names.json for writing" + DevUtils::termColor("reset") + "\n");
+   184→    }
+   185→
+   186→    // Write blacklist.json
+   187→    File blacklistFile = LittleFS.open("/spacecraft_data/blacklist.json", "w");
+   188→    if (blacklistFile) {
+   189→        if (serializeJson(spacecraftBlacklistJson, blacklistFile) == 0) {
+   190→            if (showSerial) Serial.print(DevUtils::termColor("red") + "Failed to write blacklist.json" + DevUtils::termColor("reset") + "\n");
+   191→        }
+   192→        blacklistFile.close();
+   193→    } else {
+   194→        if (showSerial) Serial.print(DevUtils::termColor("red") + "Failed to open blacklist.json for writing" + DevUtils::termColor("reset") + "\n");
+   195→    }
+   196→
+   197→    // Write version marker
+   198→    File versionFile = LittleFS.open("/spacecraft_data/version.txt", "w");
+   199→    if (versionFile) {
+   200→        versionFile.print(firmwareVersion);
+   201→        versionFile.close();
+   202→    } else {
+   203→        if (showSerial) Serial.print(DevUtils::termColor("red") + "Failed to write version.txt" + DevUtils::termColor("reset") + "\n");
+   204→    }
+   205→
+   206→    if (showSerial) Serial.print(DevUtils::termColor("green") + "Spacecraft data written to flash" + DevUtils::termColor("reset") + "\n");
+   207→}
+   208→
+   209→/* Check Name */
+   210→const char* SpacecraftData::callsignToName(const char* key) {
+   211→    bool showSerial = FileUtils::config.debugUtils.showSerial;
+   212→
+   213→    if (showSerial) {
+   214→        char buffer[256];
+   215→        snprintf(
+   216→            buffer,
+   217→            sizeof(buffer),
+   218→            "%s>>> Checking names lookup for %s...%s\n",
+   219→            DevUtils::termColor("yellow"),
+   220→            key,
+   221→            DevUtils::termColor("reset")
+   222→        );
+   223→        Serial.print(buffer);
+   224→    }
+   225→
+   226→    if (spacecraftNamesJson.containsKey(key)) {
+   227→        if (showSerial)
+   228→            Serial.print(DevUtils::termColor("green") + "Found spacecraft name for " + String(key) + DevUtils::termColor("reset") + "\n");
+   229→        const char* spacecraftName = spacecraftNamesJson[key];
+   230→        return spacecraftName;
+   231→    }
+   232→
+   233→    if (showSerial) {
+   234→        Serial.print(DevUtils::termColor("red") + "Spacecraft name not found for " + String(key) + DevUtils::termColor("reset") + "\n");
+   235→    }
+   236→
+   237→    // Spacecraft name not found, return the callsign
+   238→    return key;
+   239→}
+   240→
+   241→/* Check Blacklist */
+   242→bool SpacecraftData::checkBlacklist(const char* key) {
+   243→    bool showSerial = FileUtils::config.debugUtils.showSerial;
+   244→    bool isBlacklisted = spacecraftBlacklistJson[key] != nullptr; // If the key is not null, it is blacklisted
+   245→
+   246→    if (showSerial) {
+   247→        char buffer[128];
+   248→        if (isBlacklisted) {
+   249→            snprintf(
+   250→                buffer,
+   251→                sizeof(buffer),
+   252→                "%s%s is blacklisted, skipping...%s\n",
+   253→                DevUtils::termColor("purple"),
+   254→                key,
+   255→                DevUtils::termColor("reset")
+   256→            );
+   257→            Serial.print(buffer);
+   258→        }
+   259→    }
+   260→
+   261→    return isBlacklisted;
+   262→}
+   263→
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-02 12:15:40Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./lib/FileUtils/FileUtils.h`
+
+```text
+     1→/*
+     2→    Filesystem Utilities
+     3→    Created by Grant Keller, September 2023
+     4→*/
+     5→
+     6→#ifndef ARDUINO_H
+     7→#include <Arduino.h>
+     8→#endif
+     9→
+    10→#ifndef VECTOR_H
+    11→#include <vector>
+    12→#endif
+    13→
+    14→#ifndef UTILITY_H
+    15→#include <utility>
+    16→#endif
+    17→
+    18→#ifndef LITTLEFS_H
+    19→#include <LittleFS.h>
+    20→#endif
+    21→
+    22→#ifndef JSON_H
+    23→#include <ArduinoJson.h>
+    24→#endif
+    25→
+    26→// #ifndef DEVUTILS_H
+    27→// #include <DevUtils.h>
+    28→// #endif
+    29→
+    30→#ifndef FILEUTILS_H
+    31→#define FILEUTILS_H
+    32→
+    33→class DevUtils;
+    34→
+    35→class FileUtils {
+    36→    private:
+    37→    struct DebugUtils {
+    38→        bool testCores;
+    39→        bool showSerial;
+    40→        bool diagMeasure;
+    41→        bool disableWiFi;
+    42→        bool testLEDs;
+    43→    };
+    44→
+    45→    struct WifiNetwork {
+    46→        char apSSID[32];
+    47→        char apPass[32];
+    48→        char serverName[128]; // DSN XML server URL
+    49→        bool forceDummyData;
+    50→        int retryDataFetchLimit;
+    51→    };
+    52→
+    53→    struct PinsHardware {
+    54→        int outerPin;
+    55→        int middlePin;
+    56→        int innerPin;
+    57→        int bottomPin;
+    58→        int wifiRst;
+    59→        int outputEnable;
+    60→        int potentiometer;
+    61→    };
+    62→
+    63→    struct DisplayLED {
+    64→        int brightness;
+    65→        int fps;
+    66→        int outerPixelsTotal;
+    67→        int middlePixelsTotal;
+    68→        int innerPixelsTotal;
+    69→        int bottomPixelsTotal;
+    70→        int outerChunks;
+    71→        int middleChunks;
+    72→        int innerChunks;
+    73→        int bottomChunks;
+    74→        int craftDelay;
+    75→        int displayMinDuration;
+    76→    };
+    77→
+    78→    struct TextTypography {
+    79→        int characterWidth;
+    80→        int textMeteorGap;
+    81→        int meteorOffset;
+    82→    };
+    83→
+    84→    struct TimersDelays {
+    85→        int timerDelay;
+    86→    };
+    87→
+    88→    struct Miscellaneous {
+    89→        int colorTheme;
+    90→    };
+    91→
+    92→    struct Config {
+    93→        DebugUtils debugUtils;
+    94→        WifiNetwork wifiNetwork;
+    95→        PinsHardware pinsHardware;
+    96→        DisplayLED displayLED;
+    97→        TextTypography textTypography;
+    98→        TimersDelays timersDelays;
+    99→        Miscellaneous miscellaneous;
+   100→    };
+   101→
+   102→
+   103→    public:
+   104→    static Config config;
+   105→
+   106→    static void listDir(const char* dirname, uint8_t levels);
+   107→    static void listFilesystem(const char* dirname, int8_t loop);
+   108→    static void createDir(const char* path);
+   109→    static void removeDir(const char* path);
+   110→    static void readFile(const char* path);
+   111→    static void writeFile(const char* path, const char* message);
+   112→    static void appendFile(const char* path, const char* message);
+   113→    static void renameFile(const char* path1, const char* path2);
+   114→    static void deleteFile(const char* path);
+   115→
+   116→    static bool checkConfigFileExists();
+   117→    static bool createConfigFile();
+   118→    static void initConfigFile();
+   119→    static void printAllConfigFileKeys();
+   120→    static void setConfigValuesFromFile(File configFile);
+   121→    static bool checkOrCreateConfigFile();
+   122→    static void updateDebugUtilsField(const char* key, const JsonVariant& value);
+   123→    static void updateWifiNetworkField(const char* key, const JsonVariant& value);
+   124→    static void updatePinsHardwareField(const char* key, const JsonVariant& value);
+   125→    static void updateDisplayLEDField(const char* key, const JsonVariant& value);
+   126→    static void updateTextTypographyField(const char* key, const JsonVariant& value);
+   127→    static void updateTimersDelaysField(const char* key, const JsonVariant& value);
+   128→    static void updateMiscellaneousField(const char* key, const JsonVariant& value);
+   129→    static void writeConfigFileBool(const char* key, bool value);
+   130→    static void writeConfigFileInt(const char* key, int value);
+   131→    static void writeConfigFileString(const char* key, const char* value);
+   132→};
+   133→
+   134→#endif
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-02 12:15:42Z)**_
+
+Now let me read the FileUtils.cpp file to see the configuration system implementation:
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-02 12:15:42Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./lib/FileUtils/FileUtils.cpp`
+
+```text
+     1→#include <FileUtils.h>
+     2→#include <DevUtils.h>
+     3→
+     4→
+     5→FileUtils::Config FileUtils::config = {
+     6→	{ // debugUtils
+     7→		false, // testCores
+     8→		false, // showSerial
+     9→		false, // diagMeasure
+    10→		false, // disableWiFi
+    11→		false  // testLEDs
+    12→	},
+    13→	{ // wifiNetwork
+    14→		"JPL MiniPulse", // apSSID
+    15→		"",              // apPass
+    16→		"https://eyes.nasa.gov/dsn/data/dsn.xml?r=", // serverName
+    17→		false // forceDummyData
+    18→	},
+    19→	{ // pinsHardware
+    20→		17, // outerPin
+    21→		18, // middlePin
+    22→		19, // innerPin
+    23→		16, // bottomPin
+    24→		21, // wifiRst
+    25→		22, // outputEnable
+    26→		32  // potentiometer
+    27→	},
+    28→	{ // displayLED
+    29→		127, // brightness
+    30→		60,  // fps
+    31→		800, // outerPixelsTotal
+    32→		800, // middlePixelsTotal
+    33→		960,  // innerPixelsTotal
+    34→		5,   // bottomPixelsTotal
+    35→		10,  // outerChunks
+    36→		10,  // middleChunks
+    37→		12,  // innerChunks
+    38→		1,   // bottomChunks
+    39→		8000, // craftDelay
+    40→		1000  // displayMinDuration
+    41→	},
+    42→
+    43→	{ // textTypography
+    44→		5,    // characterWidth
+    45→		4000, // textMeteorGap
+    46→		32    // meteorOffset
+    47→	},
+    48→	{ // timersDelays
+    49→		10000 // timerDelay
+    50→	},
+    51→	{ // miscellaneous
+    52→		0 // colorTheme
+    53→	}
+    54→};
+    55→
+    56→
+    57→/* General File/Folder functions */
+    58→
+    59→void FileUtils::listDir(const char* dirname, uint8_t levels) {
+    60→	Serial.printf("Listing directory: %s\r\n", dirname);
+    61→
+    62→	File root = LittleFS.open(dirname);
+    63→	if (!root) {
+    64→		Serial.println("- failed to open directory");
+    65→		return;
+    66→	}
+    67→	if (!root.isDirectory()) {
+    68→		Serial.println(" - not a directory");
+    69→		return;
+    70→	}
+    71→
+    72→	File file = root.openNextFile();
+    73→	while (file) {
+    74→		if (file.isDirectory()) {
+    75→			Serial.print("  DIR : ");
+    76→
+    77→			Serial.print(file.name());
+    78→			time_t t = file.getLastWrite();
+    79→			struct tm* tmstruct = localtime(&t);
+    80→			Serial.printf("  LAST WRITE: %d-%02d-%02d %02d:%02d:%02d\n", (tmstruct->tm_year) + 1900, (tmstruct->tm_mon) + 1, tmstruct->tm_mday, tmstruct->tm_hour, tmstruct->tm_min, tmstruct->tm_sec);
+    81→
+    82→			if (levels) {
+    83→				listDir(file.name(), levels - 1);
+    84→			}
+    85→		} else {
+    86→			Serial.print("  FILE: ");
+    87→			Serial.print(file.name());
+    88→			Serial.print("  SIZE: ");
+    89→
+    90→			Serial.print(file.size());
+    91→			time_t t = file.getLastWrite();
+    92→			struct tm* tmstruct = localtime(&t);
+    93→			Serial.printf("  LAST WRITE: %d-%02d-%02d %02d:%02d:%02d\n", (tmstruct->tm_year) + 1900, (tmstruct->tm_mon) + 1, tmstruct->tm_mday, tmstruct->tm_hour, tmstruct->tm_min, tmstruct->tm_sec);
+    94→		}
+    95→		file = root.openNextFile();
+    96→	}
+    97→}
+    98→
+    99→void FileUtils::listFilesystem(const char* dirname, int8_t loop = 0) {
+   100→	// Serial.printf("Listing directory: %s\r\n", dirname);
+   101→
+   102→	File root = LittleFS.open(dirname);
+   103→	if (!root) {
+   104→		Serial.println("- failed to open directory");
+   105→		return;
+   106→	}
+   107→	if (!root.isDirectory()) {
+   108→		Serial.println(" - not a directory");
+   109→		return;
+   110→	}
+   111→
+   112→	File file = root.openNextFile();
+   113→	while (file) {
+   114→		for (int8_t i = 0; i < loop; i++) {
+   115→			Serial.print("    ");
+   116→		}
+   117→
+   118→		Serial.print("└──");
+   119→
+   120→		if (file.isDirectory()) {
+   121→			Serial.print("/");
+   122→			Serial.print(file.name());
+   123→			time_t t = file.getLastWrite();
+   124→			struct tm* tmstruct = localtime(&t);
+   125→			Serial.printf(
+   126→				"  LAST WRITE: %d-%02d-%02d %02d:%02d:%02d\n",
+   127→				(tmstruct->tm_year) + 1900, (tmstruct->tm_mon) + 1,
+   128→				tmstruct->tm_mday, tmstruct->tm_hour,
+   129→				tmstruct->tm_min, tmstruct->tm_sec
+   130→			);
+   131→
+   132→			// Create a new path with leading '/'
+   133→			String newPath = String(dirname) + "/" + file.name();
+   134→			listFilesystem(newPath.c_str(), loop + 1);
+   135→		} else {
+   136→			Serial.print(" ");
+   137→			Serial.print(file.name());
+   138→			Serial.print("  SIZE: ");
+   139→			Serial.print(file.size());
+   140→			time_t t = file.getLastWrite();
+   141→			struct tm* tmstruct = localtime(&t);
+   142→			Serial.printf(
+   143→				"  LAST WRITE: %d-%02d-%02d %02d:%02d:%02d\n",
+   144→				(tmstruct->tm_year) + 1900, (tmstruct->tm_mon) + 1,
+   145→				tmstruct->tm_mday, tmstruct->tm_hour,
+   146→				tmstruct->tm_min, tmstruct->tm_sec
+   147→			);
+   148→		}
+   149→		file = root.openNextFile();
+   150→	}
+   151→}
+   152→
+   153→void FileUtils::createDir(const char* path) {
+   154→	bool showSerial = config.debugUtils.showSerial;
+   155→	if (showSerial) Serial.print("Free heap: " + String(ESP.getFreeHeap()) + "\n");
+   156→	if (showSerial) Serial.printf("Creating Dir: %s\n", path);
+   157→	try {
+   158→		if (LittleFS.mkdir(path)) {
+   159→			if (showSerial) Serial.println("Dir created");
+   160→		} else {
+   161→			if (showSerial) Serial.println("mkdir failed");
+   162→		}
+   163→	} catch (const std::exception& e) {
+   164→		if (showSerial) Serial.println(e.what());
+   165→	}
+   166→}
+   167→
+   168→void FileUtils::removeDir(const char* path) {
+   169→	bool showSerial = config.debugUtils.showSerial;
+   170→	if (showSerial) Serial.printf("Removing Dir: %s\n", path);
+   171→	if (LittleFS.rmdir(path)) {
+   172→		if (showSerial) Serial.println("Dir removed");
+   173→	} else {
+   174→		if (showSerial) Serial.println("rmdir failed");
+   175→	}
+   176→}
+   177→
+   178→void FileUtils::readFile(const char* path) {
+   179→	bool showSerial = config.debugUtils.showSerial;
+   180→	if (showSerial) Serial.printf("Reading file: %s\r\n", path);
+   181→
+   182→	File file = LittleFS.open(path);
+   183→	if (!file || file.isDirectory()) {
+   184→		if (showSerial) Serial.println("- failed to open file for reading");
+   185→		return;
+   186→	}
+   187→
+   188→	if (showSerial) {
+   189→		Serial.println("- read from file:");
+   190→		while (file.available()) {
+   191→			Serial.write(file.read());
+   192→		}
+   193→	}
+   194→	file.close();
+   195→}
+   196→
+   197→void FileUtils::writeFile(const char* path, const char* message) {
+   198→	bool showSerial = config.debugUtils.showSerial;
+   199→	if (showSerial) Serial.printf("Writing file: %s\r\n", path);
+   200→
+   201→	File file = LittleFS.open(path, FILE_WRITE);
+   202→	if (!file) {
+   203→		if (showSerial) Serial.println("- failed to open file for writing");
+   204→		return;
+   205→	}
+   206→	if (file.print(message)) {
+   207→		if (showSerial) Serial.println("- file written");
+   208→	} else {
+   209→		if (showSerial) Serial.println("- write failed");
+   210→	}
+   211→	file.close();
+   212→}
+   213→
+   214→void FileUtils::appendFile(const char* path, const char* message) {
+   215→	bool showSerial = config.debugUtils.showSerial;
+   216→	if (showSerial) Serial.printf("Appending to file: %s\r\n", path);
+   217→
+   218→	File file = LittleFS.open(path, FILE_APPEND);
+   219→	if (!file) {
+   220→		if (showSerial) Serial.println("- failed to open file for appending");
+   221→		return;
+   222→	}
+   223→	if (file.print(message)) {
+   224→		if (showSerial) Serial.println("- message appended");
+   225→	} else {
+   226→		if (showSerial) Serial.println("- append failed");
+   227→	}
+   228→	file.close();
+   229→}
+   230→
+   231→void FileUtils::renameFile(const char* path1, const char* path2) {
+   232→	bool showSerial = config.debugUtils.showSerial;
+   233→	if (showSerial) Serial.printf("Renaming file %s to %s\r\n", path1, path2);
+   234→	if (LittleFS.rename(path1, path2)) {
+   235→		if (showSerial) Serial.println("- file renamed");
+   236→	} else {
+   237→		if (showSerial) Serial.println("- rename failed");
+   238→	}
+   239→}
+   240→
+   241→void FileUtils::deleteFile(const char* path) {
+   242→	bool showSerial = config.debugUtils.showSerial;
+   243→	if (showSerial) Serial.printf("Deleting file: %s\r\n", path);
+   244→	if (LittleFS.remove(path)) {
+   245→		if (showSerial) Serial.println("- file deleted");
+   246→	} else {
+   247→		if (showSerial) Serial.println("- delete failed");
+   248→	}
+   249→}
+   250→
+   251→
+   252→
+   253→
+   254→/* Config file functions */
+   255→void FileUtils::initConfigFile() {
+   256→	Serial.println("Initializing config file... ");
+   257→	bool fileInitSuccess = FileUtils::checkOrCreateConfigFile();
+   258→	if (!fileInitSuccess) {
+   259→		Serial.println("Failed checking and creating config file");
+   260→		return;
+   261→	}
+   262→
+   263→	File configFile = LittleFS.open("/config.json", "r");
+   264→	setConfigValuesFromFile(configFile);
+   265→}
+   266→
+   267→bool FileUtils::checkConfigFileExists() {
+   268→	bool fileExists = LittleFS.exists("/config.json");
+   269→	return fileExists;
+   270→}
+   271→
+   272→bool FileUtils::createConfigFile() {
+   273→	File configFile = LittleFS.open("/config.json", "w");
+   274→	if (!configFile) {
+   275→		Serial.println("Failed to create file");
+   276→		return false;
+   277→	} else {
+   278→		configFile.print("{}");
+   279→		configFile.flush();
+   280→		configFile.close();
+   281→		return true;
+   282→	}
+   283→}
+   284→
+   285→bool FileUtils::checkOrCreateConfigFile() {
+   286→	if (!checkConfigFileExists()) {
+   287→		Serial.println("Config file does not exist, creating...");
+   288→		return createConfigFile();
+   289→	} else {
+   290→		Serial.println("Config file found");
+   291→		return true;
+   292→	}
+   293→}
+   294→
+   295→void FileUtils::setConfigValuesFromFile(File configFile) {
+   296→	Serial.println("Setting config values from file...");
+   297→	// File configFile = LittleFS.open("/config.json", "r");
+   298→	if (!configFile) {
+   299→		Serial.println("Failed to open config file for reading");
+   300→		return;
+   301→	}
+   302→
+   303→	StaticJsonDocument<1024> doc;
+   304→	DeserializationError error = deserializeJson(doc, configFile);
+   305→	if (error) {
+   306→		Serial.println("Failed to parse config file");
+   307→		return;
+   308→	}
+   309→
+   310→	configFile.close();
+   311→
+   312→	for (JsonPair kv : doc.as<JsonObject>()) {
+   313→		Serial.print(kv.key().c_str() + String(": ") + kv.value().as<String>() + String("\n"));
+   314→		if (kv.key() == "showSerial") {
+   315→			FileUtils::config.debugUtils.showSerial = kv.value().as<bool>();
+   316→		} else if (kv.key() == "diagMeasure") {
+   317→			FileUtils::config.debugUtils.diagMeasure = kv.value().as<int>();
+   318→		} else if (kv.key() == "brightness") {
+   319→			FileUtils::config.displayLED.brightness = kv.value().as<int>();
+   320→		}
+   321→	}
+   322→}
+   323→
+   324→void FileUtils::printAllConfigFileKeys() {
+   325→	if (!config.debugUtils.showSerial) return;
+   326→
+   327→	File configFile = LittleFS.open("/config.json", "r");
+   328→	if (!configFile) {
+   329→		Serial.println("Failed to open config file for reading");
+   330→		return;
+   331→	}
+   332→
+   333→	StaticJsonDocument<1024> doc;
+   334→	DeserializationError error = deserializeJson(doc, configFile);
+   335→	if (error) {
+   336→		Serial.println("Failed to parse config file");
+   337→		return;
+   338→	}
+   339→
+   340→	configFile.close();
+   341→
+   342→	Serial.print("\n");
+   343→	Serial.print("┌────────────────────────────────┐\n");
+   344→	Serial.print("│        CONFIG FILE KEYS        │\n");
+   345→	Serial.print("└────────────────────────────────┘\n");
+   346→
+   347→
+   348→	for (JsonPair kv : doc.as<JsonObject>()) {
+   349→		Serial.print(kv.key().c_str() + String(": ") + kv.value().as<String>() + String("\n"));
+   350→	}
+   351→}
+   352→
+   353→
+   354→/* Update/Write values to config */
+   355→
+   356→void FileUtils::updateDebugUtilsField(const char* key, const JsonVariant& value) {
+   357→	bool showSerial = config.debugUtils.showSerial;
+   358→	if (showSerial) Serial.print("Updating debug utils field - " + String(key) + ": " + String(value.as<bool>()));
+   359→
+   360→	if (strcmp(key, "testCores") == 0) {
+   361→		config.debugUtils.testCores = value;
+   362→	} else if (strcmp(key, "showSerial") == 0) {
+   363→		config.debugUtils.showSerial = value;
+   364→	} else if (strcmp(key, "diagMeasure") == 0) {
+   365→		config.debugUtils.diagMeasure = value;
+   366→	} else if (strcmp(key, "disableWiFi") == 0) {
+   367→		config.debugUtils.disableWiFi = value;
+   368→	} else if (strcmp(key, "testLEDs") == 0) {
+   369→		config.debugUtils.testLEDs = value;
+   370→	} else {
+   371→		if (showSerial) Serial.println("Key not found in DebugUtils struct");
+   372→	}
+   373→}
+   374→
+   375→void FileUtils::updateWifiNetworkField(const char* key, const JsonVariant& value) {
+   376→	if (strcmp(key, "apSSID") == 0) {
+   377→		strlcpy(config.wifiNetwork.apSSID, value, sizeof(config.wifiNetwork.apSSID));
+   378→	} else if (strcmp(key, "apPass") == 0) {
+   379→		strlcpy(config.wifiNetwork.apPass, value, sizeof(config.wifiNetwork.apPass));
+   380→	} else if (strcmp(key, "serverName") == 0) {
+   381→		strlcpy(config.wifiNetwork.serverName, value, sizeof(config.wifiNetwork.serverName));
+   382→	} else if (strcmp(key, "forceDummyData") == 0) {
+   383→		config.wifiNetwork.forceDummyData = value;
+   384→	} else if (strcmp(key, "retryDataFetchLimit") == 0) {
+   385→		config.wifiNetwork.retryDataFetchLimit = value;
+   386→	} else {
+   387→		if (config.debugUtils.showSerial) Serial.println("Key not found in WifiNetwork struct");
+   388→	}
+   389→}
+   390→
+   391→void FileUtils::updatePinsHardwareField(const char* key, const JsonVariant& value) {
+   392→	if (strcmp(key, "outerPin") == 0) {
+   393→		config.pinsHardware.outerPin = value;
+   394→	} else if (strcmp(key, "middlePin") == 0) {
+   395→		config.pinsHardware.middlePin = value;
+   396→	} else if (strcmp(key, "innerPin") == 0) {
+   397→		config.pinsHardware.innerPin = value;
+   398→	} else if (strcmp(key, "bottomPin") == 0) {
+   399→		config.pinsHardware.bottomPin = value;
+   400→	} else if (strcmp(key, "wifiRst") == 0) {
+   401→		config.pinsHardware.wifiRst = value;
+   402→	} else if (strcmp(key, "outputEnable") == 0) {
+   403→		config.pinsHardware.outputEnable = value;
+   404→	} else if (strcmp(key, "potentiometer") == 0) {
+   405→		config.pinsHardware.potentiometer = value;
+   406→	} else {
+   407→		if (config.debugUtils.showSerial) Serial.println("Key not found in PinsHardware struct");
+   408→	}
+   409→}
+   410→
+   411→// Function to update DisplayLED fields
+   412→void FileUtils::updateDisplayLEDField(const char* key, const JsonVariant& value) {
+   413→	if (strcmp(key, "brightness") == 0) {
+   414→		config.displayLED.brightness = value;
+   415→	} else if (strcmp(key, "fps") == 0) {
+   416→		config.displayLED.fps = value;
+   417→	} else if (strcmp(key, "outerPixelsTotal") == 0) {
+   418→		config.displayLED.outerPixelsTotal = value;
+   419→	} else if (strcmp(key, "middlePixelsTotal") == 0) {
+   420→		config.displayLED.middlePixelsTotal = value;
+   421→	} else if (strcmp(key, "innerPixelsTotal") == 0) {
+   422→		config.displayLED.innerPixelsTotal = value;
+   423→	} else if (strcmp(key, "bottomPixelsTotal") == 0) {
+   424→		config.displayLED.bottomPixelsTotal = value;
+   425→	} else if (strcmp(key, "outerChunks") == 0) {
+   426→		config.displayLED.outerChunks = value;
+   427→	} else if (strcmp(key, "middleChunks") == 0) {
+   428→		config.displayLED.middleChunks = value;
+   429→	} else if (strcmp(key, "innerChunks") == 0) {
+   430→		config.displayLED.innerChunks = value;
+   431→	} else if (strcmp(key, "bottomChunks") == 0) {
+   432→		config.displayLED.bottomChunks = value;
+   433→	} else if (strcmp(key, "craftDelay") == 0) {
+   434→		config.displayLED.craftDelay = value;
+   435→	} else if (strcmp(key, "displayMinDuration") == 0) {
+   436→		config.displayLED.displayMinDuration = value;
+   437→	} else {
+   438→		if (config.debugUtils.showSerial) Serial.println("Key not found in DisplayLED struct");
+   439→	}
+   440→}
+   441→
+   442→// Function to update TextTypography fields
+   443→void FileUtils::updateTextTypographyField(const char* key, const JsonVariant& value) {
+   444→	if (strcmp(key, "characterWidth") == 0) {
+   445→		config.textTypography.characterWidth = value;
+   446→	} else if (strcmp(key, "textMeteorGap") == 0) {
+   447→		config.textTypography.textMeteorGap = value;
+   448→	} else if (strcmp(key, "meteorOffset") == 0) {
+   449→		config.textTypography.meteorOffset = value;
+   450→	} else {
+   451→		if (config.debugUtils.showSerial) Serial.println("Key not found in TextTypography struct");
+   452→	}
+   453→}
+   454→
+   455→// Function to update TimersDelays fields
+   456→void FileUtils::updateTimersDelaysField(const char* key, const JsonVariant& value) {
+   457→	if (strcmp(key, "timerDelay") == 0) {
+   458→		config.timersDelays.timerDelay = value;
+   459→	} else {
+   460→		if (config.debugUtils.showSerial) Serial.println("Key not found in TimersDelays struct");
+   461→	}
+   462→}
+   463→
+   464→// Function to update Miscellaneous fields
+   465→void FileUtils::updateMiscellaneousField(const char* key, const JsonVariant& value) {
+   466→	if (strcmp(key, "colorTheme") == 0) {
+   467→		config.miscellaneous.colorTheme = value;
+   468→	} else {
+   469→		if (config.debugUtils.showSerial) Serial.println("Key not found in Miscellaneous struct");
+   470→	}
+   471→}
+   472→
+   473→void FileUtils::writeConfigFileBool(const char* key, bool value) {
+   474→	bool showSerial = config.debugUtils.showSerial;
+   475→	File configFile = LittleFS.open("/config.json", "r+");
+   476→	if (!configFile) {
+   477→		if (showSerial) Serial.println("Failed to open config file for reading");
+   478→		return;
+   479→	}
+   480→
+   481→	StaticJsonDocument<1024> doc;
+   482→	DeserializationError error = deserializeJson(doc, configFile);
+   483→	if (error) {
+   484→		if (showSerial) Serial.println("Failed to parse config file");
+   485→		return;
+   486→	}
+   487→
+   488→	configFile.close();
+   489→
+   490→	doc[key] = value;
+   491→
+   492→	configFile = LittleFS.open("/config.json", "w");
+   493→	if (!configFile) {
+   494→		if (showSerial) Serial.println("Failed to open config file for writing");
+   495→		return;
+   496→	}
+   497→
+   498→	serializeJson(doc, configFile);
+   499→	configFile.close();
+   500→
+   501→	String stringValue = value ? "true" : "false";
+   502→	if (showSerial) Serial.println("Config key " + String(key) + " set to " + stringValue);
+   503→}
+   504→
+   505→void FileUtils::writeConfigFileInt(const char* key, int value) {
+   506→	bool showSerial = config.debugUtils.showSerial;
+   507→	if (!checkConfigFileExists()) {
+   508→		if (showSerial) Serial.println("Config file does not exist");
+   509→	} else {
+   510→		if (showSerial) Serial.println("Config file found");
+   511→	}
+   512→	File configFile = LittleFS.open("/config.json", "r+");
+   513→	if (!configFile) {
+   514→		if (showSerial) Serial.println("Failed to open config file for reading");
+   515→		return;
+   516→	}
+   517→
+   518→	StaticJsonDocument<1024> doc;
+   519→	DeserializationError error = deserializeJson(doc, configFile);
+   520→	if (error) {
+   521→		if (showSerial) Serial.println("Failed to parse config file");
+   522→		return;
+   523→	}
+   524→
+   525→	configFile.close();
+   526→
+   527→	doc[key] = value; // Update file value
+   528→
+   529→	configFile = LittleFS.open("/config.json", "w");
+   530→	if (!configFile) {
+   531→		if (showSerial) Serial.println("Failed to open config file for writing");
+   532→		return;
+   533→	}
+   534→
+   535→	if (serializeJson(doc, configFile) == 0) {
+   536→		if (showSerial) Serial.println("Failed to write to config file");
+   537→		return;
+   538→	}
+   539→
+   540→	configFile.flush(); // Flush file to write
+   541→	configFile.close(); // Close file
+   542→
+   543→	if (showSerial) Serial.println("CONFIG FILE saved: " + String(key) + " == " + String(value));
+   544→}
+   545→
+   546→void FileUtils::writeConfigFileString(const char* key, const char* value) {
+   547→	bool showSerial = config.debugUtils.showSerial;
+   548→	File configFile = LittleFS.open("/config.json", "r+");
+   549→	if (!configFile) {
+   550→		if (showSerial) Serial.println("Failed to open config file for reading");
+   551→		return;
+   552→	}
+   553→
+   554→	StaticJsonDocument<1024> doc;
+   555→	DeserializationError error = deserializeJson(doc, configFile);
+   556→	if (error) {
+   557→		if (showSerial) Serial.println("Failed to parse config file");
+   558→		return;
+   559→	}
+   560→
+   561→	configFile.close();
+   562→
+   563→	doc[key] = value;
+   564→
+   565→	configFile = LittleFS.open("/config.json", "w");
+   566→	if (!configFile) {
+   567→		if (showSerial) Serial.println("Failed to open config file for writing");
+   568→		return;
+   569→	}
+   570→
+   571→	serializeJson(doc, configFile);
+   572→	configFile.close();
+   573→
+   574→	if (showSerial) Serial.println("Config key " + String(key) + " set to " + String(value));
+   575→}
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-02 12:15:43Z)**_
+
+Now let me search for where callsigns are processed in main.cpp:
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-02 12:15:44Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+
+`find /Users/grant/code/JPL-MiniPulse -name "main.cpp" -o -name "main.ino"`
+
+```text
+/Users/grant/code/JPL-MiniPulse/src/main.cpp
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-02 12:15:59Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+File content (29074 tokens) exceeds maximum allowed tokens (25000). Please use offset and limit parameters to read specific portions of the file, or use the GrepTool to search for specific content.
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-02 12:16:00Z)**_
+
+Let me search for the specific callsign processing code in main.cpp:
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-02 12:16:01Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Grep"><details>
+<summary>Tool use: **Grep**</summary>
+ path `./src/main.cpp` pattern `callsignToName|checkBlacklist|callsign`
+
+```text
+570-	printString += "\n------------------------------\n";
+571-
+572-	Serial.println(printString);
+573-}
+574-
+575:void printCraftInfo(uint listPosition, const char* callsign, const char* name, uint nameLength, uint downSignal, uint upSignal)
+576-{
+577-	if (!FileUtils::config.debugUtils.showSerial) return;
+578-
+579-	char buffer[256];
+580:	if (callsign == nullptr || name == nullptr) {
+581-		snprintf(
+582-			buffer,
+583-			sizeof(buffer),
+584-			"ITEM #%u: Invalid\n",
+585-			listPosition
+--
+591-	int written = snprintf(
+592-		buffer,
+593-		sizeof(buffer),
+594-		"ITEM #%u: (%s) %s [%u] [↓ Sig Dn: %u] [↑ Sig Up: %u]\n",
+595-		listPosition,
+596:		callsign,
+597-		name,
+598-		nameLength,
+599-		downSignal,
+600-		upSignal
+601-	);
+--
+604-	} else {
+605-		Serial.print("ITEM #E: Invalid\n");
+606-	}
+607-}
+608-
+609:String returnCraftInfo(uint listPosition, const char* callsign, const char* name, uint nameLength, uint downSignal, uint upSignal)
+610-{
+611:	if (callsign == nullptr) {
+612:		callsign = "NULL";
+613-	}
+614-	if (name == nullptr) {
+615-		name = "NULL";
+616-	}
+617-
+618-	char buffer[256];
+619-	snprintf(buffer, sizeof(buffer), "ITEM #%u: (%s) %s [%u] [↓ Sig Dn: %u] [↑ Sig Up: %u]\n",
+620:		listPosition, callsign, name, nameLength, downSignal, upSignal);
+621-	return String(buffer);
+622-}
+623-
+624-void printCurrentQueue(QueueHandle_t queue) {
+625-	if (!FileUtils::config.debugUtils.showSerial) return;
+--
+648-		CraftQueueItem* tempBuffer = &theTempBuffer;
+649-
+650-		int queueCount = uxQueueMessagesWaiting(queue);
+651-		for (int i = 0; i < queueCount; i++) {
+652-			if (xQueueReceive(queue, &tempBuffer, (TickType_t)10)) {
+653:				String craftInfo = returnCraftInfo(i, tempBuffer->callsign, tempBuffer->name, tempBuffer->nameLength, tempBuffer->downSignal, tempBuffer->upSignal);
+654-				strncat(buffer, craftInfo.c_str(), sizeof(buffer) - strlen(buffer) - 1);
+655-
+656-				if (!xQueueSend(tempQueue, &tempBuffer, (TickType_t)10)) {
+657-					Serial.println("Error: Could not send data to the temporary queue.");
+658-					// Handle error as necessary, maybe break out of the loop
+--
+689-
+690-	Serial.print(
+691-		DevUtils::termColor("blue") +
+692-		"============= CURRENT DATA BUFFER =============" + DevUtils::termColor("reset") +
+693-		"\n");
+694:	printCraftInfo(0, currentCraftBuffer.callsign, currentCraftBuffer.name, currentCraftBuffer.nameLength, currentCraftBuffer.downSignal, currentCraftBuffer.upSignal);
+695-	Serial.print(
+696-		DevUtils::termColor("blue") + "===============================================" + DevUtils::termColor("reset") + "\n\n");
+697-}
+698-
+699-void printSemaphoreList() {
+--
+713-			Serial.print(
+714-				marker +
+715-				"[" +
+716-				String(i) +
+717-				"] " +
+718:				String(freeList[i]->callsignArray) +
+719-				"\n");
+720-		}
+721-		Serial.print("\n");
+722-	}
+723-}
+--
+739-		snprintf(
+740-			semaphoreStatusMessage,
+741-			sizeof(semaphoreStatusMessage),
+742-			"%sSemaphore freed: %s [%d/%d]%s\n",
+743-			DevUtils::termColor("green"),
+744:			String(infoBuffer->callsignArray).c_str(),
+745-			freeListTop + 1,
+746-			MAX_ITEMS,
+747-			DevUtils::termColor("reset")
+748-		);
+749-		if (FileUtils::config.debugUtils.showSerial) Serial.print(semaphoreStatusMessage);
+--
+2091-
+2092-	FoundSignals foundSignals = { 0, 0 };
+2093-
+2094-	if (FileUtils::config.debugUtils.showSerial == true) {
+2095-		char buffer[256];
+2096:		snprintf(buffer, sizeof(buffer), "%s>>> Finding signals for %s%s\n", DevUtils::termColor("yellow"), tempNewCraft->callsign, DevUtils::termColor("reset"));
+2097-		Serial.print(buffer);
+2098-	}
+2099-
+2100-	// Loop through XML signal elements and find the one that matches the target
+2101-	for (XMLElement* xmlSignal = xmlDish->FirstChildElement(); xmlSignal != NULL; xmlSignal = xmlSignal->NextSiblingElement()) {
+--
+2137-		/ Serial.println("signalType: " + String(signalType));
+2138-
+2139-
+2140-		if (strcmp(signalType, "data") != 0) continue;
+2141-
+2142:		if (strcmp(spacecraft, tempNewCraft->callsign) != 0) continue;
+2143-
+2144-
+2145-		/ For up signals: binary detection (medium animation if data type found)
+2146-		if (!isDown) {
+2147-			tempNewCraft->upSignal = UP_SIGNAL_RATE_CLASS;
+--
+2176-	if (tempNewCraft->downSignal == 0 && tempNewCraft->upSignal == 0) {
+2177-		if (FileUtils::config.debugUtils.showSerial == true)
+2178-			Serial.print(
+2179-				DevUtils::termColor("red") +
+2180-				"No signals found for " +
+2181:				String(tempNewCraft->callsign) +
+2182-				DevUtils::termColor("reset") +
+2183-				"\n");
+2184-	}
+2185-
+2186-	return foundSignals;
+--
+2194-			Serial.print(
+2195-				"\n" +
+2196-				DevUtils::termColor("yellow") +
+2197-				">>--------=> Sending to queue >>--------=>" + DevUtils::termColor("reset") +
+2198-				"\n");
+2199:			printCraftInfo(0, newCraft->callsign, newCraft->name, newCraft->nameLength, newCraft->downSignal, newCraft->upSignal);
+2200-			Serial.print(
+2201-				DevUtils::termColor("yellow") + "----------------------------------------" + DevUtils::termColor("reset") +
+2202-				"\n");
+2203-		}
+2204-
+--
+2207-			if (xQueueSend(queue, &newCraft, 100) == pdPASS) {
+2208-				if (FileUtils::config.debugUtils.showSerial == true) {
+2209-					Serial.print(
+2210-						DevUtils::termColor("green") +
+2211-						"[+] " +
+2212:						String(newCraft->callsign) +
+2213-						" added to queue" +
+2214-						DevUtils::termColor("reset") +
+2215-						"\n\n");
+2216-				}
+2217-			} else {
+--
+2220-					snprintf(
+2221-						failedAddingQueueBuffer,
+2222-						sizeof(failedAddingQueueBuffer),
+2223-						"%s[-] %s Failed to add to queue%s\n\n",
+2224-						DevUtils::termColor("red"),
+2225:						newCraft->callsign,
+2226-						DevUtils::termColor("reset")
+2227-					);
+2228-					Serial.print(failedAddingQueueBuffer);
+2229-				}
+2230-			}
+--
+2265-	if (freeList[freeListTop] != nullptr) {
+2266-		newCraft = freeList[freeListTop];
+2267-		freeList[freeListTop] = nullptr;
+2268-		freeListTop--;
+2269-
+2270:		// Copy callsign
+2271:		strlcpy(newCraft->callsignArray, tempNewCraft->callsignArray, sizeof(newCraft->callsignArray));
+2272:		newCraft->callsign = newCraft->callsignArray;
+2273-
+2274-		// Copy name
+2275-		strlcpy(newCraft->nameArray, tempNewCraft->nameArray, sizeof(newCraft->nameArray));
+2276-		newCraft->name = newCraft->nameArray;
+2277-
+--
+2287-
+2288-	return newCraft;
+2289-}
+2290-
+2291-bool isValidCraftQueueItem(CraftQueueItem* item) {
+2292:	// Check if callsign and name are not empty
+2293:	if (strlen(item->callsignArray) == 0 || strlen(item->nameArray) == 0) {
+2294-		return false;
+2295-	}
+2296-
+2297-	// Check if nameLength matches the actual length of the name in nameArray
+2298-	if (item->nameLength != strlen(item->nameArray)) {
+--
+2532-									t++;
+2533-									continue;
+2534-								}
+2535-
+2536-								size_t targetLength = strlen(target);
+2537:								if (targetLength >= sizeof(tempNewCraft.callsignArray)) {
+2538-									if (showSerial == true) {
+2539-										Serial.print(DevUtils::termColor("red"));
+2540-										Serial.println("Error: target length exceeds buffer size");
+2541-										Serial.println(DevUtils::termColor("reset"));
+2542-									}
+--
+2544-									continue;
+2545-								}
+2546-
+2547-								/* Check Blacklist */
+2548-								feedWatchdog();
+2549:								if (SpacecraftData::checkBlacklist(target) == true) {
+2550-									// if (showSerial == true)
+2551-									/ 	Serial.print(DevUtils::termColor("red") + "Blacklisted target, skipping..." + DevUtils::termColor("reset") + "\n");
+2552-									vTaskDelay(pdMS_TO_TICKS(100)); // Delay to allow other tasks to run
+2553-									t++;
+2554-									continue;
+2555-								}
+2556-
+2557-								/* Get the craft name to compare in finding signal */
+2558:								int callsignArrayLength = sizeof(CraftQueueItem::callsignArray);
+2559:								size_t result = strlcpy(tempNewCraft.callsignArray, target, callsignArrayLength);
+2560-
+2561:								if (result >= callsignArrayLength) {
+2562-									if (showSerial == true) {
+2563-										Serial.print(DevUtils::termColor("red"));
+2564:										Serial.print("Problem copying callsign to tempNewCraft.callsignArray: truncated copy");
+2565-										Serial.print(DevUtils::termColor("reset") + "\n");
+2566-									}
+2567-									t++;
+2568-									continue;
+2569-								}
+2570:								tempNewCraft.callsign = tempNewCraft.callsignArray; // Set the callsign
+2571-
+2572-								feedWatchdog();
+2573:								const char* name = SpacecraftData::callsignToName(target);
+2574-
+2575-								if (name == nullptr) {
+2576-									if (showSerial == true)
+2577-										Serial.print(
+2578-											DevUtils::termColor("red") +
+--
+2614-								if (showSerial == true) {
+2615-									char validatedBuffer[256];
+2616-									snprintf(
+2617-										validatedBuffer,
+2618-										sizeof(validatedBuffer),
+2619:										"%sValidated: (%s) %s%s\n", DevUtils::termColor("green"), tempNewCraft.callsign,
+2620-										name, DevUtils::termColor("reset")
+2621-									);
+2622-									Serial.print(validatedBuffer);
+2623-								}
+2624-
+--
+2632-								if (foundSignals.downSignal == 0 && foundSignals.upSignal == 0) {
+2633-									// if (showSerial == true)
+2634-									// 	Serial.print(
+2635-									/ 		DevUtils::termColor("red") +
+2636-									// 		"No signals found for " +
+2637:									// 		String(tempNewCraft.callsign) +
+2638-									/ 		DevUtils::termColor("reset") +
+2639-									// 		"\n");
+2640-									t++;
+2641-									continue;
+2642-								} else {
+--
+2648-								/** TARGET HAS BEEN FULLY VALIDATED
+2649-								 * We hav all of the info needed for this new craft
+2650-								 * **/
+2651-								 // if (showSerial == true) {
+2652-								 // 	Serial.print("======== TEMP NEW CRAFT ========\n");
+2653:								 // 	Serial.print("callsign: " + String(tempNewCraft.callsign) + "\n");
+2654-								 / 	Serial.print("name: " + String(tempNewCraft.name) + "\n");
+2655-								 / 	Serial.print("nameLength: " + String(tempNewCraft.nameLength) + "\n");
+2656-								 / 	Serial.print("downSignal: " + String(tempNewCraft.downSignal) + "\n");
+2657-								 / 	Serial.print("upSignal: " + String(tempNewCraft.upSignal) + "\n");
+2658-								 // 	Serial.print("================================\n");
+--
+2661-								if (showSerial) {
+2662-									char validatedBuffer[256];
+2663-									snprintf(
+2664-										validatedBuffer,
+2665-										sizeof(validatedBuffer),
+2666:										"%sValidated: (%s) %s%s\n", DevUtils::termColor("green"), tempNewCraft.callsign, name, DevUtils::termColor("reset")
+2667-									);
+2668-									Serial.print(validatedBuffer);
+2669-								}
+2670-
+2671-
+--
+3526-						"───│          RETRIEVE QUEUE        │───\n",
+3527-						"   └────────────────────────────────┘   \n"
+3528-					);
+3529-					printCurrentQueue(queue);
+3530-
+3531:					// printCraftInfo(0, infoBuffer->callsign, infoBuffer->name, infoBuffer->nameLength, infoBuffer->downSignal, infoBuffer->upSignal);
+3532-					// Serial.println("--------------------------------------------\n\n");
+3533-				}
+3534-
+3535-				// Copy data from queue to buffer
+3536-				if (infoBuffer && infoBuffer->name && strlen(infoBuffer->name) > 0) {
+3537:					strncpy(currentCraftBuffer.callsignArray, infoBuffer->callsignArray, sizeof(currentCraftBuffer.callsignArray) - 1);
+3538:					currentCraftBuffer.callsignArray[sizeof(currentCraftBuffer.callsignArray) - 1] = '\0'; // Ensure null-termination
+3539-
+3540-					strncpy(currentCraftBuffer.nameArray, infoBuffer->nameArray, sizeof(currentCraftBuffer.nameArray) - 1);
+3541-					currentCraftBuffer.nameArray[sizeof(currentCraftBuffer.nameArray) - 1] = '\0'; // Ensure null-termination
+3542-
+3543-					currentCraftBuffer.nameLength = infoBuffer->nameLength;
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-02 12:16:02Z)**_
+
+Now let me search for where XML data comes in and where the target/callsign is extracted:
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-02 12:16:04Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Grep"><details>
+<summary>Tool use: **Grep**</summary>
+ path `./src/main.cpp` pattern `XMLElement.*target|FirstChildElement|GetText.*target|xmlTarget|targetElement`
+
+```text
+2097-		Serial.print(buffer);
+2098-	}
+2099-
+2100-	// Loop through XML signal elements and find the one that matches the target
+2101:	for (XMLElement* xmlSignal = xmlDish->FirstChildElement(); xmlSignal != NULL; xmlSignal = xmlSignal->NextSiblingElement()) {
+2102-		feedWatchdog();
+2103-		if (xmlDish == nullptr) continue; // Error finding next element
+2104-
+2105-		const char* elValue = xmlSignal->Value();
+--
+2386-			dev.handleException();
+2387-		}
+2388-		return;
+2389-	}
+2390:	XMLElement* timestamp = root->FirstChildElement("timestamp");
+2391-
+2392-
+2393-	/* Phase 1 — Brief lock: check pool availability (microseconds) */
+2394-	CraftQueueItem tempNewCraft = {};
+--
+2425-					Serial.print("\n───────────────────────────────────────────────────────────────────\n\n");
+2426-				}
+2427-				try {
+2428-					int s = 0; // Create station elements counter
+2429:					for (XMLElement* xmlStation = root->FirstChildElement("station"); true; xmlStation = xmlStation->NextSiblingElement("station")) {
+2430-						feedWatchdog();
+2431-						vTaskDelay(pdMS_TO_TICKS(100)); // Slow the station loop
+2432-
+2433-						// if (showSerial == true)
+--
+2488-
+2489-							bool goToNextDish = false;
+2490-							int t = 0; // Create target elements counter
+2491-
+2492:							for (XMLElement* xmlTarget = xmlDish->FirstChildElement("target"); true; xmlTarget = xmlTarget->NextSiblingElement("target")) {
+2493-								feedWatchdog();
+2494-								vTaskDelay(pdMS_TO_TICKS(100)); // Slow the target loop
+2495-
+2496-								// if (showSerial == true)
+2497-								/ 	Serial.print("      └── targetCount: " + String(targetCount) + " | t: " + String(t) + "\n");
+2498-
+2499:								if (xmlTarget == NULL) {
+2500-									// if (showSerial == true)
+2501:									// 	Serial.print("                xmlTarget == NULL\n");
+2502-									goToNextDish = true;
+2503-									break;
+2504-								}
+2505-
+--
+2524-								// 		"\n"
+2525-								// 	);
+2526-
+2527-
+2528:								const char* target = xmlTarget->Attribute("name"); // Get target name
+2529-
+2530-								// Validate target name
+2531-								if (target == nullptr) {
+2532-									t++;
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-02 12:16:05Z)**_
+
+Perfect! Now let me search for additional context around the decision tree for processing targets:
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-02 12:16:06Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Grep"><details>
+<summary>Tool use: **Grep**</summary>
+ path `./src/main.cpp` pattern `xmlTarget->Attribute|const char\* target|xmlTarget->FirstChildElement`
+
+```text
+2525-								// 	);
+2526-
+2527-
+2528:								const char* target = xmlTarget->Attribute("name"); // Get target name
+2529-
+2530-								// Validate target name
+2531-								if (target == nullptr) {
+
+[Showing results with pagination = limit: 100, offset: 0]
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-02 12:16:07Z)**_
+
+Let me get more context around the target processing to see the complete flow:
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-02 12:16:08Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+  2520→								// 	Serial.print(
+  2521→								// 		DevUtils::termColor("yellow") +
+  2522→								// 		">>> Finding craft...." +
+  2523→								// 		DevUtils::termColor("reset") +
+  2524→								// 		"\n"
+  2525→								// 	);
+  2526→
+  2527→
+  2528→								const char* target = xmlTarget->Attribute("name"); // Get target name
+  2529→
+  2530→								// Validate target name
+  2531→								if (target == nullptr) {
+  2532→									t++;
+  2533→									continue;
+  2534→								}
+  2535→
+  2536→								size_t targetLength = strlen(target);
+  2537→								if (targetLength >= sizeof(tempNewCraft.callsignArray)) {
+  2538→									if (showSerial == true) {
+  2539→										Serial.print(DevUtils::termColor("red"));
+  2540→										Serial.println("Error: target length exceeds buffer size");
+  2541→										Serial.println(DevUtils::termColor("reset"));
+  2542→									}
+  2543→									t++;
+  2544→									continue;
+  2545→								}
+  2546→
+  2547→								/* Check Blacklist */
+  2548→								feedWatchdog();
+  2549→								if (SpacecraftData::checkBlacklist(target) == true) {
+  2550→									// if (showSerial == true)
+  2551→									// 	Serial.print(DevUtils::termColor("red") + "Blacklisted target, skipping..." + DevUtils::termColor("reset") + "\n");
+  2552→									vTaskDelay(pdMS_TO_TICKS(100)); // Delay to allow other tasks to run
+  2553→									t++;
+  2554→									continue;
+  2555→								}
+  2556→
+  2557→								/* Get the craft name to compare in finding signal */
+  2558→								int callsignArrayLength = sizeof(CraftQueueItem::callsignArray);
+  2559→								size_t result = strlcpy(tempNewCraft.callsignArray, target, callsignArrayLength);
+  2560→
+  2561→								if (result >= callsignArrayLength) {
+  2562→									if (showSerial == true) {
+  2563→										Serial.print(DevUtils::termColor("red"));
+  2564→										Serial.print("Problem copying callsign to tempNewCraft.callsignArray: truncated copy");
+  2565→										Serial.print(DevUtils::termColor("reset") + "\n");
+  2566→									}
+  2567→									t++;
+  2568→									continue;
+  2569→								}
+  2570→								tempNewCraft.callsign = tempNewCraft.callsignArray; // Set the callsign
+  2571→
+  2572→								feedWatchdog();
+  2573→								const char* name = SpacecraftData::callsignToName(target);
+  2574→
+  2575→								if (name == nullptr) {
+  2576→									if (showSerial == true)
+  2577→										Serial.print(
+  2578→											DevUtils::termColor("red") +
+  2579→											"Error: name is null" +
+  2580→											DevUtils::termColor("reset") +
+  2581→											"\n");
+  2582→									t++;
+  2583→									continue;
+  2584→								}
+  2585→
+  2586→								size_t nameLength = strlen(name);
+  2587→								if (nameLength >= sizeof(tempNewCraft.nameArray)) {
+  2588→									if (showSerial == true) {
+  2589→										Serial.print(DevUtils::termColor("red"));
+  2590→										Serial.println("Error: name length exceeds buffer size");
+  2591→										Serial.println(DevUtils::termColor("reset"));
+  2592→									}
+  2593→									t++;
+  2594→									continue;
+  2595→								}
+  2596→
+  2597→								result = strlcpy(tempNewCraft.nameArray, name, 100);
+  2598→
+  2599→								if (result >= 100) {
+  2600→									if (showSerial == true) {
+  2601→										Serial.print(DevUtils::termColor("red"));
+  2602→										Serial.println("Problem copying name to newCraft->nameArray: truncated copy");
+  2603→										Serial.println(DevUtils::termColor("reset"));
+  2604→									}
+  2605→									t++;
+  2606→									continue;
+  2607→								}
+  2608→
+  2609→								tempNewCraft.name = tempNewCraft.nameArray; // Set the name
+  2610→								tempNewCraft.nameLength = strlen(name); // Set the name length
+  2611→
+  2612→
+  2613→
+  2614→								if (showSerial == true) {
+  2615→									char validatedBuffer[256];
+  2616→									snprintf(
+  2617→										validatedBuffer,
+  2618→										sizeof(validatedBuffer),
+  2619→										"%sValidated: (%s) %s%s\n", DevUtils::termColor("green"), tempNewCraft.callsign,
+  2620→										name, DevUtils::termColor("reset")
+  2621→									);
+  2622→									Serial.print(validatedBuffer);
+  2623→								}
+  2624→
+  2625→
+  2626→
+  2627→								/* Look for craft signals */
+  2628→								feedWatchdog();
+  2629→								FoundSignals foundSignals = findSignals(xmlDish, &tempNewCraft);
+  2630→
+  2631→								// No signals found
+  2632→								if (foundSignals.downSignal == 0 && foundSignals.upSignal == 0) {
+  2633→									// if (showSerial == true)
+  2634→									// 	Serial.print(
+  2635→									// 		DevUtils::termColor("red") +
+  2636→									// 		"No signals found for " +
+  2637→									// 		String(tempNewCraft.callsign) +
+  2638→									// 		DevUtils::termColor("reset") +
+  2639→									// 		"\n");
+  2640→									t++;
+  2641→									continue;
+  2642→								} else {
+  2643→									tempNewCraft.downSignal = foundSignals.downSignal;
+  2644→									tempNewCraft.upSignal = foundSignals.upSignal;
+  2645→								}
+  2646→
+  2647→
+  2648→								/** TARGET HAS BEEN FULLY VALIDATED
+  2649→								 * We hav all of the info needed for this new craft
+  2650→								 * **/
+  2651→								 // if (showSerial == true) {
+  2652→								 // 	Serial.print("======== TEMP NEW CRAFT ========\n");
+  2653→								 // 	Serial.print("callsign: " + String(tempNewCraft.callsign) + "\n");
+  2654→								 // 	Serial.print("name: " + String(tempNewCraft.name) + "\n");
+  2655→								 // 	Serial.print("nameLength: " + String(tempNewCraft.nameLength) + "\n");
+  2656→								 // 	Serial.print("downSignal: " + String(tempNewCraft.downSignal) + "\n");
+  2657→								 // 	Serial.print("upSignal: " + String(tempNewCraft.upSignal) + "\n");
+  2658→								 // 	Serial.print("================================\n");
+  2659→								 // }
+  2660→
+  2661→								if (showSerial) {
+  2662→									char validatedBuffer[256];
+  2663→									snprintf(
+  2664→										validatedBuffer,
+  2665→										sizeof(validatedBuffer),
+  2666→										"%sValidated: (%s) %s%s\n", DevUtils::termColor("green"), tempNewCraft.callsign, name, DevUtils::termColor("reset")
+  2667→									);
+  2668→									Serial.print(validatedBuffer);
+  2669→								}
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-02 12:16:10Z)**_
+
+Perfect! Now let me also check how the wifiNetwork struct is used since I saw it has a `forceDummyData` field:
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-02 12:16:12Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Grep"><details>
+<summary>Tool use: **Grep**</summary>
+ path `./lib/FileUtils/FileUtils.h` pattern `wifiNetwork\.|retryDataFetchLimit|forceDummyData|WifiNetwork`
+
+```text
+43-    };
+44-
+45:    struct WifiNetwork {
+46-        char apSSID[32];
+47-        char apPass[32];
+48-        char serverName[128]; // DSN XML server URL
+49:        bool forceDummyData;
+50:        int retryDataFetchLimit;
+51-    };
+52-
+--
+92-    struct Config {
+93-        DebugUtils debugUtils;
+94:        WifiNetwork wifiNetwork;
+95-        PinsHardware pinsHardware;
+96-        DisplayLED displayLED;
+--
+121-    static bool checkOrCreateConfigFile();
+122-    static void updateDebugUtilsField(const char* key, const JsonVariant& value);
+123:    static void updateWifiNetworkField(const char* key, const JsonVariant& value);
+124-    static void updatePinsHardwareField(const char* key, const JsonVariant& value);
+125-    static void updateDisplayLEDField(const char* key, const JsonVariant& value);
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-02 12:16:13Z)**_
+
+Now let me check if there are any existing structures for handling "approved" or "whitelist" spacecraft:
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-02 12:16:14Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+
+`grep -r "approved\|whitelist\|allowlist\|approved" /Users/grant/code/JPL-MiniPulse --include="*.h" --include="*.cpp" | head -20`
+
+```text
+/Users/grant/code/JPL-MiniPulse/lib/XmlTestData/XmlTestData.cpp:// Combined fallback snapshot — all approved spacecraft from minipulse_list (Feb 2026)
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-02 12:16:15Z)**_
+
+Let me search for any data structures that track allowed or approved spacecraft:
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-02 12:16:16Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+
+`grep -r "minipulse_list\|allowed\|enabled\|disabled" /Users/grant/code/JPL-MiniPulse --include="*.h" --include="*.cpp" -l | head -10`
+
+```text
+/Users/grant/code/JPL-MiniPulse/.pio/libdeps/release/FastLED/tests/crash_handler_noop.h
+/Users/grant/code/JPL-MiniPulse/.pio/libdeps/release/FastLED/tests/test_corkscrew.cpp
+/Users/grant/code/JPL-MiniPulse/.pio/libdeps/release/FastLED/tests/doctest.h
+/Users/grant/code/JPL-MiniPulse/.pio/libdeps/release/FastLED/tests/test_audio_reactive_simple.cpp
+/Users/grant/code/JPL-MiniPulse/.pio/libdeps/release/FastLED/tests/test_json.cpp
+/Users/grant/code/JPL-MiniPulse/.pio/libdeps/release/FastLED/tests/test_istream.cpp
+/Users/grant/code/JPL-MiniPulse/.pio/libdeps/release/FastLED/examples/Esp32S3I2SDemo/Esp32S3I2SDemo.h
+/Users/grant/code/JPL-MiniPulse/.pio/libdeps/release/FastLED/examples/CompileTest/avr_test.h
+/Users/grant/code/JPL-MiniPulse/.pio/libdeps/release/FastLED/examples/NoisePlusPalette/NoisePlusPalette.h
+/Users/grant/code/JPL-MiniPulse/.pio/libdeps/release/FastLED/examples/FxNoiseRing/FxNoiseRing.h
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-02 12:16:17Z)**_
+
+Let me search more specifically in the project source files:
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-02 12:16:18Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+
+`grep -r "minipulse_list" /Users/grant/code/JPL-MiniPulse/lib /Users/grant/code/JPL-MiniPulse/src 2>/dev/null`
+
+```text
+/Users/grant/code/JPL-MiniPulse/lib/XmlTestData/XmlTestData.cpp:// Combined fallback snapshot — all approved spacecraft from minipulse_list (Feb 2026)
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-02 12:16:19Z)**_
+
+Let me check the XmlTestData to understand the structure better:
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-02 12:16:19Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./lib/XmlTestData/XmlTestData.cpp`
+
+```text
+     1→#include <XmlTestData.h>
+     2→#include <FS.h>
+     3→#include <LittleFS.h>
+     4→#include <DevUtils.h>
+     5→#include <FileUtils.h>
+     6→
+     7→static const char XML_DATA_DIR[] = "/xml_data";
+     8→
+     9→// Combined fallback snapshot — all approved spacecraft from minipulse_list (Feb 2026)
+    10→// Sources: DSN-Chronicle XML archive, dsn_timeseries DB, mission profile data
+    11→static const char data_fallback[] PROGMEM = R"==--==(<dsn>
+    12→<station name="gdscc" friendlyName="Goldstone" timeUTC="1772096403000" timeZoneOffset="-28800000"/>
+    13→<dish name="DSS14" azimuthAngle="108" elevationAngle="38" windSpeed="5" isMSPA="true" isArray="false" isDDOR="false">
+    14→<downSignal active="true" signalType="data" dataRate="160" frequency="0" band="X" power="-160" spacecraft="VGR1" spacecraftID="-31"/>
+    15→<downSignal active="true" signalType="data" dataRate="1000" frequency="0" band="X" power="-160" spacecraft="NHPC" spacecraftID="-98"/>
+    16→<target name="VGR1" id="31" uplegRange="25400000000" downlegRange="25400000000" rtlt="170000"/>
+    17→<target name="NHPC" id="98" uplegRange="8200000000" downlegRange="8200000000" rtlt="54700"/>
+    18→</dish>
+    19→<dish name="DSS24" azimuthAngle="256" elevationAngle="53" windSpeed="5" isMSPA="true" isArray="false" isDDOR="false">
+    20→<upSignal active="true" signalType="data" dataRate="0" frequency="0" band="S" power="4.9" spacecraft="JWST" spacecraftID="-170"/>
+    21→<downSignal active="true" signalType="data" dataRate="28000000" frequency="0" band="K" power="-90" spacecraft="JWST" spacecraftID="-170"/>
+    22→<upSignal active="true" signalType="data" dataRate="0" frequency="0" band="S" power="0.3" spacecraft="ACE" spacecraftID="-92"/>
+    23→<downSignal active="true" signalType="data" dataRate="85331" frequency="0" band="S" power="-113" spacecraft="ACE" spacecraftID="-92"/>
+    24→<upSignal active="true" signalType="data" dataRate="0" frequency="0" band="X" power="0.2" spacecraft="DSCO" spacecraftID="-184"/>
+    25→<downSignal active="true" signalType="data" dataRate="20000" frequency="0" band="X" power="-130" spacecraft="DSCO" spacecraftID="-184"/>
+    26→<target name="JWST" id="170" uplegRange="1300000" downlegRange="1300000" rtlt="8.69"/>
+    27→<target name="ACE" id="92" uplegRange="1490000" downlegRange="1490000" rtlt="9.93"/>
+    28→<target name="DSCO" id="184" uplegRange="1510000" downlegRange="1510000" rtlt="10.1"/>
+    29→</dish>
+    30→<dish name="DSS25" azimuthAngle="180" elevationAngle="90" windSpeed="5" isMSPA="true" isArray="false" isDDOR="false">
+    31→<upSignal active="true" signalType="data" dataRate="0" frequency="0" band="S" power="18" spacecraft="EURC" spacecraftID="-159"/>
+    32→<downSignal active="true" signalType="data" dataRate="0" frequency="0" band="Ka" power="-140" spacecraft="EURC" spacecraftID="-159"/>
+    33→<upSignal active="true" signalType="data" dataRate="0" frequency="0" band="X" power="18" spacecraft="PSYC" spacecraftID="-255"/>
+    34→<downSignal active="true" signalType="data" dataRate="216758" frequency="0" band="X" power="-130" spacecraft="PSYC" spacecraftID="-255"/>
+    35→<target name="EURC" id="159" uplegRange="291000000" downlegRange="291000000" rtlt="1940"/>
+    36→<target name="PSYC" id="255" uplegRange="400000000" downlegRange="400000000" rtlt="2670"/>
+    37→</dish>
+    38→<dish name="DSS26" azimuthAngle="140" elevationAngle="80" windSpeed="5" isMSPA="true" isArray="false" isDDOR="false">
+    39→<upSignal active="true" signalType="data" dataRate="0" frequency="0" band="S" power="0.2" spacecraft="KPLO" spacecraftID="-155"/>
+    40→<downSignal active="true" signalType="data" dataRate="8500000" frequency="0" band="X" power="-95" spacecraft="KPLO" spacecraftID="-155"/>
+    41→<downSignal active="true" signalType="data" dataRate="131100" frequency="0" band="S" power="-120" spacecraft="THB" spacecraftID="-192"/>
+    42→<downSignal active="true" signalType="data" dataRate="235228" frequency="0" band="S" power="-120" spacecraft="THC" spacecraftID="-193"/>
+    43→<downSignal active="true" signalType="data" dataRate="263480" frequency="0" band="S" power="-110" spacecraft="CAPS" spacecraftID="-217"/>
+    44→<target name="KPLO" id="155" uplegRange="363000" downlegRange="363000" rtlt="2.42"/>
+    45→<target name="THB" id="192" uplegRange="361000" downlegRange="361000" rtlt="2.41"/>
+    46→<target name="THC" id="193" uplegRange="362000" downlegRange="362000" rtlt="2.41"/>
+    47→<target name="CAPS" id="217" uplegRange="370000" downlegRange="370000" rtlt="2.47"/>
+    48→</dish>
+    49→<station name="mdscc" friendlyName="Madrid" timeUTC="1772096403000" timeZoneOffset="3600000"/>
+    50→<dish name="DSS63" azimuthAngle="276" elevationAngle="29" windSpeed="4" isMSPA="true" isArray="false" isDDOR="false">
+    51→<upSignal active="true" signalType="data" dataRate="0" frequency="0" band="X" power="19" spacecraft="JNO" spacecraftID="-61"/>
+    52→<downSignal active="true" signalType="data" dataRate="200000" frequency="0" band="X" power="-130" spacecraft="JNO" spacecraftID="-61"/>
+    53→<downSignal active="true" signalType="data" dataRate="50000" frequency="0" band="X" power="-140" spacecraft="BEPI" spacecraftID="-121"/>
+    54→<target name="JNO" id="61" uplegRange="681000000" downlegRange="681000000" rtlt="4540"/>
+    55→<target name="BEPI" id="121" uplegRange="150000000" downlegRange="150000000" rtlt="1000"/>
+    56→</dish>
+    57→<dish name="DSS54" azimuthAngle="169" elevationAngle="31" windSpeed="4" isMSPA="true" isArray="false" isDDOR="false">
+    58→<upSignal active="true" signalType="data" dataRate="0" frequency="0" band="S" power="0.2" spacecraft="WIND" spacecraftID="-8"/>
+    59→<downSignal active="true" signalType="data" dataRate="73510" frequency="0" band="S" power="-120" spacecraft="WIND" spacecraftID="-8"/>
+    60→<downSignal active="true" signalType="data" dataRate="1000000" frequency="0" band="S" power="-120" spacecraft="CGO" spacecraftID="-171"/>
+    61→<target name="WIND" id="8" uplegRange="1330000" downlegRange="1330000" rtlt="8.89"/>
+    62→<target name="CGO" id="171" uplegRange="1580000" downlegRange="1580000" rtlt="10.5"/>
+    63→</dish>
+    64→<dish name="DSS55" azimuthAngle="135" elevationAngle="23" windSpeed="4" isMSPA="true" isArray="false" isDDOR="false">
+    65→<upSignal active="true" signalType="data" dataRate="0" frequency="0" band="X" power="5" spacecraft="MRO" spacecraftID="-74"/>
+    66→<downSignal active="true" signalType="data" dataRate="1000000" frequency="0" band="X" power="-120" spacecraft="MRO" spacecraftID="-74"/>
+    67→<downSignal active="true" signalType="data" dataRate="14220" frequency="0" band="X" power="-140" spacecraft="M01O" spacecraftID="-53"/>
+    68→<downSignal active="true" signalType="data" dataRate="1541000" frequency="0" band="X" power="-120" spacecraft="TGO" spacecraftID="-143"/>
+    69→<downSignal active="true" signalType="data" dataRate="45" frequency="0" band="X" power="-160" spacecraft="MVN" spacecraftID="-202"/>
+    70→<downSignal active="true" signalType="data" dataRate="176" frequency="0" band="X" power="-150" spacecraft="M20" spacecraftID="-168"/>
+    71→<downSignal active="true" signalType="data" dataRate="87380" frequency="0" band="X" power="-130" spacecraft="MEX" spacecraftID="-41"/>
+    72→<downSignal active="true" signalType="data" dataRate="0" frequency="0" band="X" power="-480" spacecraft="MSL" spacecraftID="-76"/>
+    73→<downSignal active="true" signalType="data" dataRate="241895" frequency="0" band="X" power="-130" spacecraft="EMM" spacecraftID="-222"/>
+    74→<target name="MRO" id="74" uplegRange="351000000" downlegRange="351000000" rtlt="2340"/>
+    75→<target name="M01O" id="53" uplegRange="351000000" downlegRange="351000000" rtlt="2340"/>
+    76→<target name="TGO" id="143" uplegRange="351000000" downlegRange="351000000" rtlt="2340"/>
+    77→<target name="MVN" id="202" uplegRange="351000000" downlegRange="351000000" rtlt="2340"/>
+    78→<target name="M20" id="168" uplegRange="351000000" downlegRange="351000000" rtlt="2340"/>
+    79→<target name="MEX" id="41" uplegRange="351000000" downlegRange="351000000" rtlt="2340"/>
+    80→<target name="MSL" id="76" uplegRange="351000000" downlegRange="351000000" rtlt="2340"/>
+    81→<target name="EMM" id="222" uplegRange="351000000" downlegRange="351000000" rtlt="2340"/>
+    82→</dish>
+    83→<dish name="DSS56" azimuthAngle="134" elevationAngle="11" windSpeed="4" isMSPA="true" isArray="false" isDDOR="false">
+    84→<upSignal active="true" signalType="data" dataRate="0" frequency="0" band="X" power="10" spacecraft="STA" spacecraftID="-234"/>
+    85→<downSignal active="true" signalType="data" dataRate="720000" frequency="0" band="X" power="-120" spacecraft="STA" spacecraftID="-234"/>
+    86→<upSignal active="true" signalType="data" dataRate="0" frequency="0" band="X" power="12" spacecraft="ORX" spacecraftID="-64"/>
+    87→<downSignal active="true" signalType="data" dataRate="0" frequency="0" band="X" power="-150" spacecraft="ORX" spacecraftID="-64"/>
+    88→<downSignal active="true" signalType="data" dataRate="32000" frequency="0" band="X" power="-140" spacecraft="HYB2" spacecraftID="-37"/>
+    89→<downSignal active="true" signalType="data" dataRate="28756" frequency="0" band="X" power="-130" spacecraft="LUCY" spacecraftID="-49"/>
+    90→<target name="STA" id="234" uplegRange="129000000" downlegRange="129000000" rtlt="859"/>
+    91→<target name="ORX" id="64" uplegRange="92200000" downlegRange="92200000" rtlt="615"/>
+    92→<target name="HYB2" id="37" uplegRange="350000000" downlegRange="350000000" rtlt="2330"/>
+    93→<target name="LUCY" id="49" uplegRange="500000000" downlegRange="500000000" rtlt="3330"/>
+    94→</dish>
+    95→<dish name="DSS65" azimuthAngle="80" elevationAngle="90" windSpeed="4" isMSPA="true" isArray="false" isDDOR="false">
+    96→<downSignal active="true" signalType="data" dataRate="245800" frequency="0" band="S" power="-130" spacecraft="SOHO" spacecraftID="-21"/>
+    97→<downSignal active="true" signalType="data" dataRate="0" frequency="0" band="S" power="-120" spacecraft="CHDR" spacecraftID="-151"/>
+    98→<downSignal active="true" signalType="data" dataRate="80660" frequency="0" band="X" power="-130" spacecraft="XMM" spacecraftID="-122"/>
+    99→<downSignal active="true" signalType="data" dataRate="41063874" frequency="0" band="S" power="-100" spacecraft="TESS" spacecraftID="-95"/>
+   100→<target name="SOHO" id="21" uplegRange="1660000" downlegRange="1660000" rtlt="11"/>
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-02 12:16:21Z)**_
+
+Perfect! Now let me verify the config file structure by checking how fields are retrieved:
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-02 12:16:22Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Grep"><details>
+<summary>Tool use: **Grep**</summary>
+ path `./lib/FileUtils/FileUtils.cpp` pattern `setConfigValuesFromFile|kv\.key|showSerial.*==|diagMeasure.*==|brightness.*==`
+
+```text
+261-	}
+262-
+263-	File configFile = LittleFS.open("/config.json", "r");
+264:	setConfigValuesFromFile(configFile);
+265-}
+266-
+267-bool FileUtils::checkConfigFileExists() {
+--
+292-	}
+293-}
+294-
+295:void FileUtils::setConfigValuesFromFile(File configFile) {
+296-	Serial.println("Setting config values from file...");
+297-	// File configFile = LittleFS.open("/config.json", "r");
+298-	if (!configFile) {
+--
+310-	configFile.close();
+311-
+312-	for (JsonPair kv : doc.as<JsonObject>()) {
+313:		Serial.print(kv.key().c_str() + String(": ") + kv.value().as<String>() + String("\n"));
+314:		if (kv.key() == "showSerial") {
+315-			FileUtils::config.debugUtils.showSerial = kv.value().as<bool>();
+316:		} else if (kv.key() == "diagMeasure") {
+317-			FileUtils::config.debugUtils.diagMeasure = kv.value().as<int>();
+318:		} else if (kv.key() == "brightness") {
+319-			FileUtils::config.displayLED.brightness = kv.value().as<int>();
+320-		}
+321-	}
+--
+346-
+347-
+348-	for (JsonPair kv : doc.as<JsonObject>()) {
+349:		Serial.print(kv.key().c_str() + String(": ") + kv.value().as<String>() + String("\n"));
+350-	}
+351-}
+352-
+--
+359-
+360-	if (strcmp(key, "testCores") == 0) {
+361-		config.debugUtils.testCores = value;
+362:	} else if (strcmp(key, "showSerial") == 0) {
+363-		config.debugUtils.showSerial = value;
+364:	} else if (strcmp(key, "diagMeasure") == 0) {
+365-		config.debugUtils.diagMeasure = value;
+366-	} else if (strcmp(key, "disableWiFi") == 0) {
+367-		config.debugUtils.disableWiFi = value;
+--
+410-
+411-// Function to update DisplayLED fields
+412-void FileUtils::updateDisplayLEDField(const char* key, const JsonVariant& value) {
+413:	if (strcmp(key, "brightness") == 0) {
+414-		config.displayLED.brightness = value;
+415-	} else if (strcmp(key, "fps") == 0) {
+416-		config.displayLED.fps = value;
+--
+540-	configFile.flush(); // Flush file to write
+541-	configFile.close(); // Close file
+542-
+543:	if (showSerial) Serial.println("CONFIG FILE saved: " + String(key) + " == " + String(value));
+544-}
+545-
+546-void FileUtils::writeConfigFileString(const char* key, const char* value) {
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-02 12:16:42Z)**_
+
+Excellent! Now I have a comprehensive understanding. Let me compile my findings into a detailed report.
+
+## Comprehensive Spacecraft Data Flow Analysis
+
+I've thoroughly explored the codebase and mapped out how spacecraft data flows through the system. Here are my detailed findings:
+
+### 1. SpacecraftData Class Structure
+
+**Location**: `/Users/grant/code/JPL-MiniPulse/lib/SpacecraftData/SpacecraftData.h` and `.cpp`
+
+**Public Methods:**
+- `loadJson(const char* firmwareVersion)` — Initializes spacecraft data on boot
+- `callsignToName(const char* key)` — **Callsign lookup function** that returns the human-readable name
+- `checkBlacklist(const char* callsign)` — **Blacklist filter function** that returns `true` if blacklisted
+
+**Private Members:**
+- `spacecraftNamesJson` — DynamicJsonDocument (8192 bytes) containing ~130 callsign-to-name mappings
+- `spacecraftBlacklistJson` — DynamicJsonDocument (1024 bytes) containing ~7 entries (DSN, DSSR, GO19, HCRA, RFC, RFC(VLBI), TEST)
+
+**How They Work:**
+- `callsignToName()` checks if the callsign exists in `spacecraftNamesJson` and returns the display name, or returns the callsign itself if not found (lines 226-238)
+- `checkBlacklist()` checks if the callsign is in `spacecraftBlacklistJson` using `spacecraftBlacklistJson[key] != nullptr` (line 244)
+
+---
+
+### 2. Callsign Flow in main.cpp
+
+**Entry Point**: XML parsing loop starting at line 2492
+
+The complete flow is:
+
+1. **XML Extraction** (line 2528):
+   ```cpp
+   const char* target = xmlTarget->Attribute("name");  // Get callsign from XML
+   ```
+
+2. **Validation Chain** (lines 2531-2545):
+   - Check if `target` is null
+   - Check if target length exceeds buffer size
+
+3. **BLACKLIST CHECK** (lines 2547-2555):
+   ```cpp
+   if (SpacecraftData::checkBlacklist(target) == true) {
+       // Skip this spacecraft entirely
+       t++;
+       continue;
+   }
+   ```
+
+4. **Copy Callsign** (lines 2559-2570):
+   ```cpp
+   strlcpy(tempNewCraft.callsignArray, target, callsignArrayLength);
+   tempNewCraft.callsign = tempNewCraft.callsignArray;
+   ```
+
+5. **NAME LOOKUP** (line 2573):
+   ```cpp
+   const char* name = SpacecraftData::callsignToName(target);
+   ```
+
+6. **Copy Name** (lines 2597-2610):
+   ```cpp
+   strlcpy(tempNewCraft.nameArray, name, 100);
+   tempNewCraft.name = tempNewCraft.nameArray;
+   tempNewCraft.nameLength = strlen(name);
+   ```
+
+7. **Find Signals** (line 2629):
+   ```cpp
+   FoundSignals foundSignals = findSignals(xmlDish, &tempNewCraft);
+   ```
+
+8. **Skip if No Signals** (lines 2632-2641):
+   If both down and up signals are zero, skip
+
+9. **Queue** (lines 2207-2216):
+   If valid, add to queue
+
+**Critical Decision Points:**
+- Line 2549: Blacklist filter (reject blacklisted)
+- Line 2573: Name lookup (display name)
+- Line 2629-2632: Signal detection (must have at least one signal)
+
+---
+
+### 3. Config/Settings System
+
+**Location**: `/Users/grant/code/JPL-MiniPulse/lib/FileUtils/FileUtils.h` and `.cpp`
+
+**Struct Hierarchy**:
+```
+FileUtils::Config
+├── DebugUtils (bool: testCores, showSerial, diagMeasure, disableWiFi, testLEDs)
+├── WifiNetwork (char arrays + bool forceDummyData, int retryDataFetchLimit)
+├── PinsHardware (7 int pins)
+├── DisplayLED (10 int LED/display settings)
+├── TextTypography (3 int settings)
+├── TimersDelays (1 int)
+└── Miscellaneous (1 int colorTheme)
+```
+
+**How Settings are Loaded**:
+1. Config file is JSON at `/config.json` (line 263)
+2. `setConfigValuesFromFile()` (line 295) deserializes JSON and maps keys to struct fields
+3. **Current example** (lines 314-320):
+   ```cpp
+   for (JsonPair kv : doc.as<JsonObject>()) {
+       if (kv.key() == "showSerial") {
+           FileUtils::config.debugUtils.showSerial = kv.value().as<bool>();
+       } else if (kv.key() == "diagMeasure") {
+           FileUtils::config.debugUtils.diagMeasure = kv.value().as<int>();
+       } else if (kv.key() == "brightness") {
+           FileUtils::config.displayLED.brightness = kv.value().as<int>();
+       }
+   }
+   ```
+
+**How Settings are Written**:
+- `writeConfigFileBool(const char* key, bool value)` (line 473) — reads JSON, updates, serializes back
+- `writeConfigFileInt(const char* key, int value)` (line 505)
+- `writeConfigFileString(const char* key, const char* value)` (line 546)
+
+**Update Functions** (for runtime changes):
+- `updateDebugUtilsField()` (line 356)
+- `updateWifiNetworkField()` (line 375)
+- `updateDisplayLEDField()` (line 412)
+- etc.
+
+---
+
+### 4. Key Data Structures
+
+**CraftQueueItem** (line 38-47 in header):
+```cpp
+struct CraftQueueItem {
+    char callsignArray[40];      // Raw callsign buffer
+    const char* callsign;        // Points to callsignArray
+    char nameArray[100];         // Raw display name buffer
+    const char* name;            // Points to nameArray
+    uint nameLength;
+    uint upSignal;
+    uint downSignal;
+};
+```
+
+---
+
+### 5. Where to Add Approved/Blacklist Filtering Logic
+
+Based on my analysis, here are the key integration points:
+
+**Option A: Extend SpacecraftData (Recommended)**
+- Add `checkApproved()` method alongside `checkBlacklist()`
+- Add `spacecraftApprovedJson` DynamicJsonDocument
+- Add `populateApprovedInMemory()` private method
+- Populate from hardcoded approved list or load from flash
+
+**Option B: Extend Config System**
+- Add a `WhitelistMode` struct to `FileUtils::Config`:
+  ```cpp
+  struct WhitelistMode {
+      bool enabled;
+      // Or add an array of approved callsigns
+  };
+  ```
+- Add to `setConfigValuesFromFile()` to load approved list from config.json
+- Load via `writeConfigFileString()` or similar
+
+**Option C: Hybrid Approach**
+- Add config flag in `WifiNetwork` struct: `bool useApprovedList` (similar to `forceDummyData`)
+- Load approved list in `SpacecraftData::loadJson()` if config flag is enabled
+- Implement both blacklist AND approved checks in main.cpp decision tree
+
+**Integration in main.cpp Decision Tree (after line 2549)**:
+```cpp
+// Current blacklist check
+if (SpacecraftData::checkBlacklist(target) == true) {
+    t++;
+    continue;
+}
+
+// NEW: Add approved list check if enabled
+if (FileUtils::config.wifiNetwork.useApprovedList) {
+    if (!SpacecraftData::checkApproved(target)) {
+        t++;
+        continue;
+    }
+}
+```
+
+---
+
+### 6. Critical Information Summary
+
+| Aspect | Location | Current Status |
+|--------|----------|-----------------|
+| **Callsign lookup** | `SpacecraftData::callsignToName()` line 210 | Maps callsign → display name |
+| **Blacklist check** | `SpacecraftData::checkBlacklist()` line 242 | Returns `true` if blacklisted |
+| **Decision point** | `main.cpp` line 2549 | Blacklist filter before proceeding |
+| **Config system** | `FileUtils::config` static instance | Loaded from `/config.json` on boot |
+| **Config loading** | `setConfigValuesFromFile()` line 295 | JSON deserialization with key mapping |
+| **Config persistence** | `writeConfigFileBool/Int/String()` | Writes to `/config.json` |
+| **Approved list comment** | `XmlTestData.cpp` line 9 | References "all approved spacecraft from minipulse_list" |
+
+The system is well-architected for adding filtering logic at multiple points. The blacklist is already implemented as a separate JSON document, making it straightforward to add an approved list in parallel.
+
+_**Agent (claude-opus-4-6 2026-03-02 12:16:50Z)**_
+
+<think><details><summary>Thought Process</summary>
+Great, I now have a thorough understanding of the codebase. Let me design the plan.
+
+Key findings:
+1. `SpacecraftData` already has `checkBlacklist()` — adding `checkApproved()` follows the same pattern
+2. The filtering happens in `main.cpp` at line ~2549 in the XML parsing loop
+3. Config settings are in `FileUtils::Config` struct, persisted to `/config.json`
+4. There's already a pattern for bool settings (e.g., `showSerial`, `forceDummyData`)
+
+The plan:
+1. Add `spacecraftApprovedJson` DynamicJsonDocument to SpacecraftData
+
+
+2. Create a `populateApprovedInMemory()` method that loads approved spacecraft from the CSV, add a `checkApproved()` public method, introduce a `useApprovedOnly` config setting with a default of true, integrate filtering logic in main.cpp right after the blacklist check, and ensure the config persists properly.
+</details></think>
+
+_**Agent (claude-opus-4-6 2026-03-02 12:16:50Z)**_
+
+Good, I have a complete picture of the data flow. Let me write the plan.
+
+_**Agent (claude-opus-4-6 2026-03-02 12:17:09Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# Plan: Add Approved Spacecraft Filtering
+
+## Context
+
+The spacecraft list was just updated from the CSV with ~80+ craft. The CSV has an `Approved` column (TRUE/FALSE) distinguishing curated spacecraft from the full catalog. Currently all non-blacklisted craft are displayed. We need to add an "approved only" mode (default) that only shows curated craft, with a future setting to switch to "show all non-blacklisted."
+
+## Changes
+
+### 1. SpacecraftData — Add approved list
+
+**File:** `lib/SpacecraftData/SpacecraftData.h`
+- Add `static DynamicJsonDocument spacecraftApprovedJson;` member
+- Add `static void populateApprovedInMemory();` private method
+- Add `static bool checkApproved(const char* callsign);` public method
+
+**File:** `lib/SpacecraftData/SpacecraftData.cpp`
+- Define `spacecraftApprovedJson(1024)` — small doc, just callsign keys with `true` values
+- Implement `populateApprovedInMemory()` — populate with all `Approved=TRUE` callsigns from the CSV:
+  ACE, BEPI, BIOS, CAPS, CGO, CHDR, DSCO, EMM, ESCB, ESCG, EURC, HYB2, IMAP, JNO, JWST, KPLO, LRO, LUCY, M01O, M20, MEX, MMS1, MMS2, MMS3, MMS4, MRO, MSL, MVN, NHPC, ORX, PSYC, SOHO, SOLAR, SWFO, SPP, STA, TESS, TGO, THB, THC, VGR1, VGR2, WIND, XMM
+- Implement `checkApproved()` — same pattern as `checkBlacklist()` but returns true if callsign IS in the approved list
+- Call `populateApprovedInMemory()` from `loadJson()`
+
+### 2. Config — Add `useApprovedOnly` setting
+
+**File:** `lib/FileUtils/FileUtils.h`
+- Add `bool useApprovedOnly = true;` to the most appropriate config sub-struct (likely `Miscellaneous` or a new section)
+
+**File:** `lib/FileUtils/FileUtils.cpp`
+- Add `useApprovedOnly` to `setConfigValuesFromFile()` key-value mapping
+- Default is `true` (approved-only mode)
+
+### 3. Main — Add approved filtering in XML parse loop
+
+**File:** `src/main.cpp` (~line 2549, after blacklist check)
+- After the existing `checkBlacklist()` block, add:
+  \```cpp
+  if (FileUtils::config.miscellaneous.useApprovedOnly) {
+      if (!SpacecraftData::checkApproved(target)) {
+          t++;
+          continue;
+      }
+  }
+  \```
+
+### 4. No portal UI changes yet
+
+The setting will default to `true` and can be changed via config.json directly for now. Portal UI for toggling this is a separate task (Roadmap #42).
+
+## Verification
+
+1. `~/.platformio/penv/bin/pio run -e release` — must compile clean
+2. Default behavior: only approved craft should be recognized (same ~44 craft from the CSV's Approved=TRUE)
+3. Setting `useApprovedOnly: false` in config.json should show all non-blacklisted craft
+
+```
+
+```text
+File created successfully at: /Users/grant/.claude/plans/smooth-dreaming-dahl.md
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 12:22:56Z)**_
+
+<tool-use data-tool-type="generic" data-tool-name="ExitPlanMode"><details>
+<summary>Tool use: **ExitPlanMode**</summary>
+
+```text
+The user doesn't want to proceed with this tool use. The tool use was rejected (eg. if it was a file edit, the new_string was NOT written to the file). STOP what you are doing and wait for the user to tell you how to proceed.
+```
+</details></tool-use>
+
+---
+
+_**User (2026-03-02 12:22:56Z)**_
+
+[Request interrupted by user for tool use]

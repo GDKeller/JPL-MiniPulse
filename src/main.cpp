@@ -1,4 +1,4 @@
-const char* currentFirmwareVersion = "1.1.0-16"; // Current firmware version
+const char* currentFirmwareVersion = "1.1.0-rc.17"; // Current firmware version
 const char* githubApiUrl = "https://api.github.com/repos/GDKeller/JPL-MiniPulse/releases/latest";
 const char* firmwareBinaryUrl = "https://github.com/GDKeller/JPL-MiniPulse/releases/latest/download/firmware.bin";
 
@@ -441,8 +441,13 @@ const char* getRemoteFirmwareVersion() {
 }
 
 // Returns true if `remote` is a higher semver than `current`.
-// Expects format "major.minor.patch" (e.g. "1.2.3"). Returns false on parse failure.
+// Handles optional "v" prefix (e.g. "v1.2.3") and pre-release suffixes (e.g. "1.2.3-rc.1").
+// Pre-release versions have lower precedence than the same version without a suffix.
 bool isNewerVersion(const char* remote, const char* current) {
+	// Strip optional "v" prefix
+	if (remote[0] == 'v' || remote[0] == 'V') remote++;
+	if (current[0] == 'v' || current[0] == 'V') current++;
+
 	int rMajor = 0, rMinor = 0, rPatch = 0;
 	int cMajor = 0, cMinor = 0, cPatch = 0;
 
@@ -451,7 +456,18 @@ bool isNewerVersion(const char* remote, const char* current) {
 
 	if (rMajor != cMajor) return rMajor > cMajor;
 	if (rMinor != cMinor) return rMinor > cMinor;
-	return rPatch > cPatch;
+	if (rPatch != cPatch) return rPatch > cPatch;
+
+	// Same major.minor.patch — check pre-release suffixes
+	bool rHasPreRelease = strchr(remote, '-') != nullptr;
+	bool cHasPreRelease = strchr(current, '-') != nullptr;
+
+	// Current is pre-release, remote is stable release → upgrade
+	if (cHasPreRelease && !rHasPreRelease) return true;
+	// Current is stable, remote is pre-release → no downgrade
+	if (!cHasPreRelease && rHasPreRelease) return false;
+
+	return false;
 }
 
 bool checkFirmwareUpdateAvailable() {
@@ -2547,9 +2563,13 @@ void parseData(const char* payload)
 								/* Check Blacklist */
 								feedWatchdog();
 								if (SpacecraftData::checkBlacklist(target) == true) {
-									// if (showSerial == true)
-									// 	Serial.print(DevUtils::termColor("red") + "Blacklisted target, skipping..." + DevUtils::termColor("reset") + "\n");
 									vTaskDelay(pdMS_TO_TICKS(100)); // Delay to allow other tasks to run
+									t++;
+									continue;
+								}
+
+								/* Check Approved List */
+								if (FileUtils::config.miscellaneous.useApprovedOnly && !SpacecraftData::checkApproved(target)) {
 									t++;
 									continue;
 								}
