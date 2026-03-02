@@ -99,7 +99,6 @@ volatile bool forceDummyData = false;
 bool forceAnimationType = false;
 uint8_t noTargetFoundCounter = 0;  // Keeps track of how many times target is not found
 uint8_t retryDataFetchCounter = 0; // Keeps track of how many times data fetch failed
-uint8_t retryDataFetchLimit = 3;  // After dummy data is used this many times, try to get actual data again
 const int maxHttpRetries = 3;
 bool dataStarted = false;
 // char fetchUrl[64];	// Fixed memory for DSN XML fetch URL - random number is appended when used to prevent caching
@@ -2796,13 +2795,13 @@ void parseData(const char* payload)
 									// SUCCESS — target validated, defer pool pop to Phase 3
 									craftValidated = true;
 									breakParseLoop = true;
+									parseCounter = 0;
 									if (usingDummyData == true) {
 										// Advance counters so next cycle picks a different craft
 										targetCount = t + 1;
 										dishCount = d;
 										stationCount = s;
 									} else {
-										parseCounter = 0;
 										targetCount = t;
 										dishCount = d;
 										stationCount = s;
@@ -3095,8 +3094,6 @@ void fetchData() {
 
 	bool dataFetched = false;
 
-	bool parseLimitReached = parseCounter >= retryDataFetchLimit;
-
 	if (!forceDummyData && isWiFiConnected()) {
 		String url = generateFetchUrl();
 
@@ -3189,12 +3186,10 @@ void fetchData() {
 			Serial.print(dataStatusBuffer);
 		}
 
-		// Load from LittleFS each cycle (xmlDataBuffer is shared and gets reused).
-		// Falls back to compiled-in PROGMEM safety net if LittleFS read fails.
+		// Copy directly from PROGMEM — avoids LittleFS I/O and guarantees known-good data.
 		const char* currentDummyFile = dummyXmlFile; // snapshot volatile once
-		if (!XmlTestData::loadFile(currentDummyFile, xmlDataBuffer, sizeof(xmlDataBuffer))) {
-			strlcpy(xmlDataBuffer, XmlTestData::getFallbackData(), sizeof(xmlDataBuffer));
-		}
+		const char* progmemData = XmlTestData::getProgmemData(currentDummyFile);
+		strlcpy(xmlDataBuffer, progmemData ? progmemData : XmlTestData::getFallbackData(), sizeof(xmlDataBuffer));
 		parseData(xmlDataBuffer);
 	}
 
