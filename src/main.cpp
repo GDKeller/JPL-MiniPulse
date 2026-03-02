@@ -1,4 +1,4 @@
-const char* currentFirmwareVersion = "1.1.4"; // Current firmware version
+const char* currentFirmwareVersion = "1.1.5"; // Current firmware version
 const char* githubApiUrl = "https://api.github.com/repos/GDKeller/JPL-MiniPulse/releases/latest";
 const char* firmwareBinaryUrl = "https://github.com/GDKeller/JPL-MiniPulse/releases/latest/download/firmware.bin";
 
