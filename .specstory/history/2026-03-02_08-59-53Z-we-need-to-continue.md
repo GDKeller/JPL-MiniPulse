@@ -2922,7 +2922,7 @@ commit the specstory history as well
 
 ---
 
-_**Agent (claude-opus-4-6 2026-03-02 11:16:48Z)**_
+_**Agent (claude-opus-4-6 2026-03-02 11:17:02Z)**_
 
 <tool-use data-tool-type="shell" data-tool-name="Bash"><details>
 <summary>Tool use: **Bash**</summary>
@@ -2930,3 +2930,3286 @@ Stage specstory history files
 
 `git add .specstory/history/2026-02-27_09-59-01Z-command-name-clear-command.md .specstory/history/2026-02-27_12-07-44Z-command-name-clear-command.md .specstory/history/2026-02-27_19-43-21Z.md .specstory/history/2026-03-02_08-59-53Z-we-need-to-continue.md .specstory/history/2026-03-02_08-59-53Z.md`
 </details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:17:11Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Commit specstory history
+
+```bash
+git commit -m "$(cat <<'EOF'
+chore: add specstory conversation history
+EOF
+)"
+```
+
+```text
+[feature/ota-and-remote-data d6b0991] chore: add specstory conversation history
+ 5 files changed, 38172 insertions(+)
+ create mode 100644 .specstory/history/2026-02-27_09-59-01Z-command-name-clear-command.md
+ create mode 100644 .specstory/history/2026-02-27_12-07-44Z-command-name-clear-command.md
+ create mode 100644 .specstory/history/2026-02-27_19-43-21Z.md
+ create mode 100644 .specstory/history/2026-03-02_08-59-53Z-we-need-to-continue.md
+ create mode 100644 .specstory/history/2026-03-02_08-59-53Z.md
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:17:14Z)**_
+
+Committed as `d6b0991` — `chore: add specstory conversation history`
+
+---
+
+_**User (2026-03-02 11:17:47Z)**_
+
+use TeamCreate to create a team of agents to implement the Github OTA plan
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 11:18:01Z)**_
+
+<think><details><summary>Thought Process</summary>
+The user wants me to create a team of agents to implement the GitHub OTA plan. Let me think about what agents would be needed:
+
+1. The plan involves modifying `src/main.cpp` - this is the main implementation work
+2. There are several steps:
+   - Step 1: Define GitHub URLs (add constants)
+   - Step 2: Add semver comparison helper (`isNewerVersion()` + update `checkFirmwareUpdateAvailable()`)
+   - Step 3: Update `getRemoteFirmwareVersion()` (HTTPS, GitHub API, JSON parsing)
+   - Step 4: Update `updateFirmwareOta()` (WiFiClientSecure, redirect following)
+   - Step 5: Create Release Workflow (this is a process, not code)
+
+Since all the code changes are concentrated in `src/main.cpp`, I need to be careful about how to structure the agents to avoid conflicts. I could have a coordinator agent oversee the work while a specialized implementation agent handles the C++ modifications, and then a reviewer agent validates the changes afterward.
+
+Let me set up a team with a clear division of labor: I'll coordinate as the team lead, have an implementer agent make the actual code changes following the plan, and assign a reviewer agent to verify the work meets the requirements.
+</details></think>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:18:01Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TeamCreate"><details>
+<summary>Tool use: **TeamCreate**</summary>
+Implement GitHub-based OTA firmware updates per board/PLAN-github-ota.md
+
+```text
+{
+  "team_name": "github-ota",
+  "team_file_path": "/Users/grant/.claude/teams/github-ota/config.json",
+  "lead_agent_id": "team-lead@github-ota"
+}
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:18:06Z)**_
+
+Now let me read the final plan to create accurate tasks, then set everything up.
+
+_**Agent (claude-opus-4-6 2026-03-02 11:18:07Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./board/PLAN-github-ota.md`
+
+```text
+     1→# Planning Document: GitHub-Based OTA Firmware Updates
+     2→
+     3→## Overview
+     4→
+     5→Replace the current `develop.kellerdigital.com` firmware hosting with GitHub Releases for version checking and firmware binary downloads.
+     6→
+     7→## Background
+     8→
+     9→### Current Behavior
+    10→
+    11→OTA firmware updates use two hardcoded URLs in `src/main.cpp`:
+    12→
+    13→1. **Version check** (~line 391): `http://develop.kellerdigital.com/minipulse/latest_version.txt`
+    14→2. **Firmware binary** (~line 448): `http://develop.kellerdigital.com/minipulse/firmware.bin`
+    15→
+    16→Both use plain HTTP via `HTTPClient` / `httpUpdate`. The version check fetches a text file, compares it with `strcmp()` against the hardcoded `currentFirmwareVersion`, and the binary download uses ESP32's built-in `httpUpdate.update()`.
+    17→
+    18→### Problems
+    19→
+    20→- Relies on a personal server that may go offline
+    21→- Plain HTTP is vulnerable to MITM attacks (firmware injection)
+    22→- No versioned history of releases
+    23→- Manual file management on the server
+    24→
+    25→### Proposed Behavior
+    26→
+    27→Use GitHub Releases from `GDKeller/JPL-MiniPulse` for both version checking and firmware downloads:
+    28→- **Version check**: Query the GitHub Releases API (`/releases/latest`), parse `tag_name` from the JSON response
+    29→- **Firmware binary**: Download `firmware.bin` from the latest release assets
+    30→- No `latest_version.txt` file needed — the release tag IS the version
+    31→
+    32→## Rollout Strategy
+    33→
+    34→### The Bootstrapping Problem
+    35→
+    36→v1.1.0 is the release that *contains* the new GitHub OTA code, but it must itself be distributed via the **old** kellerdigital.com OTA system (since devices in the field are still pointing there). This creates a two-phase rollout:
+    37→
+    38→| Phase | Version | Distributed Via | Contains |
+    39→|-------|---------|-----------------|----------|
+    40→| **1 — Bridge release** | `1.1.0` | kellerdigital.com (old OTA) | New GitHub OTA code + all other 1.1.0 features |
+    41→| **2 — First GitHub release** | `1.1.1` | GitHub Releases (new OTA) | Minimal changes — exists primarily to validate the new OTA path |
+    42→
+    43→### Version Comparison
+    44→
+    45→The current code uses `strcmp(latestVersion, currentFirmwareVersion) != 0` — any difference triggers an update, which means a stale or rolled-back release tag could cause an accidental downgrade. We'll replace this with a proper semver comparison that only triggers when the remote version is strictly newer (higher major, minor, or patch).
+    46→
+    47→### Phase 1: Ship v1.1.0 via kellerdigital.com
+    48→
+    49→1. Finalize all v1.1.0 code (including the new GitHub OTA functions)
+    50→2. Set `currentFirmwareVersion = "1.1.0"`
+    51→3. Build and upload `firmware.bin` to `develop.kellerdigital.com/minipulse/`
+    52→4. Update `latest_version.txt` on the server to `1.1.0`
+    53→5. Devices in the field update via the old path — they now have GitHub OTA code
+    54→
+    55→### Phase 2: Test with v1.1.1 on GitHub Releases
+    56→
+    57→1. Bump `currentFirmwareVersion` to `"1.1.1"` (no other code changes needed)
+    58→2. Build firmware: `~/.platformio/penv/bin/pio run -e release`
+    59→3. Create GitHub Release with tag `1.1.1`, upload `firmware.bin` as asset
+    60→4. A device already running v1.1.0 should detect `1.1.1` via the GitHub API and OTA update successfully
+    61→
+    62→### After Validation
+    63→
+    64→Once Phase 2 succeeds, kellerdigital.com is no longer needed for OTA. Future releases (1.1.2, 1.2.0, etc.) go exclusively through GitHub Releases.
+    65→
+    66→## Design Decisions
+    67→
+    68→### HTTPS Requirement
+    69→
+    70→GitHub requires HTTPS. Two options:
+    71→
+    72→| Option | Pros | Cons |
+    73→|--------|------|------|
+    74→| **A: WiFiClientSecure + setInsecure()** | Simple, no cert management | No server verification (still encrypted in transit) |
+    75→| **B: WiFiClientSecure + root CA cert** | Full TLS verification | Must update cert when it expires; uses ~1-2KB more flash |
+    76→
+    77→**Recommendation**: Start with **Option A** (`setInsecure()`). This provides encrypted transport (preventing passive eavesdropping) without the cert maintenance burden. The device is on a local network and firmware signing (Roadmap #30) is the proper long-term solution for binary integrity.
+    78→
+    79→### GitHub URL Pattern
+    80→
+    81→Two GitHub endpoints:
+    82→
+    83→1. **Version check** (API — returns JSON):
+    84→   ```
+    85→   https://api.github.com/repos/GDKeller/JPL-MiniPulse/releases/latest
+    86→   ```
+    87→   Response includes `"tag_name": "1.1.1"` — this is the version string.
+    88→
+    89→2. **Firmware download** (Release asset — returns 302 redirect to CDN):
+    90→   ```
+    91→   https://github.com/GDKeller/JPL-MiniPulse/releases/latest/download/firmware.bin
+    92→   ```
+    93→
+    94→The API endpoint returns JSON directly (no redirect). The asset download URL returns a **302 redirect** to the actual CDN URL. The ESP32 HTTP client must follow redirects for the binary download.
+    95→
+    96→### Redirect Handling
+    97→
+    98→- `HTTPClient` supports `setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS)` or `HTTPC_FORCE_FOLLOW_REDIRECTS`
+    99→- `httpUpdate` also supports `setFollowRedirects()` — confirmed in the installed ESP32 framework (`HTTPUpdate.h`). It passes the setting through to its internal `HTTPClient`. This means we can use `httpUpdate` directly without manual redirect resolution.
+   100→
+   101→### Failure During Update (Power Loss / Network Drop)
+   102→
+   103→The `release` and `debug` builds use `min_spiffs.csv`, which has a dual A/B partition layout (`ota_0` + `ota_1`). The ESP32 OTA mechanism writes new firmware to the **inactive** partition and only flips the bootloader flag after the full binary is written and verified.
+   104→
+   105→| Failure Scenario | What Happens |
+   106→|-----------------|--------------|
+   107→| **Internet drops mid-download** | `httpUpdate` returns `HTTP_UPDATE_FAILED` (timeout). Inactive partition has partial write but bootloader flag never switches. Device stays on current firmware. |
+   108→| **Power loss mid-write** | Same — `otadata` flag hasn't been flipped. Device reboots into current firmware on the intact active partition. |
+   109→| **Power loss after write, before reboot** | `otadata` flag already updated. Device boots into new firmware on next power-up. This is fine — the write completed successfully. |
+   110→
+   111→No code changes needed — the A/B partition scheme handles this inherently.
+   112→
+   113→**Note:** The `devdebug` env uses `huge_app.csv` which has only one app partition (no `ota_1`). OTA updates will fail on that build since there's no partition to write to. This is expected — `devdebug` is for JTAG debugging, not production use.
+   114→
+   115→### Memory Impact
+   116→
+   117→- `WiFiClientSecure` uses ~20-40KB more heap than `WiFiClient`
+   118→- Current free heap at runtime is ~100-150KB (from diagnostics), so this is feasible
+   119→- The secure client should be created on the stack or as a local variable, not a persistent global, to free memory after update
+   120→
+   121→## Files to Modify
+   122→
+   123→| File | Change |
+   124→|------|--------|
+   125→| `src/main.cpp` | Add `#include <WiFiClientSecure.h>`, update URLs, switch to WiFiClientSecure, enable redirect following on httpUpdate |
+   126→| `platformio.ini` | No changes needed (WiFiClientSecure is part of ESP32 Arduino core) |
+   127→
+   128→## Implementation Details
+   129→
+   130→### Step 1: Define GitHub URLs
+   131→
+   132→**File:** `src/main.cpp` (top of file, near version string)
+   133→
+   134→```cpp
+   135→// v1.1.0 ships with these URLs — first GitHub Release will be v1.1.1
+   136→const char* currentFirmwareVersion = "1.1.0";
+   137→const char* githubApiUrl = "https://api.github.com/repos/GDKeller/JPL-MiniPulse/releases/latest";
+   138→const char* firmwareBinaryUrl = "https://github.com/GDKeller/JPL-MiniPulse/releases/latest/download/firmware.bin";
+   139→```
+   140→
+   141→### Step 2: Add semver comparison helper
+   142→
+   143→Replace the `strcmp != 0` check with a proper semver comparison. Parses `major.minor.patch` from both strings and returns true only when the remote version is strictly newer.
+   144→
+   145→```cpp
+   146→// Returns true if `remote` is a higher semver than `current`.
+   147→// Expects format "major.minor.patch" (e.g. "1.2.3"). Returns false on parse failure.
+   148→bool isNewerVersion(const char* remote, const char* current) {
+   149→    int rMajor = 0, rMinor = 0, rPatch = 0;
+   150→    int cMajor = 0, cMinor = 0, cPatch = 0;
+   151→
+   152→    if (sscanf(remote, "%d.%d.%d", &rMajor, &rMinor, &rPatch) != 3) return false;
+   153→    if (sscanf(current, "%d.%d.%d", &cMajor, &cMinor, &cPatch) != 3) return false;
+   154→
+   155→    if (rMajor != cMajor) return rMajor > cMajor;
+   156→    if (rMinor != cMinor) return rMinor > cMinor;
+   157→    return rPatch > cPatch;
+   158→}
+   159→```
+   160→
+   161→Then update `checkFirmwareUpdateAvailable()` to use it:
+   162→
+   163→```cpp
+   164→bool checkFirmwareUpdateAvailable() {
+   165→    const char* latestVersion = getRemoteFirmwareVersion();
+   166→
+   167→    if (strcmp(latestVersion, "") == 0) {
+   168→        return false;
+   169→    }
+   170→
+   171→    return isNewerVersion(latestVersion, currentFirmwareVersion);
+   172→}
+   173→```
+   174→
+   175→### Step 3: Update getRemoteFirmwareVersion()
+   176→
+   177→**Current** (~line 391): Uses `HTTPClient` with plain HTTP to fetch a text file.
+   178→
+   179→**Proposed:** Query the GitHub Releases API and parse `tag_name` from the JSON response.
+   180→
+   181→```cpp
+   182→const char* getRemoteFirmwareVersion() {
+   183→    bool showSerial = FileUtils::config.debugUtils.showSerial;
+   184→    static char buffer[16];
+   185→    buffer[0] = '\0';
+   186→
+   187→    WiFiClientSecure secureClient;
+   188→    secureClient.setInsecure(); // Encrypted transport, no cert pinning
+   189→
+   190→    HTTPClient httpFirmware;
+   191→    httpFirmware.setTimeout(10000); // 10s timeout (GitHub API can be slow)
+   192→
+   193→    if (!httpFirmware.begin(secureClient, githubApiUrl)) {
+   194→        if (showSerial) Serial.println("Failed to begin HTTP connection for version check");
+   195→        return buffer;
+   196→    }
+   197→
+   198→    // Headers must be added after begin() — begin() may clear internal state
+   199→    httpFirmware.addHeader("Accept", "application/vnd.github+json");
+   200→    httpFirmware.addHeader("User-Agent", "JPL-MiniPulse-ESP32"); // GitHub API requires User-Agent
+   201→
+   202→    int httpCode = httpFirmware.GET();
+   203→    if (showSerial) Serial.printf("Version check HTTP code: %d\n", httpCode);
+   204→
+   205→    if (httpCode == HTTP_CODE_OK) {
+   206→        // Parse directly from stream to avoid allocating full response (5-20KB) on heap
+   207→        WiFiClient& stream = httpFirmware.getStream();
+   208→
+   209→        StaticJsonDocument<64> filter;
+   210→        filter["tag_name"] = true;
+   211→
+   212→        DynamicJsonDocument doc(512);
+   213→        DeserializationError err = deserializeJson(doc, stream, DeserializationOption::Filter(filter));
+   214→
+   215→        if (err == DeserializationError::Ok && doc.containsKey("tag_name")) {
+   216→            const char* tagName = doc["tag_name"];
+   217→            if (showSerial) Serial.printf("Remote version (tag): %s\n", tagName);
+   218→            strncpy(buffer, tagName, sizeof(buffer) - 1);
+   219→            buffer[sizeof(buffer) - 1] = '\0';
+   220→        } else {
+   221→            if (showSerial) Serial.println("Failed to parse tag_name from GitHub API response");
+   222→        }
+   223→    } else {
+   224→        if (showSerial) Serial.printf("Failed to fetch remote version (HTTP %d)\n", httpCode);
+   225→    }
+   226→
+   227→    httpFirmware.end();
+   228→    return buffer;
+   229→}
+   230→```
+   231→
+   232→**Note on memory:** The GitHub API response for `/releases/latest` can be large (~5-20KB depending on release notes and assets). By using `getStream()` with ArduinoJson's filter, we parse directly from the HTTP stream without allocating the full response as a `String` on the heap. This is critical — on a ~100-150KB heap, avoiding a 5-20KB intermediate allocation matters.
+   233→
+   234→### Step 4: Update updateFirmwareOta()
+   235→
+   236→**Current** (~line 439): Uses `WiFiClient` (plain HTTP) with the kellerdigital.com URL.
+   237→
+   238→**Proposed:** Use `WiFiClientSecure` with `httpUpdate`'s native redirect support. The ESP32 framework's `HTTPUpdate` class has `setFollowRedirects()` which passes through to its internal `HTTPClient`, so no manual redirect resolution is needed.
+   239→
+   240→```cpp
+   241→void updateFirmwareOta() {
+   242→    if (!checkFirmwareUpdateAvailable()) return;
+   243→    bool showSerial = FileUtils::config.debugUtils.showSerial;
+   244→
+   245→    if (showSerial) Serial.println("\n--------\nAttempting firmware update from GitHub...");
+   246→
+   247→    WiFiClientSecure secureClient;
+   248→    secureClient.setInsecure();
+   249→
+   250→    httpUpdate.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
+   251→
+   252→    t_httpUpdate_return ret = httpUpdate.update(secureClient, firmwareBinaryUrl);
+   253→
+   254→    switch (ret) {
+   255→        case HTTP_UPDATE_FAILED:
+   256→            if (showSerial) Serial.printf(">> HTTP_UPDATE_FAILED Error (%d): %s\n",
+   257→                httpUpdate.getLastError(), httpUpdate.getLastErrorString().c_str());
+   258→            break;
+   259→        case HTTP_UPDATE_NO_UPDATES:
+   260→            if (showSerial) Serial.println(">> HTTP_UPDATE_NO_UPDATES");
+   261→            break;
+   262→        case HTTP_UPDATE_OK:
+   263→            if (showSerial) Serial.println(">> HTTP_UPDATE_OK");
+   264→            break;
+   265→        default:
+   266→            if (showSerial) Serial.println(">> HTTP_UPDATE Unknown result");
+   267→            break;
+   268→    }
+   269→
+   270→    if (showSerial) Serial.println("OTA update complete\n--------\n");
+   271→}
+   272→```
+   273→
+   274→**Fallback:** If `httpUpdate.setFollowRedirects()` doesn't handle GitHub's cross-host redirect chain (GitHub → CDN) properly on hardware, the fallback is to manually resolve the redirect via a HEAD request and pass the final CDN URL to `httpUpdate.update()`. This needs to be tested on hardware.
+   275→
+   276→### Step 5: Create Release Workflow
+   277→
+   278→For the v1.1.0 bridge release (Phase 1 — old OTA path):
+   279→
+   280→1. Set `currentFirmwareVersion = "1.1.0"` in `src/main.cpp`
+   281→2. Build firmware: `~/.platformio/penv/bin/pio run -e release`
+   282→3. Upload `firmware.bin` to `develop.kellerdigital.com/minipulse/`
+   283→4. Update `latest_version.txt` on the server to `1.1.0`
+   284→
+   285→For v1.1.1 and all future releases (Phase 2+ — GitHub OTA path):
+   286→
+   287→1. Update `currentFirmwareVersion` in `src/main.cpp` (e.g., `"1.1.1"`)
+   288→2. Build firmware: `~/.platformio/penv/bin/pio run -e release`
+   289→3. Create a GitHub Release with tag matching the version (e.g., tag `1.1.1`)
+   290→4. Upload `firmware.bin` (from `.pio/build/release/firmware.bin`) as a release asset
+   291→
+   292→That's it — the device reads the version from the release tag, so no extra files needed.
+   293→
+   294→This could be automated with GitHub Actions in the future.
+   295→
+   296→### Note on #39 (`.catch()` on firmware version fetch)
+   297→
+   298→The current portal JavaScript fetches the version without error handling. This is addressed by this plan — the rewritten `getRemoteFirmwareVersion()` handles HTTP failures gracefully and the portal JS should be updated to handle fetch errors at the same time. No need for a separate fix.
+   299→
+   300→## Testing
+   301→
+   302→### Phase 1 Validation (v1.1.0 via kellerdigital.com)
+   303→
+   304→1. Flash v1.1.0 to a device via USB or existing OTA
+   305→2. Verify the device's portal shows version `1.1.0`
+   306→3. Confirm the GitHub OTA code compiles and doesn't break existing functionality
+   307→4. (The old kellerdigital.com OTA path should still work for distributing 1.1.0 to field devices)
+   308→
+   309→### Phase 2 Validation (v1.1.1 via GitHub Releases)
+   310→
+   311→1. Create GitHub Release tagged `1.1.1` with a built `firmware.bin`
+   312→2. On a device running v1.1.0, trigger a firmware update check
+   313→3. Verify version check hits the GitHub API and returns `1.1.1` over HTTPS
+   314→4. Verify redirect following works (GitHub → CDN) for the binary download
+   315→5. Verify firmware download and flash succeeds — device reboots into v1.1.1
+   316→6. Monitor heap usage during HTTPS operations (WiFiClientSecure overhead)
+   317→
+   318→### Failure Cases
+   319→
+   320→1. No WiFi — update check should fail gracefully, no crash
+   321→2. GitHub API down or rate-limited (HTTP 403) — should report error, not hang
+   322→3. No releases exist yet (HTTP 404) — should return empty version, no update offered
+   323→4. Invalid/corrupt binary on GitHub — httpUpdate should reject it
+   324→5. Slow network — 10s timeout should prevent indefinite blocking
+   325→
+   326→## Risks
+   327→
+   328→| Risk | Severity | Mitigation |
+   329→|------|----------|------------|
+   330→| GitHub redirect chain breaks httpUpdate | MED | `httpUpdate.setFollowRedirects()` confirmed in framework; test on hardware; manual redirect resolution as fallback |
+   331→| WiFiClientSecure heap usage too high | MED | Create client as local variable; monitor free heap |
+   332→| GitHub rate limiting (60 req/hr unauthenticated) | LOW | Device only checks on portal interaction, not polling |
+   333→| HTTPS handshake timeout on slow WiFi | MED | Set 10s timeout; retry logic already exists |
+   334→| Accidental version downgrade | LOW | Mitigated: `isNewerVersion()` does proper semver comparison (major.minor.patch), only triggers when remote is strictly newer |
+   335→| No releases exist yet (404 from API) | LOW | Handled by the `httpCode != HTTP_CODE_OK` path — returns empty buffer, no update offered |
+   336→
+   337→## Estimated Scope
+   338→
+   339→- 1 file modified (`src/main.cpp`)
+   340→- ~40 lines changed
+   341→- No new dependencies (WiFiClientSecure is part of ESP32 core)
+   342→- Two-phase rollout: v1.1.0 via old server, v1.1.1 via GitHub Releases
+   343→- Requires hardware testing for redirect behavior
+   344→- kellerdigital.com can be decommissioned for OTA after v1.1.1 is validated
+   345→
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:18:28Z)**_
+
+<think><details><summary>Thought Process</summary>
+Now let me create tasks for the team. The implementation steps are sequential since they all modify the same file (`src/main.cpp`). However, I can parallelize some work:
+
+1. **Implementer agent** - Does the actual code changes (Steps 1-4). Since all changes are in `src/main.cpp` and sequential, one agent should handle this.
+2. **Reviewer agent** - Reviews the implementation after it's done.
+
+Actually, let me think about whether there's any parallelism possible:
+- Step 1 (URLs) and Step 2 (semver helper) could be done by the same agent since they're both in main.cpp
+
+
+- Step 3 (getRemoteFirmwareVersion) depends on Step 1 (needs the URL constants)
+- Step 4 (updateFirmwareOta) depends on Step 2 (needs isNewerVersion via checkFirmwareUpdateAvailable)
+
+So the implementation is inherently sequential. I should have one implementer handle all four code steps, then a reviewer checks the work, and maybe a build verifier tries to compile. Let me break this down into discrete tasks starting with adding the WiFi header and GitHub URL constants.
+
+Now I'm planning the remaining tasks: adding the version comparison helper, rewriting the GitHub API call, updating the OTA function with secure WiFi, then verifying it compiles and getting a code review. Since all the changes are in one file, I could have the implementer do steps 1-4 sequentially, with the build check and review depending on those being complete.
+</details></think>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:18:28Z)**_
+
+Now let me create tasks and spawn the team.
+
+_**Agent (claude-opus-4-6 2026-03-02 11:18:34Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskCreate"><details>
+<summary>Tool use: **TaskCreate**</summary>
+Implement the GitHub-based OTA firmware update changes in src/main.cpp per board/PLAN-github-ota.md. All changes are in one file. Steps:
+
+**Step 1: Add include and GitHub URL constants**
+- Add `#include <WiFiClientSecure.h>` near the other includes at the top
+- Add two new URL constants near `currentFirmwareVersion` (line 1):
+  ```cpp
+  const char* githubApiUrl = "https://api.github.com/repos/GDKeller/JPL-MiniPulse/releases/latest";
+  const char* firmwareBinaryUrl = "https://github.com/GDKeller/JPL-MiniPulse/releases/latest/download/firmware.bin";
+  ```
+- Do NOT change currentFirmwareVersion (leave it as-is for now)
+
+**Step 2: Add isNewerVersion() helper and update checkFirmwareUpdateAvailable()**
+- Add `isNewerVersion(const char* remote, const char* current)` function BEFORE `checkFirmwareUpdateAvailable()`. It parses major.minor.patch with sscanf and returns true only when remote is strictly newer.
+- Rewrite `checkFirmwareUpdateAvailable()` to use `isNewerVersion()` instead of `strcmp != 0`. Keep the empty-string check. Remove all the dead commented-out snprintf/buffer code.
+
+**Step 3: Rewrite getRemoteFirmwareVersion() (~line 391)**
+- Replace the existing function with the HTTPS GitHub API version from the plan
+- Use WiFiClientSecure with setInsecure()
+- Use getStream() + ArduinoJson filter (NOT getString()) to parse tag_name
+- Add headers AFTER begin(), not before
+- Gate ALL Serial output behind showSerial
+
+**Step 4: Rewrite updateFirmwareOta() (~line 439)**
+- Replace the existing function with the WiFiClientSecure version from the plan
+- Use httpUpdate.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS)
+- Remove the old kellerdigital.com URL and WiFiClient usage
+- Gate ALL Serial output behind showSerial
+- Remove the old snprintf/buffer pattern, use direct Serial calls gated behind showSerial
+
+IMPORTANT conventions:
+- All Serial output MUST be gated behind `FileUtils::config.debugUtils.showSerial` (or a local `bool showSerial` variable)
+- Use tabs for indentation (match existing code style)
+- Read the plan at board/PLAN-github-ota.md for exact code snippets
+
+```text
+Task #1 created successfully: Implement GitHub OTA code changes in src/main.cpp (Steps 1-4)
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:18:37Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskCreate"><details>
+<summary>Tool use: **TaskCreate**</summary>
+After the code changes are implemented, run the PlatformIO build to verify everything compiles:
+- Run: `~/.platformio/penv/bin/pio run -e release`
+- If the build fails, diagnose and fix the compilation errors
+- Report the build result (success or errors encountered)
+
+```text
+Task #2 created successfully: Verify build compiles with PlatformIO
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:18:40Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskCreate"><details>
+<summary>Tool use: **TaskCreate**</summary>
+After implementation and build verification, review the changes in src/main.cpp against the plan at board/PLAN-github-ota.md. Check for:
+1. WiFiClientSecure include is present
+2. GitHub URL constants are correct
+3. isNewerVersion() properly compares semver (major.minor.patch)
+4. checkFirmwareUpdateAvailable() uses isNewerVersion() not strcmp
+5. getRemoteFirmwareVersion() uses getStream() not getString(), headers after begin(), all Serial gated behind showSerial
+6. updateFirmwareOta() uses httpUpdate.setFollowRedirects(), WiFiClientSecure, all Serial gated behind showSerial
+7. No leftover kellerdigital.com URLs
+8. Code style matches existing conventions (tabs, showSerial pattern)
+9. No dead/commented-out code left behind
+
+Use `git diff` to see exactly what changed.
+
+```text
+Task #3 created successfully: Review implemented GitHub OTA changes
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:18:44Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskUpdate"><details>
+<summary>Tool use: **TaskUpdate**</summary>
+
+```text
+Updated task #2 blockedBy
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:18:45Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskUpdate"><details>
+<summary>Tool use: **TaskUpdate**</summary>
+
+```text
+Updated task #3 blockedBy
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:18:48Z)**_
+
+Now spawning the team. The implementer starts on task 1. Build and review agents will activate when unblocked.
+
+_**Agent (claude-opus-4-6 2026-03-02 11:18:54Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="Agent"><details>
+<summary>Tool use: **Agent**</summary>
+Implement GitHub OTA changes
+
+```text
+Spawned successfully.
+agent_id: implementer@github-ota
+name: implementer
+team_name: github-ota
+The agent is now running and will receive instructions via mailbox.
+```
+</details></tool-use>
+
+_**Agent - sidechain (2026-03-02 11:18:54Z)**_
+
+<teammate-message teammate_id="team-lead" summary="Implement GitHub OTA changes">
+You are the implementer on team github-ota. Your job is to implement the GitHub OTA code changes in src/main.cpp.
+
+Read your task details from the task list (Task #1), then read the plan at board/PLAN-github-ota.md for the exact code. Also read the current src/main.cpp to understand the existing code before making changes.
+
+IMPORTANT implementation notes:
+- Use tabs for indentation (match existing code)
+- Gate ALL Serial output behind showSerial
+- Use targeted edits (Edit tool), not full file rewrites
+- Follow the plan's code exactly, adapted to the existing code style
+- Do NOT change currentFirmwareVersion — leave it as-is
+- After finishing Task #1, also pick up Task #2 (build verification) since it depends on your work
+
+Start by reading your task, the plan, and the relevant sections of main.cpp.
+</teammate-message>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:18:58Z)**_
+
+
+
+I'll start by reading my task details, the plan, and the current source code.
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:18:58Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskList"><details>
+<summary>Tool use: **TaskList**</summary>
+
+```text
+#1 [pending] Implement GitHub OTA code changes in src/main.cpp (Steps 1-4)
+#2 [pending] Verify build compiles with PlatformIO [blocked by #1]
+#3 [pending] Review implemented GitHub OTA changes [blocked by #2]
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:18:59Z)**_
+
+Team is set up:
+
+- **Task 1**: Implement code changes (Steps 1-4) → assigned to `implementer`
+- **Task 2**: Build verification → blocked on Task 1, `implementer` will pick it up after
+- **Task 3**: Code review → blocked on Task 2, I'll spawn a reviewer when it's ready
+
+The implementer is working now. I'll coordinate as results come in.
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:19:01Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskGet"><details>
+<summary>Tool use: **TaskGet**</summary>
+
+```text
+Task #1: Implement GitHub OTA code changes in src/main.cpp (Steps 1-4)
+Status: pending
+Description: Implement the GitHub-based OTA firmware update changes in src/main.cpp per board/PLAN-github-ota.md. All changes are in one file. Steps:
+
+**Step 1: Add include and GitHub URL constants**
+- Add `#include <WiFiClientSecure.h>` near the other includes at the top
+- Add two new URL constants near `currentFirmwareVersion` (line 1):
+  ```cpp
+  const char* githubApiUrl = "https://api.github.com/repos/GDKeller/JPL-MiniPulse/releases/latest";
+  const char* firmwareBinaryUrl = "https://github.com/GDKeller/JPL-MiniPulse/releases/latest/download/firmware.bin";
+  ```
+- Do NOT change currentFirmwareVersion (leave it as-is for now)
+
+**Step 2: Add isNewerVersion() helper and update checkFirmwareUpdateAvailable()**
+- Add `isNewerVersion(const char* remote, const char* current)` function BEFORE `checkFirmwareUpdateAvailable()`. It parses major.minor.patch with sscanf and returns true only when remote is strictly newer.
+- Rewrite `checkFirmwareUpdateAvailable()` to use `isNewerVersion()` instead of `strcmp != 0`. Keep the empty-string check. Remove all the dead commented-out snprintf/buffer code.
+
+**Step 3: Rewrite getRemoteFirmwareVersion() (~line 391)**
+- Replace the existing function with the HTTPS GitHub API version from the plan
+- Use WiFiClientSecure with setInsecure()
+- Use getStream() + ArduinoJson filter (NOT getString()) to parse tag_name
+- Add headers AFTER begin(), not before
+- Gate ALL Serial output behind showSerial
+
+**Step 4: Rewrite updateFirmwareOta() (~line 439)**
+- Replace the existing function with the WiFiClientSecure version from the plan
+- Use httpUpdate.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS)
+- Remove the old kellerdigital.com URL and WiFiClient usage
+- Gate ALL Serial output behind showSerial
+- Remove the old snprintf/buffer pattern, use direct Serial calls gated behind showSerial
+
+IMPORTANT conventions:
+- All Serial output MUST be gated behind `FileUtils::config.debugUtils.showSerial` (or a local `bool showSerial` variable)
+- Use tabs for indentation (match existing code style)
+- Read the plan at board/PLAN-github-ota.md for exact code snippets
+Blocks: #2
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:19:04Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskUpdate"><details>
+<summary>Tool use: **TaskUpdate**</summary>
+
+```text
+Updated task #1 owner, status
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:19:07Z)**_
+
+Now let me read the plan and the current source file.
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:19:08Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./board/PLAN-github-ota.md`
+
+```text
+     1→# Planning Document: GitHub-Based OTA Firmware Updates
+     2→
+     3→## Overview
+     4→
+     5→Replace the current `develop.kellerdigital.com` firmware hosting with GitHub Releases for version checking and firmware binary downloads.
+     6→
+     7→## Background
+     8→
+     9→### Current Behavior
+    10→
+    11→OTA firmware updates use two hardcoded URLs in `src/main.cpp`:
+    12→
+    13→1. **Version check** (~line 391): `http://develop.kellerdigital.com/minipulse/latest_version.txt`
+    14→2. **Firmware binary** (~line 448): `http://develop.kellerdigital.com/minipulse/firmware.bin`
+    15→
+    16→Both use plain HTTP via `HTTPClient` / `httpUpdate`. The version check fetches a text file, compares it with `strcmp()` against the hardcoded `currentFirmwareVersion`, and the binary download uses ESP32's built-in `httpUpdate.update()`.
+    17→
+    18→### Problems
+    19→
+    20→- Relies on a personal server that may go offline
+    21→- Plain HTTP is vulnerable to MITM attacks (firmware injection)
+    22→- No versioned history of releases
+    23→- Manual file management on the server
+    24→
+    25→### Proposed Behavior
+    26→
+    27→Use GitHub Releases from `GDKeller/JPL-MiniPulse` for both version checking and firmware downloads:
+    28→- **Version check**: Query the GitHub Releases API (`/releases/latest`), parse `tag_name` from the JSON response
+    29→- **Firmware binary**: Download `firmware.bin` from the latest release assets
+    30→- No `latest_version.txt` file needed — the release tag IS the version
+    31→
+    32→## Rollout Strategy
+    33→
+    34→### The Bootstrapping Problem
+    35→
+    36→v1.1.0 is the release that *contains* the new GitHub OTA code, but it must itself be distributed via the **old** kellerdigital.com OTA system (since devices in the field are still pointing there). This creates a two-phase rollout:
+    37→
+    38→| Phase | Version | Distributed Via | Contains |
+    39→|-------|---------|-----------------|----------|
+    40→| **1 — Bridge release** | `1.1.0` | kellerdigital.com (old OTA) | New GitHub OTA code + all other 1.1.0 features |
+    41→| **2 — First GitHub release** | `1.1.1` | GitHub Releases (new OTA) | Minimal changes — exists primarily to validate the new OTA path |
+    42→
+    43→### Version Comparison
+    44→
+    45→The current code uses `strcmp(latestVersion, currentFirmwareVersion) != 0` — any difference triggers an update, which means a stale or rolled-back release tag could cause an accidental downgrade. We'll replace this with a proper semver comparison that only triggers when the remote version is strictly newer (higher major, minor, or patch).
+    46→
+    47→### Phase 1: Ship v1.1.0 via kellerdigital.com
+    48→
+    49→1. Finalize all v1.1.0 code (including the new GitHub OTA functions)
+    50→2. Set `currentFirmwareVersion = "1.1.0"`
+    51→3. Build and upload `firmware.bin` to `develop.kellerdigital.com/minipulse/`
+    52→4. Update `latest_version.txt` on the server to `1.1.0`
+    53→5. Devices in the field update via the old path — they now have GitHub OTA code
+    54→
+    55→### Phase 2: Test with v1.1.1 on GitHub Releases
+    56→
+    57→1. Bump `currentFirmwareVersion` to `"1.1.1"` (no other code changes needed)
+    58→2. Build firmware: `~/.platformio/penv/bin/pio run -e release`
+    59→3. Create GitHub Release with tag `1.1.1`, upload `firmware.bin` as asset
+    60→4. A device already running v1.1.0 should detect `1.1.1` via the GitHub API and OTA update successfully
+    61→
+    62→### After Validation
+    63→
+    64→Once Phase 2 succeeds, kellerdigital.com is no longer needed for OTA. Future releases (1.1.2, 1.2.0, etc.) go exclusively through GitHub Releases.
+    65→
+    66→## Design Decisions
+    67→
+    68→### HTTPS Requirement
+    69→
+    70→GitHub requires HTTPS. Two options:
+    71→
+    72→| Option | Pros | Cons |
+    73→|--------|------|------|
+    74→| **A: WiFiClientSecure + setInsecure()** | Simple, no cert management | No server verification (still encrypted in transit) |
+    75→| **B: WiFiClientSecure + root CA cert** | Full TLS verification | Must update cert when it expires; uses ~1-2KB more flash |
+    76→
+    77→**Recommendation**: Start with **Option A** (`setInsecure()`). This provides encrypted transport (preventing passive eavesdropping) without the cert maintenance burden. The device is on a local network and firmware signing (Roadmap #30) is the proper long-term solution for binary integrity.
+    78→
+    79→### GitHub URL Pattern
+    80→
+    81→Two GitHub endpoints:
+    82→
+    83→1. **Version check** (API — returns JSON):
+    84→   ```
+    85→   https://api.github.com/repos/GDKeller/JPL-MiniPulse/releases/latest
+    86→   ```
+    87→   Response includes `"tag_name": "1.1.1"` — this is the version string.
+    88→
+    89→2. **Firmware download** (Release asset — returns 302 redirect to CDN):
+    90→   ```
+    91→   https://github.com/GDKeller/JPL-MiniPulse/releases/latest/download/firmware.bin
+    92→   ```
+    93→
+    94→The API endpoint returns JSON directly (no redirect). The asset download URL returns a **302 redirect** to the actual CDN URL. The ESP32 HTTP client must follow redirects for the binary download.
+    95→
+    96→### Redirect Handling
+    97→
+    98→- `HTTPClient` supports `setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS)` or `HTTPC_FORCE_FOLLOW_REDIRECTS`
+    99→- `httpUpdate` also supports `setFollowRedirects()` — confirmed in the installed ESP32 framework (`HTTPUpdate.h`). It passes the setting through to its internal `HTTPClient`. This means we can use `httpUpdate` directly without manual redirect resolution.
+   100→
+   101→### Failure During Update (Power Loss / Network Drop)
+   102→
+   103→The `release` and `debug` builds use `min_spiffs.csv`, which has a dual A/B partition layout (`ota_0` + `ota_1`). The ESP32 OTA mechanism writes new firmware to the **inactive** partition and only flips the bootloader flag after the full binary is written and verified.
+   104→
+   105→| Failure Scenario | What Happens |
+   106→|-----------------|--------------|
+   107→| **Internet drops mid-download** | `httpUpdate` returns `HTTP_UPDATE_FAILED` (timeout). Inactive partition has partial write but bootloader flag never switches. Device stays on current firmware. |
+   108→| **Power loss mid-write** | Same — `otadata` flag hasn't been flipped. Device reboots into current firmware on the intact active partition. |
+   109→| **Power loss after write, before reboot** | `otadata` flag already updated. Device boots into new firmware on next power-up. This is fine — the write completed successfully. |
+   110→
+   111→No code changes needed — the A/B partition scheme handles this inherently.
+   112→
+   113→**Note:** The `devdebug` env uses `huge_app.csv` which has only one app partition (no `ota_1`). OTA updates will fail on that build since there's no partition to write to. This is expected — `devdebug` is for JTAG debugging, not production use.
+   114→
+   115→### Memory Impact
+   116→
+   117→- `WiFiClientSecure` uses ~20-40KB more heap than `WiFiClient`
+   118→- Current free heap at runtime is ~100-150KB (from diagnostics), so this is feasible
+   119→- The secure client should be created on the stack or as a local variable, not a persistent global, to free memory after update
+   120→
+   121→## Files to Modify
+   122→
+   123→| File | Change |
+   124→|------|--------|
+   125→| `src/main.cpp` | Add `#include <WiFiClientSecure.h>`, update URLs, switch to WiFiClientSecure, enable redirect following on httpUpdate |
+   126→| `platformio.ini` | No changes needed (WiFiClientSecure is part of ESP32 Arduino core) |
+   127→
+   128→## Implementation Details
+   129→
+   130→### Step 1: Define GitHub URLs
+   131→
+   132→**File:** `src/main.cpp` (top of file, near version string)
+   133→
+   134→```cpp
+   135→// v1.1.0 ships with these URLs — first GitHub Release will be v1.1.1
+   136→const char* currentFirmwareVersion = "1.1.0";
+   137→const char* githubApiUrl = "https://api.github.com/repos/GDKeller/JPL-MiniPulse/releases/latest";
+   138→const char* firmwareBinaryUrl = "https://github.com/GDKeller/JPL-MiniPulse/releases/latest/download/firmware.bin";
+   139→```
+   140→
+   141→### Step 2: Add semver comparison helper
+   142→
+   143→Replace the `strcmp != 0` check with a proper semver comparison. Parses `major.minor.patch` from both strings and returns true only when the remote version is strictly newer.
+   144→
+   145→```cpp
+   146→// Returns true if `remote` is a higher semver than `current`.
+   147→// Expects format "major.minor.patch" (e.g. "1.2.3"). Returns false on parse failure.
+   148→bool isNewerVersion(const char* remote, const char* current) {
+   149→    int rMajor = 0, rMinor = 0, rPatch = 0;
+   150→    int cMajor = 0, cMinor = 0, cPatch = 0;
+   151→
+   152→    if (sscanf(remote, "%d.%d.%d", &rMajor, &rMinor, &rPatch) != 3) return false;
+   153→    if (sscanf(current, "%d.%d.%d", &cMajor, &cMinor, &cPatch) != 3) return false;
+   154→
+   155→    if (rMajor != cMajor) return rMajor > cMajor;
+   156→    if (rMinor != cMinor) return rMinor > cMinor;
+   157→    return rPatch > cPatch;
+   158→}
+   159→```
+   160→
+   161→Then update `checkFirmwareUpdateAvailable()` to use it:
+   162→
+   163→```cpp
+   164→bool checkFirmwareUpdateAvailable() {
+   165→    const char* latestVersion = getRemoteFirmwareVersion();
+   166→
+   167→    if (strcmp(latestVersion, "") == 0) {
+   168→        return false;
+   169→    }
+   170→
+   171→    return isNewerVersion(latestVersion, currentFirmwareVersion);
+   172→}
+   173→```
+   174→
+   175→### Step 3: Update getRemoteFirmwareVersion()
+   176→
+   177→**Current** (~line 391): Uses `HTTPClient` with plain HTTP to fetch a text file.
+   178→
+   179→**Proposed:** Query the GitHub Releases API and parse `tag_name` from the JSON response.
+   180→
+   181→```cpp
+   182→const char* getRemoteFirmwareVersion() {
+   183→    bool showSerial = FileUtils::config.debugUtils.showSerial;
+   184→    static char buffer[16];
+   185→    buffer[0] = '\0';
+   186→
+   187→    WiFiClientSecure secureClient;
+   188→    secureClient.setInsecure(); // Encrypted transport, no cert pinning
+   189→
+   190→    HTTPClient httpFirmware;
+   191→    httpFirmware.setTimeout(10000); // 10s timeout (GitHub API can be slow)
+   192→
+   193→    if (!httpFirmware.begin(secureClient, githubApiUrl)) {
+   194→        if (showSerial) Serial.println("Failed to begin HTTP connection for version check");
+   195→        return buffer;
+   196→    }
+   197→
+   198→    // Headers must be added after begin() — begin() may clear internal state
+   199→    httpFirmware.addHeader("Accept", "application/vnd.github+json");
+   200→    httpFirmware.addHeader("User-Agent", "JPL-MiniPulse-ESP32"); // GitHub API requires User-Agent
+   201→
+   202→    int httpCode = httpFirmware.GET();
+   203→    if (showSerial) Serial.printf("Version check HTTP code: %d\n", httpCode);
+   204→
+   205→    if (httpCode == HTTP_CODE_OK) {
+   206→        // Parse directly from stream to avoid allocating full response (5-20KB) on heap
+   207→        WiFiClient& stream = httpFirmware.getStream();
+   208→
+   209→        StaticJsonDocument<64> filter;
+   210→        filter["tag_name"] = true;
+   211→
+   212→        DynamicJsonDocument doc(512);
+   213→        DeserializationError err = deserializeJson(doc, stream, DeserializationOption::Filter(filter));
+   214→
+   215→        if (err == DeserializationError::Ok && doc.containsKey("tag_name")) {
+   216→            const char* tagName = doc["tag_name"];
+   217→            if (showSerial) Serial.printf("Remote version (tag): %s\n", tagName);
+   218→            strncpy(buffer, tagName, sizeof(buffer) - 1);
+   219→            buffer[sizeof(buffer) - 1] = '\0';
+   220→        } else {
+   221→            if (showSerial) Serial.println("Failed to parse tag_name from GitHub API response");
+   222→        }
+   223→    } else {
+   224→        if (showSerial) Serial.printf("Failed to fetch remote version (HTTP %d)\n", httpCode);
+   225→    }
+   226→
+   227→    httpFirmware.end();
+   228→    return buffer;
+   229→}
+   230→```
+   231→
+   232→**Note on memory:** The GitHub API response for `/releases/latest` can be large (~5-20KB depending on release notes and assets). By using `getStream()` with ArduinoJson's filter, we parse directly from the HTTP stream without allocating the full response as a `String` on the heap. This is critical — on a ~100-150KB heap, avoiding a 5-20KB intermediate allocation matters.
+   233→
+   234→### Step 4: Update updateFirmwareOta()
+   235→
+   236→**Current** (~line 439): Uses `WiFiClient` (plain HTTP) with the kellerdigital.com URL.
+   237→
+   238→**Proposed:** Use `WiFiClientSecure` with `httpUpdate`'s native redirect support. The ESP32 framework's `HTTPUpdate` class has `setFollowRedirects()` which passes through to its internal `HTTPClient`, so no manual redirect resolution is needed.
+   239→
+   240→```cpp
+   241→void updateFirmwareOta() {
+   242→    if (!checkFirmwareUpdateAvailable()) return;
+   243→    bool showSerial = FileUtils::config.debugUtils.showSerial;
+   244→
+   245→    if (showSerial) Serial.println("\n--------\nAttempting firmware update from GitHub...");
+   246→
+   247→    WiFiClientSecure secureClient;
+   248→    secureClient.setInsecure();
+   249→
+   250→    httpUpdate.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
+   251→
+   252→    t_httpUpdate_return ret = httpUpdate.update(secureClient, firmwareBinaryUrl);
+   253→
+   254→    switch (ret) {
+   255→        case HTTP_UPDATE_FAILED:
+   256→            if (showSerial) Serial.printf(">> HTTP_UPDATE_FAILED Error (%d): %s\n",
+   257→                httpUpdate.getLastError(), httpUpdate.getLastErrorString().c_str());
+   258→            break;
+   259→        case HTTP_UPDATE_NO_UPDATES:
+   260→            if (showSerial) Serial.println(">> HTTP_UPDATE_NO_UPDATES");
+   261→            break;
+   262→        case HTTP_UPDATE_OK:
+   263→            if (showSerial) Serial.println(">> HTTP_UPDATE_OK");
+   264→            break;
+   265→        default:
+   266→            if (showSerial) Serial.println(">> HTTP_UPDATE Unknown result");
+   267→            break;
+   268→    }
+   269→
+   270→    if (showSerial) Serial.println("OTA update complete\n--------\n");
+   271→}
+   272→```
+   273→
+   274→**Fallback:** If `httpUpdate.setFollowRedirects()` doesn't handle GitHub's cross-host redirect chain (GitHub → CDN) properly on hardware, the fallback is to manually resolve the redirect via a HEAD request and pass the final CDN URL to `httpUpdate.update()`. This needs to be tested on hardware.
+   275→
+   276→### Step 5: Create Release Workflow
+   277→
+   278→For the v1.1.0 bridge release (Phase 1 — old OTA path):
+   279→
+   280→1. Set `currentFirmwareVersion = "1.1.0"` in `src/main.cpp`
+   281→2. Build firmware: `~/.platformio/penv/bin/pio run -e release`
+   282→3. Upload `firmware.bin` to `develop.kellerdigital.com/minipulse/`
+   283→4. Update `latest_version.txt` on the server to `1.1.0`
+   284→
+   285→For v1.1.1 and all future releases (Phase 2+ — GitHub OTA path):
+   286→
+   287→1. Update `currentFirmwareVersion` in `src/main.cpp` (e.g., `"1.1.1"`)
+   288→2. Build firmware: `~/.platformio/penv/bin/pio run -e release`
+   289→3. Create a GitHub Release with tag matching the version (e.g., tag `1.1.1`)
+   290→4. Upload `firmware.bin` (from `.pio/build/release/firmware.bin`) as a release asset
+   291→
+   292→That's it — the device reads the version from the release tag, so no extra files needed.
+   293→
+   294→This could be automated with GitHub Actions in the future.
+   295→
+   296→### Note on #39 (`.catch()` on firmware version fetch)
+   297→
+   298→The current portal JavaScript fetches the version without error handling. This is addressed by this plan — the rewritten `getRemoteFirmwareVersion()` handles HTTP failures gracefully and the portal JS should be updated to handle fetch errors at the same time. No need for a separate fix.
+   299→
+   300→## Testing
+   301→
+   302→### Phase 1 Validation (v1.1.0 via kellerdigital.com)
+   303→
+   304→1. Flash v1.1.0 to a device via USB or existing OTA
+   305→2. Verify the device's portal shows version `1.1.0`
+   306→3. Confirm the GitHub OTA code compiles and doesn't break existing functionality
+   307→4. (The old kellerdigital.com OTA path should still work for distributing 1.1.0 to field devices)
+   308→
+   309→### Phase 2 Validation (v1.1.1 via GitHub Releases)
+   310→
+   311→1. Create GitHub Release tagged `1.1.1` with a built `firmware.bin`
+   312→2. On a device running v1.1.0, trigger a firmware update check
+   313→3. Verify version check hits the GitHub API and returns `1.1.1` over HTTPS
+   314→4. Verify redirect following works (GitHub → CDN) for the binary download
+   315→5. Verify firmware download and flash succeeds — device reboots into v1.1.1
+   316→6. Monitor heap usage during HTTPS operations (WiFiClientSecure overhead)
+   317→
+   318→### Failure Cases
+   319→
+   320→1. No WiFi — update check should fail gracefully, no crash
+   321→2. GitHub API down or rate-limited (HTTP 403) — should report error, not hang
+   322→3. No releases exist yet (HTTP 404) — should return empty version, no update offered
+   323→4. Invalid/corrupt binary on GitHub — httpUpdate should reject it
+   324→5. Slow network — 10s timeout should prevent indefinite blocking
+   325→
+   326→## Risks
+   327→
+   328→| Risk | Severity | Mitigation |
+   329→|------|----------|------------|
+   330→| GitHub redirect chain breaks httpUpdate | MED | `httpUpdate.setFollowRedirects()` confirmed in framework; test on hardware; manual redirect resolution as fallback |
+   331→| WiFiClientSecure heap usage too high | MED | Create client as local variable; monitor free heap |
+   332→| GitHub rate limiting (60 req/hr unauthenticated) | LOW | Device only checks on portal interaction, not polling |
+   333→| HTTPS handshake timeout on slow WiFi | MED | Set 10s timeout; retry logic already exists |
+   334→| Accidental version downgrade | LOW | Mitigated: `isNewerVersion()` does proper semver comparison (major.minor.patch), only triggers when remote is strictly newer |
+   335→| No releases exist yet (404 from API) | LOW | Handled by the `httpCode != HTTP_CODE_OK` path — returns empty buffer, no update offered |
+   336→
+   337→## Estimated Scope
+   338→
+   339→- 1 file modified (`src/main.cpp`)
+   340→- ~40 lines changed
+   341→- No new dependencies (WiFiClientSecure is part of ESP32 core)
+   342→- Two-phase rollout: v1.1.0 via old server, v1.1.1 via GitHub Releases
+   343→- Requires hardware testing for redirect behavior
+   344→- kellerdigital.com can be decommissioned for OTA after v1.1.1 is validated
+   345→
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:19:11Z)**_
+
+Now let me read the current `src/main.cpp`.
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:19:12Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+File content (39658 tokens) exceeds maximum allowed tokens (25000). Please use offset and limit parameters to read specific portions of the file, or use the GrepTool to search for specific content.
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:19:14Z)**_
+
+The file is large. Let me read the key sections I need to modify.
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:19:15Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+     1→const char* currentFirmwareVersion = "1.1.0-16"; // Current firmware version
+     2→
+     3→#pragma region -- LIBRARIES
+     4→#include <Arduino.h>		// Arduino core
+     5→#include <esp_task_wdt.h>	// ESP32 task watchdog
+     6→#include "soc/timer_group_struct.h" // Timer group struct
+     7→#include "soc/timer_group_reg.h"  // Timer group register
+     8→#include <FS.h>				// File system
+     9→#include <LittleFS.h>		// LittleFS file system
+    10→#include <HTTPClient.h>		// HTTP client
+    11→#include <HTTPUpdate.h> 	// HTTP update
+    12→#include <FastLED.h>		// FastLED lib
+    13→#include <tinyxml2.h>		// XML parser
+    14→#include <iostream>			// C++ I/O
+    15→#include <cstring>			// C++ string
+    16→#include <ArduinoJson.h>	// JSON parser
+    17→#include <algorithm>		// C++ algorithms
+    18→#include <WiFiManager.h>	// WiFi manager lib
+    19→#include <ESPmDNS.h>		// mDNS responder (minipulse.local)
+    20→
+    21→/* Custom libs */
+    22→#include <DevUtils.h>		// Custom dev utils lib
+    23→#include <FileUtils.h>		// Custom file utilities lib
+    24→#include <MathHelpers.h>	// Custom math helpers lib
+    25→#include <TextCharacters.h> // Custom LED text lib
+    26→#include <AnimationUtils.h> // Custom animation utilities lib
+    27→#include <Animate.h>		// Custom animate lib
+    28→
+    29→#include <SpacecraftData.h> // Custom spacecraft data lib
+    30→#include <XmlTestData.h>   // XML test/fallback data on LittleFS
+    31→
+    32→
+    33→#pragma endregion -- END LIBRARIES
+    34→
+    35→#pragma region -- NAMESPACES
+    36→using namespace tinyxml2; // XML parser
+    37→using namespace std;	  // C++ I/O
+    38→#pragma endregion thing
+    39→
+    40→#pragma region-- ESP32 PIN ASSIGNMENTS
+    41→#define OUTER_PIN 17		// Outer ring pin
+    42→#define MIDDLE_PIN 18		// Middle ring pin
+    43→#define INNER_PIN 19		// Inner ring pin
+    44→#define BOTTOM_PIN 16		// Bottom ring pin
+    45→#define WIFI_RST 21			// WiFi reset pin
+    46→#define OUTPUT_ENABLE 22	// Output enable pin
+    47→#define POTENTIOMETER 32	// Brightness potentiometer pin
+    48→#pragma endregion
+    49→
+    50→
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:19:19Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Grep"><details>
+<summary>Tool use: **Grep**</summary>
+ path `./src/main.cpp` pattern `getRemoteFirmwareVersion|checkFirmwareUpdateAvailable|updateFirmwareOta`
+
+```text
+391:const char* getRemoteFirmwareVersion() {
+413:bool checkFirmwareUpdateAvailable() {
+417:	const char* latestVersion = getRemoteFirmwareVersion();
+439:void updateFirmwareOta() {
+440:	if (!checkFirmwareUpdateAvailable()) return;
+793:		const char* remoteFirmwareVersion = getRemoteFirmwareVersion();
+800:		const char* remoteFirmwareVersion = getRemoteFirmwareVersion();
+801:		bool updateAvailable = checkFirmwareUpdateAvailable();
+810:		bool updateAvailable = checkFirmwareUpdateAvailable();
+811:		updateFirmwareOta();
+3455:	// updateFirmwareOta(); // Check for OTA update
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:19:21Z)**_
+
+Let me read the full blocks of these functions.
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:19:22Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+   385→	httpUpdate.onStart(update_started);
+   386→	httpUpdate.onEnd(update_finished);
+   387→	httpUpdate.onProgress(update_progress);
+   388→	httpUpdate.onError(update_error);
+   389→}
+   390→
+   391→const char* getRemoteFirmwareVersion() {
+   392→	bool showSerial = FileUtils::config.debugUtils.showSerial;
+   393→
+   394→	static char buffer[16];
+   395→	HTTPClient httpFirmware;
+   396→	httpFirmware.begin("http://develop.kellerdigital.com/minipulse/latest_version.txt");
+   397→	int httpCode = httpFirmware.GET();
+   398→	if (showSerial) Serial.print("HTTP code: " + String(httpCode) + "\n");
+   399→
+   400→	if (httpCode == HTTP_CODE_OK) {
+   401→		String latestVersion = httpFirmware.getString();
+   402→		if (showSerial) Serial.println("Remote version: " + latestVersion);
+   403→		strncpy(buffer, latestVersion.c_str(), sizeof(buffer) - 1);
+   404→	} else {
+   405→		if (showSerial) Serial.println("Failed to fetch remote version");
+   406→		buffer[0] = '\0';
+   407→	}
+   408→
+   409→	httpFirmware.end();
+   410→	return buffer;
+   411→}
+   412→
+   413→bool checkFirmwareUpdateAvailable() {
+   414→	// char buffer[2048];
+   415→	// int offset = 0;
+   416→
+   417→	const char* latestVersion = getRemoteFirmwareVersion();
+   418→
+   419→	// offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Remote version: %s\n", latestVersion);
+   420→
+   421→	if (strcmp(latestVersion, "") == 0) {
+   422→		// offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Unable to fetch latest version from remote server\n");
+   423→		// Serial.print(buffer);
+   424→		return false;
+   425→	}
+   426→
+   427→	if (strcmp(latestVersion, currentFirmwareVersion) != 0) {
+   428→		// offset += snprintf(buffer + offset, sizeof(buffer) - offset, "New firmware available!\n");
+   429→		// Serial.print(buffer);
+   430→		return true;
+   431→	} else {
+   432→		// offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Firmware is up to date\n");
+   433→	}
+   434→
+   435→	// Serial.print(buffer);
+   436→	return false;
+   437→}
+   438→
+   439→void updateFirmwareOta() {
+   440→	if (!checkFirmwareUpdateAvailable()) return;
+   441→
+   442→	char buffer[2048];
+   443→	int offset = 0;
+   444→	offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n--------\nAttempting to update firmware from remote server...\n");
+   445→
+   446→
+   447→	WiFiClient client;
+   448→	t_httpUpdate_return ret = httpUpdate.update(client, "http://develop.kellerdigital.com/minipulse/firmware.bin");
+   449→	// Or:
+   450→	//t_httpUpdate_return ret = httpUpdate.update(client, "server", 80, "/file.bin");
+   451→
+   452→	switch (ret) {
+   453→		case HTTP_UPDATE_FAILED:
+   454→			offset += snprintf(buffer + offset, sizeof(buffer) - offset, ">> HTTP_UPDATE_FAILED Error (%d): %s\n", httpUpdate.getLastError(), httpUpdate.getLastErrorString().c_str());
+   455→			break;
+   456→
+   457→		case HTTP_UPDATE_NO_UPDATES:
+   458→			offset += snprintf(buffer + offset, sizeof(buffer) - offset, ">> HTTP_UPDATE_NO_UPDATES");
+   459→			break;
+   460→
+   461→		case HTTP_UPDATE_OK:
+   462→			offset += snprintf(buffer + offset, sizeof(buffer) - offset, ">> HTTP_UPDATE_OK");
+   463→			break;
+   464→
+   465→		default:
+   466→			offset += snprintf(buffer + offset, sizeof(buffer) - offset, ">> HTTP_UPDATE Unknown error");
+   467→			break;
+   468→	}
+   469→
+   470→	offset += snprintf(buffer + offset, sizeof(buffer) - offset, "OTA update complete\n--------\n\n");
+   471→	if (FileUtils::config.debugUtils.showSerial) Serial.print(buffer);
+   472→}
+   473→
+   474→#pragma region -- ANIMATION UTILITIES
+   475→
+   476→uint8_t fpsInMs = 1000 / fpsRate;
+   477→bool meteorTailDecay = true;
+   478→bool meteorTailRandom = true;
+   479→
+   480→// State counters to enable fractional animation speeds
+   481→// These all start at 1 and get incremented during animation update
+   482→uint8_t counterHalfSpeed = 1;
+   483→uint8_t counterThirdSpeed = 1;
+   484→uint8_t counterQuarterSpeed = 1;
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:19:25Z)**_
+
+Good, now I have all the context I need. Let me implement the changes step by step.
+
+**Step 1: Add `#include <WiFiClientSecure.h>` and GitHub URL constants.**
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:19:30Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/src/main.cpp has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:19:35Z)**_
+
+Step 1 done. Now **Step 2: Add `isNewerVersion()` helper and update `checkFirmwareUpdateAvailable()`.**
+
+I need to add `isNewerVersion()` before `checkFirmwareUpdateAvailable()` and then update `checkFirmwareUpdateAvailable()`. Let me first add the helper function between `getRemoteFirmwareVersion()` and `checkFirmwareUpdateAvailable()`.
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:19:41Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/src/main.cpp has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:19:44Z)**_
+
+Step 2 done. Now **Step 3: Rewrite `getRemoteFirmwareVersion()`.**
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:19:54Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/src/main.cpp has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:19:57Z)**_
+
+Step 3 done. Now **Step 4: Rewrite `updateFirmwareOta()`.**
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:20:04Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/src/main.cpp has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:20:07Z)**_
+
+All 4 steps are done. Let me verify the changes look correct by reading the modified area.
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:20:08Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+     1→const char* currentFirmwareVersion = "1.1.0-16"; // Current firmware version
+     2→const char* githubApiUrl = "https://api.github.com/repos/GDKeller/JPL-MiniPulse/releases/latest";
+     3→const char* firmwareBinaryUrl = "https://github.com/GDKeller/JPL-MiniPulse/releases/latest/download/firmware.bin";
+     4→
+     5→#pragma region -- LIBRARIES
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:20:12Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Grep"><details>
+<summary>Tool use: **Grep**</summary>
+ path `./src/main.cpp` pattern `WiFiClientSecure`
+
+```text
+14:#include <WiFiClientSecure.h>	// Secure WiFi client (HTTPS)
+399:	WiFiClientSecure secureClient;
+473:	WiFiClientSecure secureClient;
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:20:16Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+   391→	httpUpdate.onError(update_error);
+   392→}
+   393→
+   394→const char* getRemoteFirmwareVersion() {
+   395→	bool showSerial = FileUtils::config.debugUtils.showSerial;
+   396→	static char buffer[16];
+   397→	buffer[0] = '\0';
+   398→
+   399→	WiFiClientSecure secureClient;
+   400→	secureClient.setInsecure(); // Encrypted transport, no cert pinning
+   401→
+   402→	HTTPClient httpFirmware;
+   403→	httpFirmware.setTimeout(10000); // 10s timeout (GitHub API can be slow)
+   404→
+   405→	if (!httpFirmware.begin(secureClient, githubApiUrl)) {
+   406→		if (showSerial) Serial.println("Failed to begin HTTP connection for version check");
+   407→		return buffer;
+   408→	}
+   409→
+   410→	// Headers must be added after begin() — begin() may clear internal state
+   411→	httpFirmware.addHeader("Accept", "application/vnd.github+json");
+   412→	httpFirmware.addHeader("User-Agent", "JPL-MiniPulse-ESP32"); // GitHub API requires User-Agent
+   413→
+   414→	int httpCode = httpFirmware.GET();
+   415→	if (showSerial) Serial.printf("Version check HTTP code: %d\n", httpCode);
+   416→
+   417→	if (httpCode == HTTP_CODE_OK) {
+   418→		// Parse directly from stream to avoid allocating full response (5-20KB) on heap
+   419→		WiFiClient& stream = httpFirmware.getStream();
+   420→
+   421→		StaticJsonDocument<64> filter;
+   422→		filter["tag_name"] = true;
+   423→
+   424→		DynamicJsonDocument doc(512);
+   425→		DeserializationError err = deserializeJson(doc, stream, DeserializationOption::Filter(filter));
+   426→
+   427→		if (err == DeserializationError::Ok && doc.containsKey("tag_name")) {
+   428→			const char* tagName = doc["tag_name"];
+   429→			if (showSerial) Serial.printf("Remote version (tag): %s\n", tagName);
+   430→			strncpy(buffer, tagName, sizeof(buffer) - 1);
+   431→			buffer[sizeof(buffer) - 1] = '\0';
+   432→		} else {
+   433→			if (showSerial) Serial.println("Failed to parse tag_name from GitHub API response");
+   434→		}
+   435→	} else {
+   436→		if (showSerial) Serial.printf("Failed to fetch remote version (HTTP %d)\n", httpCode);
+   437→	}
+   438→
+   439→	httpFirmware.end();
+   440→	return buffer;
+   441→}
+   442→
+   443→// Returns true if `remote` is a higher semver than `current`.
+   444→// Expects format "major.minor.patch" (e.g. "1.2.3"). Returns false on parse failure.
+   445→bool isNewerVersion(const char* remote, const char* current) {
+   446→	int rMajor = 0, rMinor = 0, rPatch = 0;
+   447→	int cMajor = 0, cMinor = 0, cPatch = 0;
+   448→
+   449→	if (sscanf(remote, "%d.%d.%d", &rMajor, &rMinor, &rPatch) != 3) return false;
+   450→	if (sscanf(current, "%d.%d.%d", &cMajor, &cMinor, &cPatch) != 3) return false;
+   451→
+   452→	if (rMajor != cMajor) return rMajor > cMajor;
+   453→	if (rMinor != cMinor) return rMinor > cMinor;
+   454→	return rPatch > cPatch;
+   455→}
+   456→
+   457→bool checkFirmwareUpdateAvailable() {
+   458→	const char* latestVersion = getRemoteFirmwareVersion();
+   459→
+   460→	if (strcmp(latestVersion, "") == 0) {
+   461→		return false;
+   462→	}
+   463→
+   464→	return isNewerVersion(latestVersion, currentFirmwareVersion);
+   465→}
+   466→
+   467→void updateFirmwareOta() {
+   468→	if (!checkFirmwareUpdateAvailable()) return;
+   469→	bool showSerial = FileUtils::config.debugUtils.showSerial;
+   470→
+   471→	if (showSerial) Serial.println("\n--------\nAttempting firmware update from GitHub...");
+   472→
+   473→	WiFiClientSecure secureClient;
+   474→	secureClient.setInsecure();
+   475→
+   476→	httpUpdate.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
+   477→
+   478→	t_httpUpdate_return ret = httpUpdate.update(secureClient, firmwareBinaryUrl);
+   479→
+   480→	switch (ret) {
+   481→		case HTTP_UPDATE_FAILED:
+   482→			if (showSerial) Serial.printf(">> HTTP_UPDATE_FAILED Error (%d): %s\n",
+   483→				httpUpdate.getLastError(), httpUpdate.getLastErrorString().c_str());
+   484→			break;
+   485→		case HTTP_UPDATE_NO_UPDATES:
+   486→			if (showSerial) Serial.println(">> HTTP_UPDATE_NO_UPDATES");
+   487→			break;
+   488→		case HTTP_UPDATE_OK:
+   489→			if (showSerial) Serial.println(">> HTTP_UPDATE_OK");
+   490→			break;
+   491→		default:
+   492→			if (showSerial) Serial.println(">> HTTP_UPDATE Unknown result");
+   493→			break;
+   494→	}
+   495→
+   496→	if (showSerial) Serial.println("OTA update complete\n--------\n");
+   497→}
+   498→
+   499→#pragma region -- ANIMATION UTILITIES
+   500→
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:20:19Z)**_
+
+All code changes look correct. Let me also verify there are no remaining references to the old kellerdigital.com URLs.
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:20:20Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Grep"><details>
+<summary>Tool use: **Grep**</summary>
+ path `./src/main.cpp` pattern `kellerdigital`
+
+```text
+No matches found
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:20:23Z)**_
+
+No remaining references to the old server. Now let me mark Task 1 as complete and move to Task 2 (build verification).
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:20:24Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskUpdate"><details>
+<summary>Tool use: **TaskUpdate**</summary>
+
+```text
+Updated task #1 status
+
+Task completed. Call TaskList now to find your next available task or see if your work unblocked others.
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:20:27Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskUpdate"><details>
+<summary>Tool use: **TaskUpdate**</summary>
+
+```text
+Updated task #2 activeForm, owner, status
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:20:42Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Build release environment with PlatformIO
+
+`~/.platformio/penv/bin/pio run -e release 2>&1`
+
+```text
+Processing release (platform: espressif32; board: esp32dev; framework: arduino)
+--------------------------------------------------------------------------------
+Verbose mode can be enabled via `-v, --verbose` option
+CONFIGURATION: https://docs.platformio.org/page/boards/espressif32/esp32dev.html
+PLATFORM: Espressif 32 (6.12.0) > Espressif ESP32 Dev Module
+HARDWARE: ESP32 240MHz, 320KB RAM, 4MB Flash
+DEBUG: Current (cmsis-dap) External (cmsis-dap, esp-bridge, esp-prog, iot-bus-jtag, jlink, minimodule, olimex-arm-usb-ocd, olimex-arm-usb-ocd-h, olimex-arm-usb-tiny-h, olimex-jtag-tiny, tumpa)
+PACKAGES: 
+ - framework-arduinoespressif32 @ 3.20017.241212+sha.dcc1105b 
+ - tool-esptoolpy @ 2.40900.250804 (4.9.0) 
+ - tool-openocd-esp32 @ 2.1100.20220706 (11.0) 
+ - toolchain-xtensa-esp32 @ 8.4.0+2021r2-patch5
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ soft
+Found 45 compatible libraries
+Scanning dependencies...
+Dependency Graph
+|-- ArduinoJson @ 6.21.5
+|-- WiFiManager @ 2.0.17+sha.d82d0a1
+|-- tinyxml2 @ 0.0.0+20260219085646.sha.1dee28e
+|-- FastLED @ 3.10.3
+|-- Animate
+|-- AnimationUtils
+|-- DevUtils
+|-- ESPmDNS @ 2.0.0
+|-- FS @ 2.0.0
+|-- FileUtils
+|-- HTTPClient @ 2.0.0
+|-- HTTPUpdate @ 2.0.0
+|-- LittleFS @ 2.0.0
+|-- MathHelpers
+|-- SpacecraftData
+|-- TextCharacters
+|-- WiFiClientSecure @ 2.0.0
+|-- XmlTestData
+Building in release mode
+Compiling .pio/build/release/src/main.cpp.o
+Linking .pio/build/release/firmware.elf
+Retrieving maximum program size .pio/build/release/firmware.elf
+Checking size .pio/build/release/firmware.elf
+Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
+RAM:   [===       ]  27.5% (used 90248 bytes from 327680 bytes)
+Flash: [========  ]  75.2% (used 1478541 bytes from 1966080 bytes)
+Building .pio/build/release/firmware.bin
+esptool.py v4.9.0
+Creating esp32 image...
+Merged 27 ELF sections
+Successfully created esp32 image.
+========================= [SUCCESS] Took 10.52 seconds =========================
+
+Environment    Status    Duration
+-------------  --------  ------------
+release        SUCCESS   00:00:10.517
+========================= 1 succeeded in 00:00:10.517 =========================
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:20:46Z)**_
+
+Build succeeds. The `WiFiClientSecure` library was automatically detected and linked. RAM usage is 27.5% and Flash is 75.2% -- both well within limits.
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:20:46Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskUpdate"><details>
+<summary>Tool use: **TaskUpdate**</summary>
+
+```text
+Updated task #2 status
+
+Task completed. Call TaskList now to find your next available task or see if your work unblocked others.
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:20:50Z)**_
+
+Now let me report back to the team lead.
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:21:00Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="SendMessage"><details>
+<summary>Tool use: **SendMessage**</summary>
+
+```text
+{
+  "success": true,
+  "message": "Message sent to team-lead's inbox",
+  "routing": {
+    "sender": "implementer",
+    "senderColor": "blue",
+    "target": "@team-lead",
+    "targetColor": "red",
+    "summary": "All GitHub OTA changes implemented and build verified",
+    "content": "Tasks #1 and #2 are complete. Here's a summary:\n\n**Implementation (Task #1) -- All 4 steps done in `/Users/grant/code/JPL-MiniPulse/src/main.cpp`:**\n\n**Step 1 - Include and URL constants (lines 1-3, 14):**\n- Added `githubApiUrl` and `firmwareBinaryUrl` constants at top of file (lines 2-3)\n- Added `#include <WiFiClientSecure.h>` (line 14)\n- Left `currentFirmwareVersion` as-is (`\"1.1.0-16\"`)\n\n**Step 2 - Semver helper and updated check (lines 443-465):**\n- Added `isNewerVersion()` function that parses major.minor.patch with sscanf, returns true only when remote is strictly newer\n- Rewrote `checkFirmwareUpdateAvailable()` to use `isNewerVersion()` instead of `strcmp != 0`\n- Removed all dead commented-out snprintf/buffer code\n\n**Step 3 - Rewrote `getRemoteFirmwareVersion()` (lines 394-441):**\n- Uses `WiFiClientSecure` with `setInsecure()`\n- Queries GitHub API with proper headers (Accept, User-Agent) added after `begin()`\n- Uses `getStream()` + ArduinoJson filter to parse `tag_name` (avoids 5-20KB heap allocation)\n- 10s timeout, all Serial output gated behind `showSerial`\n\n**Step 4 - Rewrote `updateFirmwareOta()` (lines 467-497):**\n- Uses `WiFiClientSecure` with `setInsecure()`\n- Uses `httpUpdate.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS)` for GitHub CDN redirects\n- Removed old kellerdigital.com URL and WiFiClient usage\n- Removed snprintf/buffer pattern, all Serial gated behind `showSerial`\n\n**Build Verification (Task #2):**\n- `pio run -e release` passes successfully\n- RAM: 27.5% (90248/327680 bytes)\n- Flash: 75.2% (1478541/1966080 bytes)\n- `WiFiClientSecure @ 2.0.0` auto-detected and linked\n- No old `kellerdigital` references remain in the file"
+  }
+}
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:21:06Z)**_
+
+Both tasks are complete. All 4 implementation steps have been applied to `src/main.cpp` and the release build compiles cleanly. Ready for review (Task #3).
+
+_**Agent - sidechain (2026-03-02 11:21:06Z)**_
+
+<teammate-message teammate_id="implementer" color="blue">
+{"type":"task_assignment","taskId":"1","subject":"Implement GitHub OTA code changes in src/main.cpp (Steps 1-4)","description":"Implement the GitHub-based OTA firmware update changes in src/main.cpp per board/PLAN-github-ota.md. All changes are in one file. Steps:\n\n**Step 1: Add include and GitHub URL constants**\n- Add `#include <WiFiClientSecure.h>` near the other includes at the top\n- Add two new URL constants near `currentFirmwareVersion` (line 1):\n  ```cpp\n  const char* githubApiUrl = \"https://api.github.com/repos/GDKeller/JPL-MiniPulse/releases/latest\";\n  const char* firmwareBinaryUrl = \"https://github.com/GDKeller/JPL-MiniPulse/releases/latest/download/firmware.bin\";\n  ```\n- Do NOT change currentFirmwareVersion (leave it as-is for now)\n\n**Step 2: Add isNewerVersion() helper and update checkFirmwareUpdateAvailable()**\n- Add `isNewerVersion(const char* remote, const char* current)` function BEFORE `checkFirmwareUpdateAvailable()`. It parses major.minor.patch with sscanf and returns true only when remote is strictly newer.\n- Rewrite `checkFirmwareUpdateAvailable()` to use `isNewerVersion()` instead of `strcmp != 0`. Keep the empty-string check. Remove all the dead commented-out snprintf/buffer code.\n\n**Step 3: Rewrite getRemoteFirmwareVersion() (~line 391)**\n- Replace the existing function with the HTTPS GitHub API version from the plan\n- Use WiFiClientSecure with setInsecure()\n- Use getStream() + ArduinoJson filter (NOT getString()) to parse tag_name\n- Add headers AFTER begin(), not before\n- Gate ALL Serial output behind showSerial\n\n**Step 4: Rewrite updateFirmwareOta() (~line 439)**\n- Replace the existing function with the WiFiClientSecure version from the plan\n- Use httpUpdate.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS)\n- Remove the old kellerdigital.com URL and WiFiClient usage\n- Gate ALL Serial output behind showSerial\n- Remove the old snprintf/buffer pattern, use direct Serial calls gated behind showSerial\n\nIMPORTANT conventions:\n- All Serial output MUST be gated behind `FileUtils::config.debugUtils.showSerial` (or a local `bool showSerial` variable)\n- Use tabs for indentation (match existing code style)\n- Read the plan at board/PLAN-github-ota.md for exact code snippets","assignedBy":"implementer","timestamp":"2026-03-02T11:19:04.130Z"}
+</teammate-message>
+
+---
+
+_**User (2026-03-02 11:21:07Z)**_
+
+<teammate-message teammate_id="implementer" color="blue" summary="All GitHub OTA changes implemented and build verified">
+Tasks #1 and #2 are complete. Here's a summary:
+
+**Implementation (Task #1) -- All 4 steps done in `/Users/grant/code/JPL-MiniPulse/src/main.cpp`:**
+
+**Step 1 - Include and URL constants (lines 1-3, 14):**
+- Added `githubApiUrl` and `firmwareBinaryUrl` constants at top of file (lines 2-3)
+- Added `#include <WiFiClientSecure.h>` (line 14)
+- Left `currentFirmwareVersion` as-is (`"1.1.0-16"`)
+
+**Step 2 - Semver helper and updated check (lines 443-465):**
+- Added `isNewerVersion()` function that parses major.minor.patch with sscanf, returns true only when remote is strictly newer
+- Rewrote `checkFirmwareUpdateAvailable()` to use `isNewerVersion()` instead of `strcmp != 0`
+- Removed all dead commented-out snprintf/buffer code
+
+**Step 3 - Rewrote `getRemoteFirmwareVersion()` (lines 394-441):**
+- Uses `WiFiClientSecure` with `setInsecure()`
+- Queries GitHub API with proper headers (Accept, User-Agent) added after `begin()`
+- Uses `getStream()` + ArduinoJson filter to parse `tag_name` (avoids 5-20KB heap allocation)
+- 10s timeout, all Serial output gated behind `showSerial`
+
+**Step 4 - Rewrote `updateFirmwareOta()` (lines 467-497):**
+- Uses `WiFiClientSecure` with `setInsecure()`
+- Uses `httpUpdate.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS)` for GitHub CDN redirects
+- Removed old kellerdigital.com URL and WiFiClient usage
+- Removed snprintf/buffer pattern, all Serial gated behind `showSerial`
+
+**Build Verification (Task #2):**
+- `pio run -e release` passes successfully
+- RAM: 27.5% (90248/327680 bytes)
+- Flash: 75.2% (1478541/1966080 bytes)
+- `WiFiClientSecure @ 2.0.0` auto-detected and linked
+- No old `kellerdigital` references remain in the file
+</teammate-message>
+
+<teammate-message teammate_id="implementer" color="blue">
+{"type":"idle_notification","from":"implementer","timestamp":"2026-03-02T11:21:06.188Z","idleReason":"available"}
+</teammate-message>
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 11:21:10Z)**_
+
+
+
+Implementation and build are done. Let me spawn the reviewer to check the work.
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:21:10Z)**_
+
+This task assignment is a duplicate — I've already completed this work. Tasks #1 and #2 are both done. All 4 steps are implemented in `src/main.cpp` and the build passes. I already sent a detailed summary to the team lead.
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:21:10Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskList"><details>
+<summary>Tool use: **TaskList**</summary>
+
+```text
+#1 [completed] Implement GitHub OTA code changes in src/main.cpp (Steps 1-4) (implementer)
+#2 [completed] Verify build compiles with PlatformIO (implementer)
+#3 [pending] Review implemented GitHub OTA changes
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:21:10Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskUpdate"><details>
+<summary>Tool use: **TaskUpdate**</summary>
+
+```text
+Updated task #3 status
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:21:14Z)**_
+
+Both tasks are already completed. Task #3 (review) is pending and not assigned to me — it's for the team lead to handle. Nothing further for me to do right now.
+
+_**Agent - sidechain (2026-03-02 11:21:14Z)**_
+
+<teammate-message teammate_id="implementer" color="blue">
+{"type":"task_assignment","taskId":"2","subject":"Verify build compiles with PlatformIO","description":"After the code changes are implemented, run the PlatformIO build to verify everything compiles:\n- Run: `~/.platformio/penv/bin/pio run -e release`\n- If the build fails, diagnose and fix the compilation errors\n- Report the build result (success or errors encountered)","assignedBy":"implementer","timestamp":"2026-03-02T11:20:27.559Z"}
+</teammate-message>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:21:14Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="Agent"><details>
+<summary>Tool use: **Agent**</summary>
+Review GitHub OTA implementation
+
+```text
+Spawned successfully.
+agent_id: reviewer@github-ota
+name: reviewer
+team_name: github-ota
+The agent is now running and will receive instructions via mailbox.
+```
+</details></tool-use>
+
+_**Agent - sidechain (2026-03-02 11:21:14Z)**_
+
+<teammate-message teammate_id="team-lead" summary="Review GitHub OTA implementation">
+You are the reviewer on team github-ota. Your job is to review the GitHub OTA code changes that were just implemented in src/main.cpp.
+
+Your task is Task #3. Do the following:
+
+1. Run `git diff` to see exactly what changed
+2. Read the plan at board/PLAN-github-ota.md
+3. Check these specific items:
+   - WiFiClientSecure include is present
+   - GitHub URL constants are correct
+   - isNewerVersion() properly compares semver (major.minor.patch)
+   - checkFirmwareUpdateAvailable() uses isNewerVersion() not strcmp
+   - getRemoteFirmwareVersion() uses getStream() not getString(), headers after begin(), all Serial gated behind showSerial
+   - updateFirmwareOta() uses httpUpdate.setFollowRedirects(), WiFiClientSecure, all Serial gated behind showSerial
+   - No leftover kellerdigital.com URLs
+   - Code style matches existing conventions (tabs, showSerial pattern)
+   - No dead/commented-out code left behind
+
+Report your findings — both issues found and confirmations that things look correct. Be thorough but concise.
+</teammate-message>
+
+_**Agent - sidechain (claude-sonnet-4-6 2026-03-02 11:21:16Z)**_
+
+I'll review the GitHub OTA implementation. Let me start by examining the changes and the plan.
+
+_**Agent - sidechain (claude-sonnet-4-6 2026-03-02 11:21:18Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Get git diff of main.cpp from last commit
+
+`git diff HEAD~1 -- src/main.cpp 2>/dev/null | head -300`
+
+```text
+diff --git a/src/main.cpp b/src/main.cpp
+index a078715..06096ac 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -1,4 +1,6 @@
+ const char* currentFirmwareVersion = "1.1.0-16"; // Current firmware version
++const char* githubApiUrl = "https://api.github.com/repos/GDKeller/JPL-MiniPulse/releases/latest";
++const char* firmwareBinaryUrl = "https://github.com/GDKeller/JPL-MiniPulse/releases/latest/download/firmware.bin";
+ 
+ #pragma region -- LIBRARIES
+ #include <Arduino.h>		// Arduino core
+@@ -9,6 +11,7 @@ const char* currentFirmwareVersion = "1.1.0-16"; // Current firmware version
+ #include <LittleFS.h>		// LittleFS file system
+ #include <HTTPClient.h>		// HTTP client
+ #include <HTTPUpdate.h> 	// HTTP update
++#include <WiFiClientSecure.h>	// Secure WiFi client (HTTPS)
+ #include <FastLED.h>		// FastLED lib
+ #include <tinyxml2.h>		// XML parser
+ #include <iostream>			// C++ I/O
+@@ -390,85 +393,107 @@ void setupOtaUpdate() {
+ 
+ const char* getRemoteFirmwareVersion() {
+ 	bool showSerial = FileUtils::config.debugUtils.showSerial;
+-
+ 	static char buffer[16];
++	buffer[0] = '\0';
++
++	WiFiClientSecure secureClient;
++	secureClient.setInsecure(); // Encrypted transport, no cert pinning
++
+ 	HTTPClient httpFirmware;
+-	httpFirmware.begin("http://develop.kellerdigital.com/minipulse/latest_version.txt");
++	httpFirmware.setTimeout(10000); // 10s timeout (GitHub API can be slow)
++
++	if (!httpFirmware.begin(secureClient, githubApiUrl)) {
++		if (showSerial) Serial.println("Failed to begin HTTP connection for version check");
++		return buffer;
++	}
++
++	// Headers must be added after begin() — begin() may clear internal state
++	httpFirmware.addHeader("Accept", "application/vnd.github+json");
++	httpFirmware.addHeader("User-Agent", "JPL-MiniPulse-ESP32"); // GitHub API requires User-Agent
++
+ 	int httpCode = httpFirmware.GET();
+-	if (showSerial) Serial.print("HTTP code: " + String(httpCode) + "\n");
++	if (showSerial) Serial.printf("Version check HTTP code: %d\n", httpCode);
+ 
+ 	if (httpCode == HTTP_CODE_OK) {
+-		String latestVersion = httpFirmware.getString();
+-		if (showSerial) Serial.println("Remote version: " + latestVersion);
+-		strncpy(buffer, latestVersion.c_str(), sizeof(buffer) - 1);
++		// Parse directly from stream to avoid allocating full response (5-20KB) on heap
++		WiFiClient& stream = httpFirmware.getStream();
++
++		StaticJsonDocument<64> filter;
++		filter["tag_name"] = true;
++
++		DynamicJsonDocument doc(512);
++		DeserializationError err = deserializeJson(doc, stream, DeserializationOption::Filter(filter));
++
++		if (err == DeserializationError::Ok && doc.containsKey("tag_name")) {
++			const char* tagName = doc["tag_name"];
++			if (showSerial) Serial.printf("Remote version (tag): %s\n", tagName);
++			strncpy(buffer, tagName, sizeof(buffer) - 1);
++			buffer[sizeof(buffer) - 1] = '\0';
++		} else {
++			if (showSerial) Serial.println("Failed to parse tag_name from GitHub API response");
++		}
+ 	} else {
+-		if (showSerial) Serial.println("Failed to fetch remote version");
+-		buffer[0] = '\0';
++		if (showSerial) Serial.printf("Failed to fetch remote version (HTTP %d)\n", httpCode);
+ 	}
+ 
+ 	httpFirmware.end();
+ 	return buffer;
+ }
+ 
+-bool checkFirmwareUpdateAvailable() {
+-	// char buffer[2048];
+-	// int offset = 0;
++// Returns true if `remote` is a higher semver than `current`.
++// Expects format "major.minor.patch" (e.g. "1.2.3"). Returns false on parse failure.
++bool isNewerVersion(const char* remote, const char* current) {
++	int rMajor = 0, rMinor = 0, rPatch = 0;
++	int cMajor = 0, cMinor = 0, cPatch = 0;
+ 
+-	const char* latestVersion = getRemoteFirmwareVersion();
++	if (sscanf(remote, "%d.%d.%d", &rMajor, &rMinor, &rPatch) != 3) return false;
++	if (sscanf(current, "%d.%d.%d", &cMajor, &cMinor, &cPatch) != 3) return false;
++
++	if (rMajor != cMajor) return rMajor > cMajor;
++	if (rMinor != cMinor) return rMinor > cMinor;
++	return rPatch > cPatch;
++}
+ 
+-	// offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Remote version: %s\n", latestVersion);
++bool checkFirmwareUpdateAvailable() {
++	const char* latestVersion = getRemoteFirmwareVersion();
+ 
+ 	if (strcmp(latestVersion, "") == 0) {
+-		// offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Unable to fetch latest version from remote server\n");
+-		// Serial.print(buffer);
+ 		return false;
+ 	}
+ 
+-	if (strcmp(latestVersion, currentFirmwareVersion) != 0) {
+-		// offset += snprintf(buffer + offset, sizeof(buffer) - offset, "New firmware available!\n");
+-		// Serial.print(buffer);
+-		return true;
+-	} else {
+-		// offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Firmware is up to date\n");
+-	}
+-
+-	// Serial.print(buffer);
+-	return false;
++	return isNewerVersion(latestVersion, currentFirmwareVersion);
+ }
+ 
+ void updateFirmwareOta() {
+ 	if (!checkFirmwareUpdateAvailable()) return;
++	bool showSerial = FileUtils::config.debugUtils.showSerial;
++
++	if (showSerial) Serial.println("\n--------\nAttempting firmware update from GitHub...");
+ 
+-	char buffer[2048];
+-	int offset = 0;
+-	offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n--------\nAttempting to update firmware from remote server...\n");
++	WiFiClientSecure secureClient;
++	secureClient.setInsecure();
+ 
++	httpUpdate.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
+ 
+-	WiFiClient client;
+-	t_httpUpdate_return ret = httpUpdate.update(client, "http://develop.kellerdigital.com/minipulse/firmware.bin");
+-	// Or:
+-	//t_httpUpdate_return ret = httpUpdate.update(client, "server", 80, "/file.bin");
++	t_httpUpdate_return ret = httpUpdate.update(secureClient, firmwareBinaryUrl);
+ 
+ 	switch (ret) {
+ 		case HTTP_UPDATE_FAILED:
+-			offset += snprintf(buffer + offset, sizeof(buffer) - offset, ">> HTTP_UPDATE_FAILED Error (%d): %s\n", httpUpdate.getLastError(), httpUpdate.getLastErrorString().c_str());
++			if (showSerial) Serial.printf(">> HTTP_UPDATE_FAILED Error (%d): %s\n",
++				httpUpdate.getLastError(), httpUpdate.getLastErrorString().c_str());
+ 			break;
+-
+ 		case HTTP_UPDATE_NO_UPDATES:
+-			offset += snprintf(buffer + offset, sizeof(buffer) - offset, ">> HTTP_UPDATE_NO_UPDATES");
++			if (showSerial) Serial.println(">> HTTP_UPDATE_NO_UPDATES");
+ 			break;
+-
+ 		case HTTP_UPDATE_OK:
+-			offset += snprintf(buffer + offset, sizeof(buffer) - offset, ">> HTTP_UPDATE_OK");
++			if (showSerial) Serial.println(">> HTTP_UPDATE_OK");
+ 			break;
+-
+ 		default:
+-			offset += snprintf(buffer + offset, sizeof(buffer) - offset, ">> HTTP_UPDATE Unknown error");
++			if (showSerial) Serial.println(">> HTTP_UPDATE Unknown result");
+ 			break;
+ 	}
+ 
+-	offset += snprintf(buffer + offset, sizeof(buffer) - offset, "OTA update complete\n--------\n\n");
+-	if (FileUtils::config.debugUtils.showSerial) Serial.print(buffer);
++	if (showSerial) Serial.println("OTA update complete\n--------\n");
+ }
+ 
+ #pragma region -- ANIMATION UTILITIES
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:21:18Z)**_
+
+This is also a duplicate — Task #2 is already completed. The build passed successfully:
+
+- `pio run -e release` -- SUCCESS in 10.5s
+- RAM: 27.5% (90248/327680 bytes)
+- Flash: 75.2% (1478541/1966080 bytes)
+
+Both tasks #1 and #2 are done and I've already reported results to the team lead. Waiting for any new tasks.
+
+_**Agent - sidechain (claude-sonnet-4-6 2026-03-02 11:21:18Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./board/PLAN-github-ota.md`
+
+```text
+     1→# Planning Document: GitHub-Based OTA Firmware Updates
+     2→
+     3→## Overview
+     4→
+     5→Replace the current `develop.kellerdigital.com` firmware hosting with GitHub Releases for version checking and firmware binary downloads.
+     6→
+     7→## Background
+     8→
+     9→### Current Behavior
+    10→
+    11→OTA firmware updates use two hardcoded URLs in `src/main.cpp`:
+    12→
+    13→1. **Version check** (~line 391): `http://develop.kellerdigital.com/minipulse/latest_version.txt`
+    14→2. **Firmware binary** (~line 448): `http://develop.kellerdigital.com/minipulse/firmware.bin`
+    15→
+    16→Both use plain HTTP via `HTTPClient` / `httpUpdate`. The version check fetches a text file, compares it with `strcmp()` against the hardcoded `currentFirmwareVersion`, and the binary download uses ESP32's built-in `httpUpdate.update()`.
+    17→
+    18→### Problems
+    19→
+    20→- Relies on a personal server that may go offline
+    21→- Plain HTTP is vulnerable to MITM attacks (firmware injection)
+    22→- No versioned history of releases
+    23→- Manual file management on the server
+    24→
+    25→### Proposed Behavior
+    26→
+    27→Use GitHub Releases from `GDKeller/JPL-MiniPulse` for both version checking and firmware downloads:
+    28→- **Version check**: Query the GitHub Releases API (`/releases/latest`), parse `tag_name` from the JSON response
+    29→- **Firmware binary**: Download `firmware.bin` from the latest release assets
+    30→- No `latest_version.txt` file needed — the release tag IS the version
+    31→
+    32→## Rollout Strategy
+    33→
+    34→### The Bootstrapping Problem
+    35→
+    36→v1.1.0 is the release that *contains* the new GitHub OTA code, but it must itself be distributed via the **old** kellerdigital.com OTA system (since devices in the field are still pointing there). This creates a two-phase rollout:
+    37→
+    38→| Phase | Version | Distributed Via | Contains |
+    39→|-------|---------|-----------------|----------|
+    40→| **1 — Bridge release** | `1.1.0` | kellerdigital.com (old OTA) | New GitHub OTA code + all other 1.1.0 features |
+    41→| **2 — First GitHub release** | `1.1.1` | GitHub Releases (new OTA) | Minimal changes — exists primarily to validate the new OTA path |
+    42→
+    43→### Version Comparison
+    44→
+    45→The current code uses `strcmp(latestVersion, currentFirmwareVersion) != 0` — any difference triggers an update, which means a stale or rolled-back release tag could cause an accidental downgrade. We'll replace this with a proper semver comparison that only triggers when the remote version is strictly newer (higher major, minor, or patch).
+    46→
+    47→### Phase 1: Ship v1.1.0 via kellerdigital.com
+    48→
+    49→1. Finalize all v1.1.0 code (including the new GitHub OTA functions)
+    50→2. Set `currentFirmwareVersion = "1.1.0"`
+    51→3. Build and upload `firmware.bin` to `develop.kellerdigital.com/minipulse/`
+    52→4. Update `latest_version.txt` on the server to `1.1.0`
+    53→5. Devices in the field update via the old path — they now have GitHub OTA code
+    54→
+    55→### Phase 2: Test with v1.1.1 on GitHub Releases
+    56→
+    57→1. Bump `currentFirmwareVersion` to `"1.1.1"` (no other code changes needed)
+    58→2. Build firmware: `~/.platformio/penv/bin/pio run -e release`
+    59→3. Create GitHub Release with tag `1.1.1`, upload `firmware.bin` as asset
+    60→4. A device already running v1.1.0 should detect `1.1.1` via the GitHub API and OTA update successfully
+    61→
+    62→### After Validation
+    63→
+    64→Once Phase 2 succeeds, kellerdigital.com is no longer needed for OTA. Future releases (1.1.2, 1.2.0, etc.) go exclusively through GitHub Releases.
+    65→
+    66→## Design Decisions
+    67→
+    68→### HTTPS Requirement
+    69→
+    70→GitHub requires HTTPS. Two options:
+    71→
+    72→| Option | Pros | Cons |
+    73→|--------|------|------|
+    74→| **A: WiFiClientSecure + setInsecure()** | Simple, no cert management | No server verification (still encrypted in transit) |
+    75→| **B: WiFiClientSecure + root CA cert** | Full TLS verification | Must update cert when it expires; uses ~1-2KB more flash |
+    76→
+    77→**Recommendation**: Start with **Option A** (`setInsecure()`). This provides encrypted transport (preventing passive eavesdropping) without the cert maintenance burden. The device is on a local network and firmware signing (Roadmap #30) is the proper long-term solution for binary integrity.
+    78→
+    79→### GitHub URL Pattern
+    80→
+    81→Two GitHub endpoints:
+    82→
+    83→1. **Version check** (API — returns JSON):
+    84→   ```
+    85→   https://api.github.com/repos/GDKeller/JPL-MiniPulse/releases/latest
+    86→   ```
+    87→   Response includes `"tag_name": "1.1.1"` — this is the version string.
+    88→
+    89→2. **Firmware download** (Release asset — returns 302 redirect to CDN):
+    90→   ```
+    91→   https://github.com/GDKeller/JPL-MiniPulse/releases/latest/download/firmware.bin
+    92→   ```
+    93→
+    94→The API endpoint returns JSON directly (no redirect). The asset download URL returns a **302 redirect** to the actual CDN URL. The ESP32 HTTP client must follow redirects for the binary download.
+    95→
+    96→### Redirect Handling
+    97→
+    98→- `HTTPClient` supports `setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS)` or `HTTPC_FORCE_FOLLOW_REDIRECTS`
+    99→- `httpUpdate` also supports `setFollowRedirects()` — confirmed in the installed ESP32 framework (`HTTPUpdate.h`). It passes the setting through to its internal `HTTPClient`. This means we can use `httpUpdate` directly without manual redirect resolution.
+   100→
+   101→### Failure During Update (Power Loss / Network Drop)
+   102→
+   103→The `release` and `debug` builds use `min_spiffs.csv`, which has a dual A/B partition layout (`ota_0` + `ota_1`). The ESP32 OTA mechanism writes new firmware to the **inactive** partition and only flips the bootloader flag after the full binary is written and verified.
+   104→
+   105→| Failure Scenario | What Happens |
+   106→|-----------------|--------------|
+   107→| **Internet drops mid-download** | `httpUpdate` returns `HTTP_UPDATE_FAILED` (timeout). Inactive partition has partial write but bootloader flag never switches. Device stays on current firmware. |
+   108→| **Power loss mid-write** | Same — `otadata` flag hasn't been flipped. Device reboots into current firmware on the intact active partition. |
+   109→| **Power loss after write, before reboot** | `otadata` flag already updated. Device boots into new firmware on next power-up. This is fine — the write completed successfully. |
+   110→
+   111→No code changes needed — the A/B partition scheme handles this inherently.
+   112→
+   113→**Note:** The `devdebug` env uses `huge_app.csv` which has only one app partition (no `ota_1`). OTA updates will fail on that build since there's no partition to write to. This is expected — `devdebug` is for JTAG debugging, not production use.
+   114→
+   115→### Memory Impact
+   116→
+   117→- `WiFiClientSecure` uses ~20-40KB more heap than `WiFiClient`
+   118→- Current free heap at runtime is ~100-150KB (from diagnostics), so this is feasible
+   119→- The secure client should be created on the stack or as a local variable, not a persistent global, to free memory after update
+   120→
+   121→## Files to Modify
+   122→
+   123→| File | Change |
+   124→|------|--------|
+   125→| `src/main.cpp` | Add `#include <WiFiClientSecure.h>`, update URLs, switch to WiFiClientSecure, enable redirect following on httpUpdate |
+   126→| `platformio.ini` | No changes needed (WiFiClientSecure is part of ESP32 Arduino core) |
+   127→
+   128→## Implementation Details
+   129→
+   130→### Step 1: Define GitHub URLs
+   131→
+   132→**File:** `src/main.cpp` (top of file, near version string)
+   133→
+   134→```cpp
+   135→// v1.1.0 ships with these URLs — first GitHub Release will be v1.1.1
+   136→const char* currentFirmwareVersion = "1.1.0";
+   137→const char* githubApiUrl = "https://api.github.com/repos/GDKeller/JPL-MiniPulse/releases/latest";
+   138→const char* firmwareBinaryUrl = "https://github.com/GDKeller/JPL-MiniPulse/releases/latest/download/firmware.bin";
+   139→```
+   140→
+   141→### Step 2: Add semver comparison helper
+   142→
+   143→Replace the `strcmp != 0` check with a proper semver comparison. Parses `major.minor.patch` from both strings and returns true only when the remote version is strictly newer.
+   144→
+   145→```cpp
+   146→// Returns true if `remote` is a higher semver than `current`.
+   147→// Expects format "major.minor.patch" (e.g. "1.2.3"). Returns false on parse failure.
+   148→bool isNewerVersion(const char* remote, const char* current) {
+   149→    int rMajor = 0, rMinor = 0, rPatch = 0;
+   150→    int cMajor = 0, cMinor = 0, cPatch = 0;
+   151→
+   152→    if (sscanf(remote, "%d.%d.%d", &rMajor, &rMinor, &rPatch) != 3) return false;
+   153→    if (sscanf(current, "%d.%d.%d", &cMajor, &cMinor, &cPatch) != 3) return false;
+   154→
+   155→    if (rMajor != cMajor) return rMajor > cMajor;
+   156→    if (rMinor != cMinor) return rMinor > cMinor;
+   157→    return rPatch > cPatch;
+   158→}
+   159→```
+   160→
+   161→Then update `checkFirmwareUpdateAvailable()` to use it:
+   162→
+   163→```cpp
+   164→bool checkFirmwareUpdateAvailable() {
+   165→    const char* latestVersion = getRemoteFirmwareVersion();
+   166→
+   167→    if (strcmp(latestVersion, "") == 0) {
+   168→        return false;
+   169→    }
+   170→
+   171→    return isNewerVersion(latestVersion, currentFirmwareVersion);
+   172→}
+   173→```
+   174→
+   175→### Step 3: Update getRemoteFirmwareVersion()
+   176→
+   177→**Current** (~line 391): Uses `HTTPClient` with plain HTTP to fetch a text file.
+   178→
+   179→**Proposed:** Query the GitHub Releases API and parse `tag_name` from the JSON response.
+   180→
+   181→```cpp
+   182→const char* getRemoteFirmwareVersion() {
+   183→    bool showSerial = FileUtils::config.debugUtils.showSerial;
+   184→    static char buffer[16];
+   185→    buffer[0] = '\0';
+   186→
+   187→    WiFiClientSecure secureClient;
+   188→    secureClient.setInsecure(); // Encrypted transport, no cert pinning
+   189→
+   190→    HTTPClient httpFirmware;
+   191→    httpFirmware.setTimeout(10000); // 10s timeout (GitHub API can be slow)
+   192→
+   193→    if (!httpFirmware.begin(secureClient, githubApiUrl)) {
+   194→        if (showSerial) Serial.println("Failed to begin HTTP connection for version check");
+   195→        return buffer;
+   196→    }
+   197→
+   198→    // Headers must be added after begin() — begin() may clear internal state
+   199→    httpFirmware.addHeader("Accept", "application/vnd.github+json");
+   200→    httpFirmware.addHeader("User-Agent", "JPL-MiniPulse-ESP32"); // GitHub API requires User-Agent
+   201→
+   202→    int httpCode = httpFirmware.GET();
+   203→    if (showSerial) Serial.printf("Version check HTTP code: %d\n", httpCode);
+   204→
+   205→    if (httpCode == HTTP_CODE_OK) {
+   206→        // Parse directly from stream to avoid allocating full response (5-20KB) on heap
+   207→        WiFiClient& stream = httpFirmware.getStream();
+   208→
+   209→        StaticJsonDocument<64> filter;
+   210→        filter["tag_name"] = true;
+   211→
+   212→        DynamicJsonDocument doc(512);
+   213→        DeserializationError err = deserializeJson(doc, stream, DeserializationOption::Filter(filter));
+   214→
+   215→        if (err == DeserializationError::Ok && doc.containsKey("tag_name")) {
+   216→            const char* tagName = doc["tag_name"];
+   217→            if (showSerial) Serial.printf("Remote version (tag): %s\n", tagName);
+   218→            strncpy(buffer, tagName, sizeof(buffer) - 1);
+   219→            buffer[sizeof(buffer) - 1] = '\0';
+   220→        } else {
+   221→            if (showSerial) Serial.println("Failed to parse tag_name from GitHub API response");
+   222→        }
+   223→    } else {
+   224→        if (showSerial) Serial.printf("Failed to fetch remote version (HTTP %d)\n", httpCode);
+   225→    }
+   226→
+   227→    httpFirmware.end();
+   228→    return buffer;
+   229→}
+   230→```
+   231→
+   232→**Note on memory:** The GitHub API response for `/releases/latest` can be large (~5-20KB depending on release notes and assets). By using `getStream()` with ArduinoJson's filter, we parse directly from the HTTP stream without allocating the full response as a `String` on the heap. This is critical — on a ~100-150KB heap, avoiding a 5-20KB intermediate allocation matters.
+   233→
+   234→### Step 4: Update updateFirmwareOta()
+   235→
+   236→**Current** (~line 439): Uses `WiFiClient` (plain HTTP) with the kellerdigital.com URL.
+   237→
+   238→**Proposed:** Use `WiFiClientSecure` with `httpUpdate`'s native redirect support. The ESP32 framework's `HTTPUpdate` class has `setFollowRedirects()` which passes through to its internal `HTTPClient`, so no manual redirect resolution is needed.
+   239→
+   240→```cpp
+   241→void updateFirmwareOta() {
+   242→    if (!checkFirmwareUpdateAvailable()) return;
+   243→    bool showSerial = FileUtils::config.debugUtils.showSerial;
+   244→
+   245→    if (showSerial) Serial.println("\n--------\nAttempting firmware update from GitHub...");
+   246→
+   247→    WiFiClientSecure secureClient;
+   248→    secureClient.setInsecure();
+   249→
+   250→    httpUpdate.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
+   251→
+   252→    t_httpUpdate_return ret = httpUpdate.update(secureClient, firmwareBinaryUrl);
+   253→
+   254→    switch (ret) {
+   255→        case HTTP_UPDATE_FAILED:
+   256→            if (showSerial) Serial.printf(">> HTTP_UPDATE_FAILED Error (%d): %s\n",
+   257→                httpUpdate.getLastError(), httpUpdate.getLastErrorString().c_str());
+   258→            break;
+   259→        case HTTP_UPDATE_NO_UPDATES:
+   260→            if (showSerial) Serial.println(">> HTTP_UPDATE_NO_UPDATES");
+   261→            break;
+   262→        case HTTP_UPDATE_OK:
+   263→            if (showSerial) Serial.println(">> HTTP_UPDATE_OK");
+   264→            break;
+   265→        default:
+   266→            if (showSerial) Serial.println(">> HTTP_UPDATE Unknown result");
+   267→            break;
+   268→    }
+   269→
+   270→    if (showSerial) Serial.println("OTA update complete\n--------\n");
+   271→}
+   272→```
+   273→
+   274→**Fallback:** If `httpUpdate.setFollowRedirects()` doesn't handle GitHub's cross-host redirect chain (GitHub → CDN) properly on hardware, the fallback is to manually resolve the redirect via a HEAD request and pass the final CDN URL to `httpUpdate.update()`. This needs to be tested on hardware.
+   275→
+   276→### Step 5: Create Release Workflow
+   277→
+   278→For the v1.1.0 bridge release (Phase 1 — old OTA path):
+   279→
+   280→1. Set `currentFirmwareVersion = "1.1.0"` in `src/main.cpp`
+   281→2. Build firmware: `~/.platformio/penv/bin/pio run -e release`
+   282→3. Upload `firmware.bin` to `develop.kellerdigital.com/minipulse/`
+   283→4. Update `latest_version.txt` on the server to `1.1.0`
+   284→
+   285→For v1.1.1 and all future releases (Phase 2+ — GitHub OTA path):
+   286→
+   287→1. Update `currentFirmwareVersion` in `src/main.cpp` (e.g., `"1.1.1"`)
+   288→2. Build firmware: `~/.platformio/penv/bin/pio run -e release`
+   289→3. Create a GitHub Release with tag matching the version (e.g., tag `1.1.1`)
+   290→4. Upload `firmware.bin` (from `.pio/build/release/firmware.bin`) as a release asset
+   291→
+   292→That's it — the device reads the version from the release tag, so no extra files needed.
+   293→
+   294→This could be automated with GitHub Actions in the future.
+   295→
+   296→### Note on #39 (`.catch()` on firmware version fetch)
+   297→
+   298→The current portal JavaScript fetches the version without error handling. This is addressed by this plan — the rewritten `getRemoteFirmwareVersion()` handles HTTP failures gracefully and the portal JS should be updated to handle fetch errors at the same time. No need for a separate fix.
+   299→
+   300→## Testing
+   301→
+   302→### Phase 1 Validation (v1.1.0 via kellerdigital.com)
+   303→
+   304→1. Flash v1.1.0 to a device via USB or existing OTA
+   305→2. Verify the device's portal shows version `1.1.0`
+   306→3. Confirm the GitHub OTA code compiles and doesn't break existing functionality
+   307→4. (The old kellerdigital.com OTA path should still work for distributing 1.1.0 to field devices)
+   308→
+   309→### Phase 2 Validation (v1.1.1 via GitHub Releases)
+   310→
+   311→1. Create GitHub Release tagged `1.1.1` with a built `firmware.bin`
+   312→2. On a device running v1.1.0, trigger a firmware update check
+   313→3. Verify version check hits the GitHub API and returns `1.1.1` over HTTPS
+   314→4. Verify redirect following works (GitHub → CDN) for the binary download
+   315→5. Verify firmware download and flash succeeds — device reboots into v1.1.1
+   316→6. Monitor heap usage during HTTPS operations (WiFiClientSecure overhead)
+   317→
+   318→### Failure Cases
+   319→
+   320→1. No WiFi — update check should fail gracefully, no crash
+   321→2. GitHub API down or rate-limited (HTTP 403) — should report error, not hang
+   322→3. No releases exist yet (HTTP 404) — should return empty version, no update offered
+   323→4. Invalid/corrupt binary on GitHub — httpUpdate should reject it
+   324→5. Slow network — 10s timeout should prevent indefinite blocking
+   325→
+   326→## Risks
+   327→
+   328→| Risk | Severity | Mitigation |
+   329→|------|----------|------------|
+   330→| GitHub redirect chain breaks httpUpdate | MED | `httpUpdate.setFollowRedirects()` confirmed in framework; test on hardware; manual redirect resolution as fallback |
+   331→| WiFiClientSecure heap usage too high | MED | Create client as local variable; monitor free heap |
+   332→| GitHub rate limiting (60 req/hr unauthenticated) | LOW | Device only checks on portal interaction, not polling |
+   333→| HTTPS handshake timeout on slow WiFi | MED | Set 10s timeout; retry logic already exists |
+   334→| Accidental version downgrade | LOW | Mitigated: `isNewerVersion()` does proper semver comparison (major.minor.patch), only triggers when remote is strictly newer |
+   335→| No releases exist yet (404 from API) | LOW | Handled by the `httpCode != HTTP_CODE_OK` path — returns empty buffer, no update offered |
+   336→
+   337→## Estimated Scope
+   338→
+   339→- 1 file modified (`src/main.cpp`)
+   340→- ~40 lines changed
+   341→- No new dependencies (WiFiClientSecure is part of ESP32 core)
+   342→- Two-phase rollout: v1.1.0 via old server, v1.1.1 via GitHub Releases
+   343→- Requires hardware testing for redirect behavior
+   344→- kellerdigital.com can be decommissioned for OTA after v1.1.1 is validated
+   345→
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-sonnet-4-6 2026-03-02 11:21:20Z)**_
+
+Now let me check the current state of the file around the OTA functions to see the full context:
+
+_**Agent (claude-opus-4-6 2026-03-02 11:21:20Z)**_
+
+<think><details><summary>Thought Process</summary>
+The diagnostics are showing:
+1. `'Arduino.h' file not found` - This is a false positive from clang/clangd. In PlatformIO ESP32 projects, Arduino.h is provided by the framework and resolved at build time, not by the local IDE's clang. The build already passed successfully.
+2. `Included header iostream is not used directly` - This might be a real issue or also a clangd false positive. Let me not worry about these - they're IDE diagnostics, not build errors. The PlatformIO build passed successfully.
+
+I'll wait for the reviewer to report back.
+</details></think>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:21:22Z)**_
+
+Those diagnostics are IDE false positives — `Arduino.h` is provided by the ESP32 framework at build time (not visible to clangd), and the `iostream` warning is clangd noise. The actual PlatformIO build passed clean.
+
+Waiting for the reviewer to report back.
+
+---
+
+_**User (2026-03-02 11:21:22Z)**_
+
+<teammate-message teammate_id="implementer" color="blue">
+{"type":"idle_notification","from":"implementer","timestamp":"2026-03-02T11:21:14.493Z","idleReason":"available"}
+</teammate-message>
+
+<teammate-message teammate_id="implementer" color="blue">
+{"type":"idle_notification","from":"implementer","timestamp":"2026-03-02T11:21:18.602Z","idleReason":"available"}
+</teammate-message>
+
+---
+
+_**Agent - sidechain (claude-sonnet-4-6 2026-03-02 11:21:23Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Check key identifiers in main.cpp
+
+`grep -n "kellerdigital\|githubApiUrl\|firmwareBinaryUrl\|WiFiClientSecure\|isNewerVersion\|getRemoteFirmwareVersion\|checkFirmwareUpdateAvailable\|updateFirmwareOta\|showSerial\|setFollowRedirects\|getStream\|getString" /Users/grant/code/JPL-MiniPulse/src/main.cpp | head -80`
+
+```text
+2:const char* githubApiUrl = "https://api.github.com/repos/GDKeller/JPL-MiniPulse/releases/latest";
+3:const char* firmwareBinaryUrl = "https://github.com/GDKeller/JPL-MiniPulse/releases/latest/download/firmware.bin";
+14:#include <WiFiClientSecure.h>	// Secure WiFi client (HTTPS)
+152:// WiFiManagerParameter field_show_serial("show_serial", "Show Serial", FileUtils::config.debugUtils.showSerial, 1);
+181:// FileUtils::config.debugUtils.showSerial ? " checked" : "");
+371:	if (FileUtils::config.debugUtils.showSerial) Serial.println("CALLBACK:  HTTP update process started");
+375:	if (FileUtils::config.debugUtils.showSerial) Serial.println("CALLBACK:  HTTP update process finished");
+379:	if (FileUtils::config.debugUtils.showSerial) Serial.printf("CALLBACK:  HTTP update process at %d of %d bytes...\n", cur, total);
+383:	if (FileUtils::config.debugUtils.showSerial) Serial.printf("CALLBACK:  HTTP update fatal error code %d\n", err);
+387:	if (FileUtils::config.debugUtils.showSerial) Serial.println("Setting up OTA update...");
+394:const char* getRemoteFirmwareVersion() {
+395:	bool showSerial = FileUtils::config.debugUtils.showSerial;
+399:	WiFiClientSecure secureClient;
+405:	if (!httpFirmware.begin(secureClient, githubApiUrl)) {
+406:		if (showSerial) Serial.println("Failed to begin HTTP connection for version check");
+415:	if (showSerial) Serial.printf("Version check HTTP code: %d\n", httpCode);
+419:		WiFiClient& stream = httpFirmware.getStream();
+429:			if (showSerial) Serial.printf("Remote version (tag): %s\n", tagName);
+433:			if (showSerial) Serial.println("Failed to parse tag_name from GitHub API response");
+436:		if (showSerial) Serial.printf("Failed to fetch remote version (HTTP %d)\n", httpCode);
+445:bool isNewerVersion(const char* remote, const char* current) {
+457:bool checkFirmwareUpdateAvailable() {
+458:	const char* latestVersion = getRemoteFirmwareVersion();
+464:	return isNewerVersion(latestVersion, currentFirmwareVersion);
+467:void updateFirmwareOta() {
+468:	if (!checkFirmwareUpdateAvailable()) return;
+469:	bool showSerial = FileUtils::config.debugUtils.showSerial;
+471:	if (showSerial) Serial.println("\n--------\nAttempting firmware update from GitHub...");
+473:	WiFiClientSecure secureClient;
+476:	httpUpdate.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
+478:	t_httpUpdate_return ret = httpUpdate.update(secureClient, firmwareBinaryUrl);
+482:			if (showSerial) Serial.printf(">> HTTP_UPDATE_FAILED Error (%d): %s\n",
+486:			if (showSerial) Serial.println(">> HTTP_UPDATE_NO_UPDATES");
+489:			if (showSerial) Serial.println(">> HTTP_UPDATE_OK");
+492:			if (showSerial) Serial.println(">> HTTP_UPDATE Unknown result");
+496:	if (showSerial) Serial.println("OTA update complete\n--------\n");
+543:	if (!FileUtils::config.debugUtils.showSerial) return;
+577:	if (!FileUtils::config.debugUtils.showSerial) return;
+625:	if (!FileUtils::config.debugUtils.showSerial) return;
+688:	if (!FileUtils::config.debugUtils.showSerial) return;
+701:	if (FileUtils::config.debugUtils.showSerial) {
+730:			if (FileUtils::config.debugUtils.showSerial) Serial.println("Error: free list is full, cannot return item");
+749:		if (FileUtils::config.debugUtils.showSerial) Serial.print(semaphoreStatusMessage);
+770:			if (FileUtils::config.debugUtils.showSerial) Serial.print("\n\n----------STARTING CONFIG PORTAL\n\n");
+780:				if (FileUtils::config.debugUtils.showSerial) Serial.println("Button Pressed: Starting Config Portal");
+795:		if (FileUtils::config.debugUtils.showSerial) {
+803:	if (FileUtils::config.debugUtils.showSerial)
+813:	if (FileUtils::config.debugUtils.showSerial)
+818:		const char* remoteFirmwareVersion = getRemoteFirmwareVersion();
+825:		const char* remoteFirmwareVersion = getRemoteFirmwareVersion();
+826:		bool updateAvailable = checkFirmwareUpdateAvailable();
+835:		bool updateAvailable = checkFirmwareUpdateAvailable();
+836:		updateFirmwareOta();
+919:	bool showSerial = FileUtils::config.debugUtils.showSerial;
+921:	if (showSerial) Serial.print("\n\n<--------- PORTAL FORM SUBMITTED --------->\n\n");
+925:	String showSerialValue = getParam("show_serial");
+926:	if (showSerial) Serial.print("---\nshow_serial input: " + showSerialValue + "\n");
+929:	bool showSerialValueBool = (showSerialValue.length() > 0 && showSerialValue != "0");
+930:	if (showSerial) Serial.print("show serial bool: " + String(showSerialValueBool) + "\n");
+933:	if (showSerial) Serial.print("Previous config showSerial: " + String(FileUtils::config.debugUtils.showSerial) + "\n");
+934:	FileUtils::config.debugUtils.showSerial = showSerialValueBool;
+935:	if (showSerial) Serial.print("New config showSerial: " + String(FileUtils::config.debugUtils.showSerial) + "\n");
+937:	// wm.setDebugOutput(showSerialValueBool); // Turn on/off WiFiManager debug output
+940:	FileUtils::writeConfigFileBool("showSerial", FileUtils::config.debugUtils.showSerial);
+942:	if (showSerial) Serial.println();
+948:	if (showSerial) Serial.print("---\nshow_diagnostics input: " + showDiagnosticsValue + "\n");
+952:	if (showSerial) Serial.print("show diagnostics bool: " + String(showDiagnosticsValueBool) + "\n");
+955:	if (showSerial) Serial.print("Previous config showDiagnostics: " + String(FileUtils::config.debugUtils.diagMeasure) + "\n");
+957:	if (showSerial) Serial.print("New config showDiagnostics: " + String(FileUtils::config.debugUtils.diagMeasure) + "\n");
+962:	if (showSerial) Serial.println();
+968:	if (showSerial) Serial.print("---\nforce_animation_enabled input: " + forceAnimationEnabledValue + "\n");
+970:	if (showSerial) Serial.println("forceAnimationType enabled: " + String(forceAnimationType));
+974:	if (showSerial) Serial.print("force_animation_type input: " + forcedAnimationTypeValue + "\n");
+975:	if (showSerial) Serial.println("Previous forcedAnimationType: " + String(animate.forcedAnimationType));
+979:		if (showSerial) Serial.println("WARNING: force_animation_type parse failed, keeping previous value");
+983:	if (showSerial) Serial.println("New forcedAnimationType: " + String(animate.forcedAnimationType));
+989:	if (showSerial) Serial.print("---\nbrightness input: " + brightnessValue + "\n");
+995:		if (showSerial) Serial.println("WARNING: brightness parse failed, defaulting to 50%");
+1004:	if (showSerial) Serial.print("Previous config brightness: " + String(FileUtils::config.displayLED.brightness) + "\n");
+1006:	if (showSerial) Serial.print("New config brightness: " + String(FileUtils::config.displayLED.brightness) + "\n");
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-sonnet-4-6 2026-03-02 11:21:24Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Check file header for includes and URL constants
+
+`head -20 /Users/grant/code/JPL-MiniPulse/src/main.cpp`
+
+```text
+const char* currentFirmwareVersion = "1.1.0-16"; // Current firmware version
+const char* githubApiUrl = "https://api.github.com/repos/GDKeller/JPL-MiniPulse/releases/latest";
+const char* firmwareBinaryUrl = "https://github.com/GDKeller/JPL-MiniPulse/releases/latest/download/firmware.bin";
+
+#pragma region -- LIBRARIES
+#include <Arduino.h>		// Arduino core
+#include <esp_task_wdt.h>	// ESP32 task watchdog
+#include "soc/timer_group_struct.h" // Timer group struct
+#include "soc/timer_group_reg.h"  // Timer group register
+#include <FS.h>				// File system
+#include <LittleFS.h>		// LittleFS file system
+#include <HTTPClient.h>		// HTTP client
+#include <HTTPUpdate.h> 	// HTTP update
+#include <WiFiClientSecure.h>	// Secure WiFi client (HTTPS)
+#include <FastLED.h>		// FastLED lib
+#include <tinyxml2.h>		// XML parser
+#include <iostream>			// C++ I/O
+#include <cstring>			// C++ string
+#include <ArduinoJson.h>	// JSON parser
+#include <algorithm>		// C++ algorithms
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:21:25Z)**_
+
+<think><details><summary>Thought Process</summary>
+The implementer is idle and waiting. I'll wait for the reviewer to finish before doing anything else. No need to respond to idle notifications.
+</details></think>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:21:25Z)**_
+
+Waiting for the reviewer to finish.
+
+_**Agent - sidechain (claude-sonnet-4-6 2026-03-02 11:21:27Z)**_
+
+Now let me check for any remaining `kellerdigital` references and examine the `isNewerVersion` logic and `currentFirmwareVersion` semver compatibility more closely:
+
+_**Agent - sidechain (claude-sonnet-4-6 2026-03-02 11:21:28Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Check for any remaining kellerdigital URLs
+
+`grep -n "kellerdigital" /Users/grant/code/JPL-MiniPulse/src/main.cpp`
+</details></tool-use>
+
+_**Agent - sidechain (claude-sonnet-4-6 2026-03-02 11:21:28Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/main.cpp`
+
+```text
+   393→
+   394→const char* getRemoteFirmwareVersion() {
+   395→	bool showSerial = FileUtils::config.debugUtils.showSerial;
+   396→	static char buffer[16];
+   397→	buffer[0] = '\0';
+   398→
+   399→	WiFiClientSecure secureClient;
+   400→	secureClient.setInsecure(); // Encrypted transport, no cert pinning
+   401→
+   402→	HTTPClient httpFirmware;
+   403→	httpFirmware.setTimeout(10000); // 10s timeout (GitHub API can be slow)
+   404→
+   405→	if (!httpFirmware.begin(secureClient, githubApiUrl)) {
+   406→		if (showSerial) Serial.println("Failed to begin HTTP connection for version check");
+   407→		return buffer;
+   408→	}
+   409→
+   410→	// Headers must be added after begin() — begin() may clear internal state
+   411→	httpFirmware.addHeader("Accept", "application/vnd.github+json");
+   412→	httpFirmware.addHeader("User-Agent", "JPL-MiniPulse-ESP32"); // GitHub API requires User-Agent
+   413→
+   414→	int httpCode = httpFirmware.GET();
+   415→	if (showSerial) Serial.printf("Version check HTTP code: %d\n", httpCode);
+   416→
+   417→	if (httpCode == HTTP_CODE_OK) {
+   418→		// Parse directly from stream to avoid allocating full response (5-20KB) on heap
+   419→		WiFiClient& stream = httpFirmware.getStream();
+   420→
+   421→		StaticJsonDocument<64> filter;
+   422→		filter["tag_name"] = true;
+   423→
+   424→		DynamicJsonDocument doc(512);
+   425→		DeserializationError err = deserializeJson(doc, stream, DeserializationOption::Filter(filter));
+   426→
+   427→		if (err == DeserializationError::Ok && doc.containsKey("tag_name")) {
+   428→			const char* tagName = doc["tag_name"];
+   429→			if (showSerial) Serial.printf("Remote version (tag): %s\n", tagName);
+   430→			strncpy(buffer, tagName, sizeof(buffer) - 1);
+   431→			buffer[sizeof(buffer) - 1] = '\0';
+   432→		} else {
+   433→			if (showSerial) Serial.println("Failed to parse tag_name from GitHub API response");
+   434→		}
+   435→	} else {
+   436→		if (showSerial) Serial.printf("Failed to fetch remote version (HTTP %d)\n", httpCode);
+   437→	}
+   438→
+   439→	httpFirmware.end();
+   440→	return buffer;
+   441→}
+   442→
+   443→// Returns true if `remote` is a higher semver than `current`.
+   444→// Expects format "major.minor.patch" (e.g. "1.2.3"). Returns false on parse failure.
+   445→bool isNewerVersion(const char* remote, const char* current) {
+   446→	int rMajor = 0, rMinor = 0, rPatch = 0;
+   447→	int cMajor = 0, cMinor = 0, cPatch = 0;
+   448→
+   449→	if (sscanf(remote, "%d.%d.%d", &rMajor, &rMinor, &rPatch) != 3) return false;
+   450→	if (sscanf(current, "%d.%d.%d", &cMajor, &cMinor, &cPatch) != 3) return false;
+   451→
+   452→	if (rMajor != cMajor) return rMajor > cMajor;
+   453→	if (rMinor != cMinor) return rMinor > cMinor;
+   454→	return rPatch > cPatch;
+   455→}
+   456→
+   457→bool checkFirmwareUpdateAvailable() {
+   458→	const char* latestVersion = getRemoteFirmwareVersion();
+   459→
+   460→	if (strcmp(latestVersion, "") == 0) {
+   461→		return false;
+   462→	}
+   463→
+   464→	return isNewerVersion(latestVersion, currentFirmwareVersion);
+   465→}
+   466→
+   467→void updateFirmwareOta() {
+   468→	if (!checkFirmwareUpdateAvailable()) return;
+   469→	bool showSerial = FileUtils::config.debugUtils.showSerial;
+   470→
+   471→	if (showSerial) Serial.println("\n--------\nAttempting firmware update from GitHub...");
+   472→
+   473→	WiFiClientSecure secureClient;
+   474→	secureClient.setInsecure();
+   475→
+   476→	httpUpdate.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
+   477→
+   478→	t_httpUpdate_return ret = httpUpdate.update(secureClient, firmwareBinaryUrl);
+   479→
+   480→	switch (ret) {
+   481→		case HTTP_UPDATE_FAILED:
+   482→			if (showSerial) Serial.printf(">> HTTP_UPDATE_FAILED Error (%d): %s\n",
+   483→				httpUpdate.getLastError(), httpUpdate.getLastErrorString().c_str());
+   484→			break;
+   485→		case HTTP_UPDATE_NO_UPDATES:
+   486→			if (showSerial) Serial.println(">> HTTP_UPDATE_NO_UPDATES");
+   487→			break;
+   488→		case HTTP_UPDATE_OK:
+   489→			if (showSerial) Serial.println(">> HTTP_UPDATE_OK");
+   490→			break;
+   491→		default:
+   492→			if (showSerial) Serial.println(">> HTTP_UPDATE Unknown result");
+   493→			break;
+   494→	}
+   495→
+   496→	if (showSerial) Serial.println("OTA update complete\n--------\n");
+   497→}
+   498→
+   499→#pragma region -- ANIMATION UTILITIES
+   500→
+   501→uint8_t fpsInMs = 1000 / fpsRate;
+   502→bool meteorTailDecay = true;
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-sonnet-4-6 2026-03-02 11:21:30Z)**_
+
+I have a thorough picture of the implementation. Let me send my findings to the team lead.
+
+_**Agent - sidechain (claude-sonnet-4-6 2026-03-02 11:21:55Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="SendMessage"><details>
+<summary>Tool use: **SendMessage**</summary>
+
+```text
+{
+  "success": true,
+  "message": "Message sent to team-lead's inbox",
+  "routing": {
+    "sender": "reviewer",
+    "senderColor": "green",
+    "target": "@team-lead",
+    "targetColor": "red",
+    "summary": "GitHub OTA review complete — one issue found",
+    "content": "## GitHub OTA Code Review — Findings\n\n### CONFIRMATIONS (all look correct)\n\n**WiFiClientSecure include**: Present at `src/main.cpp:14` — `#include <WiFiClientSecure.h>`.\n\n**GitHub URL constants**: Both defined at lines 2–3, match the plan exactly:\n- `githubApiUrl` = `https://api.github.com/repos/GDKeller/JPL-MiniPulse/releases/latest`\n- `firmwareBinaryUrl` = `https://github.com/GDKeller/JPL-MiniPulse/releases/latest/download/firmware.bin`\n\n**isNewerVersion() semver logic**: Correct. Parses `major.minor.patch` with `sscanf`, returns false on parse failure, compares major → minor → patch in order. Strictly greater-than only — no accidental downgrades.\n\n**checkFirmwareUpdateAvailable() uses isNewerVersion()**: Yes, at line 464. The old `strcmp != 0` is gone.\n\n**getRemoteFirmwareVersion() — getStream() not getString()**: Uses `httpFirmware.getStream()` at line 419 with ArduinoJson filter, not `getString()`. Correct heap-efficient approach.\n\n**getRemoteFirmwareVersion() — headers after begin()**: `addHeader()` calls at lines 411–412 are after `httpFirmware.begin()` at line 405. Correct.\n\n**getRemoteFirmwareVersion() — all Serial gated**: Every `Serial` call gated behind `if (showSerial)`. Confirmed.\n\n**updateFirmwareOta() — setFollowRedirects()**: `httpUpdate.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS)` at line 476. Correct.\n\n**updateFirmwareOta() — uses WiFiClientSecure**: `WiFiClientSecure secureClient` created locally at line 473, passed to `httpUpdate.update()`. Correct.\n\n**updateFirmwareOta() — all Serial gated**: `showSerial` captured at line 469, all Serial calls gated. Confirmed.\n\n**No leftover kellerdigital.com URLs**: Zero matches in the entire file.\n\n**No dead/commented-out code**: The old snprintf buffer pattern, commented-out code blocks, and the `// Or:` comment with alternate httpUpdate call are all removed cleanly.\n\n**Code style**: Tabs for indentation, `bool showSerial = FileUtils::config.debugUtils.showSerial` pattern at top of functions — consistent with surrounding code.\n\n---\n\n### ISSUE FOUND — One concern worth flagging\n\n**currentFirmwareVersion has a pre-release suffix** (`\"1.1.0-16\"`) that will cause `isNewerVersion()` to silently fail.\n\n`sscanf(current, \"%d.%d.%d\", ...)` on `\"1.1.0-16\"` will parse `1`, `1`, `0` successfully (sscanf stops at the `-`), returning 3. So `isNewerVersion()` won't return false — but the current version will be treated as `1.1.0` even though the intent of `\"1.1.0-16\"` is presumably a pre-release or build number.\n\nThis means: if the GitHub release tag is `\"1.1.0\"` (plain semver, no suffix), `isNewerVersion(\"1.1.0\", \"1.1.0-16\")` will return `false` (0 == 0, 0 == 0, 0 == 0 — equal, not newer). That's actually safe behavior in this case — no spurious update triggered.\n\nHowever, the plan says `currentFirmwareVersion` should be `\"1.1.0\"` (no suffix) for the bridge release. The `-16` suffix appears to be a dev/build counter that should be removed before the v1.1.0 release is cut. This is likely intentional in-flight state (the file shows `\"1.1.0-16\"` as the working version), but worth confirming before shipping.\n\n**Summary**: The code is solid. The one flag is that `currentFirmwareVersion = \"1.1.0-16\"` needs to be cleaned to `\"1.1.0\"` (or proper semver) before the release is cut, otherwise the version string passed to `isNewerVersion()` carries a suffix that the parser silently truncates. The plan already calls this out in Phase 1 Step 2, so it's tracked — just making sure it's noted here."
+  }
+}
+```
+</details></tool-use>
+
+---
+
+_**User (2026-03-02 11:21:56Z)**_
+
+<teammate-message teammate_id="reviewer" color="green" summary="GitHub OTA review complete — one issue found">
+## GitHub OTA Code Review — Findings
+
+### CONFIRMATIONS (all look correct)
+
+**WiFiClientSecure include**: Present at `src/main.cpp:14` — `#include <WiFiClientSecure.h>`.
+
+**GitHub URL constants**: Both defined at lines 2–3, match the plan exactly:
+- `githubApiUrl` = `https://api.github.com/repos/GDKeller/JPL-MiniPulse/releases/latest`
+- `firmwareBinaryUrl` = `https://github.com/GDKeller/JPL-MiniPulse/releases/latest/download/firmware.bin`
+
+**isNewerVersion() semver logic**: Correct. Parses `major.minor.patch` with `sscanf`, returns false on parse failure, compares major → minor → patch in order. Strictly greater-than only — no accidental downgrades.
+
+**checkFirmwareUpdateAvailable() uses isNewerVersion()**: Yes, at line 464. The old `strcmp != 0` is gone.
+
+**getRemoteFirmwareVersion() — getStream() not getString()**: Uses `httpFirmware.getStream()` at line 419 with ArduinoJson filter, not `getString()`. Correct heap-efficient approach.
+
+**getRemoteFirmwareVersion() — headers after begin()**: `addHeader()` calls at lines 411–412 are after `httpFirmware.begin()` at line 405. Correct.
+
+**getRemoteFirmwareVersion() — all Serial gated**: Every `Serial` call gated behind `if (showSerial)`. Confirmed.
+
+**updateFirmwareOta() — setFollowRedirects()**: `httpUpdate.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS)` at line 476. Correct.
+
+**updateFirmwareOta() — uses WiFiClientSecure**: `WiFiClientSecure secureClient` created locally at line 473, passed to `httpUpdate.update()`. Correct.
+
+**updateFirmwareOta() — all Serial gated**: `showSerial` captured at line 469, all Serial calls gated. Confirmed.
+
+**No leftover kellerdigital.com URLs**: Zero matches in the entire file.
+
+**No dead/commented-out code**: The old snprintf buffer pattern, commented-out code blocks, and the `// Or:` comment with alternate httpUpdate call are all removed cleanly.
+
+**Code style**: Tabs for indentation, `bool showSerial = FileUtils::config.debugUtils.showSerial` pattern at top of functions — consistent with surrounding code.
+
+---
+
+### ISSUE FOUND — One concern worth flagging
+
+**currentFirmwareVersion has a pre-release suffix** (`"1.1.0-16"`) that will cause `isNewerVersion()` to silently fail.
+
+`sscanf(current, "%d.%d.%d", ...)` on `"1.1.0-16"` will parse `1`, `1`, `0` successfully (sscanf stops at the `-`), returning 3. So `isNewerVersion()` won't return false — but the current version will be treated as `1.1.0` even though the intent of `"1.1.0-16"` is presumably a pre-release or build number.
+
+This means: if the GitHub release tag is `"1.1.0"` (plain semver, no suffix), `isNewerVersion("1.1.0", "1.1.0-16")` will return `false` (0 == 0, 0 == 0, 0 == 0 — equal, not newer). That's actually safe behavior in this case — no spurious update triggered.
+
+However, the plan says `currentFirmwareVersion` should be `"1.1.0"` (no suffix) for the bridge release. The `-16` suffix appears to be a dev/build counter that should be removed before the v1.1.0 release is cut. This is likely intentional in-flight state (the file shows `"1.1.0-16"` as the working version), but worth confirming before shipping.
+
+**Summary**: The code is solid. The one flag is that `currentFirmwareVersion = "1.1.0-16"` needs to be cleaned to `"1.1.0"` (or proper semver) before the release is cut, otherwise the version string passed to `isNewerVersion()` carries a suffix that the parser silently truncates. The plan already calls this out in Phase 1 Step 2, so it's tracked — just making sure it's noted here.
+</teammate-message>
+
+---
+
+_**Agent - sidechain (claude-sonnet-4-6 2026-03-02 11:21:58Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskUpdate"><details>
+<summary>Tool use: **TaskUpdate**</summary>
+
+```text
+Updated task #3 status
+
+Task completed. Call TaskList now to find your next available task or see if your work unblocked others.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:22:01Z)**_
+
+<think><details><summary>Thought Process</summary>
+The reviewer found one issue — the `-16` suffix on currentFirmwareVersion. But this is expected — the plan already says to set it to `"1.1.0"` when cutting the release. The `-16` is a dev build counter that's been incrementing during development. The `isNewerVersion()` function handles it safely (sscanf stops at `-`, parses as 1.1.0).
+
+Let me mark Task #3 as complete and shut down the team. The implementation looks good.
+</details></think>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:22:02Z)**_
+
+Review is clean — one flag but it's already accounted for in the plan. Let me wrap up.
+
+_**Agent (claude-opus-4-6 2026-03-02 11:22:03Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskUpdate"><details>
+<summary>Tool use: **TaskUpdate**</summary>
+
+```text
+Updated task #3
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:22:04Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="SendMessage"><details>
+<summary>Tool use: **SendMessage**</summary>
+
+```text
+{
+  "success": true,
+  "message": "Shutdown request sent to implementer. Request ID: shutdown-1772450524192@implementer",
+  "request_id": "shutdown-1772450524192@implementer",
+  "target": "implementer"
+}
+```
+</details></tool-use>
+
+_**Agent - sidechain (2026-03-02 11:22:04Z)**_
+
+<teammate-message teammate_id="team-lead">
+{"type":"shutdown_request","requestId":"shutdown-1772450524192@implementer","from":"team-lead","reason":"All tasks complete, shutting down the team. Thanks.","timestamp":"2026-03-02T11:22:04.192Z"}
+</teammate-message>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:22:04Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="SendMessage"><details>
+<summary>Tool use: **SendMessage**</summary>
+
+```text
+{
+  "success": true,
+  "message": "Shutdown request sent to reviewer. Request ID: shutdown-1772450524945@reviewer",
+  "request_id": "shutdown-1772450524945@reviewer",
+  "target": "reviewer"
+}
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-sonnet-4-6 2026-03-02 11:22:07Z)**_
+
+Here is a summary of the review findings:
+
+---
+
+## GitHub OTA Review Results
+
+### All checklist items: PASS
+
+| Item | Result |
+|---|---|
+| `WiFiClientSecure` include | Present at line 14 |
+| GitHub URL constants | Correct — both match plan exactly |
+| `isNewerVersion()` semver comparison | Correct — major/minor/patch, strictly greater-than |
+| `checkFirmwareUpdateAvailable()` uses `isNewerVersion()` | Yes, old `strcmp != 0` removed |
+| `getRemoteFirmwareVersion()` uses `getStream()` | Yes, with ArduinoJson filter |
+| Headers added after `begin()` | Yes |
+| All Serial gated behind `showSerial` | Yes, in all three functions |
+| `updateFirmwareOta()` uses `setFollowRedirects()` | Yes, `HTTPC_FORCE_FOLLOW_REDIRECTS` |
+| `updateFirmwareOta()` uses `WiFiClientSecure` | Yes, local variable |
+| No leftover kellerdigital.com URLs | Zero matches in file |
+| No dead/commented-out code | Clean |
+| Code style matches conventions | Tabs, `showSerial` pattern — consistent |
+
+### One flag to address before shipping
+
+`currentFirmwareVersion` is currently `"1.1.0-16"`. The `-16` suffix causes `sscanf` to silently truncate it to `1.1.0`. This means `isNewerVersion("1.1.0", "1.1.0-16")` returns `false` (equal), so no spurious update is triggered — but the version string is ambiguous.
+
+The plan already calls for bumping to `"1.1.0"` (clean semver) before cutting the bridge release (Phase 1, Step 2). This just needs to happen before the release is tagged, not as a blocker on the code itself.
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:22:08Z)**_
+
+
+
+All work is done. Shutting down.
+
+_**Agent - sidechain (2026-03-02 11:22:08Z)**_
+
+<teammate-message teammate_id="team-lead">
+{"type":"shutdown_request","requestId":"shutdown-1772450524945@reviewer","from":"team-lead","reason":"Review complete, shutting down the team. Thanks.","timestamp":"2026-03-02T11:22:04.945Z"}
+</teammate-message>
+
+_**Agent - sidechain (claude-opus-4-6 2026-03-02 11:22:08Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="SendMessage"><details>
+<summary>Tool use: **SendMessage**</summary>
+
+**Input:**
+
+- approve: `true`
+- content: `All tasks complete. Shutting down.`
+- request_id: `shutdown-1772450524192@implementer`
+- type: `shutdown_response`
+
+</details></tool-use>
+
+_**Agent - sidechain (claude-sonnet-4-6 2026-03-02 11:22:10Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="SendMessage"><details>
+<summary>Tool use: **SendMessage**</summary>
+
+**Input:**
+
+- approve: `true`
+- request_id: `shutdown-1772450524945@reviewer`
+- type: `shutdown_response`
+
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:22:11Z)**_
+
+All done. Here's the summary:
+
+**Implementation complete** — all 4 steps applied to `src/main.cpp`:
+1. Added `#include <WiFiClientSecure.h>` + GitHub URL constants
+2. Added `isNewerVersion()` semver helper, rewrote `checkFirmwareUpdateAvailable()`
+3. Rewrote `getRemoteFirmwareVersion()` — HTTPS, GitHub API, stream parsing with ArduinoJson filter
+4. Rewrote `updateFirmwareOta()` — WiFiClientSecure, `httpUpdate.setFollowRedirects()`
+
+**Build passes** — release env compiles clean (RAM 27.5%, Flash 75.2%)
+
+**Review passed** — one note: the `-16` suffix on `currentFirmwareVersion` needs to be stripped to `"1.1.0"` when cutting the release. Already tracked in the plan (Phase 1, Step 2). The `isNewerVersion()` parser handles it safely in the meantime (sscanf stops at `-`, treats it as `1.1.0`).
+
+---
+
+_**User (2026-03-02 11:22:12Z)**_
+
+<teammate-message teammate_id="system">
+{"type":"teammate_terminated","message":"implementer has shut down."}
+</teammate-message>
+
+<teammate-message teammate_id="reviewer" color="green">
+{"type":"idle_notification","from":"reviewer","timestamp":"2026-03-02T11:22:08.103Z","idleReason":"available"}
+</teammate-message>
+
+<teammate-message teammate_id="implementer" color="blue">
+{"type":"shutdown_approved","requestId":"shutdown-1772450524192@implementer","from":"implementer","timestamp":"2026-03-02T11:22:08.756Z","paneId":"in-process","backendType":"in-process"}
+</teammate-message>
+
+<teammate-message teammate_id="system">
+{"type":"teammate_terminated","message":"reviewer has shut down."}
+</teammate-message>
+
+<teammate-message teammate_id="reviewer" color="green">
+{"type":"shutdown_approved","requestId":"shutdown-1772450524945@reviewer","from":"reviewer","timestamp":"2026-03-02T11:22:10.304Z","paneId":"in-process","backendType":"in-process"}
+</teammate-message>
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 11:22:15Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TeamDelete"><details>
+<summary>Tool use: **TeamDelete**</summary>
+
+```text
+{
+  "success": true,
+  "message": "Cleaned up directories and worktrees for team \"github-ota\"",
+  "team_name": "github-ota"
+}
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:22:18Z)**_
+
+Team cleaned up. Ready whenever you want to commit the changes or move on to the next thing.
+
+---
+
+_**User (2026-03-02 11:26:15Z)**_
+
+what are you talking about with "the -16 suffix on currentFirmwareVersion" ?
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 11:26:23Z)**_
+
+<think><details><summary>Thought Process</summary>
+The user is asking about the `-16` suffix. The current `currentFirmwareVersion` in the code is `"1.1.0-16"`. The `-16` is a build number that's been incrementing during development. The reviewer flagged that `isNewerVersion()` uses `sscanf("%d.%d.%d")` which would stop parsing at the `-`, effectively treating `"1.1.0-16"` as `"1.1.0"`.
+
+The user seems confused or is asking me to clarify. Let me just explain simply — the current value in the code is `"1.1.0-16"` and the plan says to set it to `"1.1.0"` before shipping. 
+
+The reviewer was just noting that this needs to happen before release — it's a cleanup step before we go live.
+</details></think>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:26:23Z)**_
+
+The current value in your code is:
+
+```cpp
+const char* currentFirmwareVersion = "1.1.0-16"; // line 1
+```
+
+The reviewer was just noting that when you cut the v1.1.0 release, you'll need to change that to `"1.1.0"` — which the plan already calls out in Phase 1 Step 2. Not an issue, just a reminder that the `-16` dev build counter is still there.
+
+---
+
+_**User (2026-03-02 11:26:49Z)**_
+
+oooh i see ok
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 11:26:53Z)**_
+
+
+
+Yeah, nothing to worry about — it's your in-progress build counter. You'll strip it when you're ready to ship.
+
+Want to commit the implementation changes?
+
+---
+
+_**User (2026-03-02 11:27:19Z)**_
+
+double check these changes
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-02 11:27:23Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Show all unstaged changes
+
+`git diff`
+
+```text
+<persisted-output>
+Output too large (151.9KB). Full output saved to: /Users/grant/.claude/projects/-Users-grant-code-JPL-MiniPulse/5d732211-d2c4-44eb-9676-6f2437db38e2/tool-results/bv78bzck3.txt
+
+Preview (first 2KB):
+diff --git a/.specstory/history/2026-03-02_08-59-53Z-we-need-to-continue.md b/.specstory/history/2026-03-02_08-59-53Z-we-need-to-continue.md
+index 0ab6dee..d1d9cd2 100644
+--- a/.specstory/history/2026-03-02_08-59-53Z-we-need-to-continue.md
++++ b/.specstory/history/2026-03-02_08-59-53Z-we-need-to-continue.md
+@@ -2922,7 +2922,7 @@ commit the specstory history as well
+ 
+ ---
+ 
+-_**Agent (claude-opus-4-6 2026-03-02 11:16:48Z)**_
++_**Agent (claude-opus-4-6 2026-03-02 11:17:02Z)**_
+ 
+ <tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+ <summary>Tool use: **Bash**</summary>
+@@ -2930,3 +2930,2919 @@ Stage specstory history files
+ 
+ `git add .specstory/history/2026-02-27_09-59-01Z-command-name-clear-command.md .specstory/history/2026-02-27_12-07-44Z-command-name-clear-command.md .specstory/history/2026-02-27_19-43-21Z.md .specstory/history/2026-03-02_08-59-53Z-we-need-to-continue.md .specstory/history/2026-03-02_08-59-53Z.md`
+ </details></tool-use>
++
++_**Agent (claude-opus-4-6 2026-03-02 11:17:11Z)**_
++
++<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
++<summary>Tool use: **Bash**</summary>
++Commit specstory history
++
++```bash
++git commit -m "$(cat <<'EOF'
++chore: add specstory conversation history
++EOF
++)"
++```
++
++```text
++[feature/ota-and-remote-data d6b0991] chore: add specstory conversation history
++ 5 files changed, 38172 insertions(+)
++ create mode 100644 .specstory/history/2026-02-27_09-59-01Z-command-name-clear-command.md
++ create mode 100644 .specstory/history/2026-02-27_12-07-44Z-command-name-clear-command.md
++ create mode 100644 .specstory/history/2026-02-27_19-43-21Z.md
++ create mode 100644 .specstory/history/2026-03-02_08-59-53Z-we-need-to-continue.md
++ create mode 100644 .specstory/history/2026-03-02_08-59-53Z.md
++```
++</details></tool-use>
++
++_**Agent (claude-opus-4-6 2026-03-02 11:17:14Z)**_
++
++Committed as `d6b0991` — `chore: add specstory conversation history`
++
++---
++
++_**User (2026-03-02 11:17:47Z)**_
++
+...
+</persisted-output>
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:27:27Z)**_
+
+<think><details><summary>Thought Process</summary>
+The diff is huge because it includes specstory changes. Let me just look at the main.cpp diff specifically.
+</details></think>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:27:28Z)**_
+
+The diff is mostly specstory history. Let me look at just the `src/main.cpp` changes.
+
+_**Agent (claude-opus-4-6 2026-03-02 11:27:29Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Show only main.cpp changes
+
+`git diff -- src/main.cpp`
+
+```text
+diff --git a/src/main.cpp b/src/main.cpp
+index a078715..06096ac 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -1,4 +1,6 @@
+ const char* currentFirmwareVersion = "1.1.0-16"; // Current firmware version
++const char* githubApiUrl = "https://api.github.com/repos/GDKeller/JPL-MiniPulse/releases/latest";
++const char* firmwareBinaryUrl = "https://github.com/GDKeller/JPL-MiniPulse/releases/latest/download/firmware.bin";
+ 
+ #pragma region -- LIBRARIES
+ #include <Arduino.h>		// Arduino core
+@@ -9,6 +11,7 @@ const char* currentFirmwareVersion = "1.1.0-16"; // Current firmware version
+ #include <LittleFS.h>		// LittleFS file system
+ #include <HTTPClient.h>		// HTTP client
+ #include <HTTPUpdate.h> 	// HTTP update
++#include <WiFiClientSecure.h>	// Secure WiFi client (HTTPS)
+ #include <FastLED.h>		// FastLED lib
+ #include <tinyxml2.h>		// XML parser
+ #include <iostream>			// C++ I/O
+@@ -390,85 +393,107 @@ void setupOtaUpdate() {
+ 
+ const char* getRemoteFirmwareVersion() {
+ 	bool showSerial = FileUtils::config.debugUtils.showSerial;
+-
+ 	static char buffer[16];
++	buffer[0] = '\0';
++
++	WiFiClientSecure secureClient;
++	secureClient.setInsecure(); // Encrypted transport, no cert pinning
++
+ 	HTTPClient httpFirmware;
+-	httpFirmware.begin("http://develop.kellerdigital.com/minipulse/latest_version.txt");
++	httpFirmware.setTimeout(10000); // 10s timeout (GitHub API can be slow)
++
++	if (!httpFirmware.begin(secureClient, githubApiUrl)) {
++		if (showSerial) Serial.println("Failed to begin HTTP connection for version check");
++		return buffer;
++	}
++
++	// Headers must be added after begin() — begin() may clear internal state
++	httpFirmware.addHeader("Accept", "application/vnd.github+json");
++	httpFirmware.addHeader("User-Agent", "JPL-MiniPulse-ESP32"); // GitHub API requires User-Agent
++
+ 	int httpCode = httpFirmware.GET();
+-	if (showSerial) Serial.print("HTTP code: " + String(httpCode) + "\n");
++	if (showSerial) Serial.printf("Version check HTTP code: %d\n", httpCode);
+ 
+ 	if (httpCode == HTTP_CODE_OK) {
+-		String latestVersion = httpFirmware.getString();
+-		if (showSerial) Serial.println("Remote version: " + latestVersion);
+-		strncpy(buffer, latestVersion.c_str(), sizeof(buffer) - 1);
++		// Parse directly from stream to avoid allocating full response (5-20KB) on heap
++		WiFiClient& stream = httpFirmware.getStream();
++
++		StaticJsonDocument<64> filter;
++		filter["tag_name"] = true;
++
++		DynamicJsonDocument doc(512);
++		DeserializationError err = deserializeJson(doc, stream, DeserializationOption::Filter(filter));
++
++		if (err == DeserializationError::Ok && doc.containsKey("tag_name")) {
++			const char* tagName = doc["tag_name"];
++			if (showSerial) Serial.printf("Remote version (tag): %s\n", tagName);
++			strncpy(buffer, tagName, sizeof(buffer) - 1);
++			buffer[sizeof(buffer) - 1] = '\0';
++		} else {
++			if (showSerial) Serial.println("Failed to parse tag_name from GitHub API response");
++		}
+ 	} else {
+-		if (showSerial) Serial.println("Failed to fetch remote version");
+-		buffer[0] = '\0';
++		if (showSerial) Serial.printf("Failed to fetch remote version (HTTP %d)\n", httpCode);
+ 	}
+ 
+ 	httpFirmware.end();
+ 	return buffer;
+ }
+ 
+-bool checkFirmwareUpdateAvailable() {
+-	// char buffer[2048];
+-	// int offset = 0;
++// Returns true if `remote` is a higher semver than `current`.
++// Expects format "major.minor.patch" (e.g. "1.2.3"). Returns false on parse failure.
++bool isNewerVersion(const char* remote, const char* current) {
++	int rMajor = 0, rMinor = 0, rPatch = 0;
++	int cMajor = 0, cMinor = 0, cPatch = 0;
+ 
+-	const char* latestVersion = getRemoteFirmwareVersion();
++	if (sscanf(remote, "%d.%d.%d", &rMajor, &rMinor, &rPatch) != 3) return false;
++	if (sscanf(current, "%d.%d.%d", &cMajor, &cMinor, &cPatch) != 3) return false;
++
++	if (rMajor != cMajor) return rMajor > cMajor;
++	if (rMinor != cMinor) return rMinor > cMinor;
++	return rPatch > cPatch;
++}
+ 
+-	// offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Remote version: %s\n", latestVersion);
++bool checkFirmwareUpdateAvailable() {
++	const char* latestVersion = getRemoteFirmwareVersion();
+ 
+ 	if (strcmp(latestVersion, "") == 0) {
+-		// offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Unable to fetch latest version from remote server\n");
+-		// Serial.print(buffer);
+ 		return false;
+ 	}
+ 
+-	if (strcmp(latestVersion, currentFirmwareVersion) != 0) {
+-		// offset += snprintf(buffer + offset, sizeof(buffer) - offset, "New firmware available!\n");
+-		// Serial.print(buffer);
+-		return true;
+-	} else {
+-		// offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Firmware is up to date\n");
+-	}
+-
+-	// Serial.print(buffer);
+-	return false;
++	return isNewerVersion(latestVersion, currentFirmwareVersion);
+ }
+ 
+ void updateFirmwareOta() {
+ 	if (!checkFirmwareUpdateAvailable()) return;
++	bool showSerial = FileUtils::config.debugUtils.showSerial;
++
++	if (showSerial) Serial.println("\n--------\nAttempting firmware update from GitHub...");
+ 
+-	char buffer[2048];
+-	int offset = 0;
+-	offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n--------\nAttempting to update firmware from remote server...\n");
++	WiFiClientSecure secureClient;
++	secureClient.setInsecure();
+ 
++	httpUpdate.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
+ 
+-	WiFiClient client;
+-	t_httpUpdate_return ret = httpUpdate.update(client, "http://develop.kellerdigital.com/minipulse/firmware.bin");
+-	// Or:
+-	//t_httpUpdate_return ret = httpUpdate.update(client, "server", 80, "/file.bin");
++	t_httpUpdate_return ret = httpUpdate.update(secureClient, firmwareBinaryUrl);
+ 
+ 	switch (ret) {
+ 		case HTTP_UPDATE_FAILED:
+-			offset += snprintf(buffer + offset, sizeof(buffer) - offset, ">> HTTP_UPDATE_FAILED Error (%d): %s\n", httpUpdate.getLastError(), httpUpdate.getLastErrorString().c_str());
++			if (showSerial) Serial.printf(">> HTTP_UPDATE_FAILED Error (%d): %s\n",
++				httpUpdate.getLastError(), httpUpdate.getLastErrorString().c_str());
+ 			break;
+-
+ 		case HTTP_UPDATE_NO_UPDATES:
+-			offset += snprintf(buffer + offset, sizeof(buffer) - offset, ">> HTTP_UPDATE_NO_UPDATES");
++			if (showSerial) Serial.println(">> HTTP_UPDATE_NO_UPDATES");
+ 			break;
+-
+ 		case HTTP_UPDATE_OK:
+-			offset += snprintf(buffer + offset, sizeof(buffer) - offset, ">> HTTP_UPDATE_OK");
++			if (showSerial) Serial.println(">> HTTP_UPDATE_OK");
+ 			break;
+-
+ 		default:
+-			offset += snprintf(buffer + offset, sizeof(buffer) - offset, ">> HTTP_UPDATE Unknown error");
++			if (showSerial) Serial.println(">> HTTP_UPDATE Unknown result");
+ 			break;
+ 	}
+ 
+-	offset += snprintf(buffer + offset, sizeof(buffer) - offset, "OTA update complete\n--------\n\n");
+-	if (FileUtils::config.debugUtils.showSerial) Serial.print(buffer);
++	if (showSerial) Serial.println("OTA update complete\n--------\n");
+ }
+ 
+ #pragma region -- ANIMATION UTILITIES
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-02 11:27:36Z)**_
+
+Looks correct. Let me verify each piece against the plan:
+
+- `githubApiUrl` and `firmwareBinaryUrl` constants at top
+- `#include <WiFiClientSecure.h>` added with the other includes
+- `getRemoteFirmwareVersion()` — WiFiClientSecure + setInsecure, headers after begin(), getStream() with ArduinoJson filter, all Serial gated
+- `isNewerVersion()` — sscanf-based semver comparison, placed before `checkFirmwareUpdateAvailable()`
+- `checkFirmwareUpdateAvailable()` — uses `isNewerVersion()`, dead commented code removed
+- `updateFirmwareOta()` — WiFiClientSecure, `httpUpdate.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS)`, old kellerdigital URL gone, old snprintf buffer pattern gone, all Serial gated
+- No leftover kellerdigital.com references
+
+Everything matches the plan. Clean diff, no stray changes.
+
+---
+
+_**User (2026-03-02 11:29:55Z)**_
+
+<command-message>commit-commands:commit</command-message>
+<command-name>/commit-commands:commit</command-name>
+
+_**User (2026-03-02 11:29:55Z)**_
+
+## Context
+
+- Current git status: On branch feature/ota-and-remote-data
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   .specstory/history/2026-03-02_08-59-53Z-we-need-to-continue.md
+	modified:   src/main.cpp
+
+no changes added to commit (use "git add" and/or "git commit -a")
+- Current git diff (staged and unstaged changes): <persisted-output>
+Output too large (162.6KB). Full output saved to: /Users/grant/.claude/projects/-Users-grant-code-JPL-MiniPulse/5d732211-d2c4-44eb-9676-6f2437db38e2/tool-results/busyzi00f.txt
+
+Preview (first 2KB):
+diff --git a/.specstory/history/2026-03-02_08-59-53Z-we-need-to-continue.md b/.specstory/history/2026-03-02_08-59-53Z-we-need-to-continue.md
+index 0ab6dee..208403f 100644
+--- a/.specstory/history/2026-03-02_08-59-53Z-we-need-to-continue.md
++++ b/.specstory/history/2026-03-02_08-59-53Z-we-need-to-continue.md
+@@ -2922,7 +2922,7 @@ commit the specstory history as well
+ 
+ ---
+ 
+-_**Agent (claude-opus-4-6 2026-03-02 11:16:48Z)**_
++_**Agent (claude-opus-4-6 2026-03-02 11:17:02Z)**_
+ 
+ <tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+ <summary>Tool use: **Bash**</summary>
+@@ -2930,3 +2930,3193 @@ Stage specstory history files
+ 
+ `git add .specstory/history/2026-02-27_09-59-01Z-command-name-clear-command.md .specstory/history/2026-02-27_12-07-44Z-command-name-clear-command.md .specstory/history/2026-02-27_19-43-21Z.md .specstory/history/2026-03-02_08-59-53Z-we-need-to-continue.md .specstory/history/2026-03-02_08-59-53Z.md`
+ </details></tool-use>
++
++_**Agent (claude-opus-4-6 2026-03-02 11:17:11Z)**_
++
++<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
++<summary>Tool use: **Bash**</summary>
++Commit specstory history
++
++```bash
++git commit -m "$(cat <<'EOF'
++chore: add specstory conversation history
++EOF
++)"
++```
++
++```text
++[feature/ota-and-remote-data d6b0991] chore: add specstory conversation history
++ 5 files changed, 38172 insertions(+)
++ create mode 100644 .specstory/history/2026-02-27_09-59-01Z-command-name-clear-command.md
++ create mode 100644 .specstory/history/2026-02-27_12-07-44Z-command-name-clear-command.md
++ create mode 100644 .specstory/history/2026-02-27_19-43-21Z.md
++ create mode 100644 .specstory/history/2026-03-02_08-59-53Z-we-need-to-continue.md
++ create mode 100644 .specstory/history/2026-03-02_08-59-53Z.md
++```
++</details></tool-use>
++
++_**Agent (claude-opus-4-6 2026-03-02 11:17:14Z)**_
++
++Committed as `d6b0991` — `chore: add specstory conversation history`
++
++---
++
++_**User (2026-03-02 11:17:47Z)**_
++
+...
+</persisted-output>
+- Current branch: feature/ota-and-remote-data
+- Recent commits: d6b0991 chore: add specstory conversation history
+2d4d175 docs(ota): refine GitHub OTA plan with rollout strategy, semver, and safety analysis
+cc2d778 fix(serial): wire up dead snprintf buffers in printCraftInfo and freeSemaphoreItem
+a36f391 feat(serial): gate all runtime serial output behind showSerial config flag #29
+c85c0af chore: Convo history
+e7ed1be fix(parse): guard against null root element in parseData
+ffcc0f6 feat(xml-data): extract XML constants to LittleFS via XmlTestData library
+355a92c refactor(xml-data): extract XML constants to LittleFS-backed XmlTestData library
+dd5d8a0 chore: add specstory conversation history
+865c603 chore(cleanup): remove commented-out dummy XML placeholder data
+
+## Your task
+
+Based on the above changes, create a single git commit.
+
+You have the capability to call multiple tools in a single response. Stage and create the commit using a single message. Do not use any other tools or do anything else. Do not send any other text or messages besides these tool calls.

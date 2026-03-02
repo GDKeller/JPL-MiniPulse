@@ -1,4 +1,6 @@
 const char* currentFirmwareVersion = "1.1.0-16"; // Current firmware version
+const char* githubApiUrl = "https://api.github.com/repos/GDKeller/JPL-MiniPulse/releases/latest";
+const char* firmwareBinaryUrl = "https://github.com/GDKeller/JPL-MiniPulse/releases/latest/download/firmware.bin";
 
 #pragma region -- LIBRARIES
 #include <Arduino.h>		// Arduino core
@@ -9,6 +11,7 @@ const char* currentFirmwareVersion = "1.1.0-16"; // Current firmware version
 #include <LittleFS.h>		// LittleFS file system
 #include <HTTPClient.h>		// HTTP client
 #include <HTTPUpdate.h> 	// HTTP update
+#include <WiFiClientSecure.h>	// Secure WiFi client (HTTPS)
 #include <FastLED.h>		// FastLED lib
 #include <tinyxml2.h>		// XML parser
 #include <iostream>			// C++ I/O
@@ -390,85 +393,107 @@ void setupOtaUpdate() {
 
 const char* getRemoteFirmwareVersion() {
 	bool showSerial = FileUtils::config.debugUtils.showSerial;
-
 	static char buffer[16];
+	buffer[0] = '\0';
+
+	WiFiClientSecure secureClient;
+	secureClient.setInsecure(); // Encrypted transport, no cert pinning
+
 	HTTPClient httpFirmware;
-	httpFirmware.begin("http://develop.kellerdigital.com/minipulse/latest_version.txt");
+	httpFirmware.setTimeout(10000); // 10s timeout (GitHub API can be slow)
+
+	if (!httpFirmware.begin(secureClient, githubApiUrl)) {
+		if (showSerial) Serial.println("Failed to begin HTTP connection for version check");
+		return buffer;
+	}
+
+	// Headers must be added after begin() — begin() may clear internal state
+	httpFirmware.addHeader("Accept", "application/vnd.github+json");
+	httpFirmware.addHeader("User-Agent", "JPL-MiniPulse-ESP32"); // GitHub API requires User-Agent
+
 	int httpCode = httpFirmware.GET();
-	if (showSerial) Serial.print("HTTP code: " + String(httpCode) + "\n");
+	if (showSerial) Serial.printf("Version check HTTP code: %d\n", httpCode);
 
 	if (httpCode == HTTP_CODE_OK) {
-		String latestVersion = httpFirmware.getString();
-		if (showSerial) Serial.println("Remote version: " + latestVersion);
-		strncpy(buffer, latestVersion.c_str(), sizeof(buffer) - 1);
+		// Parse directly from stream to avoid allocating full response (5-20KB) on heap
+		WiFiClient& stream = httpFirmware.getStream();
+
+		StaticJsonDocument<64> filter;
+		filter["tag_name"] = true;
+
+		DynamicJsonDocument doc(512);
+		DeserializationError err = deserializeJson(doc, stream, DeserializationOption::Filter(filter));
+
+		if (err == DeserializationError::Ok && doc.containsKey("tag_name")) {
+			const char* tagName = doc["tag_name"];
+			if (showSerial) Serial.printf("Remote version (tag): %s\n", tagName);
+			strncpy(buffer, tagName, sizeof(buffer) - 1);
+			buffer[sizeof(buffer) - 1] = '\0';
+		} else {
+			if (showSerial) Serial.println("Failed to parse tag_name from GitHub API response");
+		}
 	} else {
-		if (showSerial) Serial.println("Failed to fetch remote version");
-		buffer[0] = '\0';
+		if (showSerial) Serial.printf("Failed to fetch remote version (HTTP %d)\n", httpCode);
 	}
 
 	httpFirmware.end();
 	return buffer;
 }
 
-bool checkFirmwareUpdateAvailable() {
-	// char buffer[2048];
-	// int offset = 0;
+// Returns true if `remote` is a higher semver than `current`.
+// Expects format "major.minor.patch" (e.g. "1.2.3"). Returns false on parse failure.
+bool isNewerVersion(const char* remote, const char* current) {
+	int rMajor = 0, rMinor = 0, rPatch = 0;
+	int cMajor = 0, cMinor = 0, cPatch = 0;
 
+	if (sscanf(remote, "%d.%d.%d", &rMajor, &rMinor, &rPatch) != 3) return false;
+	if (sscanf(current, "%d.%d.%d", &cMajor, &cMinor, &cPatch) != 3) return false;
+
+	if (rMajor != cMajor) return rMajor > cMajor;
+	if (rMinor != cMinor) return rMinor > cMinor;
+	return rPatch > cPatch;
+}
+
+bool checkFirmwareUpdateAvailable() {
 	const char* latestVersion = getRemoteFirmwareVersion();
 
-	// offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Remote version: %s\n", latestVersion);
-
 	if (strcmp(latestVersion, "") == 0) {
-		// offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Unable to fetch latest version from remote server\n");
-		// Serial.print(buffer);
 		return false;
 	}
 
-	if (strcmp(latestVersion, currentFirmwareVersion) != 0) {
-		// offset += snprintf(buffer + offset, sizeof(buffer) - offset, "New firmware available!\n");
-		// Serial.print(buffer);
-		return true;
-	} else {
-		// offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Firmware is up to date\n");
-	}
-
-	// Serial.print(buffer);
-	return false;
+	return isNewerVersion(latestVersion, currentFirmwareVersion);
 }
 
 void updateFirmwareOta() {
 	if (!checkFirmwareUpdateAvailable()) return;
+	bool showSerial = FileUtils::config.debugUtils.showSerial;
 
-	char buffer[2048];
-	int offset = 0;
-	offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n--------\nAttempting to update firmware from remote server...\n");
+	if (showSerial) Serial.println("\n--------\nAttempting firmware update from GitHub...");
 
+	WiFiClientSecure secureClient;
+	secureClient.setInsecure();
 
-	WiFiClient client;
-	t_httpUpdate_return ret = httpUpdate.update(client, "http://develop.kellerdigital.com/minipulse/firmware.bin");
-	// Or:
-	//t_httpUpdate_return ret = httpUpdate.update(client, "server", 80, "/file.bin");
+	httpUpdate.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
+
+	t_httpUpdate_return ret = httpUpdate.update(secureClient, firmwareBinaryUrl);
 
 	switch (ret) {
 		case HTTP_UPDATE_FAILED:
-			offset += snprintf(buffer + offset, sizeof(buffer) - offset, ">> HTTP_UPDATE_FAILED Error (%d): %s\n", httpUpdate.getLastError(), httpUpdate.getLastErrorString().c_str());
+			if (showSerial) Serial.printf(">> HTTP_UPDATE_FAILED Error (%d): %s\n",
+				httpUpdate.getLastError(), httpUpdate.getLastErrorString().c_str());
 			break;
-
 		case HTTP_UPDATE_NO_UPDATES:
-			offset += snprintf(buffer + offset, sizeof(buffer) - offset, ">> HTTP_UPDATE_NO_UPDATES");
+			if (showSerial) Serial.println(">> HTTP_UPDATE_NO_UPDATES");
 			break;
-
 		case HTTP_UPDATE_OK:
-			offset += snprintf(buffer + offset, sizeof(buffer) - offset, ">> HTTP_UPDATE_OK");
+			if (showSerial) Serial.println(">> HTTP_UPDATE_OK");
 			break;
-
 		default:
-			offset += snprintf(buffer + offset, sizeof(buffer) - offset, ">> HTTP_UPDATE Unknown error");
+			if (showSerial) Serial.println(">> HTTP_UPDATE Unknown result");
 			break;
 	}
 
-	offset += snprintf(buffer + offset, sizeof(buffer) - offset, "OTA update complete\n--------\n\n");
-	if (FileUtils::config.debugUtils.showSerial) Serial.print(buffer);
+	if (showSerial) Serial.println("OTA update complete\n--------\n");
 }
 
 #pragma region -- ANIMATION UTILITIES
