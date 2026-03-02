@@ -1,4 +1,4 @@
-const char* currentFirmwareVersion = "1.1.1"; // Current firmware version
+const char* currentFirmwareVersion = "1.1.2"; // Current firmware version
 const char* githubApiUrl = "https://api.github.com/repos/GDKeller/JPL-MiniPulse/releases/latest";
 const char* firmwareBinaryUrl = "https://github.com/GDKeller/JPL-MiniPulse/releases/latest/download/firmware.bin";
 
@@ -3192,17 +3192,11 @@ void fetchData() {
 			Serial.print(dataStatusBuffer);
 		}
 
-		// Load from LittleFS, with caching to avoid re-reading the same file each cycle.
+		// Load from LittleFS each cycle (xmlDataBuffer is shared and gets reused).
 		// Falls back to compiled-in PROGMEM safety net if LittleFS read fails.
-		static const char* cachedDummyFile = nullptr;
 		const char* currentDummyFile = dummyXmlFile; // snapshot volatile once
-		if (cachedDummyFile != currentDummyFile) {
-			if (XmlTestData::loadFile(currentDummyFile, xmlDataBuffer, sizeof(xmlDataBuffer))) {
-				cachedDummyFile = currentDummyFile;
-			} else {
-				strlcpy(xmlDataBuffer, XmlTestData::getFallbackData(), sizeof(xmlDataBuffer));
-				cachedDummyFile = nullptr; // don't cache failure — retry next cycle
-			}
+		if (!XmlTestData::loadFile(currentDummyFile, xmlDataBuffer, sizeof(xmlDataBuffer))) {
+			strlcpy(xmlDataBuffer, XmlTestData::getFallbackData(), sizeof(xmlDataBuffer));
 		}
 		parseData(xmlDataBuffer);
 	}
