@@ -1,4 +1,4 @@
-const char* currentFirmwareVersion = "1.1.5"; // Current firmware version
+const char* currentFirmwareVersion = "1.1.3"; // Current firmware version
 const char* githubApiUrl = "https://api.github.com/repos/GDKeller/JPL-MiniPulse/releases/latest";
 const char* firmwareBinaryUrl = "https://github.com/GDKeller/JPL-MiniPulse/releases/latest/download/firmware.bin";
 
@@ -554,6 +554,8 @@ String resolveRedirectUrl(const char* url) {
 		}
 
 		http.addHeader("User-Agent", "JPL-MiniPulse-ESP32");
+		const char* collectHeaders[] = {"Location"};
+		http.collectHeaders(collectHeaders, 1);
 		int httpCode = http.GET();
 
 		if (httpCode >= 300 && httpCode < 400) {
