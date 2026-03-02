@@ -7,10 +7,6 @@
 #include <Arduino.h>
 #endif
 
-#ifndef MAP
-#include <map>
-#endif
-
 #ifndef EXCEPTION
 #include <exception>
 #endif

@@ -49,7 +49,8 @@ FileUtils::Config FileUtils::config = {
 		10000 // timerDelay
 	},
 	{ // miscellaneous
-		0 // colorTheme
+		0,   // colorTheme
+		true // useApprovedOnly
 	}
 };
 
@@ -151,92 +152,100 @@ void FileUtils::listFilesystem(const char* dirname, int8_t loop = 0) {
 }
 
 void FileUtils::createDir(const char* path) {
-	// prinmt free heap
-	Serial.print("Free heap: " + String(ESP.getFreeHeap()) + "\n");
-	Serial.printf("Creating Dir: %s\n", path);
+	bool showSerial = config.debugUtils.showSerial;
+	if (showSerial) Serial.print("Free heap: " + String(ESP.getFreeHeap()) + "\n");
+	if (showSerial) Serial.printf("Creating Dir: %s\n", path);
 	try {
 		if (LittleFS.mkdir(path)) {
-			Serial.println("Dir created");
+			if (showSerial) Serial.println("Dir created");
 		} else {
-			Serial.println("mkdir failed");
+			if (showSerial) Serial.println("mkdir failed");
 		}
 	} catch (const std::exception& e) {
-		Serial.println(e.what());
+		if (showSerial) Serial.println(e.what());
 	}
 }
 
 void FileUtils::removeDir(const char* path) {
-	Serial.printf("Removing Dir: %s\n", path);
+	bool showSerial = config.debugUtils.showSerial;
+	if (showSerial) Serial.printf("Removing Dir: %s\n", path);
 	if (LittleFS.rmdir(path)) {
-		Serial.println("Dir removed");
+		if (showSerial) Serial.println("Dir removed");
 	} else {
-		Serial.println("rmdir failed");
+		if (showSerial) Serial.println("rmdir failed");
 	}
 }
 
 void FileUtils::readFile(const char* path) {
-	Serial.printf("Reading file: %s\r\n", path);
+	bool showSerial = config.debugUtils.showSerial;
+	if (showSerial) Serial.printf("Reading file: %s\r\n", path);
 
 	File file = LittleFS.open(path);
 	if (!file || file.isDirectory()) {
-		Serial.println("- failed to open file for reading");
+		if (showSerial) Serial.println("- failed to open file for reading");
 		return;
 	}
 
-	Serial.println("- read from file:");
-	while (file.available()) {
-		Serial.write(file.read());
+	if (showSerial) {
+		Serial.println("- read from file:");
+		while (file.available()) {
+			Serial.write(file.read());
+		}
 	}
 	file.close();
 }
 
 void FileUtils::writeFile(const char* path, const char* message) {
-	Serial.printf("Writing file: %s\r\n", path);
+	bool showSerial = config.debugUtils.showSerial;
+	if (showSerial) Serial.printf("Writing file: %s\r\n", path);
 
 	File file = LittleFS.open(path, FILE_WRITE);
 	if (!file) {
-		Serial.println("- failed to open file for writing");
+		if (showSerial) Serial.println("- failed to open file for writing");
 		return;
 	}
 	if (file.print(message)) {
-		Serial.println("- file written");
+		if (showSerial) Serial.println("- file written");
 	} else {
-		Serial.println("- write failed");
+		if (showSerial) Serial.println("- write failed");
 	}
 	file.close();
 }
 
 void FileUtils::appendFile(const char* path, const char* message) {
-	Serial.printf("Appending to file: %s\r\n", path);
+	bool showSerial = config.debugUtils.showSerial;
+	if (showSerial) Serial.printf("Appending to file: %s\r\n", path);
 
 	File file = LittleFS.open(path, FILE_APPEND);
 	if (!file) {
-		Serial.println("- failed to open file for appending");
+		if (showSerial) Serial.println("- failed to open file for appending");
 		return;
 	}
 	if (file.print(message)) {
-		Serial.println("- message appended");
+		if (showSerial) Serial.println("- message appended");
 	} else {
-		Serial.println("- append failed");
+		if (showSerial) Serial.println("- append failed");
 	}
 	file.close();
 }
 
 void FileUtils::renameFile(const char* path1, const char* path2) {
-	Serial.printf("Renaming file %s to %s\r\n", path1, path2);
+	bool showSerial = config.debugUtils.showSerial;
+	if (showSerial) Serial.printf("Renaming file %s to %s\r\n", path1, path2);
 	if (LittleFS.rename(path1, path2)) {
-		Serial.println("- file renamed");
+		if (showSerial) Serial.println("- file renamed");
 	} else {
-		Serial.println("- rename failed");
+		if (showSerial) Serial.println("- rename failed");
 	}
 }
 
 void FileUtils::deleteFile(const char* path) {
-	Serial.printf("Deleting file: %s\r\n", path);
+	bool showSerial = config.debugUtils.showSerial;
+	if (showSerial) Serial.printf("Deleting file: %s\r\n", path);
 	if (LittleFS.remove(path)) {
-		Serial.println("- file deleted");
+		if (showSerial) Serial.println("- file deleted");
 	} else {
-		Serial.println("- delete failed");
+		if (showSerial) Serial.println("- delete failed");
 	}
 }
 
@@ -309,11 +318,15 @@ void FileUtils::setConfigValuesFromFile(File configFile) {
 			FileUtils::config.debugUtils.diagMeasure = kv.value().as<int>();
 		} else if (kv.key() == "brightness") {
 			FileUtils::config.displayLED.brightness = kv.value().as<int>();
+		} else if (kv.key() == "useApprovedOnly") {
+			FileUtils::config.miscellaneous.useApprovedOnly = kv.value().as<bool>();
 		}
 	}
 }
 
 void FileUtils::printAllConfigFileKeys() {
+	if (!config.debugUtils.showSerial) return;
+
 	File configFile = LittleFS.open("/config.json", "r");
 	if (!configFile) {
 		Serial.println("Failed to open config file for reading");
@@ -333,7 +346,7 @@ void FileUtils::printAllConfigFileKeys() {
 	Serial.print("┌────────────────────────────────┐\n");
 	Serial.print("│        CONFIG FILE KEYS        │\n");
 	Serial.print("└────────────────────────────────┘\n");
-	
+
 
 	for (JsonPair kv : doc.as<JsonObject>()) {
 		Serial.print(kv.key().c_str() + String(": ") + kv.value().as<String>() + String("\n"));
@@ -344,8 +357,8 @@ void FileUtils::printAllConfigFileKeys() {
 /* Update/Write values to config */
 
 void FileUtils::updateDebugUtilsField(const char* key, const JsonVariant& value) {
-	Serial.print("Updating debug utils field - " + String(key) + ": " + String(value.as<bool>()));
-
+	bool showSerial = config.debugUtils.showSerial;
+	if (showSerial) Serial.print("Updating debug utils field - " + String(key) + ": " + String(value.as<bool>()));
 
 	if (strcmp(key, "testCores") == 0) {
 		config.debugUtils.testCores = value;
@@ -358,23 +371,23 @@ void FileUtils::updateDebugUtilsField(const char* key, const JsonVariant& value)
 	} else if (strcmp(key, "testLEDs") == 0) {
 		config.debugUtils.testLEDs = value;
 	} else {
-		Serial.println("Key not found in DebugUtils struct");
+		if (showSerial) Serial.println("Key not found in DebugUtils struct");
 	}
 }
 
 void FileUtils::updateWifiNetworkField(const char* key, const JsonVariant& value) {
 	if (strcmp(key, "apSSID") == 0) {
-		strncpy(config.wifiNetwork.apSSID, value, sizeof(config.wifiNetwork.apSSID));
+		strlcpy(config.wifiNetwork.apSSID, value, sizeof(config.wifiNetwork.apSSID));
 	} else if (strcmp(key, "apPass") == 0) {
-		strncpy(config.wifiNetwork.apPass, value, sizeof(config.wifiNetwork.apPass));
+		strlcpy(config.wifiNetwork.apPass, value, sizeof(config.wifiNetwork.apPass));
 	} else if (strcmp(key, "serverName") == 0) {
-		strncpy(config.wifiNetwork.serverName, value, sizeof(config.wifiNetwork.serverName));
+		strlcpy(config.wifiNetwork.serverName, value, sizeof(config.wifiNetwork.serverName));
 	} else if (strcmp(key, "forceDummyData") == 0) {
 		config.wifiNetwork.forceDummyData = value;
 	} else if (strcmp(key, "retryDataFetchLimit") == 0) {
 		config.wifiNetwork.retryDataFetchLimit = value;
 	} else {
-		Serial.println("Key not found in WifiNetwork struct");
+		if (config.debugUtils.showSerial) Serial.println("Key not found in WifiNetwork struct");
 	}
 }
 
@@ -394,7 +407,7 @@ void FileUtils::updatePinsHardwareField(const char* key, const JsonVariant& valu
 	} else if (strcmp(key, "potentiometer") == 0) {
 		config.pinsHardware.potentiometer = value;
 	} else {
-		Serial.println("Key not found in PinsHardware struct");
+		if (config.debugUtils.showSerial) Serial.println("Key not found in PinsHardware struct");
 	}
 }
 
@@ -425,7 +438,7 @@ void FileUtils::updateDisplayLEDField(const char* key, const JsonVariant& value)
 	} else if (strcmp(key, "displayMinDuration") == 0) {
 		config.displayLED.displayMinDuration = value;
 	} else {
-		Serial.println("Key not found in DisplayLED struct");
+		if (config.debugUtils.showSerial) Serial.println("Key not found in DisplayLED struct");
 	}
 }
 
@@ -438,7 +451,7 @@ void FileUtils::updateTextTypographyField(const char* key, const JsonVariant& va
 	} else if (strcmp(key, "meteorOffset") == 0) {
 		config.textTypography.meteorOffset = value;
 	} else {
-		Serial.println("Key not found in TextTypography struct");
+		if (config.debugUtils.showSerial) Serial.println("Key not found in TextTypography struct");
 	}
 }
 
@@ -447,7 +460,7 @@ void FileUtils::updateTimersDelaysField(const char* key, const JsonVariant& valu
 	if (strcmp(key, "timerDelay") == 0) {
 		config.timersDelays.timerDelay = value;
 	} else {
-		Serial.println("Key not found in TimersDelays struct");
+		if (config.debugUtils.showSerial) Serial.println("Key not found in TimersDelays struct");
 	}
 }
 
@@ -455,22 +468,25 @@ void FileUtils::updateTimersDelaysField(const char* key, const JsonVariant& valu
 void FileUtils::updateMiscellaneousField(const char* key, const JsonVariant& value) {
 	if (strcmp(key, "colorTheme") == 0) {
 		config.miscellaneous.colorTheme = value;
+	} else if (strcmp(key, "useApprovedOnly") == 0) {
+		config.miscellaneous.useApprovedOnly = value;
 	} else {
-		Serial.println("Key not found in Miscellaneous struct");
+		if (config.debugUtils.showSerial) Serial.println("Key not found in Miscellaneous struct");
 	}
 }
 
 void FileUtils::writeConfigFileBool(const char* key, bool value) {
+	bool showSerial = config.debugUtils.showSerial;
 	File configFile = LittleFS.open("/config.json", "r+");
 	if (!configFile) {
-		Serial.println("Failed to open config file for reading");
+		if (showSerial) Serial.println("Failed to open config file for reading");
 		return;
 	}
 
 	StaticJsonDocument<1024> doc;
 	DeserializationError error = deserializeJson(doc, configFile);
 	if (error) {
-		Serial.println("Failed to parse config file");
+		if (showSerial) Serial.println("Failed to parse config file");
 		return;
 	}
 
@@ -480,7 +496,7 @@ void FileUtils::writeConfigFileBool(const char* key, bool value) {
 
 	configFile = LittleFS.open("/config.json", "w");
 	if (!configFile) {
-		Serial.println("Failed to open config file for writing");
+		if (showSerial) Serial.println("Failed to open config file for writing");
 		return;
 	}
 
@@ -488,25 +504,26 @@ void FileUtils::writeConfigFileBool(const char* key, bool value) {
 	configFile.close();
 
 	String stringValue = value ? "true" : "false";
-	Serial.println("Config key " + String(key) + " set to " + stringValue);
+	if (showSerial) Serial.println("Config key " + String(key) + " set to " + stringValue);
 }
 
 void FileUtils::writeConfigFileInt(const char* key, int value) {
+	bool showSerial = config.debugUtils.showSerial;
 	if (!checkConfigFileExists()) {
-		Serial.println("Config file does not exist");
+		if (showSerial) Serial.println("Config file does not exist");
 	} else {
-		Serial.println("Config file found");
+		if (showSerial) Serial.println("Config file found");
 	}
 	File configFile = LittleFS.open("/config.json", "r+");
 	if (!configFile) {
-		Serial.println("Failed to open config file for reading");
+		if (showSerial) Serial.println("Failed to open config file for reading");
 		return;
 	}
 
 	StaticJsonDocument<1024> doc;
 	DeserializationError error = deserializeJson(doc, configFile);
 	if (error) {
-		Serial.println("Failed to parse config file");
+		if (showSerial) Serial.println("Failed to parse config file");
 		return;
 	}
 
@@ -516,32 +533,33 @@ void FileUtils::writeConfigFileInt(const char* key, int value) {
 
 	configFile = LittleFS.open("/config.json", "w");
 	if (!configFile) {
-		Serial.println("Failed to open config file for writing");
+		if (showSerial) Serial.println("Failed to open config file for writing");
 		return;
 	}
 
 	if (serializeJson(doc, configFile) == 0) {
-		Serial.println("Failed to write to config file");
+		if (showSerial) Serial.println("Failed to write to config file");
 		return;
 	}
 
 	configFile.flush(); // Flush file to write
 	configFile.close(); // Close file
 
-	Serial.println("CONFIG FILE saved: " + String(key) + " == " + String(value));
+	if (showSerial) Serial.println("CONFIG FILE saved: " + String(key) + " == " + String(value));
 }
 
 void FileUtils::writeConfigFileString(const char* key, const char* value) {
+	bool showSerial = config.debugUtils.showSerial;
 	File configFile = LittleFS.open("/config.json", "r+");
 	if (!configFile) {
-		Serial.println("Failed to open config file for reading");
+		if (showSerial) Serial.println("Failed to open config file for reading");
 		return;
 	}
 
 	StaticJsonDocument<1024> doc;
 	DeserializationError error = deserializeJson(doc, configFile);
 	if (error) {
-		Serial.println("Failed to parse config file");
+		if (showSerial) Serial.println("Failed to parse config file");
 		return;
 	}
 
@@ -551,12 +569,12 @@ void FileUtils::writeConfigFileString(const char* key, const char* value) {
 
 	configFile = LittleFS.open("/config.json", "w");
 	if (!configFile) {
-		Serial.println("Failed to open config file for writing");
+		if (showSerial) Serial.println("Failed to open config file for writing");
 		return;
 	}
 
 	serializeJson(doc, configFile);
 	configFile.close();
 
-	Serial.println("Config key " + String(key) + " set to " + String(value));
+	if (showSerial) Serial.println("Config key " + String(key) + " set to " + String(value));
 }

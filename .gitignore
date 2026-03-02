@@ -3,3 +3,13 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
+
+.venv/
+venv/
+.DS_Store
+scripts/
+
+.claude/
+.serena/
+*.csv
+*.db

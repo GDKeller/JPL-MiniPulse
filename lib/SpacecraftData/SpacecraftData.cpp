@@ -1,588 +1,216 @@
 #include <SpacecraftData.h>
 
-DynamicJsonDocument SpacecraftData::spacecraftNamesJson(5120);
+DynamicJsonDocument SpacecraftData::spacecraftNamesJson(8192);
 DynamicJsonDocument SpacecraftData::spacecraftBlacklistJson(1024);
-DynamicJsonDocument SpacecraftData::spacecraftPlaceholderRatesJson(6144);
+DynamicJsonDocument SpacecraftData::spacecraftApprovedJson(2048);
 
-// SpacecraftData::SpacecraftData()
-//     : spacecraftNamesJson(5120), spacecraftBlacklistJson(1024), spacecraftPlaceholderRatesJson(6144) {}
+void SpacecraftData::loadJson(const char* firmwareVersion) {
+    bool showSerial = FileUtils::config.debugUtils.showSerial;
+    if (showSerial) Serial.println("Initializing spacecraft data...");
+    populateNamesInMemory();
+    populateBlacklistInMemory();
+    populateApprovedInMemory();
 
-
-void SpacecraftData::loadJson() {
-    Serial.println("Loading spacecraft data...");
-    SpacecraftData::loadSpacecraftNamesFile();
-    delay(100);
-    Serial.println("Loading spacecraft blacklist...");
-    SpacecraftData::loadSpacecraftBlacklistFile();
-    delay(100);
-    Serial.println("Loading spacecraft placeholder rates...");
-    SpacecraftData::loadSpacecraftPlaceholderRatesFile();
-    delay(100);
-};
-
-// Create and write spacecraft names file
-void SpacecraftData::createAndWriteNamesFile() {
-    if (LittleFS.exists("/spacecraft_data/names.json")) {
-        Serial.println("names.json already exists");
-        // return;
+    if (shouldWriteFiles(firmwareVersion)) {
+        if (showSerial) Serial.println("Firmware version changed — writing spacecraft data to flash");
+        writeFilesToFlash(firmwareVersion);
+    } else {
+        if (showSerial) Serial.println("Spacecraft data unchanged — skipping flash writes");
     }
+}
 
-    // Open file for writing
-    Serial.println("Opening names.json for writing...");
-    File file = LittleFS.open("/spacecraft_data/names.json", "w");
-
-    if (!file) {
-        Serial.print(DevUtils::termColor("red") + "Failed trying to open names.json" + DevUtils::termColor("reset") + "\n");
-        return;
-    }
-
-    // Prep JSON buffer
-    Serial.println("Clearing global JSON document...");
+void SpacecraftData::populateNamesInMemory() {
     spacecraftNamesJson.clear();
 
-    // Add spacecraft data directly into the JSON object
-    spacecraftNamesJson["ACE"] = "Advanced Composition Explorer";
-    spacecraftNamesJson["PLC"] = "Akatsuki";
-    spacecraftNamesJson["ARGO"] = "ArgoMoon";
+    // Spacecraft (alphabetical by callsign)
+    spacecraftNamesJson["ACE"] = "Adv Composition Explorer";
+    spacecraftNamesJson["AGM1"] = "Griffin Lander";
+    spacecraftNamesJson["AIRS"] = "AIRS";
+    spacecraftNamesJson["B101"] = "Blue Moon 1 SN1";
+    spacecraftNamesJson["B102"] = "Blue Moon 1 SN2";
+    spacecraftNamesJson["BEPI"] = "BepiColombo";
     spacecraftNamesJson["BIOS"] = "BioSentinel";
-    spacecraftNamesJson["CAPS"] = "Capstone";
-    spacecraftNamesJson["CHDR"] = "Chandra Xray Observatory";
-    spacecraftNamesJson["CH2"] = "Chandrayaan 2";
-    spacecraftNamesJson["CUE3"] = "CU Earth Escape Explorer";
-    spacecraftNamesJson["CuSP"] = "CubeSat-Observation of Solar Particles";
-    spacecraftNamesJson["DART"] = "DART";
-    spacecraftNamesJson["unknown10"] = "Dragonfly";
-    spacecraftNamesJson["DSCO"] = "Deep Space Climate Observatory";
-    spacecraftNamesJson["EMM"] = "Emirates Mars Mission";
-    spacecraftNamesJson["EQUL"] = "EQUilibriUm Lunar-Earth Spacecraft";
+    spacecraftNamesJson["CAPS"] = "CAPSTONE";
+    spacecraftNamesJson["CGO"] = "Carruthers Observatory";
+    spacecraftNamesJson["CHDR"] = "Chandra Xray";
+    spacecraftNamesJson["CMA"] = "Caltech Apophis";
+    spacecraftNamesJson["DAVINCI"] = "DAVINCI";
+    spacecraftNamesJson["DFLY"] = "Dragonfly";
+    spacecraftNamesJson["DSCO"] = "DSCOVR";
+    spacecraftNamesJson["EM2"] = "Artemis Orion 2";
+    spacecraftNamesJson["EM3"] = "Artemis Orion 3";
+    spacecraftNamesJson["EMM"] = "Emirates Mars";
+    spacecraftNamesJson["ERO"] = "Earth Return Orb";
+    spacecraftNamesJson["ESCB"] = "EscaPADE Blue";
+    spacecraftNamesJson["ESCG"] = "EscaPADE Gold";
+    spacecraftNamesJson["EUCL"] = "Euclid";
     spacecraftNamesJson["EURC"] = "Europa Clipper";
-    spacecraftNamesJson["RSP"] = "ExoMars Rover";
-    spacecraftNamesJson["GAIA"] = "Gaia";
-    spacecraftNamesJson["GTL"] = "Geotail";
+    spacecraftNamesJson["EUS1"] = "Explor Upper Stage";
+    spacecraftNamesJson["GWP"] = "Lunar Gateway";
+    spacecraftNamesJson["HERA"] = "Hera";
+    spacecraftNamesJson["HST"] = "Hubble";
     spacecraftNamesJson["HYB2"] = "Hayabusa 2";
-    spacecraftNamesJson["EM1"] = "Artemis 1";
-    spacecraftNamesJson["EM2"] = "Artemis 2";
-    spacecraftNamesJson["EM3"] = "Artemis 3";
-    spacecraftNamesJson["NSYT"] = "InSight";
+    spacecraftNamesJson["IM3"] = "Intuitive Mach 3";
+    spacecraftNamesJson["IM4"] = "Intuitive Mach 4";
+    spacecraftNamesJson["IMAP"] = "IMAP";
+    spacecraftNamesJson["INTG"] = "INTEGRAL";
+    spacecraftNamesJson["JNO"] = "Juno Jupiter";
+    spacecraftNamesJson["JUICE"] = "JUICE";
     spacecraftNamesJson["JWST"] = "James Webb Space Telescope";
-    spacecraftNamesJson["JNO"] = "Juno";
-    spacecraftNamesJson["KPLO"] = "Korea Pathfinder Lunar Orbiter";
-    spacecraftNamesJson["LICI"] = "LICIA Cube";
-    spacecraftNamesJson["LND1"] = "Lunar Node 1";
+    spacecraftNamesJson["KPLO"] = "Danuri Korea";
+    spacecraftNamesJson["LEMS"] = "Lunar Monitor Stn";
+    spacecraftNamesJson["LEV1"] = "Lunar Excur Veh";
+    spacecraftNamesJson["LRO"] = "Lunar Recon Orbiter";
+    spacecraftNamesJson["LTV"] = "Lunar Terrain Veh";
     spacecraftNamesJson["LUCY"] = "Lucy";
-    spacecraftNamesJson["LFL"] = "Lunar Flashlight";
-    spacecraftNamesJson["HMAP"] = "Lunar Hydrogen Mapper";
-    spacecraftNamesJson["LRO"] = "Lunar Reconnaissance Orbiter";
-    spacecraftNamesJson["MMS1"] = "Magnetospheric MultiScale Formation Flyer 1";
-    spacecraftNamesJson["MMS2"] = "Magnetospheric MultiScale Formation Flyer 2";
-    spacecraftNamesJson["MMS3"] = "Magnetospheric MultiScale Formation Flyer 3";
-    spacecraftNamesJson["MMS4"] = "Magnetospheric MultiScale Formation Flyer 4";
+    spacecraftNamesJson["LUPX"] = "LUPEX";
     spacecraftNamesJson["M01O"] = "Mars Odyssey";
-    spacecraftNamesJson["M20"] = "Mars 2020";
-    spacecraftNamesJson["MVN"] = "MAVEN";
+    spacecraftNamesJson["M20"] = "Mars Perseverance";
+    spacecraftNamesJson["MAX"] = "Multi Asteroid Exp";
     spacecraftNamesJson["MEX"] = "Mars Express";
+    spacecraftNamesJson["MMS1"] = "Magneto MultiScale 1";
+    spacecraftNamesJson["MMS2"] = "Magneto MultiScale 2";
+    spacecraftNamesJson["MMS3"] = "Magneto MultiScale 3";
+    spacecraftNamesJson["MMS4"] = "Magneto MultiScale 4";
+    spacecraftNamesJson["MMX"] = "Martian Moons Exp";
     spacecraftNamesJson["MOM"] = "Mars Orbiter";
-    spacecraftNamesJson["MRO"] = "Mars Reconnaissance Orbiter";
-    spacecraftNamesJson["MSL"] = "Curiosity";
-    spacecraftNamesJson["MLI"] = "Morehead Lunar Ice Cube";
-    spacecraftNamesJson["NEAS"] = "Near Earth Asteroid Scout";
-    spacecraftNamesJson["NHPC"] = "New Horizons";
-    spacecraftNamesJson["ORX"] = "OSIRIS REx";
-    spacecraftNamesJson["OMOT"] = "OMOTENASHI";
-    spacecraftNamesJson["PSYC"] = "Psyche";
-    spacecraftNamesJson["SOHO"] = "Solar and Heliospheric Observatory";
+    spacecraftNamesJson["MRO"] = "Mars Recon Orbiter";
+    spacecraftNamesJson["MSL"] = "Mars Curiosity";
+    spacecraftNamesJson["MVN"] = "MAVEN";
+    spacecraftNamesJson["NEOS"] = "NEO Surveyor";
+    spacecraftNamesJson["NHPC"] = "New Horizons Pluto";
+    spacecraftNamesJson["ORACLE-P"] = "Oracle P";
+    spacecraftNamesJson["ORX"] = "OSIRIS APEX";
+    spacecraftNamesJson["PLC"] = "Akatsuki";
+    spacecraftNamesJson["PSYC"] = "Psyche Asteroid";
+    spacecraftNamesJson["RFM"] = "Rosalind Franklin";
+    spacecraftNamesJson["RLVM"] = "Rocket Lab Venus";
+    spacecraftNamesJson["RST"] = "Roman Telescope";
+    spacecraftNamesJson["SMAP"] = "SMAP";
+    spacecraftNamesJson["SOHO"] = "Solar Heliospheric Observatory";
+    spacecraftNamesJson["SOLAR"] = "SOLAR";
+    spacecraftNamesJson["SOLO"] = "Solar Orbiter";
     spacecraftNamesJson["SPP"] = "Parker Solar Probe";
+    spacecraftNamesJson["SRBB"] = "SunRISE Bebop";
+    spacecraftNamesJson["SRED"] = "SunRISE Edward";
+    spacecraftNamesJson["SREI"] = "SunRISE Ein";
+    spacecraftNamesJson["SRFY"] = "SunRISE Faye";
+    spacecraftNamesJson["SRJT"] = "SunRISE Jet";
+    spacecraftNamesJson["SRL"] = "Sample Return Lndr";
+    spacecraftNamesJson["SRSP"] = "SunRISE Spike";
     spacecraftNamesJson["STA"] = "STEREO A";
-    spacecraftNamesJson["TESS"] = "Transiting Exoplanet Survey Satellite";
-    spacecraftNamesJson["TGO"] = "ExoMars Trace Gas Orbiter";
-    spacecraftNamesJson["THB"] = "THEMIS B";
-    spacecraftNamesJson["THC"] = "THEMIS C";
-    spacecraftNamesJson["TM"] = "TeamMiles";
+    spacecraftNamesJson["SWFO"] = "SWFO L1";
+    spacecraftNamesJson["SX01"] = "Starship Uncrewed";
+    spacecraftNamesJson["SX02"] = "Starship Crewed";
+    spacecraftNamesJson["TESS"] = "TESS Exoplanet Survey";
+    spacecraftNamesJson["TGO"] = "ExoMars TGO";
+    spacecraftNamesJson["THB"] = "Themis B";
+    spacecraftNamesJson["THC"] = "Themis C";
+    spacecraftNamesJson["VERITAS"] = "VERITAS";
     spacecraftNamesJson["VGR1"] = "Voyager 1";
     spacecraftNamesJson["VGR2"] = "Voyager 2";
+    spacecraftNamesJson["VPR"] = "VIPER";
     spacecraftNamesJson["WIND"] = "Wind";
     spacecraftNamesJson["XMM"] = "XMM Newton";
+
+    // Blacklist / utility (alphabetical by callsign)
     spacecraftNamesJson["ATOT"] = "Advanced Tracking and Observational Techniques";
-    spacecraftNamesJson["EGS"] = "EVN and Global Sevices";
+    spacecraftNamesJson["DSSR"] = "DSN Solar System Radar";
+    spacecraftNamesJson["EGS"] = "European and Global VLBI Systems";
     spacecraftNamesJson["GBRA"] = "Ground Based Radio Astronomy";
     spacecraftNamesJson["GSSR"] = "Goldstone Solar System Radar";
     spacecraftNamesJson["GVRT"] = "Goldstone Apple Valley Radio Telescope";
+    spacecraftNamesJson["HCRA"] = "Host Country Radio Astronomy";
+    spacecraftNamesJson["RFC"] = "Reference Frame Calibration";
     spacecraftNamesJson["SGP"] = "Space Geodesy Program";
-    spacecraftNamesJson["TDR6"] = "Tracking and Data Relay Satellites (TDRS)";
-    spacecraftNamesJson["TDR7"] = "Tracking and Data Relay Satellites (TDRS)";
-    spacecraftNamesJson["TDR8"] = "Tracking and Data Relay Satellites (TDRS)";
-    spacecraftNamesJson["TDR9"] = "Tracking and Data Relay Satellites (TDRS)";
-    spacecraftNamesJson["TD10"] = "Tracking and Data Relay Satellites (TDRS)";
-    spacecraftNamesJson["TD11"] = "Tracking and Data Relay Satellites (TDRS)";
-    spacecraftNamesJson["TD12"] = "Tracking and Data Relay Satellites (TDRS)";
-    spacecraftNamesJson["TD13"] = "Tracking and Data Relay Satellites (TDRS)";
+
+    // TDRS (numerical order)
+    spacecraftNamesJson["TDR6"] = "TDRS 6";
+    spacecraftNamesJson["TDR7"] = "TDRS 7";
+    spacecraftNamesJson["TDR8"] = "TDRS 8";
+    spacecraftNamesJson["TDR9"] = "TDRS 9";
+    spacecraftNamesJson["TD10"] = "TDRS 10";
+    spacecraftNamesJson["TD11"] = "TDRS 11";
+    spacecraftNamesJson["TD12"] = "TDRS 12";
+    spacecraftNamesJson["TD13"] = "TDRS 13";
+
+    // Test rates
     spacecraftNamesJson["Rate1"] = "Test Rate 1";
     spacecraftNamesJson["Rate2"] = "Test Rate 2";
     spacecraftNamesJson["Rate3"] = "Test Rate 3";
     spacecraftNamesJson["Rate4"] = "Test Rate 4";
     spacecraftNamesJson["Rate5"] = "Test Rate 5";
     spacecraftNamesJson["Rate6"] = "Test Rate 6";
-
-
-    // Serialize JSON to file
-    Serial.println("Serializing JSON to file...");
-    if (serializeJson(spacecraftNamesJson, file) == 0) {
-        Serial.print(DevUtils::termColor("red") + "Failed to write to names.json" + DevUtils::termColor("reset") + "\n");
-        return;
-    }
-
-    // Close file
-    Serial.println("Closing names.json...");
-    file.close();
-    Serial.print(DevUtils::termColor("green") + "names.json created and written" + DevUtils::termColor("reset") + "\n");
-
-    // print all key value pairs
-    int craftCount = 0;
-    for (JsonPair kv : spacecraftNamesJson.as<JsonObject>()) {
-        craftCount++;
-        // Serial.print(String(kv.key().c_str()) + ": " + kv.value().as<String>() + "\n");
-    }
-    
-    char craftCountBuffer[128];
-    snprintf(
-        craftCountBuffer,
-        sizeof(craftCountBuffer),
-        "Known spacecraft: %d\n\n",
-        craftCount
-    );
 }
 
-// Load spacecraft Names
-void SpacecraftData::loadSpacecraftNamesFile()
-{
-    SpacecraftData::createAndWriteNamesFile();
-
-    Serial.println("Loading spacecraft names from filesystem...");
-
-    FileUtils::createDir("spacecraft_data");
-
-    // Open file for reading
-    Serial.println("Opening names.json for reading...");
-    File file = LittleFS.open("/spacecraft_data/names.json", "r");
-
-    if (!file) {
-        Serial.print(DevUtils::termColor("red") + "Failed trying to open names.json" + DevUtils::termColor("reset") + "\n");
-        return;
-    }
-
-    Serial.println("File \"names.json\" opened successfully");
-
-    size_t size = file.size();
-    if (size > 5120) {
-        Serial.print(DevUtils::termColor("red") + "names.json file size is too large" + DevUtils::termColor("reset") + "\n");
-        return;
-    }
-
-    Serial.println("Deserializing JSON from file...");
-    DeserializationError error = deserializeJson(spacecraftNamesJson, file);
-    file.close();
-    vTaskDelay(100); // Make sure the file is closed
-
-    if (error) {
-        Serial.print(DevUtils::termColor("red") + "Failed trying to deserialize names JSON with error: " + error.c_str() + DevUtils::termColor("reset") + "\n");
-        return;
-    }
-
-    Serial.print(DevUtils::termColor("green") + "Spacecraft names loaded" + DevUtils::termColor("reset") + "\n");
-    // Serial.print("\n");
-}
-
-void SpacecraftData::createAndWriteBlacklistFile() {
-    if (LittleFS.exists("/spacecraft_data/blacklist.json")) {
-        Serial.println("blacklist.json already exists");
-        return;
-    }
-
-    // Open file for writing
-    Serial.println("Opening blacklist.json for writing...");
-    File file = LittleFS.open("/spacecraft_data/blacklist.json", "w");
-
-    if (!file) {
-        Serial.print(DevUtils::termColor("red") + "Failed trying to open blacklist.json" + DevUtils::termColor("reset") + "\n");
-        return;
-    }
-
-    // Prep JSON buffer
-    Serial.println("Clearing global JSON document...");
+void SpacecraftData::populateBlacklistInMemory() {
     spacecraftBlacklistJson.clear();
-
-    // Add spacecraft data directly into the JSON object
-    spacecraftBlacklistJson["TEST"] = true;
     spacecraftBlacklistJson["DSN"] = true;
+    spacecraftBlacklistJson["DSSR"] = true;
+    spacecraftBlacklistJson["GO19"] = true;
+    spacecraftBlacklistJson["HCRA"] = true;
+    spacecraftBlacklistJson["RFC"] = true;
     spacecraftBlacklistJson["RFC(VLBI)"] = true;
-    spacecraftBlacklistJson["GO19"];
-
-    // Serialize JSON to file
-    Serial.println("Serializing JSON to file...");
-    if (serializeJson(spacecraftBlacklistJson, file) == 0) {
-        Serial.print(DevUtils::termColor("red") + "Failed to write to blacklist.json" + DevUtils::termColor("reset") + "\n");
-        return;
-    }
-
-    file.close();
-    Serial.println(DevUtils::termColor("green") + "blacklist.json written" + DevUtils::termColor("reset") + "\n");
-
-    // print all key value pairs
-    for (JsonPair kv : spacecraftBlacklistJson.as<JsonObject>()) {
-        Serial.println(kv.key().c_str());
-    }
-
+    spacecraftBlacklistJson["TEST"] = true;
 }
 
-void SpacecraftData::loadSpacecraftBlacklistFile() {
-    SpacecraftData::createAndWriteBlacklistFile();
-    
-    Serial.println("Loading spacecraft blacklist from filesystem...");
-    
+bool SpacecraftData::shouldWriteFiles(const char* firmwareVersion) {
+    File versionFile = LittleFS.open("/spacecraft_data/version.txt", "r");
+    if (!versionFile) {
+        return true; // File doesn't exist — first boot or fresh flash
+    }
+
+    String storedVersion = versionFile.readStringUntil('\n');
+    versionFile.close();
+
+    if (storedVersion.length() == 0) {
+        return true; // Empty or corrupted file
+    }
+
+    return strcmp(storedVersion.c_str(), firmwareVersion) != 0;
+}
+
+void SpacecraftData::writeFilesToFlash(const char* firmwareVersion) {
+    bool showSerial = FileUtils::config.debugUtils.showSerial;
     FileUtils::createDir("spacecraft_data");
-    
 
-    // Open file for reading
-    Serial.println("Opening blacklist.json for reading...");
-    File file = LittleFS.open("/spacecraft_data/blacklist.json", "r");
-
-    if (!file) {
-        Serial.print(DevUtils::termColor("red") + "Failed trying to open blacklist.json" + DevUtils::termColor("reset") + "\n");
-        return;
-    }
-
-    Serial.println("File \"blacklist.json\" opened successfully");
-
-    size_t size = file.size();
-    if (size > 1024) {
-        Serial.print(DevUtils::termColor("red") + "blacklist.json file size is too large" + DevUtils::termColor("reset") + "\n");
-        return;
-    }
-
-    Serial.println("Deserializing JSON...");
-    DeserializationError error = deserializeJson(spacecraftBlacklistJson, file);
-    file.close();
-
-    if (error) {
-        if (FileUtils::config.debugUtils.showSerial)
-            Serial.print(DevUtils::termColor("red") + "Failed trying to deserialize blacklist.json with error: " + error.c_str() + DevUtils::termColor("reset") + "\n");
-
-        return;
-    }
-
-    Serial.print(DevUtils::termColor("green") + "Spacecraft blacklist loaded" + DevUtils::termColor("reset") + "\n");
-    Serial.print("\n\n");
-}
-
-
-
-// Check & create spacecraft placeholder rates file
-void SpacecraftData::createAndWritePlaceholderRatesFile() {
-    Serial.println("Creating and writing spacecraft placeholder rates...");
-
-    // Check & create spacecraft_data directory
-    Serial.println("Looking for spacecraft_data directory...");
-    FileUtils::createDir("spacecraft_data");
-    FileUtils::createDir("ok");
-
-    // Check & create JSON
-    Serial.println("Looking for placeholder_rates.json...");
-    FileUtils::listFilesystem("/", 0);
-
-    try {        
-        bool fileExists = LittleFS.exists("/spacecraft_data/placeholder_rates.json");
-        if (fileExists) {
-            Serial.println("/spacecraft_data/placeholder_rates.json already exists");
-            return;
+    // Write names.json
+    File namesFile = LittleFS.open("/spacecraft_data/names.json", "w");
+    if (namesFile) {
+        if (serializeJson(spacecraftNamesJson, namesFile) == 0) {
+            if (showSerial) Serial.print(DevUtils::termColor("red") + "Failed to write names.json" + DevUtils::termColor("reset") + "\n");
         }
-    } catch (const std::exception& e) {
-        Serial.println("Error: " + String(e.what()));
+        namesFile.close();
+    } else {
+        if (showSerial) Serial.print(DevUtils::termColor("red") + "Failed to open names.json for writing" + DevUtils::termColor("reset") + "\n");
     }
 
-
-    // Open file for writing
-    Serial.println("Opening placeholder_rates.json for writing...");
-    File file = LittleFS.open("/spacecraft_data/placeholder_rates.json", "w");
-    if (!file) {
-        Serial.println("Failed to open placeholder_rates.json for writing");
-        return;
-    }
-
-    // Create a JSON document
-    Serial.println("Clearing global JSON document...");
-    spacecraftPlaceholderRatesJson.clear();
-
-     // Adding spacecraft data directly into the JSON object
-    JsonArray caps = spacecraftPlaceholderRatesJson.createNestedArray("CAPS");
-    caps.add("7.813e+00");
-    caps.add("1.250e+02");
-    caps.add("9.999e+02");
-    caps.add("4.000e+03");
-
-    JsonArray dart = spacecraftPlaceholderRatesJson.createNestedArray("DART");
-    dart.add("7.813e+00");
-    dart.add("2.000e+03");
-    dart.add("1.600e+04");
-
-    JsonArray dssr = spacecraftPlaceholderRatesJson.createNestedArray("DSSR");
-    dssr.add("1.000e+03");
-    dssr.add("2.000e+03");
-    dssr.add("4.000e+03");
-    dssr.add("1.600e+04");
-
-    JsonArray jwst = spacecraftPlaceholderRatesJson.createNestedArray("JWST");
-    jwst.add("1.250e+02");
-    jwst.add("2.500e+02");
-    jwst.add("4.000e+03");
-    jwst.add("2.500e+05");
-
-    JsonArray kplo = spacecraftPlaceholderRatesJson.createNestedArray("KPLO");
-    kplo.add("7.813e+00");
-    kplo.add("1.250e+02");
-    kplo.add("2.500e+02");
-    kplo.add("4.000e+03");
-    kplo.add("1.600e+04");
-    kplo.add("2.500e+05");
-
-    JsonArray lici = spacecraftPlaceholderRatesJson.createNestedArray("LICI");
-    lici.add("7.813e+00");
-    lici.add("1.600e+01");
-    lici.add("5.000e+02");
-    lici.add("4.000e+03");
-    lici.add("1.600e+04");
-
-    JsonArray m01o = spacecraftPlaceholderRatesJson.createNestedArray("M01O");
-    m01o.add("7.813e+00");
-    m01o.add("2.500e+02");
-    m01o.add("2.000e+03");
-    m01o.add("2.500e+05");
-
-    JsonArray m20 = spacecraftPlaceholderRatesJson.createNestedArray("M20");
-    m20.add("7.813e+00");
-    m20.add("1.250e+02");
-    m20.add("1.000e+03");
-    m20.add("2.000e+03");
-    m20.add("1.600e+04");
-
-    JsonArray mms1 = spacecraftPlaceholderRatesJson.createNestedArray("MMS1");
-    mms1.add("7.813e+00");
-    mms1.add("1.250e+02");
-    mms1.add("1.000e+03");
-    mms1.add("2.500e+05");
-
-    JsonArray mms2 = spacecraftPlaceholderRatesJson.createNestedArray("MMS2");
-    mms2.add("6.250e+01");
-    mms2.add("2.500e+02");
-    mms2.add("1.000e+03");
-
-    JsonArray mms3 = spacecraftPlaceholderRatesJson.createNestedArray("MMS3");
-    mms3.add("2.500e+02");
-    mms3.add("1.000e+03");
-    mms3.add("3.200e+04");
-    mms3.add("2.500e+05");
-
-    JsonArray mms4 = spacecraftPlaceholderRatesJson.createNestedArray("MMS4");
-    mms4.add("0.000e+00");
-    mms4.add("2.500e+02");
-    mms4.add("2.000e+03");
-
-    JsonArray mro = spacecraftPlaceholderRatesJson.createNestedArray("MRO");
-    mro.add("7.812e+00");
-    mro.add("6.250e+01");
-    mro.add("1.250e+02");
-    mro.add("4.000e+03");
-    mro.add("1.600e+04");
-
-    JsonArray msl = spacecraftPlaceholderRatesJson.createNestedArray("MSL");
-    msl.add("7.813e+00");
-    msl.add("1.250e+02");
-    msl.add("4.000e+03");
-    msl.add("1.600e+04");
-
-    JsonArray mvn = spacecraftPlaceholderRatesJson.createNestedArray("MVN");
-    mvn.add("7.813e+00");
-    mvn.add("9.999e+02");
-    mvn.add("2.000e+03");
-    mvn.add("1.600e+04");
-    mvn.add("2.500e+05");
-
-    JsonArray plss = spacecraftPlaceholderRatesJson.createNestedArray("PLSS");
-    plss.add("7.813e+00");
-    plss.add("6.250e+01");
-    plss.add("5.000e+02");
-    plss.add("4.000e+03");
-    plss.add("1.600e+04");
-    plss.add("2.500e+05");
-
-    JsonArray spp = spacecraftPlaceholderRatesJson.createNestedArray("SPP");
-    spp.add("7.813e+00");
-    spp.add("6.250e+01");
-    spp.add("9.999e+02");
-    spp.add("4.000e+03");
-    spp.add("3.200e+04");
-
-    JsonArray soho = spacecraftPlaceholderRatesJson.createNestedArray("SOHO");
-    soho.add("7.813e+00");
-    soho.add("9.999e+02");
-    soho.add("4.000e+03");
-    soho.add("1.600e+04");
-    soho.add("2.500e+05");
-
-    JsonArray tess = spacecraftPlaceholderRatesJson.createNestedArray("TESS");
-    tess.add("7.813e+00");
-    tess.add("4.000e+03");
-    tess.add("1.600e+04");
-    tess.add("2.500e+05");
-
-    JsonArray themis_a = spacecraftPlaceholderRatesJson.createNestedArray("THEMIS-A");
-    themis_a.add("7.813e+00");
-    themis_a.add("9.999e+02");
-    themis_a.add("4.000e+03");
-    themis_a.add("3.200e+04");
-    themis_a.add("2.500e+05");
-
-    JsonArray themis_b = spacecraftPlaceholderRatesJson.createNestedArray("THEMIS-B");
-    themis_b.add("7.813e+00");
-    themis_b.add("9.999e+02");
-    themis_b.add("4.000e+03");
-    themis_b.add("3.200e+04");
-    themis_b.add("2.500e+05");
-
-    JsonArray themis_c = spacecraftPlaceholderRatesJson.createNestedArray("THEMIS-C");
-    themis_c.add("7.813e+00");
-    themis_c.add("9.999e+02");
-    themis_c.add("4.000e+03");
-    themis_c.add("3.200e+04");
-    themis_c.add("2.500e+05");
-
-    JsonArray themis_d = spacecraftPlaceholderRatesJson.createNestedArray("THEMIS-D");
-    themis_d.add("7.813e+00");
-    themis_d.add("9.999e+02");
-    themis_d.add("1.000e+03");
-    themis_d.add("3.200e+04");
-    themis_d.add("2.500e+05");
-
-    JsonArray themis_e = spacecraftPlaceholderRatesJson.createNestedArray("THEMIS-E");
-    themis_e.add("7.813e+00");
-    themis_e.add("9.999e+02");
-    themis_e.add("4.000e+03");
-    themis_e.add("3.200e+04");
-    themis_e.add("2.500e+05");
-
-    JsonArray vik1 = spacecraftPlaceholderRatesJson.createNestedArray("VIK1");
-    vik1.add("2.500e+02");
-    vik1.add("4.000e+03");
-
-    JsonArray vik2 = spacecraftPlaceholderRatesJson.createNestedArray("VIK2");
-    vik2.add("2.500e+02");
-    vik2.add("4.000e+03");
-
-    JsonArray wind = spacecraftPlaceholderRatesJson.createNestedArray("WIND");
-    wind.add("7.813e+00");
-    wind.add("9.999e+02");
-    wind.add("4.000e+03");
-    wind.add("1.600e+04");
-    wind.add("2.500e+05");
-
-
-    size_t size = spacecraftPlaceholderRatesJson.size();
-    Serial.println("spacecraftPlaceholderRatesJson size: " + String(size));
-    
-
-    // Serialize JSON to file
-    Serial.println("Serializing JSON to file...");
-    if (serializeJson(spacecraftPlaceholderRatesJson, file) == 0) {
-        Serial.print(DevUtils::termColor("red") + "Failed to write to file" + DevUtils::termColor("reset") + "\n");
-    }
-
-    // Clean up
-    file.close();
-    Serial.print(DevUtils::termColor("green") + "Spacecraft placeholder rates written to placeholder_rates.json" + DevUtils::termColor("reset") + "\n");
-
-    Serial.println("Printing all keys in placeholder_rates.json...");
-    for (const auto& pair : spacecraftPlaceholderRatesJson.as<JsonObject>()) {
-        Serial.println(pair.key().c_str());
-    }
-    Serial.println("\nDone\n-------------\n");
-}
-
-/**
- * Spacecraft Placeholder Rates
- */
-void SpacecraftData::loadSpacecraftPlaceholderRatesFile() {
-
-    SpacecraftData::createAndWritePlaceholderRatesFile();
-
-    Serial.println("Loading spacecraft placeholder rates from filesystem...");
-    Serial.println("Free Heap: " + String(ESP.getFreeHeap()));
-
-    // Check & create spacecraft_data directory
-    if (!LittleFS.exists("/spacecraft_data")) {
-        LittleFS.mkdir("/spacecraft_data");
-
-        if (!LittleFS.exists("/spacecraft_data")) {
-            Serial.print(DevUtils::termColor("red") + "Failed trying to create spacecraft_data directory" + DevUtils::termColor("reset") + "\n");
-            return;
+    // Write blacklist.json
+    File blacklistFile = LittleFS.open("/spacecraft_data/blacklist.json", "w");
+    if (blacklistFile) {
+        if (serializeJson(spacecraftBlacklistJson, blacklistFile) == 0) {
+            if (showSerial) Serial.print(DevUtils::termColor("red") + "Failed to write blacklist.json" + DevUtils::termColor("reset") + "\n");
         }
+        blacklistFile.close();
+    } else {
+        if (showSerial) Serial.print(DevUtils::termColor("red") + "Failed to open blacklist.json for writing" + DevUtils::termColor("reset") + "\n");
     }
 
-    // Open file for reading
-    File jsonFile = LittleFS.open("/spacecraft_data/placeholder_rates.json", "r");
-
-    if (!jsonFile) {
-        Serial.print(DevUtils::termColor("red") + "Failed trying to open placeholder_rates.json with error: " + DevUtils::termColor("reset") + "\n");
-        return;
+    // Write version marker
+    File versionFile = LittleFS.open("/spacecraft_data/version.txt", "w");
+    if (versionFile) {
+        versionFile.print(firmwareVersion);
+        versionFile.close();
+    } else {
+        if (showSerial) Serial.print(DevUtils::termColor("red") + "Failed to write version.txt" + DevUtils::termColor("reset") + "\n");
     }
 
-    Serial.println("File \"placeholder_rates.json\" opened");
-    Serial.println("Free Heap: " + String(ESP.getFreeHeap()));
-
-    size_t fileSize = jsonFile.size();
-    if (fileSize > 6144) {
-        Serial.print(DevUtils::termColor("red") + "placeholder_rates.json is too large" + DevUtils::termColor("reset") + "\n");
-        return;
-    }
-
-    DeserializationError error = deserializeJson(spacecraftPlaceholderRatesJson, jsonFile);
-    jsonFile.close();
-
-    if (error) {
-        Serial.print(DevUtils::termColor("red") + "Failed trying to deserialize placeholder_rates.json with error: " + error.c_str() + DevUtils::termColor("reset") + "\n");
-        return;
-    }
-    Serial.print(DevUtils::termColor("green") + "Spacecraft placeholder rates loaded" + DevUtils::termColor("reset") + "\n");
-    Serial.print("\n\n");
+    if (showSerial) Serial.print(DevUtils::termColor("green") + "Spacecraft data written to flash" + DevUtils::termColor("reset") + "\n");
 }
-
 
 /* Check Name */
 const char* SpacecraftData::callsignToName(const char* key) {
     bool showSerial = FileUtils::config.debugUtils.showSerial;
-
-    // if (showSerial) {
-    //     Serial.print("\n\n------------------------------\n");
-    //     Serial.print("*  Spacecraft Names  *\n");
-    //     Serial.print("------------------------------\n");
-    // }
-    
-    // File jsonFile = LittleFS.open("/spacecraft_data/names.json", "r");
-
-    // if (jsonFile) {
-    //     if (showSerial)
-    //         Serial.println("File \"names.json\" opened");
-    // } else {
-    //     if (showSerial)
-    //         Serial.println(DevUtils::termColor("red") + "Failed to open names.json" + DevUtils::termColor("reset") + "\n");
-    // }
-    
-    // DeserializationError error = deserializeJson(spacecraftNamesJson, jsonFile);
-    // jsonFile.close();
-
-    // print every key in spacecraftNamesJson
-    // for (JsonPair kv : spacecraftNamesJson.as<JsonObject>()) {
-    //     Serial.println(String(kv.key().c_str()) + ": " + kv.value().as<String>());
-    //     // break;
-    // }
 
     if (showSerial) {
         char buffer[256];
@@ -612,298 +240,92 @@ const char* SpacecraftData::callsignToName(const char* key) {
     return key;
 }
 
-
 /* Check Blacklist */
 bool SpacecraftData::checkBlacklist(const char* key) {
     bool showSerial = FileUtils::config.debugUtils.showSerial;
-    bool isBlacklisted = spacecraftBlacklistJson[key] != nullptr; // If the key is not null, it is blacklisted
+    bool isBlacklisted = spacecraftBlacklistJson[key] != nullptr;
 
-    if (showSerial) {
-        char buffer[128]; // Size this appropriately for your expected output length
-        // const char* isBlacklistedString = isBlacklisted ? "TRUE" : "FALSE";
-
-        if (isBlacklisted) {
-            snprintf(
-                buffer,
-                sizeof(buffer),
-                "%s%s is blacklisted, skipping...%s\n", 
-                DevUtils::termColor("purple"), 
-                key, 
-                DevUtils::termColor("reset")
-            );
-            Serial.print(buffer);
-        }
+    if (showSerial && isBlacklisted) {
+        char buffer[128];
+        snprintf(
+            buffer,
+            sizeof(buffer),
+            "%s%s is blacklisted, skipping...%s\n",
+            DevUtils::termColor("purple"),
+            key,
+            DevUtils::termColor("reset")
+        );
+        Serial.print(buffer);
     }
 
     return isBlacklisted;
 }
 
-
-/* Get placeholder rate */
-const char* SpacecraftData::getPlaceholderRate(const char* key) {
-
+/* Check Approved */
+bool SpacecraftData::checkApproved(const char* key) {
     bool showSerial = FileUtils::config.debugUtils.showSerial;
+    bool isApproved = spacecraftApprovedJson[key] != nullptr;
 
-    // Look for key in JSON
-    // File jsonFile = LittleFS.open("/spacecraft_data/placeholder_rates.json", "r");
-
-    // if (showSerial) {
-    //     if (jsonFile) {
-    //         Serial.println("File \"placeholder_rates.json\" opened");
-    //     } else {
-    //         Serial.println(DevUtils::termColor("red") + "Failed to open placeholder_rates.json" + DevUtils::termColor("reset") + "\n");
-    //     }
-    // }
-
-    // // put jsonFile into jsonBuffer
-    // DeserializationError error = deserializeJson(spacecraftPlaceholderRatesJson, jsonFile);
-    // // jsonFile.close();
-
-    // if (error) {
-    //     if (showSerial)
-    //         Serial.print(DevUtils::termColor("red") + "Failed trying to deserialize placeholder_rates.json with error: " + error.c_str() + DevUtils::termColor("reset") + "\n");
-    //     return "1.000e+03";
-    // }
-
-    // print all keys in jsonBuffer
-    // Serial.println("Printing all keys in jsonBuffer...");
-    // for (const auto& pair : spacecraftPlaceholderRatesJson.as<JsonObject>()) {
-    //     Serial.println(pair.key().c_str());
-    // }
-
-
-    
-    if (spacecraftPlaceholderRatesJson.containsKey(key)) {
-        if (showSerial)
-            Serial.println(DevUtils::termColor("green") +  "Found spacecraft rate for " + String(key) + DevUtils::termColor("reset") + "\n\n");
-        
-        // Get JsonVariant at key
-        JsonVariant variant = spacecraftPlaceholderRatesJson[key];
-
-        // Check if the JsonVariant is an array
-        if (variant.is<JsonArray>()) {
-            JsonArray arr = variant.as<JsonArray>();
-
-            // Generate a random index within the bounds of the array using random8
-            int randomIndex = random8(arr.size());
-
-            if (showSerial) {
-                Serial.println("Choosing placeholder rate...");
-                // Serial.println("Random index: " + String(randomIndex));
-                // Serial.println("Array size: " + String(arr.size()));
-
-                // print all items in array
-                uint8_t placeholderCounter = 0;
-                for (JsonVariant v : arr) {
-                    if (placeholderCounter == randomIndex) {
-                        Serial.print("> ");
-                    } else {
-                        Serial.print("  ");
-                    }
-                    Serial.println(v.as<String>());
-                    placeholderCounter++;
-                }
-                Serial.print("\n\n");
-            }
-
-            // Get the rate at the random index
-            const char* spacecraftRate = arr[randomIndex];
-
-            if (showSerial)
-                Serial.println("Spacecraft rate: " + String(spacecraftRate));
-
-            return spacecraftRate;
-        } else {
-            if (showSerial)
-                Serial.println("It's not an array");
-            // If it's not an array, assume it's a single rate and return it
-            const char* spacecraftRate = variant.as<const char*>();
-            return spacecraftRate;
-        }
+    if (showSerial && !isApproved) {
+        char buffer[128];
+        snprintf(
+            buffer,
+            sizeof(buffer),
+            "%s%s is not approved, skipping...%s\n",
+            DevUtils::termColor("purple"),
+            key,
+            DevUtils::termColor("reset")
+        );
+        Serial.print(buffer);
     }
 
-    if (showSerial)
-        Serial.println(DevUtils::termColor("red") + "Spacecraft rate not found for " + String(key) + DevUtils::termColor("reset") + "\n\n");
-
-    // Spacecraft rate not found, return the default rate
-    return "1.000e+03";
+    return isApproved;
 }
 
-
-
-
-
-
-// void SpacecraftData::loadSpacecraftNamesProgmem()
-// {
-//     /* Memory warning!
-//      * The values cannot be longer than 100 characters, or there will be a fatal error.
-//      * The memory for this variable for animation function is statically allocated
-//      */
-
-//     static const char spacecraftNamesJsonRaw[] = PROGMEM R"RAW-NAMES(
-//         {
-//             "ACE": "Advanced Composition Explorer",
-//             "PLC": "Akatsuki",
-//             "ARGO": "ArgoMoon",
-//             "BIOS": "BioSentinel",
-//             "CHDR": "Chandra Xray Observatory",
-//             "CH2": "Chandrayaan 2",
-//             "CUE3": "CU Earth Escape Explorer",
-//             "CuSP": "CubeSat-Observation of Solar Particles",
-//             "DART": "DART",
-//             "unknown10": "Dragonfly",
-//             "DSCO": "Deep Space Climate Observatory",
-//             "EMM": "Emirates Mars Mission",
-//             "EQUL": "EQUilibriUm Lunar-Earth Spacecraft",
-//             "EURC": "Europa Clipper",
-//             "RSP": "ExoMars Rover",
-//             "GAIA": "Gaia",
-//             "GTL": "Geotail",
-//             "HYB2": "Hayabusa 2",
-//             "EM1": "Artemis 1",
-//             "EM2": "Artemis 2",
-//             "EM3": "Artemis 3",
-//             "NSYT": "InSight",
-//             "JWST": "James Webb Space Telescope",
-//             "JNO": "Juno",
-//             "KPLO": "Korea Pathfinder Lunar Orbiter",
-//             "LICI": "LICIA Cube",
-//             "LND1": "Lunar Node 1",
-//             "LUCY": "Lucy",
-//             "LFL": "Lunar Flashlight",
-//             "HMAP": "Lunar Hydrogen Mapper",
-//             "LRO": "Lunar Reconnaissance Orbiter",
-//             "MMS1": "Magnetospheric MultiScale Formation Flyer 1",
-//             "MMS2": "Magnetospheric MultiScale Formation Flyer 2",
-//             "MMS3": "Magnetospheric MultiScale Formation Flyer 3",
-//             "MMS4": "Magnetospheric MultiScale Formation Flyer 4",
-//             "M01O": "Mars Odyssey",
-//             "M20": "Mars 2020",
-//             "MVN": "MAVEN",
-//             "MEX": "Mars Express",
-//             "MOM": "Mars Orbiter",
-//             "MRO": "Mars Reconnaissance Orbiter",
-//             "MSL": "Curiosity",
-//             "MLI": "Morehead Lunar Ice Cube",
-//             "NEAS": "Near Earth Asteroid Scout",
-//             "NHPC": "New Horizons",
-//             "ORX": "OSIRIS REx",
-//             "OMOT": "OMOTENASHI",
-//             "PSYC": "Psyche",
-//             "SOHO": "Solar and Heliospheric Observatory",
-//             "SPP": "Parker Solar Probe",
-//             "STA": "STEREO A",
-//             "TESS": "Transiting Exoplanet Survey Satellite",
-//             "TGO": "ExoMars Trace Gas Orbiter",
-//             "THB": "THEMIS B",
-//             "THC": "THEMIS C",
-//             "TM": "TeamMiles",
-//             "VGR1": "Voyager 1",
-//             "VGR2": "Voyager 2",
-//             "WIND": "Wind",
-//             "XMM": "XMM Newton",
-//             "ATOT": "Advanced Tracking and Observational Techniques",
-//             "EGS": "EVN and Global Sevices",
-//             "GBRA": "Ground Based Radio Astronomy",
-//             "GSSR": "Goldstone Solar System Radar",
-//             "GVRT": "Goldstone Apple Valley Radio Telescope",
-//             "SGP": "Space Geodesy Program",
-//             "TDR6": "Tracking and Data Relay Satellites (TDRS)",
-//             "TDR7": "Tracking and Data Relay Satellites (TDRS)",
-//             "TDR8": "Tracking and Data Relay Satellites (TDRS)",
-//             "TDR9": "Tracking and Data Relay Satellites (TDRS)",
-//             "TD10": "Tracking and Data Relay Satellites (TDRS)",
-//             "TD11": "Tracking and Data Relay Satellites (TDRS)",
-//             "TD12": "Tracking and Data Relay Satellites (TDRS)",
-//             "TD13": "Tracking and Data Relay Satellites (TDRS)",
-//             "Rate1": "Test Rate 1",
-//             "Rate2": "Test Rate 2",
-//             "Rate3": "Test Rate 3",
-//             "Rate4": "Test Rate 4",
-//             "Rate5": "Test Rate 5",
-//             "Rate6": "Test Rate 6"
-//         }
-//     )RAW-NAMES";
-
-
-//     // Check if JSON is too large
-//     if (strlen_P(spacecraftNamesJsonRaw) > 5120) {
-//         Serial.print(DevUtils::termColor("red") + "Raw names JSON is too large" + DevUtils::termColor("reset") + "\n");
-//         return;
-//     }
-
-//     // Make sure there is enough heap memory to load names
-//     if (ESP.getFreeHeap() < 5120) {
-//         Serial.print(DevUtils::termColor("red") + "Not enough heap memory to load names" + DevUtils::termColor("reset") + "\n");
-//         return;
-//     }
-
-//     // Initialize buffer
-//     char buffer[5120];
-//     if (!buffer) {
-//         Serial.print(DevUtils::termColor("red") + "Failed to allocate memory for buffer" + DevUtils::termColor("reset") + "\n");
-//         return;
-//     }
-
-//     // Copy raw JSON to buffer
-//     strncpy_P(buffer, spacecraftNamesJsonRaw, 5119);
-//     buffer[5119] = '\0';
-
-
-//     DeserializationError error = deserializeJson(spacecraftNamesJson, buffer);
-
-//     if (error) {
-//         Serial.print(DevUtils::termColor("red") + "Failed trying to deserialize names raw JSON with error: " + error.c_str() + DevUtils::termColor("reset") + "\n");
-//         return;
-//     }
-//     Serial.print(DevUtils::termColor("green") + "Spacecraft callsigns loaded" + DevUtils::termColor("reset") + "\n");
-//     Serial.println("Rate1: " + spacecraftNamesJson["Rate1"].as<String>());
-//     Serial.print("\n\n");
-// }
-
-
-// Load spacecraft blacklist
-// void SpacecraftData::loadSpacecraftBlacklistProgmem() {
-//     static const char spacecraftBlacklistJsonRaw[] = PROGMEM R"RAW-BLACKLIST(
-//         {
-//             "TEST": true,
-//             "DSN": true,
-//             "RFC(VLBI)": true
-//         }
-//     )RAW-BLACKLIST";
-
-//     // Check if JSON is too large
-//     if (strlen_P(spacecraftBlacklistJsonRaw) > 1024) {
-//         Serial.print(DevUtils::termColor("red") + "Raw blacklist JSON is too large" + DevUtils::termColor("reset") + "\n");
-//         return;
-//     }
-
-//     // Make sure there is enough heap memory to load blacklist
-//     if (ESP.getFreeHeap() < 1024) {
-//         Serial.print(DevUtils::termColor("red") + "Not enough heap memory to load blacklist" + DevUtils::termColor("reset") + "\n");
-//         return;
-//     }
-
-//     // Initialize buffer
-//     char buffer[1024];
-//     if (!buffer) {
-//         Serial.print(DevUtils::termColor("red") + "Failed to allocate memory for buffer" + DevUtils::termColor("reset") + "\n");
-//         return;
-//     }
-
-//     // Copy raw JSON to buffer
-//     strncpy_P(buffer, spacecraftBlacklistJsonRaw, 1023);
-//     buffer[1023] = '\0';
-
-
-//     DeserializationError error = deserializeJson(spacecraftBlacklistJson, buffer);
-
-//     if (error) {
-//         if (FileUtils::config.debugUtils.showSerial)
-//             Serial.print(DevUtils::termColor("red") + "Failed trying to deserialize blacklist raw JSON with error: " + error.c_str() + DevUtils::termColor("reset") + "\n");
-
-//         return;
-//     }
-//     Serial.print(DevUtils::termColor("green") + "Spacecraft blacklist loaded" + DevUtils::termColor("reset") + "\n");
-// }
+void SpacecraftData::populateApprovedInMemory() {
+    spacecraftApprovedJson.clear();
+    spacecraftApprovedJson["ACE"] = true;
+    spacecraftApprovedJson["BEPI"] = true;
+    spacecraftApprovedJson["BIOS"] = true;
+    spacecraftApprovedJson["CAPS"] = true;
+    spacecraftApprovedJson["CGO"] = true;
+    spacecraftApprovedJson["CHDR"] = true;
+    spacecraftApprovedJson["DSCO"] = true;
+    spacecraftApprovedJson["EMM"] = true;
+    spacecraftApprovedJson["ESCB"] = true;
+    spacecraftApprovedJson["ESCG"] = true;
+    spacecraftApprovedJson["EURC"] = true;
+    spacecraftApprovedJson["HYB2"] = true;
+    spacecraftApprovedJson["IMAP"] = true;
+    spacecraftApprovedJson["JNO"] = true;
+    spacecraftApprovedJson["JWST"] = true;
+    spacecraftApprovedJson["KPLO"] = true;
+    spacecraftApprovedJson["LRO"] = true;
+    spacecraftApprovedJson["LUCY"] = true;
+    spacecraftApprovedJson["M01O"] = true;
+    spacecraftApprovedJson["M20"] = true;
+    spacecraftApprovedJson["MEX"] = true;
+    spacecraftApprovedJson["MMS1"] = true;
+    spacecraftApprovedJson["MMS2"] = true;
+    spacecraftApprovedJson["MMS3"] = true;
+    spacecraftApprovedJson["MMS4"] = true;
+    spacecraftApprovedJson["MRO"] = true;
+    spacecraftApprovedJson["MSL"] = true;
+    spacecraftApprovedJson["MVN"] = true;
+    spacecraftApprovedJson["NHPC"] = true;
+    spacecraftApprovedJson["ORX"] = true;
+    spacecraftApprovedJson["PSYC"] = true;
+    spacecraftApprovedJson["SOHO"] = true;
+    spacecraftApprovedJson["SOLAR"] = true;
+    spacecraftApprovedJson["SPP"] = true;
+    spacecraftApprovedJson["STA"] = true;
+    spacecraftApprovedJson["SWFO"] = true;
+    spacecraftApprovedJson["TESS"] = true;
+    spacecraftApprovedJson["TGO"] = true;
+    spacecraftApprovedJson["THB"] = true;
+    spacecraftApprovedJson["THC"] = true;
+    spacecraftApprovedJson["VGR1"] = true;
+    spacecraftApprovedJson["VGR2"] = true;
+    spacecraftApprovedJson["WIND"] = true;
+    spacecraftApprovedJson["XMM"] = true;
+}

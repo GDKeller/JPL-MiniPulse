@@ -1,4 +1,6 @@
-const char* currentFirmwareVersion = "1.0.4"; // Current firmware version
+const char* currentFirmwareVersion = "1.1.0-rc.21"; // Current firmware version
+const char* githubApiUrl = "https://api.github.com/repos/GDKeller/JPL-MiniPulse/releases/latest";
+const char* firmwareBinaryUrl = "https://github.com/GDKeller/JPL-MiniPulse/releases/latest/download/firmware.bin";
 
 #pragma region -- LIBRARIES
 #include <Arduino.h>		// Arduino core
@@ -9,6 +11,7 @@ const char* currentFirmwareVersion = "1.0.4"; // Current firmware version
 #include <LittleFS.h>		// LittleFS file system
 #include <HTTPClient.h>		// HTTP client
 #include <HTTPUpdate.h> 	// HTTP update
+#include <WiFiClientSecure.h>	// Secure WiFi client (HTTPS)
 #include <FastLED.h>		// FastLED lib
 #include <tinyxml2.h>		// XML parser
 #include <iostream>			// C++ I/O
@@ -16,6 +19,7 @@ const char* currentFirmwareVersion = "1.0.4"; // Current firmware version
 #include <ArduinoJson.h>	// JSON parser
 #include <algorithm>		// C++ algorithms
 #include <WiFiManager.h>	// WiFi manager lib
+#include <ESPmDNS.h>		// mDNS responder (minipulse.local)
 
 /* Custom libs */
 #include <DevUtils.h>		// Custom dev utils lib
@@ -26,9 +30,13 @@ const char* currentFirmwareVersion = "1.0.4"; // Current firmware version
 #include <Animate.h>		// Custom animate lib
 
 #include <SpacecraftData.h> // Custom spacecraft data lib
+#include <XmlTestData.h>   // XML test/fallback data on LittleFS
 
 
 #pragma endregion -- END LIBRARIES
+
+bool firmwareCheckDone = false;
+String cachedFirmwareStatus = "";
 
 #pragma region -- NAMESPACES
 using namespace tinyxml2; // XML parser
@@ -66,166 +74,18 @@ QueueHandle_t queue;			 // Queue to pass data between tasks
 // Networking
 WiFiManager wm;	 // Used for connecting to WiFi
 HTTPClient http; // Used for fetching data
+char mdnsHostname[20]; // mDNS hostname (e.g. "minipulse-a3f2")
 #pragma endregion
 
 #define FORMAT_LITTLEFS_IF_FAILED true
 #define MAX_XML_SIZE 20480
 
-// Placeholder for XML data
-// const char* dummyXmlData = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?><dsn><station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" /><dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS24" windSpeed="5.556"><downSignal dataRate="28000000" frequency="25900000000" power="-91.3965" signalType="data" spacecraft="JWST" spacecraftID="-170" /><downSignal dataRate="40000" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="JWST" spacecraftID="-170" /><upSignal dataRate="16000" frequency="2090" power="4.804" signalType="data" spacecraft="JWST" spacecraftID="-170" /><target downlegRange="1.653e+06" id="170" name="JWST" rtlt="11.03" uplegRange="1.653e+06" /></dish><dish azimuthAngle="287.7" elevationAngle="18.74" isArray="false" isDDOR="false" isMSPA="false" name="DSS26" windSpeed="5.556"><downSignal dataRate="4000000" frequency="8439000000" power="-138.1801" signalType="none" spacecraft="MRO" spacecraftID="-74" /><upSignal dataRate="2000" frequency="7183" power="0.0000" signalType="none" spacecraft="MRO" spacecraftID="-74" /><target downlegRange="8.207e+07" id="74" name="MRO" rtlt="547.5" uplegRange="8.207e+07" /></dish><station friendlyName="Madrid" name="mdscc" timeUTC="1670419133000" timeZoneOffset="3600000" /><dish azimuthAngle="103.0" elevationAngle="80.19" isArray="false" isDDOR="false" isMSPA="false" name="DSS56" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="2250000000" power="-478.1842" signalType="none" spacecraft="CHDR" spacecraftID="-151" /><target downlegRange="1.417e+05" id="151" name="CHDR" rtlt="0.9455" uplegRange="1.417e+05" /></dish><dish azimuthAngle="196.5" elevationAngle="30.71" isArray="false" isDDOR="false" isMSPA="false" name="DSS65" windSpeed="5.556"><downSignal dataRate="87650" frequency="2278000000" power="-112.7797" signalType="data" spacecraft="ACE" spacecraftID="-92" /><upSignal dataRate="1000" frequency="2098" power="0.2630" signalType="data" spacecraft="ACE" spacecraftID="-92" /><target downlegRange="1.389e+06" id="92" name="ACE" rtlt="9.266" uplegRange="1.389e+06" /></dish><dish azimuthAngle="124.5" elevationAngle="53.41" isArray="false" isDDOR="false" isMSPA="false" name="DSS53" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8436000000" power="-170.1741" signalType="none" spacecraft="LICI" spacecraftID="-210" /><target downlegRange="4.099e+06" id="210" name="LICI" rtlt="27.34" uplegRange="4.099e+06" /></dish><dish azimuthAngle="219.7" elevationAngle="22.84" isArray="false" isDDOR="false" isMSPA="false" name="DSS54" windSpeed="5.556"><upSignal dataRate="2000" frequency="2066" power="1.758" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><downSignal dataRate="245800" frequency="2245000000" power="-110.7082" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><target downlegRange="1.331e+06" id="21" name="SOHO" rtlt="8.882" uplegRange="1.331e+06" /></dish><dish azimuthAngle="120.0" elevationAngle="46.53" isArray="false" isDDOR="false" isMSPA="false" name="DSS63" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8415000000" power="-478.2658" signalType="none" spacecraft="TEST" spacecraftID="-99" /><target downlegRange="-1.000e+00" id="99" name="TEST" rtlt="-1.0000" uplegRange="-1.000e+00" /></dish><station friendlyName="Canberra" name="cdscc" timeUTC="1670419133000" timeZoneOffset="39600000" /><dish azimuthAngle="330.6" elevationAngle="37.39" isArray="false" isDDOR="false" isMSPA="false" name="DSS34" windSpeed="3.087"><upSignal dataRate="250000" frequency="2041" power="0.2421" signalType="data" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="974200" frequency="2217000000" power="-116.4022" signalType="none" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="2000000" frequency="2216000000" power="-107.4503" signalType="carrier" spacecraft="EM1" spacecraftID="-23" /><target downlegRange="3.870e+05" id="23" name="EM1" rtlt="2.581" uplegRange="3.869e+05" /></dish><dish azimuthAngle="10.27" elevationAngle="28.97" isArray="false" isDDOR="false" isMSPA="false" name="DSS35" windSpeed="3.087"><downSignal dataRate="11.63" frequency="8446000000" power="-141.8096" signalType="data" spacecraft="MVN" spacecraftID="-202" /><upSignal dataRate="7.813" frequency="7189" power="8.303" signalType="data" spacecraft="MVN" spacecraftID="-202" /><target downlegRange="8.207e+07" id="202" name="MVN" rtlt="547.5" uplegRange="8.207e+07" /></dish><dish azimuthAngle="207.0" elevationAngle="15.51" isArray="false" isDDOR="false" isMSPA="false" name="DSS43" windSpeed="3.087"><upSignal dataRate="16.00" frequency="2114" power="20.20" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><downSignal dataRate="160.0" frequency="8420000000" power="-156.2618" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><target downlegRange="1.984e+10" id="32" name="VGR2" rtlt="132300" uplegRange="1.984e+10" /></dish><dish azimuthAngle="7.205" elevationAngle="26.82" isArray="false" isDDOR="false" isMSPA="false" name="DSS36" windSpeed="3.087"><downSignal dataRate="8500000" frequency="8475000000" power="-120.3643" signalType="none" spacecraft="KPLO" spacecraftID="-155" /><downSignal dataRate="8192" frequency="2261000000" power="-104.9668" signalType="data" spacecraft="KPLO" spacecraftID="-155" /><target downlegRange="4.405e+05" id="155" name="KPLO" rtlt="2.939" uplegRange="4.405e+05" /></dish><timestamp>1670419133000</timestamp></dsn>)==--==";
-// const char* dummyXmlData2 = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?><dsn><station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" /><dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS24" windSpeed="5.556"><downSignal dataRate="28000000" frequency="25900000000" power="-91.3965" signalType="data" spacecraft="JWST" spacecraftID="-170" /><downSignal dataRate="40000" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="JWST" spacecraftID="-170" /><upSignal dataRate="16000" frequency="2090" power="4.804" signalType="data" spacecraft="JWST" spacecraftID="-170" /><target downlegRange="1.653e+06" id="170" name="JWST" rtlt="11.03" uplegRange="1.653e+06" /></dish><dish azimuthAngle="287.7" elevationAngle="18.74" isArray="false" isDDOR="false" isMSPA="false" name="DSS26" windSpeed="5.556"><downSignal dataRate="4000000" frequency="8439000000" power="-138.1801" signalType="none" spacecraft="MRO" spacecraftID="-74" /><upSignal dataRate="2000" frequency="7183" power="0.0000" signalType="none" spacecraft="MRO" spacecraftID="-74" /><target downlegRange="8.207e+07" id="74" name="MRO" rtlt="547.5" uplegRange="8.207e+07" /></dish><station friendlyName="Madrid" name="mdscc" timeUTC="1670419133000" timeZoneOffset="3600000" /><dish azimuthAngle="103.0" elevationAngle="80.19" isArray="false" isDDOR="false" isMSPA="false" name="DSS56" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="2250000000" power="-478.1842" signalType="none" spacecraft="CHDR" spacecraftID="-151" /><target downlegRange="1.417e+05" id="151" name="CHDR" rtlt="0.9455" uplegRange="1.417e+05" /></dish><dish azimuthAngle="196.5" elevationAngle="30.71" isArray="false" isDDOR="false" isMSPA="false" name="DSS65" windSpeed="5.556"><downSignal dataRate="87650" frequency="2278000000" power="-112.7797" signalType="data" spacecraft="ACE" spacecraftID="-92" /><upSignal dataRate="1000" frequency="2098" power="0.2630" signalType="data" spacecraft="ACE" spacecraftID="-92" /><target downlegRange="1.389e+06" id="92" name="ACE" rtlt="9.266" uplegRange="1.389e+06" /></dish><dish azimuthAngle="124.5" elevationAngle="53.41" isArray="false" isDDOR="false" isMSPA="false" name="DSS53" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8436000000" power="-170.1741" signalType="none" spacecraft="LICI" spacecraftID="-210" /><target downlegRange="4.099e+06" id="210" name="LICI" rtlt="27.34" uplegRange="4.099e+06" /></dish><dish azimuthAngle="219.7" elevationAngle="22.84" isArray="false" isDDOR="false" isMSPA="false" name="DSS54" windSpeed="5.556"><upSignal dataRate="2000" frequency="2066" power="1.758" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><downSignal dataRate="245800" frequency="2245000000" power="-110.7082" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><target downlegRange="1.331e+06" id="21" name="SOHO" rtlt="8.882" uplegRange="1.331e+06" /></dish><dish azimuthAngle="120.0" elevationAngle="46.53" isArray="false" isDDOR="false" isMSPA="false" name="DSS63" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8415000000" power="-478.2658" signalType="none" spacecraft="TEST" spacecraftID="-99" /><target downlegRange="-1.000e+00" id="99" name="TEST" rtlt="-1.0000" uplegRange="-1.000e+00" /></dish><station friendlyName="Canberra" name="cdscc" timeUTC="1670419133000" timeZoneOffset="39600000" /><dish azimuthAngle="330.6" elevationAngle="37.39" isArray="false" isDDOR="false" isMSPA="false" name="DSS34" windSpeed="3.087"><upSignal dataRate="250000" frequency="2041" power="0.2421" signalType="data" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="974200" frequency="2217000000" power="-116.4022" signalType="none" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="2000000" frequency="2216000000" power="-107.4503" signalType="carrier" spacecraft="EM1" spacecraftID="-23" /><target downlegRange="3.870e+05" id="23" name="EM1" rtlt="2.581" uplegRange="3.869e+05" /></dish><dish azimuthAngle="10.27" elevationAngle="28.97" isArray="false" isDDOR="false" isMSPA="false" name="DSS35" windSpeed="3.087"><downSignal dataRate="11.63" frequency="8446000000" power="-141.8096" signalType="data" spacecraft="MVN" spacecraftID="-202" /><upSignal dataRate="7.813" frequency="7189" power="8.303" signalType="data" spacecraft="MVN" spacecraftID="-202" /><target downlegRange="8.207e+07" id="202" name="MVN" rtlt="547.5" uplegRange="8.207e+07" /></dish><dish azimuthAngle="207.0" elevationAngle="15.51" isArray="false" isDDOR="false" isMSPA="false" name="DSS43" windSpeed="3.087"><upSignal dataRate="16.00" frequency="2114" power="20.20" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><downSignal dataRate="160.0" frequency="8420000000" power="-156.2618" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><target downlegRange="1.984e+10" id="32" name="VGR2" rtlt="132300" uplegRange="1.984e+10" /></dish><dish azimuthAngle="7.205" elevationAngle="26.82" isArray="false" isDDOR="false" isMSPA="false" name="DSS36" windSpeed="3.087"><downSignal dataRate="8500000" frequency="8475000000" power="-120.3643" signalType="none" spacecraft="KPLO" spacecraftID="-155" /><downSignal dataRate="8192" frequency="2261000000" power="-104.9668" signalType="data" spacecraft="KPLO" spacecraftID="-155" /><target downlegRange="4.405e+05" id="155" name="KPLO" rtlt="2.939" uplegRange="4.405e+05" /></dish><timestamp>1670419133000</timestamp></dsn>)==--==";
-// const char* dummyXmlData3 = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?><dsn><station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" /><dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS24" windSpeed="5.556"><downSignal dataRate="28000000" frequency="25900000000" power="-91.3965" signalType="data" spacecraft="JWST" spacecraftID="-170" /><downSignal dataRate="40000" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="JWST" spacecraftID="-170" /><upSignal dataRate="16000" frequency="2090" power="4.804" signalType="data" spacecraft="JWST" spacecraftID="-170" /><target downlegRange="1.653e+06" id="170" name="JWST" rtlt="11.03" uplegRange="1.653e+06" /></dish><dish azimuthAngle="287.7" elevationAngle="18.74" isArray="false" isDDOR="false" isMSPA="false" name="DSS26" windSpeed="5.556"><downSignal dataRate="4000000" frequency="8439000000" power="-138.1801" signalType="none" spacecraft="MRO" spacecraftID="-74" /><upSignal dataRate="2000" frequency="7183" power="0.0000" signalType="none" spacecraft="MRO" spacecraftID="-74" /><target downlegRange="8.207e+07" id="74" name="MRO" rtlt="547.5" uplegRange="8.207e+07" /></dish><station friendlyName="Madrid" name="mdscc" timeUTC="1670419133000" timeZoneOffset="3600000" /><dish azimuthAngle="103.0" elevationAngle="80.19" isArray="false" isDDOR="false" isMSPA="false" name="DSS56" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="2250000000" power="-478.1842" signalType="none" spacecraft="CHDR" spacecraftID="-151" /><target downlegRange="1.417e+05" id="151" name="CHDR" rtlt="0.9455" uplegRange="1.417e+05" /></dish><dish azimuthAngle="196.5" elevationAngle="30.71" isArray="false" isDDOR="false" isMSPA="false" name="DSS65" windSpeed="5.556"><downSignal dataRate="87650" frequency="2278000000" power="-112.7797" signalType="data" spacecraft="ACE" spacecraftID="-92" /><upSignal dataRate="1000" frequency="2098" power="0.2630" signalType="data" spacecraft="ACE" spacecraftID="-92" /><target downlegRange="1.389e+06" id="92" name="ACE" rtlt="9.266" uplegRange="1.389e+06" /></dish><dish azimuthAngle="124.5" elevationAngle="53.41" isArray="false" isDDOR="false" isMSPA="false" name="DSS53" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8436000000" power="-170.1741" signalType="none" spacecraft="LICI" spacecraftID="-210" /><target downlegRange="4.099e+06" id="210" name="LICI" rtlt="27.34" uplegRange="4.099e+06" /></dish><dish azimuthAngle="219.7" elevationAngle="22.84" isArray="false" isDDOR="false" isMSPA="false" name="DSS54" windSpeed="5.556"><upSignal dataRate="2000" frequency="2066" power="1.758" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><downSignal dataRate="245800" frequency="2245000000" power="-110.7082" signalType="data" spacecraft="SOHO" spacecraftID="-21" /><target downlegRange="1.331e+06" id="21" name="SOHO" rtlt="8.882" uplegRange="1.331e+06" /></dish><dish azimuthAngle="120.0" elevationAngle="46.53" isArray="false" isDDOR="false" isMSPA="false" name="DSS63" windSpeed="5.556"><downSignal dataRate="0.0000" frequency="8415000000" power="-478.2658" signalType="none" spacecraft="TEST" spacecraftID="-99" /><target downlegRange="-1.000e+00" id="99" name="TEST" rtlt="-1.0000" uplegRange="-1.000e+00" /></dish><station friendlyName="Canberra" name="cdscc" timeUTC="1670419133000" timeZoneOffset="39600000" /><dish azimuthAngle="330.6" elevationAngle="37.39" isArray="false" isDDOR="false" isMSPA="false" name="DSS34" windSpeed="3.087"><upSignal dataRate="250000" frequency="2041" power="0.2421" signalType="data" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="974200" frequency="2217000000" power="-116.4022" signalType="none" spacecraft="EM1" spacecraftID="-23" /><downSignal dataRate="2000000" frequency="2216000000" power="-107.4503" signalType="carrier" spacecraft="EM1" spacecraftID="-23" /><target downlegRange="3.870e+05" id="23" name="EM1" rtlt="2.581" uplegRange="3.869e+05" /></dish><dish azimuthAngle="10.27" elevationAngle="28.97" isArray="false" isDDOR="false" isMSPA="false" name="DSS35" windSpeed="3.087"><downSignal dataRate="11.63" frequency="8446000000" power="-141.8096" signalType="data" spacecraft="MVN" spacecraftID="-202" /><upSignal dataRate="7.813" frequency="7189" power="8.303" signalType="data" spacecraft="MVN" spacecraftID="-202" /><target downlegRange="8.207e+07" id="202" name="MVN" rtlt="547.5" uplegRange="8.207e+07" /></dish><dish azimuthAngle="207.0" elevationAngle="15.51" isArray="false" isDDOR="false" isMSPA="false" name="DSS43" windSpeed="3.087"><upSignal dataRate="16.00" frequency="2114" power="20.20" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><downSignal dataRate="160.0" frequency="8420000000" power="-156.2618" signalType="data" spacecraft="VGR2" spacecraftID="-32" /><target downlegRange="1.984e+10" id="32" name="VGR2" rtlt="132300" uplegRange="1.984e+10" /></dish><dish azimuthAngle="7.205" elevationAngle="26.82" isArray="false" isDDOR="false" isMSPA="false" name="DSS36" windSpeed="3.087"><downSignal dataRate="8500000" frequency="8475000000" power="-120.3643" signalType="none" spacecraft="KPLO" spacecraftID="-155" /><downSignal dataRate="8192" frequency="2261000000" power="-104.9668" signalType="data" spacecraft="KPLO" spacecraftID="-155" /><target downlegRange="4.405e+05" id="155" name="KPLO" rtlt="2.939" uplegRange="4.405e+05" /></dish><timestamp>1670419133000</timestamp></dsn>)==--==";
-
-// Backup data
-const char* data_Sept6 = PROGMEM R"==--==(<dsn>
-<station name="gdscc" friendlyName="Goldstone" timeUTC="1694004780000" timeZoneOffset="-25200000"/>
-<dish name="DSS24" azimuthAngle="157" elevationAngle="79" windSpeed="1" isMSPA="false" isArray="false" isDDOR="false">
-<downSignal active="true" signalType="data" dataRate="8.500e+06" frequency="0" band="X" power="-4.7e+02" spacecraft="KPLO" spacecraftID="-155"/>
-<downSignal active="false" signalType="none" dataRate="0.000e+00" frequency="0" band="S" power="-1.5e+02" spacecraft="KPLO" spacecraftID="-155"/>
-<target name="KPLO" id="155" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
-</dish>
-<dish name="DSS25" azimuthAngle="84" elevationAngle="22" windSpeed="1" isMSPA="false" isArray="false" isDDOR="false">
-<downSignal active="true" signalType="data" dataRate="3.205e+04" frequency="0" band="X" power="-1.3e+02" spacecraft="LFL" spacecraftID="-164"/>
-<upSignal active="true" signalType="data" dataRate="0" frequency="0" band="X" power="1.8e+01" spacecraft="LFL" spacecraftID="-164"/>
-<target name="LFL" id="164" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
-</dish>
-<dish name="DSS26" azimuthAngle="156" elevationAngle="79" windSpeed="1" isMSPA="false" isArray="false" isDDOR="false">
-<upSignal active="true" signalType="data" dataRate="0" frequency="0" band="X" power="2.0e-01" spacecraft="KPLO" spacecraftID="-155"/>
-<downSignal active="true" signalType="data" dataRate="8.192e+03" frequency="0" band="S" power="-1.1e+02" spacecraft="KPLO" spacecraftID="-155"/>
-<downSignal active="false" signalType="none" dataRate="8.500e+06" frequency="0" band="X" power="-9.0e+01" spacecraft="KPLO" spacecraftID="-155"/>
-<target name="KPLO" id="155" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
-</dish>
-<dish name="DSS14" azimuthAngle="224" elevationAngle="64" windSpeed="0" isMSPA="false" isArray="false" isDDOR="false">
-<downSignal active="true" signalType="data" dataRate="2.000e+05" frequency="0" band="X" power="-1.3e+02" spacecraft="JNO" spacecraftID="-61"/>
-<upSignal active="true" signalType="data" dataRate="0" frequency="0" band="X" power="1.8e+01" spacecraft="JNO" spacecraftID="-61"/>
-<target name="JNO" id="61" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
-</dish>
-<station name="mdscc" friendlyName="Madrid" timeUTC="1694004780000" timeZoneOffset="7200000"/>
-<dish name="DSS65" azimuthAngle="239" elevationAngle="51" windSpeed="9" isMSPA="false" isArray="false" isDDOR="false">
-<upSignal active="true" signalType="data" dataRate="0" frequency="0" band="S" power="2.5e-01" spacecraft="WIND" spacecraftID="-8"/>
-<downSignal active="true" signalType="data" dataRate="6.400e+03" frequency="0" band="S" power="-1.3e+02" spacecraft="WIND" spacecraftID="-8"/>
-<downSignal active="true" signalType="data" dataRate="7.351e+04" frequency="0" band="S" power="-1.2e+02" spacecraft="WIND" spacecraftID="-8"/>
-<target name="WIND" id="8" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
-</dish>
-<dish name="DSS53" azimuthAngle="163" elevationAngle="46" windSpeed="9" isMSPA="true" isArray="false" isDDOR="false">
-<downSignal active="true" signalType="data" dataRate="1.163e+01" frequency="0" band="X" power="-1.6e+02" spacecraft="MVN" spacecraftID="-202"/>
-<downSignal active="false" signalType="none" dataRate="1.422e+04" frequency="0" band="X" power="-4.8e+02" spacecraft="M01O" spacecraftID="-53"/>
-<downSignal active="true" signalType="data" dataRate="1.000e+06" frequency="0" band="X" power="-1.2e+02" spacecraft="MRO" spacecraftID="-74"/>
-<downSignal active="false" signalType="none" dataRate="0.000e+00" frequency="0" band="X" power="-4.8e+02" spacecraft="M20" spacecraftID="-168"/>
-<target name="M01O" id="53" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
-<target name="MVN" id="202" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
-<target name="M20" id="168" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
-<target name="MRO" id="74" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
-</dish>
-<dish name="DSS54" azimuthAngle="199" elevationAngle="50" windSpeed="9" isMSPA="false" isArray="false" isDDOR="false">
-<downSignal active="true" signalType="data" dataRate="1.042e+03" frequency="0" band="X" power="-1.5e+02" spacecraft="SPP" spacecraftID="-96"/>
-<upSignal active="true" signalType="data" dataRate="0" frequency="0" band="X" power="1.8e+01" spacecraft="SPP" spacecraftID="-96"/>
-<target name="SPP" id="96" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
-</dish>
-<dish name="DSS55" azimuthAngle="170" elevationAngle="49" windSpeed="9" isMSPA="false" isArray="false" isDDOR="false">
-<upSignal active="true" signalType="data" dataRate="0" frequency="0" band="X" power="5.0e+00" spacecraft="LUCY" spacecraftID="-49"/>
-<downSignal active="true" signalType="data" dataRate="6.250e+04" frequency="0" band="X" power="-1.3e+02" spacecraft="LUCY" spacecraftID="-49"/>
-<target name="LUCY" id="49" uplegRange="-1.00e+00" downlegRange="-1.00e+00" rtlt="-1.000"/>
-</dish>
-<station name="cdscc" friendlyName="Canberra" timeUTC="1694004780000" timeZoneOffset="36000000"/>
-<timestamp>1694004780000</timestamp>
-</dsn>)==--==";
-
-// Test dummy data that cycles through all rate classes
-const char* data_animation_test = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?>
-<dsn>
-    <station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" />
-	<dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS24" windSpeed="5.556">
-        <downSignal dataRate="1.163e+01" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="TEST" spacecraftID="-170" />
-        <upSignal dataRate="0" frequency="2090" power="4.804" signalType="data" spacecraft="TEST" spacecraftID="-170" />
-        <target downlegRange="1.653e+06" id="170" name="TEST" rtlt="11.03" uplegRange="1.653e+06" />
-    </dish>
-	<dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS24" windSpeed="5.556">
-        <downSignal dataRate="1.163e+01" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="Rate1" spacecraftID="-170" />
-        <upSignal dataRate="1.163e+01" frequency="2090" power="4.804" signalType="data" spacecraft="Rate1" spacecraftID="-170" />
-        <target downlegRange="1.653e+06" id="170" name="Rate1" rtlt="11.03" uplegRange="1.653e+06" />
-    </dish>
-    <dish azimuthAngle="287.7" elevationAngle="18.74" isArray="false" isDDOR="false" isMSPA="false" name="DSS26" windSpeed="5.556">
-        <downSignal dataRate="6.400e+03" frequency="8439000000" power="-138.1801" signalType="data" spacecraft="Rate2" spacecraftID="-74" />
-        <upSignal dataRate="6.400e+03" frequency="7183" power="0.0000" signalType="data" spacecraft="Rate2" spacecraftID="-74" />
-        <target downlegRange="8.207e+07" id="74" name="Rate2" rtlt="547.5" uplegRange="8.207e+07" />
-    </dish>
-    <station friendlyName="Madrid" name="mdscc" timeUTC="1670419133000" timeZoneOffset="3600000" />
-    <dish azimuthAngle="103.0" elevationAngle="80.19" isArray="false" isDDOR="false" isMSPA="false" name="DSS56" windSpeed="5.556">
-        <downSignal dataRate="5.000e+04" frequency="2250000000" power="-478.1842" signalType="data" spacecraft="Rate3" spacecraftID="-151" />
-        <upSignal dataRate="5.000e+04" frequency="2250000000" power="-478.1842" signalType="data" spacecraft="Rate3" spacecraftID="-151" />
-        <target downlegRange="1.417e+05" id="151" name="Rate3" rtlt="0.9455" uplegRange="1.417e+05" />
-    </dish>
-    <dish azimuthAngle="196.5" elevationAngle="30.71" isArray="false" isDDOR="false" isMSPA="false" name="DSS65" windSpeed="5.556">
-        <downSignal dataRate="2.458e+05" frequency="2278000000" power="-112.7797" signalType="data" spacecraft="Rate4" spacecraftID="-92" />
-        <upSignal dataRate="2.458e+05" frequency="2098" power="0.2630" signalType="data" spacecraft="Rate4" spacecraftID="-92" />
-        <target downlegRange="1.389e+06" id="92" name="Rate4" rtlt="9.266" uplegRange="1.389e+06" />
-    </dish>
-    <station friendlyName="Canberra" name="cdscc" timeUTC="1670419133000" timeZoneOffset="39600000" />
-    <dish azimuthAngle="124.5" elevationAngle="53.41" isArray="false" isDDOR="false" isMSPA="false" name="DSS53" windSpeed="5.556">
-        <downSignal dataRate="1.190e+06" frequency="8436000000" power="-170.1741" signalType="data" spacecraft="Rate5" spacecraftID="-210" />
-        <upSignal dataRate="1.190e+06" frequency="8436000000" power="-170.1741" signalType="data" spacecraft="Rate5" spacecraftID="-210" />
-        <target downlegRange="4.099e+06" id="210" name="Rate5" rtlt="27.34" uplegRange="4.099e+06" />
-    </dish>
-    <dish azimuthAngle="219.7" elevationAngle="22.84" isArray="false" isDDOR="false" isMSPA="false" name="DSS54" windSpeed="5.556">
-        <downSignal dataRate="2.621e+06" frequency="2245000000" power="-110.7082" signalType="data" spacecraft="Rate6" spacecraftID="-21" />
-        <upSignal dataRate="2.621e+06" frequency="2066" power="1.758" signalType="data" spacecraft="Rate6" spacecraftID="-21" />
-        <target downlegRange="1.331e+06" id="21" name="Rate6" rtlt="8.882" uplegRange="1.331e+06" />
-    </dish>
-    <timestamp>1670419133000</timestamp>
-</dsn>)==--==";
-
-// Test dummy data that cycles through specific rate classes
-const char* data_animation_test_single = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?>
-<dsn>
-    <station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" />
-    <dish azimuthAngle="196.5" elevationAngle="30.71" isArray="false" isDDOR="false" isMSPA="false" name="DSS65" windSpeed="5.556">
-        <downSignal dataRate="2.458e+05" frequency="2278000000" power="-112.7797" signalType="data" spacecraft="Rate4" spacecraftID="-92" />
-        <upSignal dataRate="2.458e+05" frequency="2098" power="0.2630" signalType="data" spacecraft="Rate4" spacecraftID="-92" />
-        <target downlegRange="1.389e+06" id="92" name="Rate4" rtlt="9.266" uplegRange="1.389e+06" />
-    </dish>
-	<dish azimuthAngle="124.5" elevationAngle="53.41" isArray="false" isDDOR="false" isMSPA="false" name="DSS53" windSpeed="5.556">
-        <downSignal dataRate="1.190e+06" frequency="8436000000" power="-170.1741" signalType="data" spacecraft="Rate5" spacecraftID="-210" />
-        <upSignal dataRate="1.190e+06" frequency="8436000000" power="-170.1741" signalType="data" spacecraft="Rate5" spacecraftID="-210" />
-        <target downlegRange="4.099e+06" id="210" name="Rate5" rtlt="27.34" uplegRange="4.099e+06" />
-    </dish>
-    <dish azimuthAngle="219.7" elevationAngle="22.84" isArray="false" isDDOR="false" isMSPA="false" name="DSS54" windSpeed="5.556">
-        <downSignal dataRate="2.621e+06" frequency="2245000000" power="-110.7082" signalType="data" spacecraft="Rate6" spacecraftID="-21" />
-        <upSignal dataRate="2.621e+06" frequency="2066" power="1.758" signalType="data" spacecraft="Rate6" spacecraftID="-21" />
-        <target downlegRange="1.331e+06" id="21" name="Rate6" rtlt="8.882" uplegRange="1.331e+06" />
-    </dish>
-    <timestamp>1670419133000</timestamp>
-</dsn>)==--==";
-
-// Test font by displaying all alphanumberic characters
-const char* data_font_test = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?>
-<dsn>
-    <station friendlyName="Goldstone" name="gdscc" timeUTC="1670419133000" timeZoneOffset="-28800000" />
-	<dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS2" windSpeed="5.556">
-        <downSignal dataRate="1.163e+01" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="abcdefghijklmnopqrstuvwxyz 0123456789" spacecraftID="-170" />
-        <upSignal dataRate="1.163e+01" frequency="2090" power="4.804" signalType="data" spacecraft="abcdefghijklmnopqrstuvwxyz 0123456789" spacecraftID="-170" />
-        <target downlegRange="1.653e+06" id="170" name="abcdefghijklmnopqrstuvwxyz 0123456789" rtlt="11.03" uplegRange="1.653e+06" />
-    </dish>
-	<dish azimuthAngle="265.6" elevationAngle="29.25" isArray="false" isDDOR="false" isMSPA="false" name="DSS2" windSpeed="5.556">
-        <downSignal dataRate="1.163e+01" frequency="2270000000" power="-121.9500" signalType="data" spacecraft="abcdefghijklmnopqrstuvwxyz 0123456789" spacecraftID="-170" />
-        <upSignal dataRate="1.163e+01" frequency="2090" power="4.804" signalType="data" spacecraft="abcdefghijklmnopqrstuvwxyz 0123456789" spacecraftID="-170" />
-        <target downlegRange="1.653e+06" id="170" name="abcdefghijklmnopqrstuvwxyz 0123456789" rtlt="11.03" uplegRange="1.653e+06" />
-    </dish>
-	<timestamp>1670419133000</timestamp>
-</dsn>)==--==";
-
-// Test DSN Maintenance mode XML
-const char* data_dsn_maintenance = PROGMEM R"==--==(<?xml version='1.0' encoding='utf-8'?>
-<dsn>
-	<station name="gdscc" friendlyName="Goldstone" timeUTC="1698785318000" timeZoneOffset="-25200000"/>
-	<station name="mdscc" friendlyName="Madrid" timeUTC="1698785318000" timeZoneOffset="3600000"/>
-	<station name="cdscc" friendlyName="Canberra" timeUTC="1698785318000" timeZoneOffset="39600000"/>
-	<timestamp>1698785318000</timestamp>
-</dsn>)==--==";
 
 
-// Set the data to use
-const char* dummyXmlData = data_Sept6;
+
+// Which LittleFS XML file to load for dummy data
+// volatile: written by web portal (Core 1), read by fetchData task (Core 0)
+const char* volatile dummyXmlFile = "fallback";
 
 
 /* STATE TRACKING
@@ -235,10 +95,12 @@ const char* dummyXmlData = data_Sept6;
 #pragma region -- DATA FETCHING STATE VARS
 bool otaUpdateTriggered = false; // Flag to indicate OTA update has been triggered
 bool usingDummyData = false; // If true, use dummy data instead of actual data
-bool forceDummyData = false;
+volatile bool forceDummyData = false;
+bool forceAnimationType = false;
 uint8_t noTargetFoundCounter = 0;  // Keeps track of how many times target is not found
 uint8_t retryDataFetchCounter = 0; // Keeps track of how many times data fetch failed
 uint8_t retryDataFetchLimit = 3;  // After dummy data is used this many times, try to get actual data again
+const int maxHttpRetries = 3;
 bool dataStarted = false;
 // char fetchUrl[64];	// Fixed memory for DSN XML fetch URL - random number is appended when used to prevent caching
 
@@ -282,9 +144,11 @@ WiFiManagerParameter param_brightness;		   // global param ( for non blocking w 
 // WiFiManagerParameter field_meteor_tail_decay;  // global param ( for non blocking w params )
 // WiFiManagerParameter field_meteor_tail_random; // global param ( for non blocking w params )
 // WiFiManagerParameter field_global_fps;
+WiFiManagerParameter param_separator;
 WiFiManagerParameter param_force_dummy_data;
 WiFiManagerParameter param_show_serial;
 WiFiManagerParameter param_show_diagnostics;
+WiFiManagerParameter param_force_animation_enabled;
 WiFiManagerParameter param_force_animation_type;
 // WiFiManagerParameter param_update_firmware;
 // WiFiManagerParameter field_scroll_letters_delay;
@@ -345,11 +209,139 @@ bool portalRunning = false;
 
 
 
+const char* portalHeadHtml = R"---(
+		<style>
+			.param-group { display:flex; align-items:center; justify-content:space-between; margin-bottom:0.5em; }
+			.param-group input[type='checkbox'] { float:none !important; margin:0 !important; }
+			.param-group input[type='number'] { width:min-content; }
+			.param-group-stacked { display:flex; flex-direction:column; align-items:stretch; margin-bottom:0.5em; }
+			.param-group-stacked input[type='range'] { margin-top:0.3em; }
+		</style>
+		<div style="text-align:center;">
+			<img src="data:image/webp;base64,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" alt="NASA JPL" style="max-width:200px;margin:8px auto;display:block;">
+			<div style="display: inline-block; border: 1px solid gray;padding:5px 20px;">
+				<p id="firmwareStatus" style="margin-top:0; white-space:pre-line;">Checking for updates...</p>
+				<p id="updateResponse"></p>
+				<button id="checkUpdateButton" style="display:none;">Check for Updates</button>
+				<button id="updateButton" style="display:none;">Update Firmware</button>
+			</div>
+		</div>
+		<script>
+			document.addEventListener('DOMContentLoaded', function() {
+				function handleFirmwareStatus(text) {
+					document.getElementById("firmwareStatus").textContent = text;
+					document.getElementById("checkUpdateButton").style.display = "";
+					if (text.indexOf("Update available: true") !== -1) {
+						document.getElementById("updateButton").style.display = "";
+					} else {
+						document.getElementById("updateButton").style.display = "none";
+					}
+				}
+
+				fetch('/get-latest-version-number')
+				.then(function (response) { return response.text(); })
+				.then(function (text) { handleFirmwareStatus(text); })
+				.catch(function (error) {
+					document.getElementById("firmwareStatus").textContent = "Version check failed";
+					document.getElementById("checkUpdateButton").style.display = "";
+					console.error('Firmware version fetch failed:', error);
+				});
+
+				document.getElementById("checkUpdateButton").addEventListener('click', function() {
+					document.getElementById("firmwareStatus").textContent = "Checking for updates...";
+					document.getElementById("checkUpdateButton").style.display = "none";
+					document.getElementById("updateButton").style.display = "none";
+					fetch('/check-firmware-update')
+					.then(function (response) { return response.text(); })
+					.then(function (text) { handleFirmwareStatus(text); })
+					.catch(function (error) {
+						document.getElementById("firmwareStatus").textContent = "Version check failed";
+						document.getElementById("checkUpdateButton").style.display = "";
+						console.error('Firmware check failed:', error);
+					});
+				});
+
+				// Display device hostname at top of every page
+				fetch('/hostname')
+				.then(function(r) { return r.text(); })
+				.then(function(hostname) {
+					var banner = document.createElement('div');
+					banner.style.cssText = 'text-align:center;padding:6px 0;opacity:0.7;font-size:0.85em;';
+					var label = document.createTextNode('Device address: ');
+					var strong = document.createElement('strong');
+					strong.textContent = 'http://' + hostname;
+					banner.appendChild(label);
+					banner.appendChild(strong);
+					var container = document.querySelector('.wrap');
+					if (container) container.insertBefore(banner, container.firstChild);
+				})
+				.catch(function (error) {
+					console.error('Hostname fetch failed:', error);
+				});
+
+				// Hide duplicate SSID subtitle (WM renders it as a second heading after the title)
+				var headings = document.querySelectorAll('.wrap > h1, .wrap > h3');
+				if (headings.length > 1) headings[1].style.display = 'none';
+
+				// Rename "Setup" button to "Options" on portal home
+				document.querySelectorAll('form[action="/param"] button').forEach(function(b) { b.textContent = 'Options'; });
+
+				// Add "Spacecraft" button after "Options" on portal home
+				var optionsForm = document.querySelector('form[action="/param"]');
+				if (optionsForm) {
+					var refBtn = optionsForm.querySelector('button');
+					var scForm = document.createElement('form');
+					scForm.action = '/spacecraft';
+					scForm.method = 'get';
+					scForm.style.marginTop = '12px';
+					var scBtn = document.createElement('button');
+					scBtn.type = 'submit';
+					scBtn.textContent = 'Spacecraft';
+					if (refBtn) scBtn.className = refBtn.className;
+					scForm.appendChild(scBtn);
+					optionsForm.parentNode.insertBefore(scForm, optionsForm.nextSibling);
+				}
+
+				// Wrap each label+input pair in a flex container
+				document.querySelectorAll('form label[for]').forEach(function(label) {
+					var input = document.getElementById(label.getAttribute('for'));
+					if (!input) return;
+					var wrapper = document.createElement('div');
+					wrapper.className = (input.type === 'range') ? 'param-group-stacked' : 'param-group';
+					label.parentNode.insertBefore(wrapper, label);
+					// Remove <br/> nodes between label position and input
+					var node = wrapper.nextSibling;
+					while (node && node !== input) {
+						var next = node.nextSibling;
+						if (node.nodeName === 'BR') node.remove();
+						node = next;
+					}
+					wrapper.appendChild(label);
+					wrapper.appendChild(input);
+				});
+
+				document.getElementById("updateButton").addEventListener('click', function() {
+				fetch('/trigger-firmware-update')
+				.then(function (response) {
+					return response.text();
+				})
+				.then(function (text) {
+					document.getElementById("updateResponse").textContent = text;
+					console.log("response:", text);
+				})
+				.catch(function (error) {
+					console.error('Firmware update fetch failed:', error);
+				});
+			});
+			}); // DOMContentLoaded
+		</script>
+	)---";
+
 #pragma endregion -- END WIFIMANAGER PORTAL
 
 #pragma region -- TIMERS
 /* Time is measured in milliseconds, so long is used */
-uint8_t fpsRate = 60;
+uint8_t fpsRate = 30;
 unsigned long fpsTimer = 0;
 unsigned long perfTimer = 0;
 unsigned long perfDiff = 0;
@@ -370,6 +362,8 @@ const uint8_t offsetHalf = meteorOffset * 0.5;
 unsigned long dataFetchTimerMilliseconds = 0;
 
 #pragma endregion -- END TIMERS
+
+const unsigned int UP_SIGNAL_RATE_CLASS = 3; // Binary up signal: medium animation
 
 #pragma region -- LED HARDWARE CONFIG
 // Totaly number of pixels (diodes) in each strip
@@ -420,23 +414,23 @@ static int letterSpacing = 9;
 */
 
 void update_started() {
-	Serial.println("CALLBACK:  HTTP update process started");
+	if (FileUtils::config.debugUtils.showSerial) Serial.println("CALLBACK:  HTTP update process started");
 }
 
 void update_finished() {
-	Serial.println("CALLBACK:  HTTP update process finished");
+	if (FileUtils::config.debugUtils.showSerial) Serial.println("CALLBACK:  HTTP update process finished");
 }
 
 void update_progress(int cur, int total) {
-	Serial.printf("CALLBACK:  HTTP update process at %d of %d bytes...\n", cur, total);
+	if (FileUtils::config.debugUtils.showSerial) Serial.printf("CALLBACK:  HTTP update process at %d of %d bytes...\n", cur, total);
 }
 
 void update_error(int err) {
-	Serial.printf("CALLBACK:  HTTP update fatal error code %d\n", err);
+	if (FileUtils::config.debugUtils.showSerial) Serial.printf("CALLBACK:  HTTP update fatal error code %d\n", err);
 }
 
 void setupOtaUpdate() {
-	Serial.println("Setting up OTA update...");
+	if (FileUtils::config.debugUtils.showSerial) Serial.println("Setting up OTA update...");
 	httpUpdate.onStart(update_started);
 	httpUpdate.onEnd(update_finished);
 	httpUpdate.onProgress(update_progress);
@@ -445,85 +439,123 @@ void setupOtaUpdate() {
 
 const char* getRemoteFirmwareVersion() {
 	bool showSerial = FileUtils::config.debugUtils.showSerial;
-
 	static char buffer[16];
+	buffer[0] = '\0';
+
+	WiFiClientSecure secureClient;
+	secureClient.setInsecure(); // Encrypted transport, no cert pinning
+
 	HTTPClient httpFirmware;
-	httpFirmware.begin("http://develop.kellerdigital.com/minipulse/latest_version.txt");
+	httpFirmware.setTimeout(10000); // 10s timeout (GitHub API can be slow)
+
+	if (!httpFirmware.begin(secureClient, githubApiUrl)) {
+		if (showSerial) Serial.println("Failed to begin HTTP connection for version check");
+		return buffer;
+	}
+
+	// Headers must be added after begin() — begin() may clear internal state
+	httpFirmware.addHeader("Accept", "application/vnd.github+json");
+	httpFirmware.addHeader("User-Agent", "JPL-MiniPulse-ESP32"); // GitHub API requires User-Agent
+
 	int httpCode = httpFirmware.GET();
-	if (showSerial) Serial.print("HTTP code: " + String(httpCode) + "\n");
+	if (showSerial) Serial.printf("Version check HTTP code: %d\n", httpCode);
 
 	if (httpCode == HTTP_CODE_OK) {
-		String latestVersion = httpFirmware.getString();
-		if (showSerial) Serial.println("Remote version: " + latestVersion);
-		strncpy(buffer, latestVersion.c_str(), sizeof(buffer) - 1);
+		// Parse directly from stream to avoid allocating full response (5-20KB) on heap
+		WiFiClient& stream = httpFirmware.getStream();
+
+		StaticJsonDocument<64> filter;
+		filter["tag_name"] = true;
+
+		DynamicJsonDocument doc(512);
+		DeserializationError err = deserializeJson(doc, stream, DeserializationOption::Filter(filter));
+
+		if (err == DeserializationError::Ok && doc.containsKey("tag_name")) {
+			const char* tagName = doc["tag_name"];
+			if (showSerial) Serial.printf("Remote version (tag): %s\n", tagName);
+			strncpy(buffer, tagName, sizeof(buffer) - 1);
+			buffer[sizeof(buffer) - 1] = '\0';
+		} else {
+			if (showSerial) Serial.println("Failed to parse tag_name from GitHub API response");
+		}
 	} else {
-		Serial.println("Failed to fetch remote version");
-		buffer[0] = '\0';
+		if (showSerial) Serial.printf("Failed to fetch remote version (HTTP %d)\n", httpCode);
 	}
 
 	httpFirmware.end();
 	return buffer;
 }
 
-bool checkFirmwareUpdateAvailable() {
-	// char buffer[2048];
-	// int offset = 0;
+// Returns true if `remote` is a higher semver than `current`.
+// Handles optional "v" prefix (e.g. "v1.2.3") and pre-release suffixes (e.g. "1.2.3-rc.1").
+// Pre-release versions have lower precedence than the same version without a suffix.
+bool isNewerVersion(const char* remote, const char* current) {
+	// Strip optional "v" prefix
+	if (remote[0] == 'v' || remote[0] == 'V') remote++;
+	if (current[0] == 'v' || current[0] == 'V') current++;
 
+	int rMajor = 0, rMinor = 0, rPatch = 0;
+	int cMajor = 0, cMinor = 0, cPatch = 0;
+
+	if (sscanf(remote, "%d.%d.%d", &rMajor, &rMinor, &rPatch) != 3) return false;
+	if (sscanf(current, "%d.%d.%d", &cMajor, &cMinor, &cPatch) != 3) return false;
+
+	if (rMajor != cMajor) return rMajor > cMajor;
+	if (rMinor != cMinor) return rMinor > cMinor;
+	if (rPatch != cPatch) return rPatch > cPatch;
+
+	// Same major.minor.patch — check pre-release suffixes
+	bool rHasPreRelease = strchr(remote, '-') != nullptr;
+	bool cHasPreRelease = strchr(current, '-') != nullptr;
+
+	// Current is pre-release, remote is stable release → upgrade
+	if (cHasPreRelease && !rHasPreRelease) return true;
+	// Current is stable, remote is pre-release → no downgrade
+	if (!cHasPreRelease && rHasPreRelease) return false;
+
+	return false;
+}
+
+bool checkFirmwareUpdateAvailable() {
 	const char* latestVersion = getRemoteFirmwareVersion();
 
-	// offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Remote version: %s\n", latestVersion);
-
 	if (strcmp(latestVersion, "") == 0) {
-		// offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Unable to fetch latest version from remote server\n");
-		// Serial.print(buffer);
 		return false;
 	}
 
-	if (strcmp(latestVersion, currentFirmwareVersion) != 0) {
-		// offset += snprintf(buffer + offset, sizeof(buffer) - offset, "New firmware available!\n");
-		// Serial.print(buffer);
-		return true;
-	} else {
-		// offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Firmware is up to date\n");
-	}
-
-	// Serial.print(buffer);
-	return false;
+	return isNewerVersion(latestVersion, currentFirmwareVersion);
 }
 
 void updateFirmwareOta() {
 	if (!checkFirmwareUpdateAvailable()) return;
+	bool showSerial = FileUtils::config.debugUtils.showSerial;
 
-	char buffer[2048];
-	int offset = 0;
-	offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n--------\nAttempting to update firmware from remote server...\n");
+	if (showSerial) Serial.println("\n--------\nAttempting firmware update from GitHub...");
 
+	WiFiClientSecure secureClient;
+	secureClient.setInsecure();
 
-	WiFiClient client;
-	t_httpUpdate_return ret = httpUpdate.update(client, "http://develop.kellerdigital.com/minipulse/firmware.bin");
-	// Or:
-	//t_httpUpdate_return ret = httpUpdate.update(client, "server", 80, "/file.bin");
+	httpUpdate.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
+
+	t_httpUpdate_return ret = httpUpdate.update(secureClient, firmwareBinaryUrl);
 
 	switch (ret) {
 		case HTTP_UPDATE_FAILED:
-			offset += snprintf(buffer + offset, sizeof(buffer) - offset, ">> HTTP_UPDATE_FAILED Error (%d): %s\n", httpUpdate.getLastError(), httpUpdate.getLastErrorString().c_str());
+			if (showSerial) Serial.printf(">> HTTP_UPDATE_FAILED Error (%d): %s\n",
+				httpUpdate.getLastError(), httpUpdate.getLastErrorString().c_str());
 			break;
-
 		case HTTP_UPDATE_NO_UPDATES:
-			offset += snprintf(buffer + offset, sizeof(buffer) - offset, ">> HTTP_UPDATE_NO_UPDATES");
+			if (showSerial) Serial.println(">> HTTP_UPDATE_NO_UPDATES");
 			break;
-
 		case HTTP_UPDATE_OK:
-			offset += snprintf(buffer + offset, sizeof(buffer) - offset, ">> HTTP_UPDATE_OK");
+			if (showSerial) Serial.println(">> HTTP_UPDATE_OK");
 			break;
-
 		default:
-			offset += snprintf(buffer + offset, sizeof(buffer) - offset, ">> HTTP_UPDATE Unknown error");
+			if (showSerial) Serial.println(">> HTTP_UPDATE Unknown result");
 			break;
 	}
 
-	offset += snprintf(buffer + offset, sizeof(buffer) - offset, "OTA update complete\n--------\n\n");
-	Serial.print(buffer);
+	if (showSerial) Serial.println("OTA update complete\n--------\n");
 }
 
 #pragma region -- ANIMATION UTILITIES
@@ -570,6 +602,7 @@ void feedWatchdog() {
 
 void printMeteorArray()
 {
+	if (!FileUtils::config.debugUtils.showSerial) return;
 
 	String printString = "\n---------------[ METEOR ARRAY ]---------------\n";
 
@@ -603,8 +636,9 @@ void printMeteorArray()
 
 void printCraftInfo(uint listPosition, const char* callsign, const char* name, uint nameLength, uint downSignal, uint upSignal)
 {
+	if (!FileUtils::config.debugUtils.showSerial) return;
+
 	char buffer[256];
-	// Serial.print()
 	if (callsign == nullptr || name == nullptr) {
 		snprintf(
 			buffer,
@@ -612,6 +646,7 @@ void printCraftInfo(uint listPosition, const char* callsign, const char* name, u
 			"ITEM #%u: Invalid\n",
 			listPosition
 		);
+		Serial.print(buffer);
 		return;
 	}
 
@@ -649,6 +684,8 @@ String returnCraftInfo(uint listPosition, const char* callsign, const char* name
 }
 
 void printCurrentQueue(QueueHandle_t queue) {
+	if (!FileUtils::config.debugUtils.showSerial) return;
+
 	char buffer[1024]; // Create a buffer to hold the serial output
 	snprintf(
 		buffer,
@@ -710,6 +747,8 @@ void printCurrentQueue(QueueHandle_t queue) {
 }
 
 void printCurrentCraftBuffer() {
+	if (!FileUtils::config.debugUtils.showSerial) return;
+
 	Serial.print(
 		DevUtils::termColor("blue") +
 		"============= CURRENT DATA BUFFER =============" + DevUtils::termColor("reset") +
@@ -745,23 +784,18 @@ void printSemaphoreList() {
 	}
 }
 
-void freeSemaphoreItem(CraftQueueItem* infoBuffer) {
+void freeSemaphoreItem(CraftQueueItem*& infoBuffer) {
 	feedWatchdog();
 	if (xSemaphoreTake(freeListMutex, pdMS_TO_TICKS(500)) == pdTRUE) {
 
-		if (freeListTop < 0) {
-			Serial.println("Error: freeListTop is " + String(freeListTop) + "\n");
-			freeListTop = 0;
+		if (freeListTop + 1 >= MAX_ITEMS) {
+			if (FileUtils::config.debugUtils.showSerial) Serial.println("Error: free list is full, cannot return item");
+			xSemaphoreGive(freeListMutex);
+			return;
 		}
 
-		if (freeListTop > MAX_ITEMS - 1) {
-			Serial.println("Error: freeListTop is greater than MAX_ITEMS");
-			freeListTop = MAX_ITEMS - 1;
-		}
-
-		freeList[freeListTop] = infoBuffer;
 		freeListTop++;
-
+		freeList[freeListTop] = infoBuffer;
 
 		char semaphoreStatusMessage[128];
 		snprintf(
@@ -770,10 +804,11 @@ void freeSemaphoreItem(CraftQueueItem* infoBuffer) {
 			"%sSemaphore freed: %s [%d/%d]%s\n",
 			DevUtils::termColor("green"),
 			String(infoBuffer->callsignArray).c_str(),
-			freeListTop,
+			freeListTop + 1,
 			MAX_ITEMS,
 			DevUtils::termColor("reset")
 		);
+		if (FileUtils::config.debugUtils.showSerial) Serial.print(semaphoreStatusMessage);
 		infoBuffer = nullptr;
 
 		if (freeListMutex != nullptr) {
@@ -794,7 +829,7 @@ void doWiFiManager()
 		if (portalActive) {
 			wm.process(); // do processing
 		} else {
-			Serial.print("\n\n----------STARTING CONFIG PORTAL\n\n");
+			if (FileUtils::config.debugUtils.showSerial) Serial.print("\n\n----------STARTING CONFIG PORTAL\n\n");
 			wm.setConfigPortalBlocking(false);
 			wm.startConfigPortal(FileUtils::config.wifiNetwork.apSSID, FileUtils::config.wifiNetwork.apPass);
 			portalRunning = true;
@@ -804,7 +839,7 @@ void doWiFiManager()
 		// Force Wifi portal when WiFi reset button is pressed
 		if (digitalRead(WIFI_RST) == LOW) {
 			if (!portalRunning) {
-				Serial.println("Button Pressed: Starting Config Portal");
+				if (FileUtils::config.debugUtils.showSerial) Serial.println("Button Pressed: Starting Config Portal");
 				wm.setConfigPortalBlocking(false);
 				wm.startConfigPortal(FileUtils::config.wifiNetwork.apSSID, FileUtils::config.wifiNetwork.apPass);
 				portalRunning = true;
@@ -819,22 +854,26 @@ void doWiFiManager()
 		}
 	}
 	catch (...) {
-		Serial.println("Error: doWiFiManager() failed");
-		dev.handleException();
+		if (FileUtils::config.debugUtils.showSerial) {
+			Serial.println("Error: doWiFiManager() failed");
+			dev.handleException();
+		}
 	}
 }
 
 void configPortalCallback() {
-	Serial.print(
-		"\n" +
-		DevUtils::termColor("green") +
-		"[CALLBACK] configPortalCallback fired" +
-		DevUtils::termColor("reset") + "\n\n");
+	if (FileUtils::config.debugUtils.showSerial)
+		Serial.print(
+			"\n" +
+			DevUtils::termColor("green") +
+			"[CALLBACK] configPortalCallback fired" +
+			DevUtils::termColor("reset") + "\n\n");
 	portalRunning = true;
 }
 
 void webServerCallback() {
-	Serial.print("\n" + DevUtils::termColor("blue") + "Web server started" + DevUtils::termColor("reset") + "\n\n");
+	if (FileUtils::config.debugUtils.showSerial)
+		Serial.print("\n" + DevUtils::termColor("blue") + "Web server started" + DevUtils::termColor("reset") + "\n\n");
 	portalRunning = true;
 
 	wm.server->on("/get-remote-version-number", HTTP_GET, []() {
@@ -845,13 +884,32 @@ void webServerCallback() {
 		});
 
 	wm.server->on("/get-latest-version-number", HTTP_GET, []() {
-		const char* remoteFirmwareVersion = getRemoteFirmwareVersion();
-		bool updateAvailable = checkFirmwareUpdateAvailable();
-		const char* updateAvailableText = updateAvailable ? "true" : "false";
-		String response = "Current version: " + String(currentFirmwareVersion) + "<br>Remote Version: " + String(remoteFirmwareVersion) + "<br>Update available: " + String(updateAvailableText);
+		if (!firmwareCheckDone) {
+			const char* remoteVersion = getRemoteFirmwareVersion();
+			if (strlen(remoteVersion) > 0) {
+				bool updateAvailable = isNewerVersion(remoteVersion, currentFirmwareVersion);
+				const char* updateAvailableText = updateAvailable ? "true" : "false";
+				cachedFirmwareStatus = "Current version: " + String(currentFirmwareVersion) + "\nRemote Version: " + String(remoteVersion) + "\nUpdate available: " + String(updateAvailableText);
+				firmwareCheckDone = true;
+			} else {
+				cachedFirmwareStatus = "Current version: " + String(currentFirmwareVersion) + "\nVersion check failed";
+			}
+		}
+		wm.server->send(200, "text/plain", cachedFirmwareStatus);
+		});
 
-		wm.server->send(200, "text/plain", response);
-
+	wm.server->on("/check-firmware-update", HTTP_GET, []() {
+		const char* remoteVersion = getRemoteFirmwareVersion();
+		if (strlen(remoteVersion) > 0) {
+			bool updateAvailable = isNewerVersion(remoteVersion, currentFirmwareVersion);
+			const char* updateAvailableText = updateAvailable ? "true" : "false";
+			cachedFirmwareStatus = "Current version: " + String(currentFirmwareVersion) + "\nRemote Version: " + String(remoteVersion) + "\nUpdate available: " + String(updateAvailableText);
+			firmwareCheckDone = true;
+		} else {
+			cachedFirmwareStatus = "Current version: " + String(currentFirmwareVersion) + "\nVersion check failed";
+			firmwareCheckDone = false;
+		}
+		wm.server->send(200, "text/plain", cachedFirmwareStatus);
 		});
 
 	wm.server->on("/trigger-firmware-update", HTTP_GET, []() {
@@ -863,6 +921,47 @@ void webServerCallback() {
 			wm.server->send(200, "text/plain", "Firmware is up to date");
 		}
 		});
+
+	wm.server->on("/hostname", HTTP_GET, []() {
+		wm.server->send(200, "text/plain", String(mdnsHostname) + ".local");
+		});
+
+	wm.server->on("/spacecraft", HTTP_GET, []() {
+		bool priorityOnly = FileUtils::config.miscellaneous.useApprovedOnly;
+		String html;
+		html.reserve(14000); // Pre-allocate to avoid heap fragmentation from repeated realloc
+		html = "<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width,initial-scale=1'>";
+		html += "<style>";
+		html += "body{font-family:sans-serif;background:#1a1a2e;color:#eee;margin:0;padding:16px;}";
+		html += "h1{font-size:1.3em;margin-bottom:4px;}";
+		html += "p.mode{opacity:0.6;font-size:0.85em;margin-top:0;}";
+		html += "table{width:100%;border-collapse:collapse;margin-top:12px;}";
+		html += "th,td{text-align:left;padding:6px 10px;border-bottom:1px solid #333;}";
+		html += "th{opacity:0.6;font-size:0.85em;text-transform:uppercase;}";
+		html += "tr.dimmed{opacity:0.3;}";
+		html += "a.back{display:inline-block;margin-top:16px;color:#5b9bd5;text-decoration:none;}";
+		html += "</style></head><body>";
+		html += "<h1>Recognized Spacecraft</h1>";
+		html += priorityOnly
+			? "<p class='mode'>Displaying high-priority missions only &mdash; others are recognized but hidden</p>"
+			: "<p class='mode'>Displaying all recognized spacecraft</p>";
+		html += "<table><tr><th>Callsign</th><th>Name</th></tr>";
+
+		JsonObject names = SpacecraftData::spacecraftNamesJson.as<JsonObject>();
+		for (JsonPair kv : names) {
+			const char* callsign = kv.key().c_str();
+			if (SpacecraftData::checkBlacklist(callsign)) continue;
+			bool isPriority = SpacecraftData::checkApproved(callsign);
+			bool dimmed = priorityOnly && !isPriority;
+			html += dimmed ? "<tr class='dimmed'>" : "<tr>";
+			html += "<td>" + String(callsign) + "</td><td>" + String(kv.value().as<const char*>()) + "</td></tr>";
+		}
+
+		html += "</table>";
+		html += "<a class='back' href='/'>&#8592; Back</a>";
+		html += "</body></html>";
+		wm.server->send(200, "text/html", html);
+	});
 }
 
 void setColorTheme(uint8_t colorTheme)
@@ -902,18 +1001,12 @@ void setColorTheme(uint8_t colorTheme)
 
 void setXmlData(uint8_t selection) {
 	switch (selection) {
-		case 0:
-			forceDummyData = false;
-			break;
-		case 1:
-			forceDummyData = true;
-			dummyXmlData = data_Sept6;
-			break;
-		case 2:
-			forceDummyData = true;
-			dummyXmlData = data_animation_test;
-			break;
-
+		case 0: forceDummyData = false; break;
+		case 1: forceDummyData = true; dummyXmlFile = "fallback"; break;
+		case 2: forceDummyData = true; dummyXmlFile = "animation_test"; break;
+		case 3: forceDummyData = true; dummyXmlFile = "animation_test_single"; break;
+		case 4: forceDummyData = true; dummyXmlFile = "font_test"; break;
+		case 5: forceDummyData = true; dummyXmlFile = "dsn_maintenance"; break;
 	}
 }
 
@@ -941,109 +1034,143 @@ String getParam(String name)
 }
 
 void saveParamsCallback() {
-	Serial.print("\n\n<--------- PORTAL FORM SUBMITTED --------->\n\n");
+	bool showSerial = FileUtils::config.debugUtils.showSerial;
+
+	if (showSerial) Serial.print("\n\n<--------- PORTAL FORM SUBMITTED --------->\n\n");
 
 	/* SHOW SERIAL - Set serial show config key from input */
 	// Get input value
 	String showSerialValue = getParam("show_serial");
-	Serial.print("---\nshow_serial input: " + showSerialValue + "\n");
+	if (showSerial) Serial.print("---\nshow_serial input: " + showSerialValue + "\n");
 
-	// Convert to bool
-	bool showSerialValueBool = strcmp(showSerialValue.c_str(), "1") == 0 ? true : false;
-	Serial.print("show serial bool: " + String(showSerialValueBool) + "\n");
+	// Treat any non-empty, non-"0" value as true (handles "1", "on", etc.)
+	bool showSerialValueBool = (showSerialValue.length() > 0 && showSerialValue != "0");
+	if (showSerial) Serial.print("show serial bool: " + String(showSerialValueBool) + "\n");
 
 	// Set program config
-	Serial.print("Previous config showSerial: " + String(FileUtils::config.debugUtils.showSerial) + "\n");
+	if (showSerial) Serial.print("Previous config showSerial: " + String(FileUtils::config.debugUtils.showSerial) + "\n");
 	FileUtils::config.debugUtils.showSerial = showSerialValueBool;
-	Serial.print("New config showSerial: " + String(FileUtils::config.debugUtils.showSerial) + "\n");
+	if (showSerial) Serial.print("New config showSerial: " + String(FileUtils::config.debugUtils.showSerial) + "\n");
 
 	// wm.setDebugOutput(showSerialValueBool); // Turn on/off WiFiManager debug output
 
 	// Set file config
 	FileUtils::writeConfigFileBool("showSerial", FileUtils::config.debugUtils.showSerial);
 	FileUtils::readFile("/config.json");
-	Serial.println();
+	if (showSerial) Serial.println();
 
 
 	/* SHOW DIAGNOSTICS - Set show diagnostics config key from input */
 	// Get input value
 	String showDiagnosticsValue = getParam("show_diagnostics");
-	Serial.print("---\nshow_diagnostics input: " + showDiagnosticsValue + "\n");
+	if (showSerial) Serial.print("---\nshow_diagnostics input: " + showDiagnosticsValue + "\n");
 
-	// Convert to bool
-	bool showDiagnosticsValueBool = strcmp(showDiagnosticsValue.c_str(), "1") == 0 ? true : false;
-	Serial.print("show diagnostics bool: " + String(showDiagnosticsValueBool) + "\n");
+	// Treat any non-empty, non-"0" value as true (handles "1", "on", etc.)
+	bool showDiagnosticsValueBool = (showDiagnosticsValue.length() > 0 && showDiagnosticsValue != "0");
+	if (showSerial) Serial.print("show diagnostics bool: " + String(showDiagnosticsValueBool) + "\n");
 
 	// Set program config
-	Serial.print("Previous config showDiagnostics: " + String(FileUtils::config.debugUtils.diagMeasure) + "\n");
+	if (showSerial) Serial.print("Previous config showDiagnostics: " + String(FileUtils::config.debugUtils.diagMeasure) + "\n");
 	FileUtils::config.debugUtils.diagMeasure = showDiagnosticsValueBool;
-	Serial.print("New config showDiagnostics: " + String(FileUtils::config.debugUtils.diagMeasure) + "\n");
+	if (showSerial) Serial.print("New config showDiagnostics: " + String(FileUtils::config.debugUtils.diagMeasure) + "\n");
 
 	// Set file config
 	FileUtils::writeConfigFileBool("diagMeasure", FileUtils::config.debugUtils.diagMeasure);
 	FileUtils::readFile("/config.json");
-	Serial.println();
+	if (showSerial) Serial.println();
 
 
-	/* FORCE ANIMATION TYPE - Set forced animaiton type from input */
-	// Get input value
+	/* FORCE ANIMATION TYPE - Set enabled flag and animation type from input */
+	// Get checkbox value
+	String forceAnimationEnabledValue = getParam("force_animation_enabled");
+	if (showSerial) Serial.print("---\nforce_animation_enabled input: " + forceAnimationEnabledValue + "\n");
+	forceAnimationType = (forceAnimationEnabledValue.length() > 0 && forceAnimationEnabledValue != "0");
+	if (showSerial) Serial.println("forceAnimationType enabled: " + String(forceAnimationType));
+
+	// Get number value
 	String forcedAnimationTypeValue = getParam("force_animation_type");
-	Serial.print("---\nforced_animation_type input: " + forcedAnimationTypeValue + "\n");
-
-	// Set program variable
-	Serial.println("Previous forcedAnimationType: " + String(animate.forcedAnimationType));
-	animate.forcedAnimationType = atoi(forcedAnimationTypeValue.c_str());
-	Serial.println("New forcedAnimationType: " + String(animate.forcedAnimationType));
+	if (showSerial) Serial.print("force_animation_type input: " + forcedAnimationTypeValue + "\n");
+	if (showSerial) Serial.println("Previous forcedAnimationType: " + String(animate.forcedAnimationType));
+	char* endPtr;
+	long rawAnimType = strtol(forcedAnimationTypeValue.c_str(), &endPtr, 10);
+	if (*endPtr != '\0') {
+		if (showSerial) Serial.println("WARNING: force_animation_type parse failed, keeping previous value");
+	} else {
+		animate.forcedAnimationType = (rawAnimType < 1) ? 1 : (rawAnimType > 5) ? 5 : (int)rawAnimType;
+	}
+	if (showSerial) Serial.println("New forcedAnimationType: " + String(animate.forcedAnimationType));
 
 
 	/* BRIGHTNESS - Set brightness config key from input */
 	// Get input value
 	String brightnessValue = getParam("brightness");
-	Serial.print("---\nbrightness input: " + brightnessValue + "\n");
+	if (showSerial) Serial.print("---\nbrightness input: " + brightnessValue + "\n");
 
-	// Convert to int
-	int brightnessInt = atoi(brightnessValue.c_str());
+	// Convert to int and clamp to 0-100% range
+	char* brightnessEndPtr;
+	long rawBrightness = strtol(brightnessValue.c_str(), &brightnessEndPtr, 10);
+	if (*brightnessEndPtr != '\0') {
+		if (showSerial) Serial.println("WARNING: brightness parse failed, defaulting to 50%");
+		rawBrightness = 50;
+	}
+	int brightnessInt = (rawBrightness < 0) ? 0 : (rawBrightness > 100) ? 100 : (int)rawBrightness;
 
-	// Map brightness
+	// Map 0-100% to hardware range 8-160
 	int brightnessMapped = MathHelpers::map(brightnessInt, 0, 100, 8, 160);
 
-	// Set program config
-	Serial.print("Previous config brightness: " + String(FileUtils::config.displayLED.brightness) + "\n");
-	FileUtils::config.displayLED.brightness = brightnessInt;
-	Serial.print("New config brightness: " + String(FileUtils::config.displayLED.brightness) + "\n");
+	// Set program config (store hardware value)
+	if (showSerial) Serial.print("Previous config brightness: " + String(FileUtils::config.displayLED.brightness) + "\n");
+	FileUtils::config.displayLED.brightness = brightnessMapped;
+	if (showSerial) Serial.print("New config brightness: " + String(FileUtils::config.displayLED.brightness) + "\n");
 
-	// Set file conf                                                                                                                         ConfigFileInt("brightness", FileUtils::config.displayLED.brightness);
+	// Set file config
 	FileUtils::writeConfigFileInt("brightness", FileUtils::config.displayLED.brightness);
 	FileUtils::readFile("/config.json");
-	Serial.print("\n");
+	if (showSerial) Serial.print("\n");
 
-	// Set LEDs brightness	
+	// Apply to LEDs
 	setGlobalBrightness(FileUtils::config.displayLED.brightness);
 
 
 	/* FORCE DUMMY DATA - Set forceDummyData config key from input */
 	// Get input value
 	String forceDummyDataInputValue = getParam("force_dummy_data");
-	Serial.print("---\nforceDummyData input: " + forceDummyDataInputValue + "\n");
+	if (showSerial) Serial.print("---\nforceDummyData input: " + forceDummyDataInputValue + "\n");
 
-	// Convert to int
-	int forceDummyDataInt = atoi(forceDummyDataInputValue.c_str());
+	// Treat any non-empty, non-"0" value as true (handles "1", "on", etc.)
+	int forceDummyDataInt = (forceDummyDataInputValue.length() > 0 && forceDummyDataInputValue != "0") ? 1 : 0;
 
 	// Set program config
-	Serial.print("Previous config forceDummyData: " + String(FileUtils::config.wifiNetwork.forceDummyData) + "\n");
+	if (showSerial) Serial.print("Previous config forceDummyData: " + String(FileUtils::config.wifiNetwork.forceDummyData) + "\n");
 	FileUtils::config.wifiNetwork.forceDummyData = forceDummyDataInt;
-	Serial.print("New config forceDummyData: " + String(FileUtils::config.wifiNetwork.forceDummyData) + "\n");
+	if (showSerial) Serial.print("New config forceDummyData: " + String(FileUtils::config.wifiNetwork.forceDummyData) + "\n");
 
 	// Set file config
 	FileUtils::writeConfigFileBool("forceDummyData", FileUtils::config.wifiNetwork.forceDummyData);
 	FileUtils::readFile("/config.json");
-	Serial.println();
+	if (showSerial) Serial.println();
 
 	// Set forceDummyData
 	forceDummyData = FileUtils::config.wifiNetwork.forceDummyData;
 
 
-	Serial.print("\n<--------- END PORTAL FORM CALLBACK --------->\n\n");
+	// Re-initialize checkbox params so subsequent portal loads render correctly.
+	// WiFiManager's doParamSave overwrites _value with "" for unchecked boxes,
+	// which breaks the next submission. Reconstructing restores value="1" and
+	// updates the checked attribute to reflect the new config state.
+	// Destructor frees the old _value buffer before placement new allocates a new one.
+	param_force_dummy_data.~WiFiManagerParameter();
+	new (&param_force_dummy_data) WiFiManagerParameter("force_dummy_data", "Force placeholder data", "1", 1, FileUtils::config.wifiNetwork.forceDummyData ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
+	param_show_serial.~WiFiManagerParameter();
+	new (&param_show_serial) WiFiManagerParameter("show_serial", "Show Serial", "1", 1, FileUtils::config.debugUtils.showSerial ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
+	param_show_diagnostics.~WiFiManagerParameter();
+	new (&param_show_diagnostics) WiFiManagerParameter("show_diagnostics", "Show Diagnostics", "1", 1, FileUtils::config.debugUtils.diagMeasure ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
+	param_force_animation_enabled.~WiFiManagerParameter();
+	new (&param_force_animation_enabled) WiFiManagerParameter("force_animation_enabled", "Force Animation Type", "1", 1, forceAnimationType ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
+	param_force_animation_type.~WiFiManagerParameter();
+	new (&param_force_animation_type) WiFiManagerParameter("force_animation_type", "Animation Type (1-5)", String(animate.forcedAnimationType).c_str(), 1, "type='number' min='1' max='5' step='1'");
+
+	if (showSerial) Serial.print("\n<--------- END PORTAL FORM CALLBACK --------->\n\n");
 }
 
 #pragma endregion -- END WIFIMANAGER HANDLING
@@ -1114,7 +1241,7 @@ void doLetterRegions(char theLetter, int regionStart, int startingPixel)
 	// Check if characterWidth is zero, if so, return from the function to avoid division by zero
 	if (characterWidth == 0) {
 		characterWidth = 5;
-		Serial.println("Error: characterWidth is zero - setting to 5");
+		if (FileUtils::config.debugUtils.showSerial) Serial.println("Error: characterWidth is zero - setting to 5");
 		// return;
 	}
 
@@ -1123,8 +1250,6 @@ void doLetterRegions(char theLetter, int regionStart, int startingPixel)
 
 	int16_t pixel = startingPixel + regionOffset;
 	const int16_t previousPixel = pixel - letterSpacing;
-
-	const size_t inner_leds_size = sizeof(inner_leds) / sizeof(inner_leds[0]);
 
 	for (int i = 0; i < ledCharacter.characterTotalPixels; i++) {
 		int j = i + 1;
@@ -1149,7 +1274,7 @@ void doLetterRegions(char theLetter, int regionStart, int startingPixel)
 
 
 		if (drawPrevPixelInRegion) {
-			if (drawPreviousPixel >= 0 && drawPreviousPixel < inner_leds_size) {
+			if (drawPreviousPixel >= 0 && drawPreviousPixel < innerPixelsTotal) {
 				inner_leds[drawPreviousPixel] = mpColors.off.value;
 			} else {
 				// Serial.print(DevUtils::termColor("red")) + "drawPreviousPixel out of bounds" + DevUtils::termColor("reset")) + "\n");
@@ -1157,7 +1282,7 @@ void doLetterRegions(char theLetter, int regionStart, int startingPixel)
 		}
 
 		if (drawPixelInRegion) {
-			if (drawPixel >= 0 && drawPixel < inner_leds_size) {
+			if (drawPixel >= 0 && drawPixel < innerPixelsTotal) {
 				inner_leds[drawPixel] = ledCharacter.characterArray[i] == 1 ? currentColors.letter : mpColors.off.value;
 			} else {
 				// Serial.print(DevUtils::termColor("red")) + "drawPixel out of bounds" + DevUtils::termColor("reset")) + "\n");
@@ -1649,6 +1774,23 @@ const RateClassSettings* rateClassSettings[] = {
 	rateClass6Settings
 };
 
+const int8_t meteorTimingTable[6] = {
+	60, // Rate class 1
+	50, // Rate class 2
+	40, // Rate class 3
+	35, // Rate class 4
+	20, // Rate class 5
+	10  // Rate class 6
+};
+
+const bool animationTypeCanSpiralTable[5] = {
+	false,
+	false,
+	false,
+	true,
+	false,
+};
+
 
 void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_t type) {
 	if (rateClass < 1 || rateClass > 6) return; // Invalid rate class
@@ -1662,7 +1804,7 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 
 	// Determine animation type
 	// uint8_t randomTypeAny = (rateClass <= 2) ? 0 : random8(0, 5);
-	uint8_t randomTypeAny;
+	uint8_t randomTypeAny = 0;
 	// Serial.println("random roll: " + String(randomTypeAny));
 
 	if ((isDown && animateFirstCycleDown) || (!isDown && animateFirstCycleUp)) {
@@ -1681,7 +1823,7 @@ void doRateBasedAnimation(bool isDown, uint8_t rateClass, uint8_t offset, uint8_
 		randomTypeAny = 0;
 	}
 
-	if (animate.forcedAnimationType > 0)
+	if (forceAnimationType)
 		randomTypeAny = animate.forcedAnimationType - 1;
 
 	// Debug log
@@ -1782,63 +1924,47 @@ void updateMeteors()
 {
 	bool debugMeasure = FileUtils::config.debugUtils.diagMeasure;
 
-	// Rate class update timing
-	int8_t timingTable[6] = {
-		60, // Rate class 1
-		50, // Rate class 2
-		40, // Rate class 3
-		35, // Rate class 4
-		20, // Rate class 5
-		10  // Rate class 6
-	};
-
-	bool animationTypeCanSpiralTable[5] = {
-		false,
-		false,
-		false,
-		true,
-		false,
-	};
+	// Rate class update timing uses file-scoped meteorTimingTable[] and animationTypeCanSpiralTable[]
 
 	bool updateTable[6] = { false };
 	bool spiralUpdateTable[6] = { false };
 
 
 	/* Update rate classes at different intervals */
-	EVERY_N_MILLISECONDS(timingTable[0]) {
+	EVERY_N_MILLISECONDS(meteorTimingTable[0]) {
 		updateTable[0] = true; // Rate class 1
 	}
-	EVERY_N_MILLISECONDS(timingTable[1]) {
+	EVERY_N_MILLISECONDS(meteorTimingTable[1]) {
 		updateTable[1] = true; // Rate class 2
 	}
-	EVERY_N_MILLISECONDS(timingTable[2]) {
+	EVERY_N_MILLISECONDS(meteorTimingTable[2]) {
 		updateTable[2] = true; // Rate class 3
 	}
-	EVERY_N_MILLISECONDS(timingTable[3]) {
+	EVERY_N_MILLISECONDS(meteorTimingTable[3]) {
 		updateTable[3] = true; // Rate class 4
 	}
-	EVERY_N_MILLISECONDS(timingTable[4]) {
+	EVERY_N_MILLISECONDS(meteorTimingTable[4]) {
 		updateTable[4] = true; // Rate class 5
 	}
 	updateTable[5] = true; // Rate 6 is not slowed, it runs as fast as possible
 
 
-	EVERY_N_MILLISECONDS(timingTable[0] * 4) {
+	EVERY_N_MILLISECONDS(meteorTimingTable[0] * 4) {
 		spiralUpdateTable[0] = true;
 	}
-	EVERY_N_MILLISECONDS(timingTable[1] * 4) {
+	EVERY_N_MILLISECONDS(meteorTimingTable[1] * 4) {
 		spiralUpdateTable[1] = true;
 	}
-	EVERY_N_MILLISECONDS(timingTable[2] * 4) {
+	EVERY_N_MILLISECONDS(meteorTimingTable[2] * 4) {
 		spiralUpdateTable[2] = true;
 	}
-	EVERY_N_MILLISECONDS(timingTable[3] * 4) {
+	EVERY_N_MILLISECONDS(meteorTimingTable[3] * 4) {
 		spiralUpdateTable[3] = true;
 	}
-	EVERY_N_MILLISECONDS(timingTable[4] * 4) {
+	EVERY_N_MILLISECONDS(meteorTimingTable[4] * 4) {
 		spiralUpdateTable[4] = true;
 	}
-	EVERY_N_MILLISECONDS(timingTable[5] * 4) {
+	EVERY_N_MILLISECONDS(meteorTimingTable[5] * 4) {
 		spiralUpdateTable[5] = true;
 	}
 
@@ -1929,30 +2055,12 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 	if (showDiagnostics)
 		Serial.print("animationCleanup:" + String(displayMinDuration + animationCleanupDelay) + ",");
 
-	/* Update Scrolling letters animation */
-	if (nameScrollDone == false && currentDisplayDuration < displayMinDuration + animationCleanupDelay) {
-		// Serial.println("-------- scroll letters: " + String(spacecraftName));
-		scrollLetters(spacecraftName, spacecraftNameSize);
-	}
-
-
 	if (animationTypeSetDown == false) {
 		// Serial.println("---");
 		// Serial.println("animationTypeSetDown == false");
 		// Serial.println("---");
-		// const uint8_t animationId = random8(0,2);
-		// const uint8_t animationId = random8(1, 4);
-		const uint8_t animationId = 1;
-		// Serial.print("roll animation: "); Serial.println(animationId);
-
-		/**
-		 * 0 = Meteor/Rain (default)
-		 * 1 = Pulse
-		 * 2 = Spiral
-		 */
-
-		animationTypeDown = animationId;
-		animationTypeUp = animationId;
+		animationTypeDown = 1; // Pulse
+		animationTypeUp = 1;
 		animationTypeSetDown = true;
 	}
 
@@ -2020,13 +2128,41 @@ void updateAnimation(const char* spacecraftName, int spacecraftNameSize, int dow
 		}
 	}
 
-	drawMeteors(); // Assign new pixels for meteors
-	EVERY_N_MILLISECONDS(100) updateBottomPixels();
-	FastLED.show(); // Update LEDs
-	updateMeteors(); // Update first pixel location for all active Meteors in array
+	// Gate render + update to achievable frame rate (~30 FPS)
+	if (currentMillis - fpsTimer >= fpsInMs) {
+		fpsTimer = currentMillis;
 
-	if (showDiagnostics)
-		FastLED.countFPS();
+		unsigned long frameStart = millis();
+
+		/* Update Scrolling letters animation */
+		if (nameScrollDone == false && currentDisplayDuration < displayMinDuration + animationCleanupDelay) {
+			scrollLetters(spacecraftName, spacecraftNameSize);
+		}
+
+		drawMeteors(); // Assign new pixels for meteors
+		EVERY_N_MILLISECONDS(100) updateBottomPixels();
+		FastLED.show(); // Update LEDs
+		updateMeteors(); // Advance meteor positions for next frame
+		unsigned long frameTime = millis() - frameStart;
+
+		if (showDiagnostics) {
+			FastLED.countFPS();
+			Serial.print("frameMs:");
+			Serial.print(frameTime);
+			Serial.print(",heap:");
+			Serial.print(ESP.getFreeHeap() / 1024);
+			Serial.print(",heapFrag:");
+			uint32_t freeHeap = ESP.getFreeHeap();
+			if (freeHeap > 0) {
+				Serial.print((ESP.getMaxAllocHeap() * 100) / freeHeap);
+			} else {
+				Serial.print("ERR");
+			}
+			Serial.print(",");
+		}
+	} else {
+		vTaskDelay(1); // Yield to FreeRTOS scheduler when not rendering
+	}
 }
 
 #pragma endregion -- ANIMATION FUNCTIONS
@@ -2124,39 +2260,28 @@ FoundSignals findSignals(XMLElement* xmlDish, CraftQueueItem* tempNewCraft) {
 		if (strcmp(spacecraft, tempNewCraft->callsign) != 0) continue;
 
 
+		// For up signals: binary detection (medium animation if data type found)
+		if (!isDown) {
+			tempNewCraft->upSignal = UP_SIGNAL_RATE_CLASS;
+			foundSignals.upSignal = UP_SIGNAL_RATE_CLASS;
+			continue;
+		}
+
+		// For down signals: keep existing rate-based logic
 		const char* rate = xmlSignal->Attribute("dataRate");
 		if (rate == nullptr) continue;
 
 		double rateDouble = stod(rate);
 		unsigned long rateLong = static_cast<unsigned long>(rateDouble);
 
-		// if (rateLong == 0) continue;
-		if (rateLong == 0) {
-			if (isDown) {
-				// if (showSerial)
-				// 	Serial.println("Downsignal rate is 0, skipping");
-				continue;
-			} else {
-				// if (showSerial)
-				// 	Serial.println("Upsignal rate is 0 - using placeholder");
-
-				const char* placeholderRate = SpacecraftData::getPlaceholderRate(tempNewCraft->callsign);
-				rateDouble = stod(placeholderRate);
-				rateLong = static_cast<unsigned long>(rateDouble);
-			}
-		}
+		if (rateLong == 0) continue;
 
 		unsigned int rateClass = rateLongToRateClass(rateLong);
 
 		if (rateClass == 0) continue;
 
-		if (isDown == true) {
-			tempNewCraft->downSignal = rateClass;
-			foundSignals.downSignal = rateClass;
-		} else if (isDown == false) {
-			tempNewCraft->upSignal = rateClass;
-			foundSignals.upSignal = rateClass;
-		}
+		tempNewCraft->downSignal = rateClass;
+		foundSignals.downSignal = rateClass;
 
 		if (tempNewCraft->downSignal != 0 && tempNewCraft->upSignal != 0) {
 			break;
@@ -2179,7 +2304,7 @@ FoundSignals findSignals(XMLElement* xmlDish, CraftQueueItem* tempNewCraft) {
 	return foundSignals;
 }
 
-void sendCrafToQueue(CraftQueueItem* newCraft) {
+void sendCraftToQueue(CraftQueueItem* newCraft) {
 
 	if (strlen(newCraft->name) != 0 && (newCraft->downSignal != 0 || newCraft->upSignal != 0)) {
 
@@ -2246,42 +2371,37 @@ void incrementDataParseCounter() {
 }
 
 CraftQueueItem* assignValuesToCraftSemaphore(CraftQueueItem* tempNewCraft) {
-	CraftQueueItem* newCraft;
+	CraftQueueItem* newCraft = nullptr;
 
 	// Get a free item from the freeList
 	// Serial.println("freeListTop: " + String(freeListTop));
 
-	if (freeListTop < 0) freeListTop = 0;
-	if (freeListTop >= MAX_ITEMS) freeListTop = MAX_ITEMS - 1;
-
-	for (uint8_t i = MAX_ITEMS - 1; i > 0; i--) {
-		if (freeList[i] != nullptr) {
-			// Serial.print("is not nullptr");
-
-			newCraft = freeList[freeListTop];
-
-			// Copy callsign
-			strlcpy(newCraft->callsignArray, tempNewCraft->callsignArray, sizeof(newCraft->callsignArray));
-			newCraft->callsign = newCraft->callsignArray;  // Point to the new data
-
-			// Copy name
-			strlcpy(newCraft->nameArray, tempNewCraft->nameArray, sizeof(newCraft->nameArray));
-			newCraft->name = newCraft->nameArray;  // Point to the new data
-
-			// Copy name length
-			newCraft->nameLength = tempNewCraft->nameLength;
-
-			// Copy down signal
-			newCraft->downSignal = tempNewCraft->downSignal;
-
-			// Copy up signal
-			newCraft->upSignal = tempNewCraft->upSignal;
-		} else {
-			Serial.print("freeList[" + String(i) + "] is nullptr\n");
-		}
+	if (freeListTop < 0 || freeListTop >= MAX_ITEMS) {
+		return newCraft; // Pool empty or invalid state
 	}
 
-	if (freeListTop > 0) freeListTop--;
+	if (freeList[freeListTop] != nullptr) {
+		newCraft = freeList[freeListTop];
+		freeList[freeListTop] = nullptr;
+		freeListTop--;
+
+		// Copy callsign
+		strlcpy(newCraft->callsignArray, tempNewCraft->callsignArray, sizeof(newCraft->callsignArray));
+		newCraft->callsign = newCraft->callsignArray;
+
+		// Copy name
+		strlcpy(newCraft->nameArray, tempNewCraft->nameArray, sizeof(newCraft->nameArray));
+		newCraft->name = newCraft->nameArray;
+
+		// Copy name length
+		newCraft->nameLength = tempNewCraft->nameLength;
+
+		// Copy down signal
+		newCraft->downSignal = tempNewCraft->downSignal;
+
+		// Copy up signal
+		newCraft->upSignal = tempNewCraft->upSignal;
+	}
 
 	return newCraft;
 }
@@ -2311,8 +2431,6 @@ void parseData(const char* payload)
 {
 	bool showSerial = FileUtils::config.debugUtils.showSerial;
 	feedWatchdog();
-	static bool semaphoreTaken = false;
-	
 	if (showSerial)
 		Serial.print("Data Parse attempts: " + String(parseCounter) + "\n");
 
@@ -2373,25 +2491,48 @@ void parseData(const char* payload)
 				DevUtils::termColor("reset")
 			);
 			Serial.print(xmlErrorBuffer);
+			dev.handleException();
 		}
-		dev.handleException();
 		return;
 	}
 
 	/* Find XML elements */
-	XMLNode* root = xmlDocument.RootElement();					  // Find document root node
-	XMLElement* timestamp = root->FirstChildElement("timestamp"); // Find XML timestamp element
+	XMLNode* root = xmlDocument.RootElement();
+	if (!root) {
+		if (showSerial) {
+			Serial.println("XML has no root element");
+			dev.handleException();
+		}
+		return;
+	}
+	XMLElement* timestamp = root->FirstChildElement("timestamp");
 
 
-	/* Parse the XML file */
+	/* Phase 1 — Brief lock: check pool availability (microseconds) */
+	CraftQueueItem tempNewCraft = {};
+	bool breakParseLoop = false;
+	bool craftValidated = false;
+
 	if (xSemaphoreTake(freeListMutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
-		semaphoreTaken = true;
-		printSemaphoreList();
-		if (freeListTop >= 0) {
-			CraftQueueItem tempNewCraft = {};
-			bool breakParseLoop = false;
+		if (showSerial) printSemaphoreList();
+		bool poolAvailable = (freeListTop >= 0);
+		xSemaphoreGive(freeListMutex);
+		if (!poolAvailable) {
+			if (showSerial) Serial.println("No free items in queue item pool");
+			feedWatchdog();
+			parseCounter++;
+			return;
+		}
+	} else {
+		if (showSerial) Serial.println("Phase 1: freeListMutex timeout — parse cycle skipped");
+		feedWatchdog();
+		parseCounter++;
+		return;
+	}
 
-			/* Loop through all XML elements */
+	/* Phase 2 — Parse loop (no lock held) */
+	{
+		/* Loop through all XML elements */
 			// 2 attempts at loop
 			for (int i = 0; i < 2; i++) {
 				// Serial.println("Parsing loop: " + String(i));
@@ -2524,9 +2665,13 @@ void parseData(const char* payload)
 								/* Check Blacklist */
 								feedWatchdog();
 								if (SpacecraftData::checkBlacklist(target) == true) {
-									// if (showSerial == true)
-									// 	Serial.print(DevUtils::termColor("red") + "Blacklisted target, skipping..." + DevUtils::termColor("reset") + "\n");
 									vTaskDelay(pdMS_TO_TICKS(100)); // Delay to allow other tasks to run
+									t++;
+									continue;
+								}
+
+								/* Check Approved List */
+								if (FileUtils::config.miscellaneous.useApprovedOnly && !SpacecraftData::checkApproved(target)) {
 									t++;
 									continue;
 								}
@@ -2647,31 +2792,25 @@ void parseData(const char* payload)
 
 
 								feedWatchdog();
-								CraftQueueItem* newCraft = assignValuesToCraftSemaphore(&tempNewCraft);
-
-
-								if (isValidCraftQueueItem(newCraft)) {
-									// SUCCESS - craft validated and sent to the queue
-									// The data fetching process is complete
-									sendCrafToQueue(newCraft);
-									
+								if (isValidCraftQueueItem(&tempNewCraft)) {
+									// SUCCESS — target validated, defer pool pop to Phase 3
+									craftValidated = true;
 									if (usingDummyData == true) {
 										if (parseCounter >= retryDataFetchLimit) {
 											parseCounter = 0;
-											breakParseLoop = true; // Break out of all loops
-											targetCount = 0; // Reset the global target counter
-											dishCount = 0; // Reset the global dish counter
-											stationCount = 0; // Reset the global station counter
+											breakParseLoop = true;
+											targetCount = 0;
+											dishCount = 0;
+											stationCount = 0;
 										}
 									} else {
-										parseCounter = 0;		
-										breakParseLoop = true; // Break out of all loops
-										targetCount = t; // Set the global target counter to the current target number
-										dishCount = d; // Set the global dish counter to the current dish number
-										stationCount = s; // Set the global station counter to the current station number
+										parseCounter = 0;
+										breakParseLoop = true;
+										targetCount = t;
+										dishCount = d;
+										stationCount = s;
 									}
 									feedWatchdog();
-
 									break;
 								} else {
 									if (showSerial == true)
@@ -2723,59 +2862,38 @@ void parseData(const char* payload)
 				}
 
 				catch (...) {
-					if (FileUtils::config.debugUtils.showSerial == true) {
-						Serial.print(DevUtils::termColor("red"));
-						Serial.println("Problem parsing payload:");
-						Serial.println(DevUtils::termColor("reset"));
+					if (showSerial) {
+						Serial.println("Exception in parse loop");
+						dev.handleException();
 					}
-					dev.handleException();
+					feedWatchdog();
 					parseCounter++;
-					if (semaphoreTaken == true && freeListMutex != nullptr) {
-						xSemaphoreGive(freeListMutex);
-						semaphoreTaken = false;
-					}
 					return;
 				}
 
 				if (breakParseLoop == true) break;
 			} // End arbitary loop
+	} // End Phase 2 scope
 
-			incrementDataParseCounter();
-			if (semaphoreTaken == true && freeListMutex != nullptr) {
-				xSemaphoreGive(freeListMutex);
-				semaphoreTaken == false;
-			}
-
-			feedWatchdog();
-			parseCounter++;
-			return;
-
-		} else {
-			// There are no free items in the queue item pool
-			Serial.println("No free items in queue item pool");
-			if (semaphoreTaken == true && freeListMutex != nullptr) {
-				xSemaphoreGive(freeListMutex);
-				semaphoreTaken = false;
-			}
-
-			return;
-		}
-
-
-		if (semaphoreTaken == true && freeListMutex != nullptr) {
+	/* Phase 3 — Brief lock: pool pop + queue send (microseconds under lock) */
+	if (craftValidated) {
+		CraftQueueItem* newCraft = nullptr;
+		if (xSemaphoreTake(freeListMutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
+			newCraft = assignValuesToCraftSemaphore(&tempNewCraft);
 			xSemaphoreGive(freeListMutex);
-			semaphoreTaken == false;
+		} else {
+			if (showSerial) Serial.println("Phase 3: freeListMutex timeout — validated craft lost");
 		}
-
-		if (FileUtils::config.debugUtils.showSerial == true)
-			Serial.print("Reached the end of logic for parse attempt: " + String(parseCounter) + "\n");
-		parseCounter++;
-
-		feedWatchdog();
-		return;
+		if (newCraft != nullptr) {
+			sendCraftToQueue(newCraft);
+		} else {
+			if (showSerial) Serial.println("Pool allocation failed — validated craft lost");
+		}
 	}
-	// Serial.println("fetch done");
+
+	incrementDataParseCounter();
 	feedWatchdog();
+	parseCounter++;
 }
 
 void logOutput(const char* color, const String& message) {
@@ -2833,8 +2951,10 @@ char* generateFetchUrl() {
 		}
 	}
 	catch (...) {
-		Serial.println("Error: generateFetchUrl() failed");
-		dev.handleException();
+		if (FileUtils::config.debugUtils.showSerial) {
+			Serial.println("Error: generateFetchUrl() failed");
+			dev.handleException();
+		}
 	}
 	return fetchUrl;
 }
@@ -2855,8 +2975,10 @@ bool handleHttpResponse(uint16_t httpResponseCode) {
 			return true;
 		}
 		catch (...) {
-			Serial.println("Error: handleHttpResponse() failed");
-			dev.handleException();
+			if (FileUtils::config.debugUtils.showSerial) {
+				Serial.println("Error: handleHttpResponse() failed");
+				dev.handleException();
+			}
 			return false;
 		}
 	}
@@ -2875,10 +2997,11 @@ bool attemptHTTPConnection(const String& url) {
 	return handleHttpResponse(httpResponseCode);
 }
 
-bool fetchHTTPData(const String& url) {
+static char xmlDataBuffer[20480];  // 20KB buffer for XML data from HTTP response
+
+bool fetchHTTPData(const String& url, char* buffer, size_t bufferSize) {
 	bool showSerial = FileUtils::config.debugUtils.showSerial;
 
-	const int maxHttpRetries = 3;
 	for (int retry = 0; retry < maxHttpRetries; retry++) {
 		feedWatchdog(); // HTTP connection can sometimes be slow
 
@@ -2903,51 +3026,51 @@ bool fetchHTTPData(const String& url) {
 					String res = http.getString();
 
 					if (res == nullptr or res.length() == 0 or res == "") {
-						Serial.print("Error: API response is empty\n");
+						if (showSerial) Serial.print("Error: API response is empty\n");
 						http.end();
 						return false;
 					}
 
 					feedWatchdog(); // The response may be large, just in case
 
-					if (showSerial) {
-						Serial.print("Writing XML data to file...\n");
-					}
-
-					File xmlFile = LittleFS.open("/temp.xml", "w");
-					if (!xmlFile) {
-						logOutput("red", "Failed to open XML file for writing");
+					if (res.length() >= bufferSize) {
+						if (showSerial)
+							Serial.println("[fetchHTTPData] Response too large for buffer");
 						http.end();
 						return false;
 					}
 
-					size_t bytesWritten = xmlFile.print(res);
-					xmlFile.close();
-					feedWatchdog(); // Just in case writing to the file is slow
+					memcpy(buffer, res.c_str(), res.length());
+					buffer[res.length()] = '\0';
+
+					if (showSerial)
+						Serial.println("[fetchHTTPData] XML data copied to buffer (" + String(res.length()) + " bytes)");
 				}
 				catch (...) {
-					Serial.print("Error getting string from API response\n");
+					if (showSerial) Serial.print("Error getting string from API response\n");
+					http.end();
+					return false;
 				}
 
 				http.end();
-				return true; // XML data saved to LittleFS
+				return true;
 			} else {
 				http.end();
 				if (FileUtils::config.debugUtils.showSerial == true)
 					Serial.println("[fetchHTTPData] Failed to fetch data");
 			}
-
-			// vTaskDelay(pdMS_TO_TICKS(100)); // Wait to allow other tasks to run
 		}
 		catch (...) {
-			Serial.println("Error: fetchHTTPData() failed");
-			dev.handleException();
-			http.end();  // Close connection in case of an exception
-			vTaskDelay(pdMS_TO_TICKS(100)); // Replace delay with vTaskDelay
+			if (showSerial) {
+				Serial.println("Error: fetchHTTPData() failed");
+				dev.handleException();
+			}
+			http.end();
+			vTaskDelay(pdMS_TO_TICKS(100));
 		}
 	}
-	http.end();  // Ensure connection is closed even if no successful fetch
-	return false;  // No data fetched
+	http.end();
+	return false;
 }
 
 
@@ -2956,7 +3079,7 @@ void fetchData() {
 
 	const bool showSerial = FileUtils::config.debugUtils.showSerial;
 
-	if (FileUtils::config.debugUtils.testCores == true) {
+	if (showSerial && FileUtils::config.debugUtils.testCores == true) {
 		Serial.print("fetchData() running on core " + String(xPortGetCoreID()) + "\n\n");
 	}
 
@@ -3005,7 +3128,7 @@ void fetchData() {
 			// Serial.print(urlBuffer);
 		}
 
-		dataFetched = fetchHTTPData(url);
+		dataFetched = fetchHTTPData(url, xmlDataBuffer, sizeof(xmlDataBuffer));
 
 		if (showSerial) {
 			const char* dataFetchedStatusString = dataFetched ? "Success" : "Failure";
@@ -3026,16 +3149,12 @@ void fetchData() {
 		}
 	}
 
-	File xmlFile;
-
-	static char xmlDataBuffer[20480];  // 20KB buffer
-
 	const unsigned long currentMillis = millis();
 	const unsigned long dataFetchDurationSeconds = (currentMillis - dataFetchTimerMilliseconds) / 1000;
 	dataFetchTimerMilliseconds = currentMillis;
 
 	if (dataFetched) {
-		// Data was fetched, use live data
+		// Data was fetched directly into xmlDataBuffer, use live data
 		feedWatchdog();
 		usingDummyData = false;
 
@@ -3052,38 +3171,6 @@ void fetchData() {
 			);
 			Serial.print(dataStatusBuffer);
 		}
-
-		xmlFile = LittleFS.open("/temp.xml", "r");
-		if (!xmlFile) {
-			if (showSerial)
-				Serial.println("[fetchData] Failed to open XML file for reading.");
-
-			return;
-		}
-		size_t xmlFileSize = xmlFile.size();
-
-		if (showSerial)
-			Serial.println("[fetchData] XML file size: " + String(xmlFileSize));
-
-		if (xmlFileSize > sizeof(xmlDataBuffer) - 1) {
-			if (showSerial)
-				Serial.println(DevUtils::termColor("red") + "[fetchData] XML file is too large for buffer." + DevUtils::termColor("reset"));
-
-			xmlFile.close();
-			return;
-		}
-
-		feedWatchdog();
-
-		// Read the entire file into the buffer
-		xmlFile.readBytes(xmlDataBuffer, xmlFileSize);
-		xmlDataBuffer[xmlFileSize] = '\0'; // Null-terminate the string
-
-		xmlFile.close();
-		LittleFS.remove("/temp.xml"); // Optionally delete the file after reading
-
-		if (showSerial)
-			Serial.println("[fetchData] XML file read");
 
 		feedWatchdog();
 		parseData(xmlDataBuffer); // Parse live data
@@ -3105,7 +3192,19 @@ void fetchData() {
 			Serial.print(dataStatusBuffer);
 		}
 
-		parseData(dummyXmlData); // Parse dummy data
+		// Load from LittleFS, with caching to avoid re-reading the same file each cycle.
+		// Falls back to compiled-in PROGMEM safety net if LittleFS read fails.
+		static const char* cachedDummyFile = nullptr;
+		const char* currentDummyFile = dummyXmlFile; // snapshot volatile once
+		if (cachedDummyFile != currentDummyFile) {
+			if (XmlTestData::loadFile(currentDummyFile, xmlDataBuffer, sizeof(xmlDataBuffer))) {
+				cachedDummyFile = currentDummyFile;
+			} else {
+				strlcpy(xmlDataBuffer, XmlTestData::getFallbackData(), sizeof(xmlDataBuffer));
+				cachedDummyFile = nullptr; // don't cache failure — retry next cycle
+			}
+		}
+		parseData(xmlDataBuffer);
 	}
 
 	if (!dataStarted) {
@@ -3117,13 +3216,13 @@ void fetchData() {
 
 	feedWatchdog();
 
-	if (!isWiFiConnected && wm.getWiFiIsSaved() == true) {
-		Serial.print("Trying to reconnect to WiFi \"" + String(wm.getWiFiSSID()) + "\"\n");
+	if (!isWiFiConnected() && wm.getWiFiIsSaved() == true) {
+		if (showSerial) Serial.print("Trying to reconnect to WiFi \"" + String(wm.getWiFiSSID()) + "\"\n");
 
 		bool res = wm.autoConnect(FileUtils::config.wifiNetwork.apSSID, FileUtils::config.wifiNetwork.apPass);
 
 		if (!res) { // Wifi connection failed
-			Serial.print(
+			if (showSerial) Serial.print(
 				DevUtils::termColor("red") +
 				"Failed to reconnect to WiFi" +
 				DevUtils::termColor("reset"));
@@ -3139,7 +3238,8 @@ void fetchData() {
 				connectedNetwork != nullptr ? connectedNetwork : "NULL",
 				DevUtils::termColor("reset")
 			);
-			Serial.print(successStringBuffer);
+			if (showSerial) Serial.print(successStringBuffer);
+			MDNS.begin(mdnsHostname); // Restart mDNS after reconnect
 		}
 	}
 
@@ -3182,8 +3282,10 @@ void getData(void* parameter) {
 			}
 		}
 		catch (...) {
-			Serial.println("Error: getData() failed");
-			dev.handleException();
+			if (FileUtils::config.debugUtils.showSerial) {
+				Serial.println("Error: getData() failed");
+				dev.handleException();
+			}
 		}
 
 		vTaskDelay(pdMS_TO_TICKS(100)); // delay for 100 milliseconds to allow other tasks to run
@@ -3227,19 +3329,23 @@ void setup()
 		Serial.print("└────────────────────────────────┘\n\n");
 
 		FileUtils::initConfigFile();
-		Serial.print("Config loaded\n\n");
-		FileUtils::printAllConfigFileKeys();
+		bool showSerial = FileUtils::config.debugUtils.showSerial;
+		if (showSerial) Serial.print("Config loaded\n\n");
+		if (showSerial) FileUtils::printAllConfigFileKeys();
 
 		// if (FileUtils::config.wifiNetwork.apPass != nullptr) {
 		// 	Serial.print("password: " + String(FileUtils::config.wifiNetwork.apPass) + "\n");
 		// } else {
 		// 	Serial.print("password: NULL\n");
 		// }
-		Serial.print("serverName: " + String(FileUtils::config.wifiNetwork.serverName) + "\n\n");
+		if (showSerial) Serial.print("serverName: " + String(FileUtils::config.wifiNetwork.serverName) + "\n\n");
 	} else {
 		Serial.println("An Error has occurred while mounting LittleFS filesystem");
 		Serial.println("Using default config, settings will not be saved");
 	}
+
+	// showSerial is now available for the rest of setup()
+	const bool setupShowSerial = FileUtils::config.debugUtils.showSerial;
 
 	// Reset settings - wipe stored credentials for testing
 	// wm.resetSettings();
@@ -3252,7 +3358,7 @@ void setup()
 	wm.setDebugOutput(false);
 	Serial.setDebugOutput(false);
 
-	if (FileUtils::config.debugUtils.testCores == true) {
+	if (setupShowSerial && FileUtils::config.debugUtils.testCores == true) {
 		Serial.print("setup() running on core " + String(xPortGetCoreID()) + "\n\n");
 	}
 
@@ -3303,13 +3409,19 @@ void setup()
 
 	/* WIFI MANAGER SETUP */
 	WiFi.mode(WIFI_AP_STA);  // explicitly set mode, esp defaults to STA+AP
+
+	// Generate unique hostname from last 2 bytes of MAC address
+	uint8_t mac[6];
+	WiFi.macAddress(mac);
+	snprintf(mdnsHostname, sizeof(mdnsHostname), "minipulse-%02x%02x", mac[4], mac[5]);
+
 	wm.setCountry("US");	  // setting wifi country seems to improve OSX soft ap connectivity
 	wm.setConfigPortalBlocking(false);
 	wm.setCleanConnect(true);
 	wm.setConnectRetries(3);
-	wm.setConnectTimeout(10); // connect attempt fails after n seconds	
+	wm.setConnectTimeout(10); // connect attempt fails after n seconds
 	// wm.setAPStaticIPConfig(IPAddress(192, 168, 0, 1), IPAddress(192, 168, 0, 1), IPAddress(255, 255, 255, 0)); // set static ip
-	wm.setHostname("JPL_MiniPulse");
+	wm.setHostname(mdnsHostname);
 	// wm.setEnableConfigPortal(false); // Disable auto AP, it will be started manually
 	// wm.setDisableConfigPortal(true); // Disable auto-closing config portal
 	wm.setCaptivePortalEnable(false);
@@ -3319,71 +3431,39 @@ void setup()
 	// wm.setPreSaveConfigCallback(saveParamsCallback);
 	// wm.setPreSaveParamsCallback(saveParamsCallback);
 	wm.setSaveParamsCallback(saveParamsCallback);
-	std::vector<const char*> menu = { "wifi", "info", "param", "sep", "restart" };
+	std::vector<const char*> menu = { "wifi", "param", "info", "sep", "restart" };
 	wm.setMenu(menu);
 
 	// set dark theme
 	wm.setClass("invert");
 
-	int brightnessMapped = MathHelpers::map(FileUtils::config.displayLED.brightness, 8, 160, 0, 100);
-
+	int brightnessPercent = constrain(MathHelpers::map(FileUtils::config.displayLED.brightness, 8, 160, 0, 100), 0, 100);
 
 	/* User Settings */
-	new (&param_brightness) WiFiManagerParameter("brightness", "Brightness", String(FileUtils::config.displayLED.brightness).c_str(), 3, "type='range' min='8' max='160' step='1'");
+	new (&param_brightness) WiFiManagerParameter("brightness", "Brightness", String(brightnessPercent).c_str(), 3, "type='range' min='0' max='100' step='1'");
 	wm.addParameter(&param_brightness);
 
-	new (&param_force_dummy_data) WiFiManagerParameter("force-dummy-data", "Force placeholder data", String(FileUtils::config.displayLED.brightness).c_str(), 3, "type='range' min='8' max='160' step='1'");
-	wm.addParameter(&param_force_dummy_data);
+	new (&param_separator) WiFiManagerParameter("<hr style='margin-bottom:1em;'>");
+	wm.addParameter(&param_separator);
 
 	/* Developer Settings */
-	// Brightness
-	new (&param_show_serial) WiFiManagerParameter("show_serial", "Show Serial", FileUtils::config.debugUtils.showSerial ? "1" : "0", 1, "type='number' min='0' max='1' step='1'");
+	new (&param_show_serial) WiFiManagerParameter("show_serial", "Show Serial", "1", 1, FileUtils::config.debugUtils.showSerial ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
 	wm.addParameter(&param_show_serial);
 
 	// Show graphing diagnostics
-	new (&param_show_diagnostics) WiFiManagerParameter("show_diagnostics", "Show Diagnostics", FileUtils::config.debugUtils.diagMeasure ? "1" : "0", 1, "type='number' min='0' max='1' step='1'");
+	new (&param_show_diagnostics) WiFiManagerParameter("show_diagnostics", "Show Diagnostics", "1", 1, FileUtils::config.debugUtils.diagMeasure ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
 	wm.addParameter(&param_show_diagnostics);
 
-	// Force override animation type
-	new (&param_force_animation_type) WiFiManagerParameter("force_animation_type", "Force Animation Type", String(animate.forcedAnimationType).c_str(), 1, "type='number' min='0' max='5' step='1'");
+	// Force override animation type (checkbox + number)
+	new (&param_force_animation_enabled) WiFiManagerParameter("force_animation_enabled", "Force Animation Type", "1", 1, "type='checkbox' style='margin-top:-1.2em; float:right;'");
+	wm.addParameter(&param_force_animation_enabled);
+	new (&param_force_animation_type) WiFiManagerParameter("force_animation_type", "Animation Type (1-5)", "1", 1, "type='number' min='1' max='5' step='1'");
 	wm.addParameter(&param_force_animation_type);
 
-	/* Custom */
-	const char* update_button_html = R"---(
-		<div>
-			<div style="display: inline-block; border: 1px solid gray;padding:5px 20px;">
-				<p id="firmwareStatus" style="margin-top:0;></p>
-				<p id="updateResponse"></p>
-				<button id="updateButton">Update Firmware</button>
-			</div>
-		</div>
-		<script>
-			fetch('/get-latest-version-number')
-			.then(function (response) {
-				return response.text();
-			}).
-			then(function (text) {
-				document.getElementById("firmwareStatus").innerHTML = text;
-				console.log(text);
-			})
+	new (&param_force_dummy_data) WiFiManagerParameter("force_dummy_data", "Force placeholder data", "1", 1, FileUtils::config.wifiNetwork.forceDummyData ? "type='checkbox' checked style='margin-top:-1.2em; float:right;'" : "type='checkbox' style='margin-top:-1.2em; float:right;'");
+	wm.addParameter(&param_force_dummy_data);
 
-			document.getElementById("updateButton").addEventListener('click', function() {
-				fetch('/trigger-firmware-update')
-				.then(function (response) {
-					return response.text();
-				})
-				.then(function (text) {
-					document.getElementById("updateResponse").innerHTML = text;
-					console.log("response:", text);
-				})
-				.catch(function (error) {
-					console.error(error);
-				});
-			});
-		</script>
-	)---";
-
-	wm.setCustomHeadElement(update_button_html); // Add "Update Firmware" button to WiFi portal <head>
+	wm.setCustomHeadElement(portalHeadHtml);
 
 
 	char existingWifiBuffer[128];
@@ -3393,7 +3473,7 @@ void setup()
 		"Existing WiFi credentials: %s\n",
 		wm.getWiFiIsSaved() ? "TRUE" : "FALSE"
 	);
-	Serial.print(existingWifiBuffer);
+	if (setupShowSerial) Serial.print(existingWifiBuffer);
 
 	if (wm.getWiFiIsSaved() == true) {
 		char ssidBuffer[256];
@@ -3403,7 +3483,7 @@ void setup()
 			"Connecting to WiFi network %s...\n",
 			wm.getWiFiSSID().c_str()
 		);
-		Serial.print(ssidBuffer);
+		if (setupShowSerial) Serial.print(ssidBuffer);
 
 		bool res;
 		res = wm.autoConnect(FileUtils::config.wifiNetwork.apSSID, FileUtils::config.wifiNetwork.apPass);
@@ -3412,7 +3492,7 @@ void setup()
 		{
 			char failureStringBuffer[256];
 			snprintf(failureStringBuffer, sizeof(failureStringBuffer), "%sFailed to connect to WiFi%s\n", DevUtils::termColor("red"), DevUtils::termColor("reset"));
-			Serial.print(failureStringBuffer);
+			if (setupShowSerial) Serial.print(failureStringBuffer);
 		} else // Wifi connection successful
 		{
 			String deviceIP = WiFi.localIP().toString();
@@ -3427,18 +3507,25 @@ void setup()
 				deviceIP != nullptr ? deviceIP : "NULL",
 				deviceLocalWifi != nullptr ? deviceLocalWifi : "NULL"
 			);
-			Serial.print(successStringBuffer);
+			if (setupShowSerial) Serial.print(successStringBuffer);
 		}
 
 	} else {
-		Serial.print("Use the WiFi access portal for configuration\n\n");
+		if (setupShowSerial) Serial.print("Use the WiFi access portal for configuration\n\n");
 	}
-	Serial.print("WiFi Status: " + wm.getWLStatusString() + "\n\n");
+	if (setupShowSerial) Serial.print("WiFi Status: " + wm.getWLStatusString() + "\n\n");
+
+	// Start mDNS responder so device is reachable at <hostname>.local
+	if (MDNS.begin(mdnsHostname)) {
+		if (setupShowSerial) Serial.printf("mDNS responder started: http://%s.local\n", mdnsHostname);
+	} else {
+		if (setupShowSerial) Serial.println("WARNING: mDNS responder failed to start");
+	}
 
 	// Start the web portal anyways for settings
-	Serial.print("Starting local WiFi access point for configuration...\n");
+	if (setupShowSerial) Serial.print("Starting local WiFi access point for configuration...\n");
 
-	delay(1000); // Small delay to allow WiFi to connect
+	delay(250); // Brief stabilization for WiFi (WiFiManager has its own timeouts)
 
 	if (FileUtils::config.wifiNetwork.apSSID != nullptr && strcmp(FileUtils::config.wifiNetwork.apSSID, "") != 0) {
 		if (FileUtils::config.wifiNetwork.apPass != nullptr && strcmp(FileUtils::config.wifiNetwork.apPass, "") != 0) {
@@ -3448,15 +3535,17 @@ void setup()
 			wm.startConfigPortal(FileUtils::config.wifiNetwork.apSSID);
 		}
 	} else {
-		Serial.print("No SSID set for access point\n");
+		if (setupShowSerial) Serial.print("No SSID set for access point\n");
 		wm.startConfigPortal();
 	}
 
 	feedWatchdog();
-	delay(1000); // Small delay to allow WiFi to connect
+	delay(250); // Brief stabilization for portal startup
 
-	const char* apPassword = FileUtils::config.wifiNetwork.apPass;
-	DevUtils::SerialBanners::printWiFiConfigBanner(apPassword, wm); // Display Wifi config portal connection info
+	if (setupShowSerial) {
+		const char* apPassword = FileUtils::config.wifiNetwork.apPass;
+		DevUtils::SerialBanners::printWiFiConfigBanner(apPassword, wm); // Display Wifi config portal connection info
+	}
 
 
 
@@ -3464,20 +3553,13 @@ void setup()
 	http.setReuse(true);	   // Use persistent connection
 	setupOtaUpdate();		   // Setup OTA update
 
-	SpacecraftData::loadJson();		   // Load JSON data for spacecraft lookup
-	// SpacecraftData::loadSpacecraftNamesProgmem(); // Load raw spacecraft names for lookup
-	// SpacecraftData::loadSpacecraftPlaceholderRatesRaw(); // Load raw spacecraft placeholder rates for lookup
-	// SpacecraftData::loadSpacecraftBlacklistRaw(); // Load raw spacecraft blacklist for lookup
-	// SpacecraftData::loadSpacecraftBlacklist();
-	delay(100);
-
+	SpacecraftData::loadJson(currentFirmwareVersion);
+	XmlTestData::init();
 
 	/* Assign config to global state variables */
 	characterWidth = FileUtils::config.textTypography.characterWidth;
 
-	setColorTheme(colorTheme); // Set color theme
-	// drawBottomPixels();		   // Draw initial bottom pixels
-	delay(100);				   // Small delay to allow bottom pixels to draw
+	setColorTheme(FileUtils::config.miscellaneous.colorTheme); // Set color theme
 	feedWatchdog();
 
 	/* DATA TASK SETUP */
@@ -3491,17 +3573,7 @@ void setup()
 	freeList[4] = &itemPool[4];
 	xSemaphoreGive(freeListMutex); // Give the mutex back when done accessing shared data
 
-	/* Initialize the data task on the second core */
-	xTaskCreatePinnedToCore(
-		getData,	  /* Function to implement the task */
-		"getData",	  /* Name of the task */
-		6144,		  /* Stack size in byts */
-		NULL,		  /* Task input parameter */
-		0,			  /* Priority of the task */
-		&xHandleData, /* Task handle. */
-		0);			  /* Core where the task should run */
-
-	queue = xQueueCreate(5, sizeof(CraftQueueItem)); // Create queue to pass data between tasks on separate cores
+	queue = xQueueCreate(5, sizeof(CraftQueueItem*)); // Create queue to pass data between tasks on separate cores
 
 	// Check that queue was created successfully
 	if (queue == NULL) {
@@ -3516,10 +3588,20 @@ void setup()
 		ESP.restart();
 	}
 
+	/* Initialize the data task on the second core */
+	xTaskCreatePinnedToCore(
+		getData,	  /* Function to implement the task */
+		"getData",	  /* Name of the task */
+		6144,		  /* Stack size in byts */
+		NULL,		  /* Task input parameter */
+		0,			  /* Priority of the task */
+		&xHandleData, /* Task handle. */
+		0);			  /* Core where the task should run */
+
 	esp_task_wdt_init(60, true); // Enable watchdog timer with 60 second timeout
 	// updateFirmwareOta(); // Check for OTA update
 	feedWatchdog();
-	delay(1000);
+	delay(100);
 
 }
 
@@ -3535,7 +3617,7 @@ void loop() {
 	bool diagMeasureEnabled = FileUtils::config.debugUtils.diagMeasure;
 
 	// Check core test
-	if (testCoresEnabled && currentMillis - lastTime > 4000 && currentMillis - lastTime < 4500) {
+	if (showSerial && testCoresEnabled && currentMillis - lastTime > 4000 && currentMillis - lastTime < 4500) {
 		Serial.printf("loop() running on core: %d\n", xPortGetCoreID());
 	}
 
@@ -3596,17 +3678,18 @@ void loop() {
 
 				freeSemaphoreItem(infoBuffer);
 
-				if (!firstStartupAnimation) {
+				displayDurationTimer = currentMillis;
+				if (firstStartupAnimation) {
 					firstStartupAnimation = false;
-				} else {
-					displayDurationTimer = currentMillis;
 				}
 			}
 		}
 	}
 	catch (...) {
-		Serial.print("Error: loop() getting new data failed\n");
-		dev.handleException();
+		if (showSerial) {
+			Serial.print("Error: loop() getting new data failed\n");
+			dev.handleException();
+		}
 	}
 
 	// Update All LED Animations
@@ -3616,8 +3699,8 @@ void loop() {
 	catch (...) {
 		if (showSerial) {
 			Serial.print("Error: updateAnimation() failed\n");
+			dev.handleException();
 		}
-		dev.handleException();
 	}
 
 	// Serial display diagnostics for plotter
