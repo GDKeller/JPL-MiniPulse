@@ -2795,17 +2795,14 @@ void parseData(const char* payload)
 								if (isValidCraftQueueItem(&tempNewCraft)) {
 									// SUCCESS — target validated, defer pool pop to Phase 3
 									craftValidated = true;
+									breakParseLoop = true;
 									if (usingDummyData == true) {
-										if (parseCounter >= retryDataFetchLimit) {
-											parseCounter = 0;
-											breakParseLoop = true;
-											targetCount = 0;
-											dishCount = 0;
-											stationCount = 0;
-										}
+										// Advance counters so next cycle picks a different craft
+										targetCount = t + 1;
+										dishCount = d;
+										stationCount = s;
 									} else {
 										parseCounter = 0;
-										breakParseLoop = true;
 										targetCount = t;
 										dishCount = d;
 										stationCount = s;
