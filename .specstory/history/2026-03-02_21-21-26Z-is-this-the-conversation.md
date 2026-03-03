@@ -3691,3 +3691,244 @@ no changes added to commit (use "git add" and/or "git commit -a")
 _**Agent (claude-opus-4-6 2026-03-02 23:52:57Z)**_
 
 Committed. One ahead of origin, ready to push when you want. The specstory file has already changed again from this conversation.
+
+---
+
+_**User (2026-03-03 00:07:47Z)**_
+
+add to the BACKLOG file: add a progress bar when updating firmware in the portal UI
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-03 00:07:53Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Glob"><details>
+<summary>Tool use: **Glob**</summary>
+ pattern `**/BACKLOG*`
+
+```text
+/Users/grant/code/JPL-MiniPulse/board/BACKLOG.md
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-03 00:07:57Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./board/BACKLOG.md`
+
+```text
+     1→# Backlog
+     2→
+     3→Deferred items from [ROADMAP-1.1.0.md](ROADMAP-1.1.0.md). To be revisited in future releases.
+     4→
+     5→**Risk** = how much code changes. LOW = 1-5 lines, MED = 10-50 lines, HIGH = 50+ lines or structural.
+     6→**Type**: FIX = bug/correctness, OPT = performance optimization, SEC = security, CLEAN = code hygiene/nice-to-have.
+     7→
+     8→---
+     9→
+    10→## Security
+    11→
+    12→| # | Issue | Ref | Risk | Type |
+    13→|---|-------|-----|------|------|
+    14→| 6 | OTA over plain HTTP | S1 | MED | SEC |
+    15→| 7 | Unauthenticated OTA trigger | S2 | MED | SEC |
+    16→| 8 | Open WiFi AP | S3 | LOW | SEC |
+    17→| 30 | Firmware signing | S1 | HIGH | SEC |
+    18→| 31 | ESP32 Secure Boot V2 | S1 | HIGH | SEC |
+    19→| 32 | Flash encryption | S13 | HIGH | SEC |
+    20→| 33 | Production OTA domain | S8 | LOW | SEC |
+    21→
+    22→## Optimization
+    23→
+    24→| # | Issue | Ref | Risk | Type |
+    25→|---|-------|-----|------|------|
+    26→| 17 | Meteor pool allocator | P1 | HIGH | OPT |
+    27→| 26 | Disable AP after WiFi config | P6 | LOW | OPT |
+    28→| 34 | Compact meteor data structure | P8 | MED | OPT |
+    29→
+    30→## Architecture / Code Hygiene
+    31→
+    32→| # | Issue | Ref | Risk | Type |
+    33→|---|-------|-----|------|------|
+    34→| 21 | Extract modules from main.cpp | A1 | HIGH | CLEAN |
+    35→| 22 | Unify configuration system | A2 | HIGH | CLEAN |
+    36→| 28 | Implement proper state machine | A1 | HIGH | CLEAN |
+    37→
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-03 00:08:03Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/grant/code/JPL-MiniPulse/board/BACKLOG.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-03 00:08:07Z)**_
+
+Added as item #35 under a new **UI / Portal** section.
+
+---
+
+_**User (2026-03-03 00:18:13Z)**_
+
+<command-message>commit-commands:commit</command-message>
+<command-name>/commit-commands:commit</command-name>
+
+_**User (2026-03-03 00:18:13Z)**_
+
+## Context
+
+- Current git status: On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   .specstory/history/2026-03-02_21-21-26Z-is-this-the-conversation.md
+	modified:   board/BACKLOG.md
+
+no changes added to commit (use "git add" and/or "git commit -a")
+- Current git diff (staged and unstaged changes): diff --git a/.specstory/history/2026-03-02_21-21-26Z-is-this-the-conversation.md b/.specstory/history/2026-03-02_21-21-26Z-is-this-the-conversation.md
+index 40c9d74..495ef2b 100644
+--- a/.specstory/history/2026-03-02_21-21-26Z-is-this-the-conversation.md
++++ b/.specstory/history/2026-03-02_21-21-26Z-is-this-the-conversation.md
+@@ -3691,3 +3691,83 @@ no changes added to commit (use "git add" and/or "git commit -a")
+ _**Agent (claude-opus-4-6 2026-03-02 23:52:57Z)**_
+ 
+ Committed. One ahead of origin, ready to push when you want. The specstory file has already changed again from this conversation.
++
++---
++
++_**User (2026-03-03 00:07:47Z)**_
++
++add to the BACKLOG file: add a progress bar when updating firmware in the portal UI
++
++---
++
++_**Agent (claude-opus-4-6 2026-03-03 00:07:53Z)**_
++
++<tool-use data-tool-type="search" data-tool-name="Glob"><details>
++<summary>Tool use: **Glob**</summary>
++ pattern `**/BACKLOG*`
++
++```text
++/Users/grant/code/JPL-MiniPulse/board/BACKLOG.md
++```
++</details></tool-use>
++
++_**Agent (claude-opus-4-6 2026-03-03 00:07:57Z)**_
++
++<tool-use data-tool-type="read" data-tool-name="Read"><details>
++<summary>Tool use: **Read**</summary>
++ `./board/BACKLOG.md`
++
++```text
++     1→# Backlog
++     2→
++     3→Deferred items from [ROADMAP-1.1.0.md](ROADMAP-1.1.0.md). To be revisited in future releases.
++     4→
++     5→**Risk** = how much code changes. LOW = 1-5 lines, MED = 10-50 lines, HIGH = 50+ lines or structural.
++     6→**Type**: FIX = bug/correctness, OPT = performance optimization, SEC = security, CLEAN = code hygiene/nice-to-have.
++     7→
++     8→---
++     9→
++    10→## Security
++    11→
++    12→| # | Issue | Ref | Risk | Type |
++    13→|---|-------|-----|------|------|
++    14→| 6 | OTA over plain HTTP | S1 | MED | SEC |
++    15→| 7 | Unauthenticated OTA trigger | S2 | MED | SEC |
++    16→| 8 | Open WiFi AP | S3 | LOW | SEC |
++    17→| 30 | Firmware signing | S1 | HIGH | SEC |
++    18→| 31 | ESP32 Secure Boot V2 | S1 | HIGH | SEC |
++    19→| 32 | Flash encryption | S13 | HIGH | SEC |
++    20→| 33 | Production OTA domain | S8 | LOW | SEC |
++    21→
++    22→## Optimization
++    23→
++    24→| # | Issue | Ref | Risk | Type |
++    25→|---|-------|-----|------|------|
++    26→| 17 | Meteor pool allocator | P1 | HIGH | OPT |
++    27→| 26 | Disable AP after WiFi config | P6 | LOW | OPT |
++    28→| 34 | Compact meteor data structure | P8 | MED | OPT |
++    29→
++    30→## Architecture / Code Hygiene
++    31→
++    32→| # | Issue | Ref | Risk | Type |
++    33→|---|-------|-----|------|------|
++    34→| 21 | Extract modules from main.cpp | A1 | HIGH | CLEAN |
++    35→| 22 | Unify configuration system | A2 | HIGH | CLEAN |
++    36→| 28 | Implement proper state machine | A1 | HIGH | CLEAN |
++    37→
++```
++</details></tool-use>
++
++_**Agent (claude-opus-4-6 2026-03-03 00:08:03Z)**_
++
++<tool-use data-tool-type="write" data-tool-name="Edit"><details>
++<summary>Tool use: **Edit**</summary>
++
++```text
++The file /Users/grant/code/JPL-MiniPulse/board/BACKLOG.md has been updated successfully.
++```
++</details></tool-use>
++
++_**Agent (claude-opus-4-6 2026-03-03 00:08:07Z)**_
++
++Added as item #35 under a new **UI / Portal** section.
+diff --git a/board/BACKLOG.md b/board/BACKLOG.md
+index 0ee140a..fb73d71 100644
+--- a/board/BACKLOG.md
++++ b/board/BACKLOG.md
+@@ -27,6 +27,12 @@ Deferred items from [ROADMAP-1.1.0.md](ROADMAP-1.1.0.md). To be revisited in fut
+ | 26 | Disable AP after WiFi config | P6 | LOW | OPT |
+ | 34 | Compact meteor data structure | P8 | MED | OPT |
+ 
++## UI / Portal
++
++| # | Issue | Ref | Risk | Type |
++|---|-------|-----|------|------|
++| 35 | OTA progress bar in portal UI | — | MED | FIX |
++
+ ## Architecture / Code Hygiene
+ 
+ | # | Issue | Ref | Risk | Type |
+- Current branch: main
+- Recent commits: 4a4df2c chore: version bump
+3d28ee9 chore: update specstory history
+04b4670 fix(ota): bypass httpUpdate with manual redirect resolution and flash write
+21e3f38 Merge pull request #6 from GDKeller/develop/1.1.3
+ca94814 fix(ota): collect Location header before reading redirect response
+4ccb5b6 chore: version bump to 1.1.5 for OTA testing
+39ea9a4 chore: version bump for testing
+140aafc Merge branch 'develop/1.1.3'
+a20db52 chore: update specstory history
+2680ee4 chore: revert version back to 1.1.3
+
+## Your task
+
+Based on the above changes, create a single git commit.
+
+You have the capability to call multiple tools in a single response. Stage and create the commit using a single message. Do not use any other tools or do anything else. Do not send any other text or messages besides these tool calls.
+
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-03 00:18:19Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Stage and commit backlog update
+
+```bash
+git add board/BACKLOG.md .specstory/history/2026-03-02_21-21-26Z-is-this-the-conversation.md && git commit -m "$(cat <<'EOF'
+chore(board): add OTA progress bar to backlog
+EOF
+)"
+```
+</details></tool-use>

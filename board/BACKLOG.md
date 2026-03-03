@@ -27,6 +27,12 @@ Deferred items from [ROADMAP-1.1.0.md](ROADMAP-1.1.0.md). To be revisited in fut
 | 26 | Disable AP after WiFi config | P6 | LOW | OPT |
 | 34 | Compact meteor data structure | P8 | MED | OPT |
 
+## UI / Portal
+
+| # | Issue | Ref | Risk | Type |
+|---|-------|-----|------|------|
+| 35 | OTA progress bar in portal UI | — | MED | FIX |
+
 ## Architecture / Code Hygiene
 
 | # | Issue | Ref | Risk | Type |
